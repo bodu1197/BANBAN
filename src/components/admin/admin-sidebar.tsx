@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, FileText, MessagesSquare, ExternalLink, Home, PhoneCall, Sparkles, BookOpen, FileEdit, UserSearch, MapPin, TrendingUp } from "lucide-react";
+import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, FileText, MessagesSquare, ExternalLink, Home, PhoneCall, BookOpen, FileEdit, UserSearch, MapPin, TrendingUp } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -15,8 +15,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { href: "/admin/ads", icon: <Crown className="h-5 w-5" />, label: "타투 광고" },
-    { href: "/admin/ads-semi", icon: <Sparkles className="h-5 w-5" />, label: "반영구 광고" },
+    { href: "/admin/ads-semi", icon: <Crown className="h-5 w-5" />, label: "광고 관리" },
     { href: "/admin/analytics", icon: <BarChart3 className="h-5 w-5" />, label: "접속자 현황" },
     { href: "/admin/members", icon: <UserCog className="h-5 w-5" />, label: "회원 관리" },
     { href: "/admin/portfolios", icon: <Images className="h-5 w-5" />, label: "포트폴리오" },
