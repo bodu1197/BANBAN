@@ -9,14 +9,12 @@ import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard, RecruitmentCard, PopularArtistCard } from "@/components/home/cards";
 import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
-import { AiGallerySection } from "@/components/home/AiGallerySection";
 import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { ExhibitionSection } from "@/components/home/ExhibitionSection";
 import { QuoteRequestBanner } from "@/components/home/QuoteRequestBanner";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeRecruitment, HomeArtist } from "@/lib/supabase/home-queries";
-import { fetchSimilarityGallery } from "@/lib/supabase/ai-gallery-queries";
 import { fetchActiveBanner } from "@/lib/supabase/banner-queries";
 import { secureShuffle } from "@/lib/random";
 import { fetchExhibitions } from "@/lib/supabase/exhibition-queries";
@@ -263,8 +261,7 @@ async function fetchTopHomeData() {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchBottomHomeData() {
-  const [similarityGallery, timeSalePortfolios, tattooData, beautyData, exhibitions, eyebrowPortfolios, genres, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
-    safe(() => fetchSimilarityGallery(), []),
+  const [timeSalePortfolios, tattooData, beautyData, exhibitions, eyebrowPortfolios, genres, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
     safe(() => fetchTimeSalePortfolios(10), []),
     safe(() => fetchHomeData("TATTOO"), EMPTY_HOME_DATA),
     safe(() => fetchHomeData("SEMI_PERMANENT"), EMPTY_HOME_DATA),
@@ -295,7 +292,7 @@ async function fetchBottomHomeData() {
   const indieEntries = secureShuffle(rawIndieEntries);
   const butlerEntries = secureShuffle(rawButlerEntries);
 
-  return { similarityGallery, timeSalePortfolios, tattooData, beautyData, firstExhibition, exhibitionEntries, eyebrowPortfolios, touchupEntries, genres, genrePortfolios, lipPortfolios, indieEntries, butlerEntries, activeArtists, mensEyebrowPortfolios };
+  return { timeSalePortfolios, tattooData, beautyData, firstExhibition, exhibitionEntries, eyebrowPortfolios, touchupEntries, genres, genrePortfolios, lipPortfolios, indieEntries, butlerEntries, activeArtists, mensEyebrowPortfolios };
 }
 
 function HomeDiscoverySections({
@@ -373,13 +370,6 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
         moreLink="/discount"
         moreText={hp.seeMore}
       />
-      <LazyHomeSection size="sm">
-        <AiGallerySection
-          items={homeData.similarityGallery}
-          title={hp.trendingNow}
-          moreText={hp.seeMore}
-        />
-      </LazyHomeSection>
       <LazyHomeSection size="md">
         <CuratedExhibitions hp={hp} indieEntries={homeData.indieEntries} butlerEntries={homeData.butlerEntries} activeArtists={homeData.activeArtists} />
       </LazyHomeSection>
