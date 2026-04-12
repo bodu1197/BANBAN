@@ -14,11 +14,9 @@ interface DiscountPageClientProps {
   regions: Region[];
 }
 
-type CategoryKey = "all" | "tattoo" | "semi";
+type CategoryKey = "semi";
 
 const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "all", label: "전체" },
-  { key: "tattoo", label: "타투" },
   { key: "semi", label: "반영구" },
 ];
 
@@ -76,11 +74,9 @@ function PriceSlider({ maxPrice, onChange }: Readonly<{
   );
 }
 
-function matchCategory(p: HomePortfolio, cat: CategoryKey): boolean {
-  if (cat === "all") return true;
+function matchCategory(p: HomePortfolio): boolean {
   const t = p.artistType ?? "TATTOO";
-  if (cat === "tattoo") return t === "TATTOO";
-  return t === "SEMI_PERMANENT";
+  return t === "SEMI_PERMANENT" || t === "BOTH";
 }
 
 const REGION_LABELS = {
@@ -118,7 +114,7 @@ export function DiscountPageClient({
   portfolios, regions,
 }: Readonly<DiscountPageClientProps>): React.ReactElement {
   const noDataMessage = STRINGS.common.noData;
-  const [category, setCategory] = useState<CategoryKey>("all");
+  const [category, setCategory] = useState<CategoryKey>("semi");
   const [regionId, setRegionId] = useState<string | null>(null);
   const [regionSido, setRegionSido] = useState<string | null>(null);
   const [maxPrice, setMaxPrice] = useState(0);
@@ -146,15 +142,14 @@ export function DiscountPageClient({
   }, []);
 
   const filtered = useMemo(() => {
-    let items = portfolios.filter((p) => matchCategory(p, category));
+    let items = portfolios.filter((p) => matchCategory(p));
     if (maxPrice > 0 && maxPrice < PRICE_MAX) items = items.filter((p) => p.price <= maxPrice);
     items = filterByRegion(items, regionId, regionSido, regionMap, activeRegions);
     return items;
-  }, [portfolios, category, maxPrice, regionId, regionSido, regionMap, activeRegions]);
+  }, [portfolios, maxPrice, regionId, regionSido, regionMap, activeRegions]);
 
   return (
     <div className="py-4">
-      <CategoryTabs value={category} onChange={setCategory} />
 
       <RegionSelector
         regions={activeRegions}
