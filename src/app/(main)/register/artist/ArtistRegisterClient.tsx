@@ -28,6 +28,7 @@ import {
   DaumPostcodeModal,
   buildFormLabelsFromDict,
 } from "@/components/artist-form/ArtistFormFields";
+import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
 
 interface ArtistRegisterClientProps {
   categories: ArtistFormCategory[];
@@ -83,6 +84,10 @@ export function ArtistRegisterClient({ categories,
     if (!formData.title.trim() || !formData.contact.trim() || !formData.address.trim() ||
         !formData.region_id || !formData.introduce.trim() || profileImage.length === 0) {
       globalThis.alert(t.required);
+      return;
+    }
+    if (formData.introduce.trim().length < INTRODUCE_MIN_LENGTH) {
+      globalThis.alert(`소개글을 ${String(INTRODUCE_MIN_LENGTH)}자 이상 작성해 주세요. (현재 ${String(formData.introduce.trim().length)}자)`);
       return;
     }
 
@@ -203,7 +208,10 @@ export function ArtistRegisterClient({ categories,
             <ImageUpload maxLength={1} label={t.profileImageHint} onChange={(files) => setProfileImage(files.filter((f): f is File => f instanceof File))} />
           </div>
 
-          <TextField label={t.introduce} value={formData.introduce} onChange={handleInputChange("introduce")} placeholder={t.introducePlaceholder} required />
+          <GuidedIntroduce
+            value={formData.introduce}
+            onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
+          />
           <DescriptionField value={formData.description} onChange={handleInputChange("description")} t={formLabels} />
           <CategoryCheckboxGroup label={t.shopInfo} categories={shopCategories} selectedIds={formData.shop_category_ids} onToggle={handleCheckboxChange} field="shop_category_ids" />
         </div>
