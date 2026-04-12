@@ -9,7 +9,7 @@ import { AdminSearchBar, AdminPagination, AdminSearchResetBadge, AdminLoadingSpi
 
 // ─── Types ───────────────────────────────────────────────
 
-type MemberTab = "all" | "general" | "tattoo" | "semi_permanent" | "admin";
+type MemberTab = "all" | "general" | "semi_permanent" | "admin";
 type SortKey = "" | "last_login_at_asc" | "last_login_at_desc";
 
 interface Member {
@@ -55,13 +55,12 @@ const SOCIAL_LABELS: Record<string, string> = {
 };
 
 const ARTIST_TYPE_LABELS: Record<string, string> = {
-    TATTOO: "타투", SEMI_PERMANENT: "반영구", BOTH: "타투+반영구",
+    SEMI_PERMANENT: "반영구",
 };
 
 const TAB_LIST: { key: MemberTab; label: string }[] = [
     { key: "all", label: "전체" },
     { key: "general", label: "일반회원" },
-    { key: "tattoo", label: "타투" },
     { key: "semi_permanent", label: "반영구" },
     { key: "admin", label: "관리자" },
 ];
