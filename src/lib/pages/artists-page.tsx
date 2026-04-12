@@ -16,8 +16,8 @@ export async function generateArtistsMetadata(): Promise<Metadata> {
 
 export async function renderArtistsPage(): Promise<React.ReactElement> {
   const [result, regions, likedIds] = await Promise.all([
-    fetchArtistsWithDetails({ typeArtist: "TATTOO", limit: 20 }),
-    fetchActiveRegions("TATTOO"),
+    fetchArtistsWithDetails({ typeArtist: "SEMI_PERMANENT", limit: 20 }),
+    fetchActiveRegions("SEMI_PERMANENT"),
     fetchLikedArtistIds(),
   ]);
 

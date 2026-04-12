@@ -51,10 +51,9 @@ interface SearchFilters {
 function parseSearchFilters(searchParams: URLSearchParams): SearchFilters {
   const regionId = searchParams.get("region") || null;
   const regionSido = searchParams.get("regionSido") || null;
-  const typeRaw = searchParams.get("type") ?? "TATTOO";
-  const typeArtist: ArtistType = typeRaw === "SEMI_PERMANENT" ? "SEMI_PERMANENT" : "TATTOO";
+  const typeArtist: ArtistType = "SEMI_PERMANENT";
   const searchWord = searchParams.get("q") ?? "";
-  const isDefault = typeArtist === "TATTOO" && !regionId && !regionSido && !searchWord;
+  const isDefault = !regionId && !regionSido && !searchWord;
   return { regionId, regionSido, typeArtist, searchWord, isDefault };
 }
 

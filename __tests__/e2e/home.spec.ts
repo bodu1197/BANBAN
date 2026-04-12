@@ -6,7 +6,7 @@ test.describe("홈페이지", () => {
   });
 
   test("페이지 제목이 표시됨", async ({ page }) => {
-    await expect(page).toHaveTitle(/타투어때/);
+    await expect(page).toHaveTitle(/반언니/);
   });
 
   test("헤더 로고가 표시됨", async ({ page }) => {

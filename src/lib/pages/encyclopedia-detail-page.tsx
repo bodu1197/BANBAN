@@ -15,9 +15,9 @@ import {
 } from "@/lib/seo";
 
 function stripSiteSuffix(value: string): string {
-  // Root layout applies `%s | 타투어때` template — strip any trailing
-  // "- 타투어때" / "| 타투어때" stored on the article so it isn't duplicated.
-  return value.replace(/\s*[-|–—]\s*타투어때\s*$/u, "").trim();
+  // Root layout applies `%s | 반언니` template — strip any trailing
+  // "- 반언니" / "| 반언니" stored on the article so it isn't duplicated.
+  return value.replace(/\s*[-|–—]\s*반언니\s*$/u, "").trim();
 }
 
 export async function generateEncyclopediaDetailMetadata(
@@ -62,10 +62,10 @@ function ArticleStructuredData({
     image: article.cover_image_url ?? undefined,
     datePublished: article.published_at,
     dateModified: article.updated_at,
-    author: { "@type": "Organization", name: "타투어때" },
+    author: { "@type": "Organization", name: "반언니" },
     publisher: {
       "@type": "Organization",
-      name: "타투어때",
+      name: "반언니",
       url: "https://howtattoo.com",
     },
     mainEntityOfPage: {
@@ -148,7 +148,7 @@ function WatermarkStamp(): React.ReactElement {
       aria-hidden="true"
       className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-bold tracking-tight text-white shadow-sm backdrop-blur-sm md:text-xs"
     >
-      타투어때
+      반언니
     </span>
   );
 }

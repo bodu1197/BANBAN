@@ -26,7 +26,7 @@ describe("Footer", () => {
 
   it("저작권 텍스트가 표시됨", () => {
     render(<Footer />);
-    const copyrightRegex = /© \d{4} 타투어때/;
+    const copyrightRegex = /© \d{4} 반언니/;
     expect(screen.getByText(copyrightRegex)).toBeInTheDocument();
   });
 

@@ -108,7 +108,7 @@ export async function generateLocationSeoPage(
   const coverAlt = `${ctx.region_name} ${ctx.style} 타투`;
   const content = buildContent(raw, ctx.cover_image_url, coverAlt);
   const stripSuffix = (v?: string) =>
-    (v ?? "").replace(/\s*[-|–—]\s*타투어때\s*$/u, "").trim();
+    (v ?? "").replace(/\s*[-|–—]\s*반언니\s*$/u, "").trim();
   return {
     title: raw.title?.trim() || `${ctx.region_name} ${ctx.style} 타투`,
     excerpt: raw.excerpt?.trim() ?? "",

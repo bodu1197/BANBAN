@@ -3,7 +3,7 @@ import { getAlternates } from "@/lib/seo";
 
 const TITLE = "반품 및 환불 정책";
 const DESCRIPTION =
-  "타투어때 반품 및 환불 정책 안내 — 신청 기간, 반품 불가 사유, 배송비, 환불 처리 절차, 저작권 준수 사항.";
+  "반언니 반품 및 환불 정책 안내 — 신청 기간, 반품 불가 사유, 배송비, 환불 처리 절차, 저작권 준수 사항.";
 
 export async function generateRefundPolicyMetadata(): Promise<Metadata> {
   return {
@@ -18,12 +18,12 @@ export async function generateRefundPolicyMetadata(): Promise<Metadata> {
 export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
   return (
     <main className="container mx-auto flex flex-1 flex-col px-4 py-6">
-      <h1 className="mb-2 text-2xl font-bold">타투어때 반품 및 환불 정책</h1>
+      <h1 className="mb-2 text-2xl font-bold">반언니 반품 및 환불 정책</h1>
       <p className="mb-6 text-sm text-muted-foreground">Return &amp; Refund Policy</p>
 
       <article className="space-y-6 rounded-lg border p-6 text-sm leading-relaxed">
         <p>
-          타투어때는 아티스트의 창작 가치를 존중하며, 고객님께 안전하게 작품을 전달하기 위해 노력하고 있습니다.
+          반언니는 아티스트의 창작 가치를 존중하며, 고객님께 안전하게 작품을 전달하기 위해 노력하고 있습니다.
           아티스트가 직접 배송하고 관리하는 작품 판매의 특성상, 아래의 반품 규정을 반드시 확인해 주시기 바랍니다.
         </p>
 
@@ -62,13 +62,13 @@ export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
           <h2 className="mb-2 text-base font-semibold">3. 반품 배송비 및 주소 안내</h2>
           <ul className="ml-5 list-disc space-y-1">
             <li>
-              <strong>반품 주소:</strong> 타투어때는 아티스트별로 개별 발송되므로, 반품 주소는 해당 작품을 발송한 아티스트의 작업실 주소로 보내주셔야 합니다. (고객센터 접수 시 상세 주소를 개별 안내해 드립니다.)
+              <strong>반품 주소:</strong> 반언니는 아티스트별로 개별 발송되므로, 반품 주소는 해당 작품을 발송한 아티스트의 작업실 주소로 보내주셔야 합니다. (고객센터 접수 시 상세 주소를 개별 안내해 드립니다.)
             </li>
             <li>
               <strong>단순 변심:</strong> 고객님께서 왕복 배송비를 부담하셔야 합니다.
             </li>
             <li>
-              <strong>상품 하자로 인한 반품:</strong> 배송비 전액을 타투어때 또는 해당 아티스트가 부담합니다.
+              <strong>상품 하자로 인한 반품:</strong> 배송비 전액을 반언니 또는 해당 아티스트가 부담합니다.
             </li>
           </ul>
         </section>
@@ -89,7 +89,7 @@ export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
         </section>
 
         <section className="rounded-md border bg-muted/50 p-4">
-          <h2 className="mb-3 text-base font-semibold">📞 타투어때 고객지원팀</h2>
+          <h2 className="mb-3 text-base font-semibold">📞 반언니 고객지원팀</h2>
           <ul className="space-y-1">
             <li>
               <strong>전화번호:</strong>{" "}

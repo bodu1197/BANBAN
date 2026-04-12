@@ -3,7 +3,6 @@
 
 import { useState, useCallback, useMemo, Suspense, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { useArtistSearch } from "@/hooks/useArtistSearch";
 import { toggleLike } from "@/lib/actions/likes";
@@ -54,40 +53,6 @@ function ArtistSkeleton(): React.ReactElement {
             <div className="aspect-square rounded-lg bg-muted" />
           </div>
         </div>
-      ))}
-    </div>
-  );
-}
-
-// --- Category Tabs ---
-
-type ArtistType = "TATTOO" | "SEMI_PERMANENT";
-
-function CategoryTabs({ active, onChange }: Readonly<{
-  active: ArtistType;
-  onChange: (type: ArtistType) => void;
-}>): React.ReactElement {
-  const tabs: Array<{ type: ArtistType; label: string }> = [
-    { type: "TATTOO", label: "타투" },
-    { type: "SEMI_PERMANENT", label: "반영구" },
-  ];
-
-  return (
-    <div className="flex border-b border-border">
-      {tabs.map((tab) => (
-        <button
-          key={tab.type}
-          type="button"
-          onClick={() => onChange(tab.type)}
-          className={cn(
-            "flex-1 py-3 text-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-            active === tab.type
-              ? "border-b-2 border-brand-primary text-brand-primary"
-              : "text-muted-foreground hover:text-foreground focus-visible:text-foreground",
-          )}
-        >
-          {tab.label}
-        </button>
       ))}
     </div>
   );
@@ -150,7 +115,7 @@ function ArtistSearchInner({ initialArtists,
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const { artists, isLoading, isLoadingMore, sentinelRef, regionId, regionSido, typeArtist } =
+  const { artists, isLoading, isLoadingMore, sentinelRef, regionId, regionSido } =
     useArtistSearch(initialArtists, initialTotalCount);
 
   const [likedIds, setLikedIds] = useState<Set<string>>(() => new Set(initialLikedIds));
@@ -166,10 +131,6 @@ function ArtistSearchInner({ initialArtists,
 
   const handleRegionsSelect = useCallback((id: string | null, sido: string | null): void => {
     navigateWithParams({ region: id, regionSido: sido });
-  }, [navigateWithParams]);
-
-  const handleTypeChange = useCallback((type: ArtistType): void => {
-    navigateWithParams({ type: type === "TATTOO" ? null : type, region: null, regionSido: null, q: null });
   }, [navigateWithParams]);
 
   const handleLikeToggle = useCallback((artistId: string): void => {
@@ -206,9 +167,6 @@ function ArtistSearchInner({ initialArtists,
 
   return (
     <div className="mx-auto w-full max-w-[767px]">
-      {/* Category Tabs */}
-      <CategoryTabs active={typeArtist} onChange={handleTypeChange} />
-
       {/* Region Selector */}
       <RegionSelector
         regions={regions}

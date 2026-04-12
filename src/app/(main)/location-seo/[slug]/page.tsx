@@ -47,7 +47,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { slug } = await props.params;
   const page = await fetchPage(slug);
   if (!page) return { title: "페이지를 찾을 수 없습니다" };
-  const cleanTitle = page.meta_title.replace(/\s*[-|–—]\s*타투어때\s*$/u, "").trim();
+  const cleanTitle = page.meta_title.replace(/\s*[-|–—]\s*반언니\s*$/u, "").trim();
   return {
     title: cleanTitle,
     description: page.meta_description,
@@ -104,8 +104,8 @@ export default async function LocationSeoDetailPage(props: PageProps): Promise<R
     description: page.meta_description,
     image: page.cover_image_url ?? undefined,
     datePublished: page.published_at,
-    author: { "@type": "Organization", name: "타투어때" },
-    publisher: { "@type": "Organization", name: "타투어때" },
+    author: { "@type": "Organization", name: "반언니" },
+    publisher: { "@type": "Organization", name: "반언니" },
   };
 
   const faqSchema = page.faq.length > 0 ? {

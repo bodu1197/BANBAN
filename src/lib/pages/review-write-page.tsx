@@ -3,7 +3,7 @@ import ReviewWriteClient from "@/app/(main)/reviews/write/ReviewWriteClient";
 
 export async function generateReviewWriteMetadata(): Promise<{ title: string; description: string }> {
   return {
-    title: `${STRINGS.review.pageTitle} - 타투어때`,
+    title: `${STRINGS.review.pageTitle} - 반언니`,
     description: STRINGS.review.pageDescription,
   };
 }

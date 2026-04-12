@@ -1,7 +1,7 @@
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://howtattoo.com")
   .trim()
   .replace(/\/+$/, "");
-const SITE_NAME = "타투어때";
+const SITE_NAME = "반언니";
 const SCHEMA_CONTEXT = "https://schema.org";
 
 /**

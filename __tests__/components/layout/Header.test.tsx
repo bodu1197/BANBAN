@@ -41,7 +41,7 @@ describe("Header", () => {
     user: null,
   };
 
-  it("타투어때 로고가 렌더링됨", () => {
+  it("반언니 로고가 렌더링됨", () => {
     render(<Header {...defaultProps} />);
     expect(screen.getByText("타투")).toBeInTheDocument();
     expect(screen.getByText("어때")).toBeInTheDocument();

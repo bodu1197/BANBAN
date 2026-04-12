@@ -18,8 +18,8 @@ import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 
 
 export async function generateHomeMetadata(): Promise<Metadata> {
-  const title = "타투어때 - 타투 가격비교 & 타투이스트 추천 | 대한민국 1등 타투 플랫폼";
-  const description = "타투 잘하는 곳 찾을 땐 타투어때! 전국 타투샵 가격비교, 타투이스트 포트폴리오, 반영구·레터링·감성타투까지. 200만 회원이 선택한 대한민국 최대 타투 플랫폼.";
+  const title = "반언니 - 타투 가격비교 & 타투이스트 추천 | 대한민국 1등 타투 플랫폼";
+  const description = "타투 잘하는 곳 찾을 땐 반언니! 전국 타투샵 가격비교, 타투이스트 포트폴리오, 반영구·레터링·감성타투까지. 200만 회원이 선택한 대한민국 최대 타투 플랫폼.";
 
   return {
     title,

@@ -49,7 +49,7 @@ function ArticleCard({
             aria-hidden="true"
             className="pointer-events-none absolute bottom-1 right-1 rounded bg-black/55 px-1 py-px text-[9px] font-bold text-white"
           >
-            타투어때
+            반언니
           </span>
         </div>
       ) : (

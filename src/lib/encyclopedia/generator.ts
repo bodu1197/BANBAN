@@ -3,7 +3,7 @@ import type { EncyclopediaTopic } from "./topics";
 import { pickRelatedPortfolioImages } from "./queries";
 
 const MODEL = "gpt-4o-mini"; // cheap, capable; ~365 generations/year cost is trivial
-const SITE_NAME = "타투어때";
+const SITE_NAME = "반언니";
 
 export interface GeneratedArticle {
   title: string;
@@ -156,9 +156,9 @@ async function callOpenAi(topic: EncyclopediaTopic): Promise<RawAiOutput> {
 
 function stripSiteSuffix(value: string | undefined): string {
   if (!value) return "";
-  // Remove trailing "- 타투어때" / "| 타투어때" (with optional spaces) so the
-  // root layout's `%s | 타투어때` template doesn't duplicate the site name.
-  return value.replace(/\s*[-|–—]\s*타투어때\s*$/u, "").trim();
+  // Remove trailing "- 반언니" / "| 반언니" (with optional spaces) so the
+  // root layout's `%s | 반언니` template doesn't duplicate the site name.
+  return value.replace(/\s*[-|–—]\s*반언니\s*$/u, "").trim();
 }
 
 function asArray<T>(value: unknown, max: number): T[] {
