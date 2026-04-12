@@ -9,8 +9,8 @@ const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracke
 const Swing2AppBridge = dynamic(() => import("@/components/layout/Swing2AppBridge").then(m => m.Swing2AppBridge));
 
 const SITE_NAME = "반언니";
-const SITE_TITLE = "반언니 - 타투 가격비교 & 타투이스트 추천 | 대한민국 1등 타투 플랫폼";
-const SITE_DESCRIPTION = "타투 잘하는 곳 찾을 땐 반언니! 전국 타투샵 가격비교, 타투이스트 포트폴리오, 반영구·레터링·감성타투까지. 200만 회원이 선택한 대한민국 최대 타투 플랫폼.";
+const SITE_TITLE = "반언니 - 반영구 화장 가격비교 & 아티스트 추천 | 대한민국 1등 반영구 플랫폼";
+const SITE_DESCRIPTION = "반영구 잘하는 곳 찾을 땐 반언니! 전국 반영구 아티스트 포트폴리오, 눈썹·입술·아이라인 가격비교. 나에게 맞는 반영구 아티스트를 찾아보세요.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  keywords: ["타투", "타투 가격", "타투 추천", "타투샵", "타투이스트", "반영구", "레터링 타투", "감성 타투", "타투 잘하는 곳", "반언니", "tattoo", "tattoo artist"],
+  keywords: ["반영구", "반영구 화장", "눈썹 문신", "반영구 눈썹", "입술 반영구", "아이라인", "반영구 가격", "반영구 추천", "반언니"],
   authors: [{ name: SITE_NAME }],
   openGraph: {
     type: "website",
