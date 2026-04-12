@@ -32,8 +32,8 @@ export function Header({ user }: Readonly<HeaderProps>): React.ReactElement {
           href={"/"}
           className="flex items-center gap-2 font-bold text-xl"
         >
-          <span className="text-brand-primary">타투</span>
-          <span>어때</span>
+          <span className="ml-[30px] text-brand-primary">반</span>
+          <span>언니</span>
         </Link>
 
         <div className="flex items-center gap-2">
