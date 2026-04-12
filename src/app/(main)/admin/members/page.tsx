@@ -421,7 +421,7 @@ function PageContent({ data, search, tab, sort, setSearch, setTab, setPage, setS
     setPage: (p: number) => void; setSort: (s: SortKey) => void; refetch: () => void;
 }>): React.ReactElement {
     return (
-        <div className="h-full p-6">
+        <div className="h-full p-6 pb-20">
             <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <AdminPageHeader title="회원 관리" count={data.total} countLabel="명" />
                 <div className="w-full lg:w-96">

@@ -474,7 +474,7 @@ export default function CronProgressDashboard({
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-4 pb-20 md:p-6 md:pb-20">
       <DashboardHeader feature={feature} loading={loading} onRefresh={() => void refetch()} />
       <ConfigAlerts status={status} />
       <KpiGrid status={status} />

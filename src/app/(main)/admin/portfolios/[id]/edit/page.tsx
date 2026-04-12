@@ -85,7 +85,7 @@ function EditPageContent({ portfolio, media, initialCategoryIds, categories }: R
     }, [portfolio.id, form, selectedCats, deletedMediaIds, router]);
 
     return (
-        <div className="h-full overflow-y-auto p-6">
+        <div className="h-full overflow-y-auto p-6 pb-20">
             <EditHeader portfolio={portfolio} saving={saving} onBack={() => router.push("/admin/portfolios")} onSave={() => void handleSave()} />
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
