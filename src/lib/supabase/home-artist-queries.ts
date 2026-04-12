@@ -173,39 +173,34 @@ export async function fetchPopularArtists(options?: {
 
 async function fetchActiveArtistsInternal(limit: number): Promise<HomeArtist[]> {
   const supabase = createStaticClient();
-  const fetchPool = limit * 3;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data, error } = await (supabase as any).rpc("get_recently_active_artists", {
-    p_hours: 24,
-    p_limit: fetchPool,
-  });
+  const { data, error } = await supabase
+    .from("artists")
+    .select("id, title, introduce, address, likes_count, type_artist, profile_image_path, region:regions(name)")
+    .is("deleted_at", null)
+    .eq("is_hide", false)
+    .eq("status", "active")
+    .or("type_artist.eq.SEMI_PERMANENT,type_artist.eq.BOTH")
+    .limit(limit * 5);
 
   if (error) {
     throw new Error(`Failed to fetch active artists: ${error.message}`);
   }
 
-  const artists = ((data ?? []) as Array<{
-    id: string; title: string; introduce: string;
-    address: string; likes_count: number;
-    type_artist: string; profile_image_path: string | null;
-    region_name: string | null; portfolio_media_count: number;
-  }>)
-    .filter((a) => a.type_artist === "SEMI_PERMANENT" || a.type_artist === "BOTH")
-    .map((a) => ({
-      id: a.id,
-      title: a.title,
-      description: "",
-      introduce: a.introduce ?? "",
-      address: a.address ?? "",
-      regionName: a.region_name,
-      likesCount: a.likes_count,
-      lat: null,
-      lon: null,
-      typeArtist: a.type_artist as "TATTOO" | "SEMI_PERMANENT" | "BOTH",
-      profileImage: getAvatarUrl(a.profile_image_path),
-      portfolioImage: null,
-    }));
+  const artists = ((data ?? []) as ArtistRow[]).map((a) => ({
+    id: a.id,
+    title: a.title,
+    description: a.description ?? "",
+    introduce: a.introduce ?? "",
+    address: a.address,
+    regionName: a.region?.name ?? null,
+    likesCount: a.likes_count,
+    lat: a.lat ?? null,
+    lon: a.lon ?? null,
+    typeArtist: a.type_artist,
+    profileImage: getAvatarUrl(a.profile_image_path),
+    portfolioImage: null,
+  }));
 
   return secureShuffle(artists).slice(0, limit);
 }
