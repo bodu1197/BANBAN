@@ -44,7 +44,7 @@ function DashboardContent({ data, search, page, onSearch, onPageChange, onReload
     };
 
     return (
-        <div className="h-full p-6 pb-20">
+        <div className="h-full p-6 pb-40">
             <div className="mb-6">
                 <AdminPageHeader title="포인트 관리" />
             </div>

@@ -258,7 +258,7 @@ export default function AdminAnalyticsPage(): React.ReactElement {
     const isLoading = loading || !data;
 
     return (
-        <div className="h-full p-6 pb-[50px]">
+        <div className="h-full p-6 pb-40">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                 <AdminPageHeader title="접속자 현황 — 한국" />
                 <PeriodTabs period={period} onChange={setPeriod} />

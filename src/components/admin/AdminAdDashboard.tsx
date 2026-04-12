@@ -364,7 +364,7 @@ export function DashboardContent({ data, status, search, onPageChange, onStatusC
 }>): React.ReactElement {
     const { stats, subscriptions, plans, paymentBreakdown, pagination } = data;
     return (
-        <div className="h-full p-6 pb-20">
+        <div className="h-full p-6 pb-40">
             <div className="mb-6">
                 <AdminPageHeader title={dashboardTitle ?? "광고 관리 대시보드"} />
             </div>
