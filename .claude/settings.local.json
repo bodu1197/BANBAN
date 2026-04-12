@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__write_file",
+      "mcp__everything-search__everything_search",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__fetch__fetch_txt",
+      "mcp__fetch__fetch_html",
+      "mcp__fetch__fetch_youtube_transcript"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/check-self-execute.mjs",
+            "timeout": 10,
+            "statusMessage": "MEMORY.md 규칙 준수 검사 중..."
+          }
+        ]
+      }
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "sequential-thinking",
+    "context7"
+  ]
+}

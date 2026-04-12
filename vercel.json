@@ -1,0 +1,80 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/encyclopedia-generate",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/blog-generate",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/insight-generate",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/location-seo-generate",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-trend-generate",
+      "schedule": "0 5 * * 1"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Bytespider|PetalBot|SemrushBot|AhrefsBot|MJ12bot|DotBot|BLEXBot|DataForSeoBot|CCBot|Sogou|YandexBot|Baiduspider|serpstatbot|MegaIndex).*"
+        }
+      ],
+      "mitigate": {
+        "action": "deny"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "x-vercel-ip-country",
+          "value": "CN"
+        }
+      ],
+      "missing": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|NaverBot|Yeti|kakaotalk|facebookexternalhit|Twitterbot|Slackbot|Discordbot|TelegramBot|Applebot|LinkedInBot|GPTBot|ChatGPT-User).*"
+        }
+      ],
+      "mitigate": {
+        "action": "challenge"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "x-vercel-ip-country",
+          "value": "SG"
+        }
+      ],
+      "missing": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Googlebot|bingbot|NaverBot|Yeti|kakaotalk|facebookexternalhit|Twitterbot|Slackbot|Discordbot|TelegramBot|Applebot|LinkedInBot|GPTBot|ChatGPT-User).*"
+        }
+      ],
+      "mitigate": {
+        "action": "challenge"
+      }
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+// @client-reason: useState for form inputs, useTransition for form submission
+"use client";
+
+import { STRINGS } from "@/lib/strings";
+import React, { useState, useTransition, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, XCircle, Loader2, Circle } from "lucide-react";
+import type { SignupFormData, CreatedUser } from "./types";
+
+interface SignupFormStepProps {
+  formData: SignupFormData;
+  setFormData: React.Dispatch<React.SetStateAction<SignupFormData>>;
+  onBack: () => void;
+  onComplete: (user: CreatedUser) => void;
+}
+
+interface SignupResponse {
+  success?: boolean;
+  error?: string;
+  user?: { id: string; username: string; nickname: string; email: string };
+}
+
+async function signUpLegacy(data: {
+  username: string;
+  password: string;
+  email: string;
+}): Promise<{ error: Error | null; user?: { id: string; username: string } }> {
+  try {
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const result: SignupResponse = await response.json();
+    if (!response.ok) return { error: new Error(result.error ?? "Registration failed") };
+    return { error: null, user: result.user ? { id: result.user.id, username: result.user.username } : undefined };
+  } catch (err) {
+    return { error: err instanceof Error ? err : new Error("An error occurred during registration") };
+  }
+}
+
+type DupStatus = "idle" | "checking" | "available" | "taken";
+
+interface DupCheckResponse {
+  available?: boolean;
+}
+
+const DUP_LABELS: Record<string, { available: string; taken: string }> = {
+  username: { available: "사용 가능한 아이디입니다", taken: "이미 사용 중인 아이디입니다" },
+  email: { available: "사용 가능한 이메일입니다", taken: "이미 가입된 이메일입니다" },
+};
+
+function DupStatusIcon({ status, field }: Readonly<{ status: DupStatus; field: string }>): React.ReactElement | null {
+  const labels = Object.hasOwn(DUP_LABELS, field) ? DUP_LABELS[field as keyof typeof DUP_LABELS] : null;
+  if (!labels) return null;
+
+  if (status === "checking") return <span className="flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />확인 중...</span>;
+  if (status === "available") return <span className="flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3 w-3" aria-hidden="true" />{labels.available}</span>;
+  if (status === "taken") return <span className="flex items-center gap-1 text-xs text-destructive"><XCircle className="h-3 w-3" aria-hidden="true" />{labels.taken}</span>;
+  return null;
+}
+
+interface FormFieldProps {
+  id: string;
+  label: string;
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  autoComplete?: string;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  dupStatus?: DupStatus;
+  onBlurCheck?: () => void;
+}
+
+function FormField({ id, label, type, value, onChange, placeholder, disabled, autoComplete, minLength, maxLength, pattern, dupStatus, onBlurCheck }: Readonly<FormFieldProps>): React.ReactElement {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlurCheck} placeholder={placeholder} required disabled={disabled} autoComplete={autoComplete} minLength={minLength} maxLength={maxLength} pattern={pattern} />
+      {dupStatus ? <DupStatusIcon status={dupStatus} field={id} /> : null}
+    </div>
+  );
+}
+
+interface PasswordRule {
+  label: string;
+  met: boolean;
+}
+
+function PasswordChecklist({ password, confirmPassword }: Readonly<{ password: string; confirmPassword: string }>): React.ReactElement | null {
+  if (!password) return null;
+
+  const rules: PasswordRule[] = [
+    { label: "6자 이상", met: password.length >= 6 },
+    { label: "영문 포함", met: /[A-Za-z]/.test(password) },
+    { label: "숫자 포함", met: /\d/.test(password) },
+  ];
+
+  const showMatch = confirmPassword.length > 0;
+
+  return (
+    <ul className="space-y-1 pt-1">
+      {rules.map((rule) => (
+        <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-emerald-600" : "text-muted-foreground"}`}>
+          {rule.met
+            ? <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
+            : <Circle className="h-3 w-3 shrink-0" aria-hidden="true" />}
+          {rule.label}
+        </li>
+      ))}
+      {showMatch && (
+        <li className={`flex items-center gap-1.5 text-xs ${password === confirmPassword ? "text-emerald-600" : "text-destructive"}`}>
+          {password === confirmPassword
+            ? <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
+            : <XCircle className="h-3 w-3 shrink-0" aria-hidden="true" />}
+          비밀번호 일치
+        </li>
+      )}
+    </ul>
+  );
+}
+
+// eslint-disable-next-line max-lines-per-function
+export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Readonly<SignupFormStepProps>): React.ReactElement {
+  const [isPending, startTransition] = useTransition();
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [dupStatus, setDupStatus] = useState<Record<string, DupStatus>>({});
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const checkDuplicate = useCallback((field: string, value: string) => {
+    if (!value.trim()) { setDupStatus((prev) => ({ ...prev, [field]: "idle" })); return; }
+    if (field === "username" && !/^[A-Za-z][A-Za-z0-9]{3,11}$/.test(value)) return;
+    if (field === "email" && !value.includes("@")) return;
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setDupStatus((prev) => ({ ...prev, [field]: "checking" }));
+
+    timerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-duplicate?field=${field}&value=${encodeURIComponent(value)}`);
+        const data: DupCheckResponse = await res.json();
+        setDupStatus((prev) => ({ ...prev, [field]: data.available ? "available" : "taken" }));
+      } catch {
+        setDupStatus((prev) => ({ ...prev, [field]: "idle" }));
+      }
+    }, 400);
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent): void => {
+    e.preventDefault();
+    if (isPending) return;
+    setError(null);
+    if (formData.password !== confirmPassword) { setError(STRINGS.auth.passwordMismatch); return; }
+    if (formData.password.length < 6) { setError(STRINGS.auth.passwordMinError); return; }
+    if (Object.values(dupStatus).includes("taken")) { setError("중복된 항목을 수정해주세요"); return; }
+
+    startTransition(async () => {
+      const { error: signupError, user } = await signUpLegacy({
+        username: formData.username, password: formData.password,
+        email: formData.email,
+      });
+      if (signupError || !user) { setError(signupError?.message ?? "Registration failed"); return; }
+      onComplete(user);
+    });
+  };
+
+  const updateField = (field: keyof SignupFormData) => (v: string) => setFormData((prev) => ({ ...prev, [field]: v }));
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <FormField id="username" label={STRINGS.auth.username} type="text" value={formData.username} onChange={updateField("username")} placeholder={STRINGS.auth.usernameRule} disabled={isPending} autoComplete="username" minLength={4} maxLength={12} pattern="^[A-Za-z][A-Za-z0-9]*$" dupStatus={dupStatus.username} onBlurCheck={() => checkDuplicate("username", formData.username)} />
+      <FormField id="email" label={STRINGS.auth.email} type="email" value={formData.email} onChange={updateField("email")} placeholder="email@example.com" disabled={isPending} autoComplete="email" dupStatus={dupStatus.email} onBlurCheck={() => checkDuplicate("email", formData.email)} />
+      <FormField id="password" label={STRINGS.auth.password} type="password" value={formData.password} onChange={updateField("password")} placeholder={STRINGS.auth.passwordRule} disabled={isPending} autoComplete="new-password" minLength={6} />
+      <FormField id="confirmPassword" label={STRINGS.auth.confirmPassword} type="password" value={confirmPassword} onChange={setConfirmPassword} disabled={isPending} autoComplete="new-password" minLength={6} />
+      <PasswordChecklist password={formData.password} confirmPassword={confirmPassword} />
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={onBack} className="flex-1" disabled={isPending}>{STRINGS.common.back}</Button>
+        <Button type="submit" className="flex-1" disabled={isPending}>{isPending ? "..." : STRINGS.common.complete}</Button>
+      </div>
+    </form>
+  );
+}

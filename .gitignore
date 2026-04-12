@@ -1,0 +1,75 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.vercel
+.env*.local
+
+# Backup files
+howtattoo_backup.tar.gz
+*.sql
+.playwright-mcp/
+
+# Legacy archive (레거시 라라벨 + 마이그레이션 데이터 압축본)
+legacy-archive.tar.gz
+
+# Temporary scripts (임시 스크립트 - 푸시 금지)
+scripts-temp/
+
+# Migration/debug files (임시 파일)
+*.dump.txt
+*_dump.txt
+migration_manifest.jsonl
+missing_*.json
+nul
+docs/
+
+# Temp test files (임시 테스트 파일)
+tmp_test_*.ts
+build_output.txt
+run_test.ts
+scripts/debug-search.js
+scripts/test-categories.js
+
+# Backup and build artifacts
+backup-src/
+dist/
+.gstack/

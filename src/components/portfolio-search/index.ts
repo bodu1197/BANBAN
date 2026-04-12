@@ -1,0 +1,1 @@
+export { PortfolioSearchClient } from "./PortfolioSearchClient";
