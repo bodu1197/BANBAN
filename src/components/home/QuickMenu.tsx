@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Paintbrush,
   Sparkles,
   LayoutGrid,
   Search,
@@ -19,7 +18,7 @@ interface QuickMenuProps {
   labels?: QuickMenuLabels;
 }
 
-type LucideIcon = typeof Paintbrush;
+type LucideIcon = typeof Sparkles;
 
 interface MenuItem {
   key: keyof QuickMenuLabels;
@@ -31,7 +30,6 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { key: "exhibition", icon: LayoutGrid, path: "exhibition", highlight: true },
-  { key: "tattoo", icon: Paintbrush, path: "tattoo" },
   { key: "womenBeauty", icon: Sparkles, path: "women-beauty" },
   { key: "mensBeauty", icon: Crown, path: "mens-beauty" },
   { key: "artistSearch", icon: Search, path: "artists" },

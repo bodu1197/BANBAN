@@ -399,7 +399,6 @@ export const STRINGS ={
     "allGenre": "전체"
   },
   "quickMenu": {
-    "tattoo": "타투",
     "womenBeauty": "여성 반영구",
     "mensBeauty": "남성 반영구",
     "exhibition": "기획전",

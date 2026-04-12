@@ -166,12 +166,16 @@ export async function fetchTimeSalePortfolios(limit = 10): Promise<HomePortfolio
   const supabase = createStaticClient();
   const now = new Date().toISOString();
 
+  const artistIds = await getArtistIdsByType(supabase, "SEMI_PERMANENT");
+  if (artistIds.length === 0) return [];
+
   const base = supabase
     .from("portfolios")
     .select(SELECT_BASIC)
     .is("deleted_at", null)
     .gt("price", 0)
-    .gt("discount_rate", 0);
+    .gt("discount_rate", 0)
+    .in("artist_id", artistIds);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- .not() not in generated types
   const { data, error } = await (base as any)
