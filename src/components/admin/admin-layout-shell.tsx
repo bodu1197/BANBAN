@@ -6,7 +6,7 @@ export function AdminLayoutShell({ children }: Readonly<{
     return (
         <div className="fixed inset-0 z-[100] flex bg-zinc-950">
             <AdminSidebar />
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto pb-40">
                 {children}
             </main>
         </div>
