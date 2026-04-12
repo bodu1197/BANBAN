@@ -25,7 +25,7 @@ export interface ArtistFormData {
 }
 
 export const INITIAL_FORM_DATA: ArtistFormData = {
-  type_artist: "TATTOO",
+  type_artist: "SEMI_PERMANENT",
   title: "",
   contact: "",
   instagram_url: "",

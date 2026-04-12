@@ -20,7 +20,6 @@ import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import {
   useArtistFormHandlers,
   useArtistCategories,
-  TypeField,
   TextField,
   TextFieldWithHint,
   AddressField,
@@ -182,7 +181,6 @@ export function ArtistRegisterClient({ categories,
 
       <form onSubmit={handleSubmit} className="pb-28">
         <div className="space-y-6 p-4">
-          <TypeField formData={formData} setFormData={setFormData} t={formLabels} />
           <TextField label={t.artistName} value={formData.title} onChange={handleInputChange("title")} placeholder={t.artistNamePlaceholder} required />
           <TextField label={t.phone} value={formData.contact} onChange={handleInputChange("contact")} placeholder={t.phonePlaceholder} required type="tel" />
           <TextField label={t.instagramUrl} value={formData.instagram_url} onChange={handleInputChange("instagram_url")} placeholder={t.instagramUrlPlaceholder} type="url" />
