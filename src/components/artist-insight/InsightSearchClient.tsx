@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Star } from "lucide-react";
 import type { ArtistInsight } from "@/lib/supabase/artist-insight-queries";
 import type { Region } from "@/types/database";
-import InsightTypeTabs from "./InsightTypeTabs";
 import BlogFilters from "@/components/blog/BlogFilters";
 import BlogLoadMore from "@/components/blog/BlogLoadMore";
 import { useInsightSearch } from "./useInsightSearch";
@@ -72,7 +71,6 @@ export default function InsightSearchClient({ initial }: Readonly<{
 
   return (
     <section>
-      <InsightTypeTabs activeTab={state.tab} onTabChange={state.setTab} />
       <BlogFilters
         regions={state.regions}
         regionId={state.regionId}
