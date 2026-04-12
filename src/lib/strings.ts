@@ -348,7 +348,6 @@ export const STRINGS ={
   },
   "nav": {
     "home": "홈",
-    "tattoo": "타투",
     "womenBeauty": "여성 반영구",
     "mensBeauty": "남성 반영구",
     "community": "커뮤니티",

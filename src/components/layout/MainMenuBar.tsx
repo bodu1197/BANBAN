@@ -9,7 +9,6 @@ import { isActiveRoute } from "@/lib/navigation";
 
 interface MainMenuLabels {
   home: string;
-  tattoo: string;
   womenBeauty: string;
   mensBeauty: string;
   exhibition: string;
@@ -29,7 +28,6 @@ export function MainMenuBar({
   const menuItems = useMemo(() => [
     { href: homePath, label: labels.home },
     { href: "/exhibition", label: labels.exhibition },
-    { href: "/tattoo", label: labels.tattoo },
     { href: "/women-beauty", label: labels.womenBeauty },
     { href: "/mens-beauty", label: labels.mensBeauty },
     { href: "/community", label: labels.community },

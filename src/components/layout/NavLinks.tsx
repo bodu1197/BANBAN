@@ -14,7 +14,6 @@ interface NavItem {
 
 interface NavLabels {
   home: string;
-  tattoo?: string;
   womenBeauty?: string;
   mensBeauty?: string;
   exhibition?: string;
@@ -49,9 +48,6 @@ function buildNavItems(
 
   if (labels.exhibition) {
     items.push({ href: "/exhibition", label: labels.exhibition });
-  }
-  if (labels.tattoo) {
-    items.push({ href: "/tattoo", label: labels.tattoo });
   }
   if (labels.womenBeauty) {
     items.push({ href: "/women-beauty", label: labels.womenBeauty });
