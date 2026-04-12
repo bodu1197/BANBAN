@@ -6,11 +6,9 @@ import type { ExhibitionItem } from "@/lib/supabase/exhibition-queries";
 import { ExhibitionCard } from "./ExhibitionCard";
 
 const CATEGORIES = [
-    { value: "ALL", label: { ko: "전체", en: "All", ja: "すべて", zh: "全部" } },
-    { value: "TATTOO", label: { ko: "타투", en: "Tattoo", ja: "タトゥー", zh: "纹身" } },
-    { value: "WOMENS_BEAUTY", label: { ko: "여자뷰티", en: "Women's Beauty", ja: "女性ビューティー", zh: "女性美容" } },
-    { value: "MENS_BEAUTY", label: { ko: "남자뷰티", en: "Men's Beauty", ja: "男性ビューティー", zh: "男性美容" } },
-    { value: "TATTOO_COURSE", label: { ko: "타투수강", en: "Tattoo Course", ja: "タトゥー講座", zh: "纹身课程" } },
+    { value: "ALL", label: { ko: "전체" } },
+    { value: "WOMENS_BEAUTY", label: { ko: "여자뷰티" } },
+    { value: "MENS_BEAUTY", label: { ko: "남자뷰티" } },
 ] as const;
 
 function getLabel(labels: Record<string, string>): string {
