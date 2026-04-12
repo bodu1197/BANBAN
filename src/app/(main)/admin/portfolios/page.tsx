@@ -12,7 +12,7 @@ import { AdminSearchBar, AdminPagination, AdminSearchResetBadge, AdminLoadingSpi
 
 // ─── Types ───────────────────────────────────────────────
 
-type PortfolioTab = "all" | "tattoo" | "semi_permanent";
+type PortfolioTab = "semi_permanent";
 
 interface Portfolio {
     id: string;
@@ -36,8 +36,6 @@ interface PortfoliosResponse {
 }
 
 const TAB_LIST: { key: PortfolioTab; label: string }[] = [
-    { key: "all", label: "전체" },
-    { key: "tattoo", label: "타투" },
     { key: "semi_permanent", label: "반영구" },
 ];
 
@@ -59,7 +57,7 @@ function usePortfolioList(authLoading: boolean, user: unknown): {
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
-    const [tab, setTab] = useState<PortfolioTab>("all");
+    const [tab, setTab] = useState<PortfolioTab>("semi_permanent");
 
     const fetchData = useCallback(async () => {
         setLoading(true);
