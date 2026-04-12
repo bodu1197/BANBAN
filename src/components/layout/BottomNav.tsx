@@ -4,7 +4,7 @@
 import { STRINGS } from "@/lib/strings";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import { Home, Heart, FileText, User } from "lucide-react";
+import { Home, Heart, User } from "lucide-react";
 import { isActiveRoute } from "@/lib/navigation";
 import { BottomNavItem } from "./BottomNavItem";
 export function BottomNav(): React.ReactElement | null {
@@ -13,7 +13,6 @@ export function BottomNav(): React.ReactElement | null {
   const navItems = useMemo(() => [
     { href: homePath, label: STRINGS.nav.home, icon: Home },
     { href: "/likes", label: STRINGS.nav.likes, icon: Heart },
-    { href: "/quote-request/create", label: STRINGS.nav.quoteRequest, icon: FileText },
     { href: "/mypage", label: STRINGS.nav.mypage, icon: User },
   ], [homePath]);
 

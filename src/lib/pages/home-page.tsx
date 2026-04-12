@@ -10,7 +10,6 @@ import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
 import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
-import { QuoteRequestBanner } from "@/components/home/QuoteRequestBanner";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
 import { fetchActiveBanner } from "@/lib/supabase/banner-queries";
@@ -158,14 +157,6 @@ function BannerRow({ hp }: Readonly<{ hp: Record<string, string> }>): React.Reac
   return <AiBanner labels={bannerLabels} />;
 }
 
-function ServiceBannerRow({ hp }: Readonly<{ hp: Record<string, string> }>): React.ReactElement {
-  return (
-    <div className="px-4 py-1">
-      <QuoteRequestBanner title={hp.quoteRequestTitle} desc={hp.quoteRequestDesc} badge={hp.quoteRequestBadge} />
-    </div>
-  );
-}
-
 /** Safely run an async fetch, returning fallback on error to prevent one section from breaking others */
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -270,7 +261,6 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
       <LazyHomeSection size="md">
         <CuratedExhibitions hp={hp} activeArtists={homeData.activeArtists} />
       </LazyHomeSection>
-      <ServiceBannerRow hp={hp} />
       <HomeDiscoverySections hp={hp} common={common} homeData={homeData} />
       <HomeCategorySections hp={hp} common={common} homeData={homeData} />
     </>
