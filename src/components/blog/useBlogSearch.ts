@@ -81,7 +81,7 @@ function useDebouncedFetch(
 }
 
 export function useBlogSearch(initial: InitialData): BlogSearchState & BlogSearchActions {
-  const [tab, setTabState] = useState<TabValue>("ALL");
+  const [tab, setTabState] = useState<TabValue>("FEMALE_SEMI");
   const [categoryName, setCatState] = useState<string | null>(null);
   const [regionId, setRegState] = useState<string | null>(null);
   const [regionSido, setRegSidoState] = useState<string | null>(null);

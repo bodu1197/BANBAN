@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getAlternates } from "@/lib/seo";
-import { fetchBlogPosts, fetchBlogCategories, fetchBlogRegions } from "@/lib/supabase/blog-queries";
+import { searchBlogPosts, fetchBlogCategories, fetchBlogRegions } from "@/lib/supabase/blog-queries";
 import BlogSearchClient from "@/components/blog/BlogSearchClient";
 
 const PER_PAGE = 5000;
@@ -19,7 +19,7 @@ export async function generateBlogMetadata(): Promise<Metadata> {
 
 export async function renderBlogPage(): Promise<React.ReactElement> {
   const [{ data: posts, count }, categories, regions] = await Promise.all([
-    fetchBlogPosts({ limit: PER_PAGE, offset: 0 }),
+    searchBlogPosts({ typeArtist: "SEMI_PERMANENT", targetGender: "FEMALE", limit: PER_PAGE, offset: 0 }),
     fetchBlogCategories(),
     fetchBlogRegions(),
   ]);

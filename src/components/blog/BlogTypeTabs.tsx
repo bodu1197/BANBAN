@@ -9,10 +9,8 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { value: "ALL", label: "전체" },
-  { value: "TATTOO", label: "타투" },
-  { value: "MALE_SEMI", label: "남자반영구" },
   { value: "FEMALE_SEMI", label: "여자반영구" },
+  { value: "MALE_SEMI", label: "남자반영구" },
 ];
 
 export type { TabValue };
