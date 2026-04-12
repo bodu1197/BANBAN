@@ -5,7 +5,6 @@ import {
   Search,
   Percent,
   GraduationCap,
-  Users,
   Crown,
   BookOpen,
   UserSearch,
@@ -36,7 +35,6 @@ const menuItems: MenuItem[] = [
   { key: "discount", icon: Percent, path: "discount", hot: true },
   { key: "artistInsight", icon: UserSearch, path: "artist-insight" },
   { key: "course", icon: GraduationCap, path: "courses" },
-  { key: "community", icon: Users, path: "community" },
   { key: "blog", icon: BookOpen, path: "blog" },
 ];
 

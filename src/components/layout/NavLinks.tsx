@@ -17,7 +17,6 @@ interface NavLabels {
   womenBeauty?: string;
   mensBeauty?: string;
   exhibition?: string;
-  community?: string;
   search: string;
   likes?: string;
   mypage?: string;
@@ -55,10 +54,6 @@ function buildNavItems(
   if (labels.mensBeauty) {
     items.push({ href: "/mens-beauty", label: labels.mensBeauty });
   }
-  if (labels.community) {
-    items.push({ href: "/community", label: labels.community });
-  }
-
   if (includeMobileOnly && labels.likes) {
     items.push({ href: "/likes", label: labels.likes });
   }
