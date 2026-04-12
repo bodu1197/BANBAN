@@ -1,27 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/cron/encyclopedia-generate",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/blog-generate",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/insight-generate",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/location-seo-generate",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/weekly-trend-generate",
-      "schedule": "0 5 * * 1"
-    }
-  ],
+  "crons": [],
   "routes": [
     {
       "src": "/(.*)",
