@@ -1,24 +1,19 @@
 import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
-import { fetchHomeData, type HomeData } from "@/lib/supabase/fetch-home-data";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
 import dynamic from "next/dynamic";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { SectionHeader } from "@/components/home/SectionHeader";
-import { SalePortfolioCard, RecruitmentCard, PopularArtistCard } from "@/components/home/cards";
+import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
 import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
 import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
-import { ExhibitionSection } from "@/components/home/ExhibitionSection";
 import { QuoteRequestBanner } from "@/components/home/QuoteRequestBanner";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
-import type { HomePortfolio, HomeRecruitment, HomeArtist } from "@/lib/supabase/home-queries";
+import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
 import { fetchActiveBanner } from "@/lib/supabase/banner-queries";
-import { secureShuffle } from "@/lib/random";
-import { fetchExhibitions } from "@/lib/supabase/exhibition-queries";
-import { fetchExhibitionEntries, type ExhibitionEntryWithDetails } from "@/lib/supabase/exhibition-entry-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { fetchTattooGenres, fetchGenrePortfolios, type TattooGenre } from "@/lib/supabase/home-genre-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
@@ -37,19 +32,6 @@ export async function generateHomeMetadata(): Promise<Metadata> {
     openGraph: { title, description, type: "website" },
     alternates: getAlternates("/"),
   };
-}
-
-/** Merge two arrays and deduplicate by id */
-function mergeById<T extends { id: string }>(a: T[], b: T[], limit: number): T[] {
-  const seen = new Set<string>();
-  const result: T[] = [];
-  for (const item of [...a, ...b]) {
-    if (seen.has(item.id)) continue;
-    seen.add(item.id);
-    result.push(item);
-    if (result.length >= limit) break;
-  }
-  return result;
 }
 
 function ScrollSection({ items, title, moreLink, keyPrefix, moreText }: Readonly<{
@@ -76,48 +58,20 @@ function ScrollSection({ items, title, moreLink, keyPrefix, moreText }: Readonly
   );
 }
 
-function RecruitmentSection({ items, title, moreLink, moreText }: Readonly<{
-  items: HomeRecruitment[];
-  title: string;
-  moreLink: string;
-  moreText?: string;
-}>): React.ReactElement | null {
-  if (items.length === 0) return null;
-  return (
-    <section className="py-4">
-      <SectionHeader title={title} moreLink={moreLink} moreText={moreText} />
-      <HorizontalScrollList>
-        {items.map((r) => (
-          <RecruitmentCard key={r.id} recruitment={r} />
-        ))}
-      </HorizontalScrollList>
-    </section>
-  );
-}
-
 interface SectionLocaleProps {
   hp: Record<string, string>;
   common: Record<string, string>;
 }
 
-function DiscoverSections({ hp, eyebrowPortfolios, exhibitionEntries, exhibitionTitle, exhibitionLink, genres, genrePortfolios }: Readonly<
+function DiscoverSections({ hp, eyebrowPortfolios, genres, genrePortfolios }: Readonly<
   SectionLocaleProps & {
     eyebrowPortfolios: HomePortfolio[];
-    exhibitionEntries: ExhibitionEntryWithDetails[];
-    exhibitionTitle: string;
-    exhibitionLink: string;
     genres: TattooGenre[];
     genrePortfolios: HomePortfolio[];
   }
 >): React.ReactElement {
   return (
     <>
-      <ExhibitionSection
-        entries={exhibitionEntries}
-        title={exhibitionTitle}
-        moreLink={exhibitionLink}
-        moreText={hp.seeMore}
-      />
       <ScrollSection
         items={eyebrowPortfolios}
         title={hp.eyebrowSection}
@@ -135,22 +89,14 @@ function DiscoverSections({ hp, eyebrowPortfolios, exhibitionEntries, exhibition
   );
 }
 
-function CategorySections({ hp, recruitments, touchupEntries, lipPortfolios, mensEyebrowPortfolios }: Readonly<
+function CategorySections({ hp, lipPortfolios, mensEyebrowPortfolios }: Readonly<
   SectionLocaleProps & {
-    recruitments: HomeRecruitment[];
-    touchupEntries: ExhibitionEntryWithDetails[];
     lipPortfolios: HomePortfolio[];
     mensEyebrowPortfolios: HomePortfolio[];
   }
 >): React.ReactElement {
   return (
     <>
-      <ExhibitionSection
-        entries={touchupEntries}
-        title={hp.touchupSection}
-        moreLink="/exhibition/f77e33c6-89ec-461a-a9d5-638df14bcf8a"
-        moreText={hp.seeMore}
-      />
       <ScrollSection
         items={lipPortfolios}
         title={hp.lipSection}
@@ -163,12 +109,6 @@ function CategorySections({ hp, recruitments, touchupEntries, lipPortfolios, men
         title={hp.mensEyebrowSection}
         moreLink="/mens-beauty?categoryIds=88ef678a-bb80-4b65-87c4-79e5b503cf52"
         keyPrefix="mens-eyebrow-"
-        moreText={hp.seeMore}
-      />
-      <RecruitmentSection
-        items={recruitments}
-        title={hp.modelRecruitment}
-        moreLink="/recruitment"
         moreText={hp.seeMore}
       />
     </>
@@ -193,26 +133,12 @@ function ActiveArtistSection({ artists, title, moreText }: Readonly<{
   );
 }
 
-function CuratedExhibitions({ hp, indieEntries, butlerEntries, activeArtists }: Readonly<{
+function CuratedExhibitions({ hp, activeArtists }: Readonly<{
   hp: Record<string, string>;
-  indieEntries: ExhibitionEntryWithDetails[];
-  butlerEntries: ExhibitionEntryWithDetails[];
   activeArtists: HomeArtist[];
 }>): React.ReactElement {
   return (
     <>
-      <ExhibitionSection
-        entries={indieEntries}
-        title={hp.indieDesign}
-        moreLink="/exhibition/507469c7-7fbf-4846-b80c-c38cf36aa9fb"
-        moreText={hp.seeMore}
-      />
-      <ExhibitionSection
-        entries={butlerEntries}
-        title={hp.butlerSection}
-        moreLink="/exhibition/5dd684b8-7296-47f2-83aa-e387981c72f3"
-        moreText={hp.seeMore}
-      />
       <ActiveArtistSection
         artists={activeArtists}
         title={hp.todayActiveArtists ?? "오늘의 인기 아티스트"}
@@ -251,8 +177,6 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
-const EMPTY_HOME_DATA: HomeData = { artists: [], lowest: [], popular: [], recruitments: [] };
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
   const heroBanner = await safe(() => fetchActiveBanner(), null);
@@ -261,11 +185,8 @@ async function fetchTopHomeData() {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchBottomHomeData() {
-  const [timeSalePortfolios, tattooData, beautyData, exhibitions, eyebrowPortfolios, genres, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
+  const [timeSalePortfolios, eyebrowPortfolios, genres, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
     safe(() => fetchTimeSalePortfolios(10), []),
-    safe(() => fetchHomeData("TATTOO"), EMPTY_HOME_DATA),
-    safe(() => fetchHomeData("SEMI_PERMANENT"), EMPTY_HOME_DATA),
-    safe(() => fetchExhibitions(), []),
     safe(() => fetchEyebrowPortfolios(10), []),
     safe(() => fetchTattooGenres(), []),
     safe(() => fetchLipPortfolios(10), []),
@@ -273,26 +194,12 @@ async function fetchBottomHomeData() {
     safe(() => fetchMensEyebrowPortfolios(10), []),
   ]);
 
-  const firstExhibition = exhibitions[0] ?? null;
-  const TOUCHUP_EXHIBITION_ID = "f77e33c6-89ec-461a-a9d5-638df14bcf8a";
-  const INDIE_EXHIBITION_ID = "507469c7-7fbf-4846-b80c-c38cf36aa9fb";
-  const BUTLER_EXHIBITION_ID = "5dd684b8-7296-47f2-83aa-e387981c72f3";
   const firstGenreId = genres[0]?.id;
-  const HOME_EXHIBITION_LIMIT = 10;
-  const [rawEntries, rawTouchupEntries, rawIndieEntries, rawButlerEntries, genrePortfolios] = await Promise.all([
-    firstExhibition ? safe(() => fetchExhibitionEntries(firstExhibition.id, HOME_EXHIBITION_LIMIT), []) : Promise.resolve([]),
-    safe(() => fetchExhibitionEntries(TOUCHUP_EXHIBITION_ID, HOME_EXHIBITION_LIMIT), []),
-    safe(() => fetchExhibitionEntries(INDIE_EXHIBITION_ID, HOME_EXHIBITION_LIMIT), []),
-    safe(() => fetchExhibitionEntries(BUTLER_EXHIBITION_ID, HOME_EXHIBITION_LIMIT), []),
+  const [genrePortfolios] = await Promise.all([
     firstGenreId ? safe(() => fetchGenrePortfolios(firstGenreId, 10), []) : Promise.resolve([]),
   ]);
 
-  const exhibitionEntries = secureShuffle(rawEntries);
-  const touchupEntries = secureShuffle(rawTouchupEntries);
-  const indieEntries = secureShuffle(rawIndieEntries);
-  const butlerEntries = secureShuffle(rawButlerEntries);
-
-  return { timeSalePortfolios, tattooData, beautyData, firstExhibition, exhibitionEntries, eyebrowPortfolios, touchupEntries, genres, genrePortfolios, lipPortfolios, indieEntries, butlerEntries, activeArtists, mensEyebrowPortfolios };
+  return { timeSalePortfolios, eyebrowPortfolios, genres, genrePortfolios, lipPortfolios, activeArtists, mensEyebrowPortfolios };
 }
 
 function HomeDiscoverySections({
@@ -304,22 +211,17 @@ function HomeDiscoverySections({
   common: Record<string, string>;
   homeData: {
     eyebrowPortfolios: HomePortfolio[];
-    exhibitionEntries: ExhibitionEntryWithDetails[];
     genres: TattooGenre[];
     genrePortfolios: HomePortfolio[];
-    firstExhibition?: { id: string; title: string } | null;
   };
 }>): React.ReactElement {
-  const { eyebrowPortfolios, exhibitionEntries, genres, genrePortfolios, firstExhibition } = homeData;
+  const { eyebrowPortfolios, genres, genrePortfolios } = homeData;
   return (
     <LazyHomeSection>
       <DiscoverSections
         hp={hp}
         common={common}
         eyebrowPortfolios={eyebrowPortfolios}
-        exhibitionEntries={exhibitionEntries}
-        exhibitionTitle={firstExhibition?.title ?? hp.exhibition}
-        exhibitionLink={firstExhibition ? `/exhibition/${firstExhibition.id}` : "/exhibition"}
         genres={genres}
         genrePortfolios={genrePortfolios}
       />
@@ -335,21 +237,16 @@ function HomeCategorySections({
   hp: Record<string, string>;
   common: Record<string, string>;
   homeData: {
-    tattooData: { recruitments: HomeRecruitment[] };
-    beautyData: { recruitments: HomeRecruitment[] };
-    touchupEntries: ExhibitionEntryWithDetails[];
     lipPortfolios: HomePortfolio[];
     mensEyebrowPortfolios: HomePortfolio[];
   };
 }>): React.ReactElement {
-  const { tattooData, beautyData, touchupEntries, lipPortfolios, mensEyebrowPortfolios } = homeData;
+  const { lipPortfolios, mensEyebrowPortfolios } = homeData;
   return (
     <LazyHomeSection>
       <CategorySections
         hp={hp}
         common={common}
-        recruitments={mergeById(tattooData.recruitments, beautyData.recruitments, 10)}
-        touchupEntries={touchupEntries}
         lipPortfolios={lipPortfolios}
         mensEyebrowPortfolios={mensEyebrowPortfolios}
       />
@@ -371,7 +268,7 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
         moreText={hp.seeMore}
       />
       <LazyHomeSection size="md">
-        <CuratedExhibitions hp={hp} indieEntries={homeData.indieEntries} butlerEntries={homeData.butlerEntries} activeArtists={homeData.activeArtists} />
+        <CuratedExhibitions hp={hp} activeArtists={homeData.activeArtists} />
       </LazyHomeSection>
       <ServiceBannerRow hp={hp} />
       <HomeDiscoverySections hp={hp} common={common} homeData={homeData} />
