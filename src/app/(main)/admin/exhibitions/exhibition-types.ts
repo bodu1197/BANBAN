@@ -28,24 +28,20 @@ export interface ExhibitionFormData {
 
 export const EMPTY_FORM: ExhibitionFormData = {
     title: "", subtitle: "", image_path: "",
-    category: "TATTOO", is_active: true, start_at: "", end_at: "",
+    category: "WOMENS_BEAUTY", is_active: true, start_at: "", end_at: "",
 };
 
 export const API_PATH = "/api/admin/exhibitions";
 export const JSON_HEADERS = { "Content-Type": "application/json" };
 
 export const CATEGORIES = [
-    { value: "TATTOO", label: "타투" },
     { value: "WOMENS_BEAUTY", label: "여자뷰티" },
     { value: "MENS_BEAUTY", label: "남자뷰티" },
-    { value: "TATTOO_COURSE", label: "타투수강" },
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-    TATTOO: "bg-purple-500/20 text-purple-400",
     WOMENS_BEAUTY: "bg-pink-500/20 text-pink-400",
     MENS_BEAUTY: "bg-blue-500/20 text-blue-400",
-    TATTOO_COURSE: "bg-amber-500/20 text-amber-400",
 };
 
 export function categoryLabel(value: string): string {
