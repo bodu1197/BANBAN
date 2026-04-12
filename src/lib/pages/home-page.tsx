@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
-import dynamic from "next/dynamic";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
@@ -14,10 +13,7 @@ import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
 import { fetchActiveBanner } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
-import { fetchTattooGenres, fetchGenrePortfolios, type TattooGenre } from "@/lib/supabase/home-genre-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
-
-const TattooGenreSection = dynamic(() => import("@/components/home/TattooGenreSection").then(m => m.TattooGenreSection));
 
 
 
@@ -62,11 +58,9 @@ interface SectionLocaleProps {
   common: Record<string, string>;
 }
 
-function DiscoverSections({ hp, eyebrowPortfolios, genres, genrePortfolios }: Readonly<
+function DiscoverSections({ hp, eyebrowPortfolios }: Readonly<
   SectionLocaleProps & {
     eyebrowPortfolios: HomePortfolio[];
-    genres: TattooGenre[];
-    genrePortfolios: HomePortfolio[];
   }
 >): React.ReactElement {
   return (
@@ -79,11 +73,6 @@ function DiscoverSections({ hp, eyebrowPortfolios, genres, genrePortfolios }: Re
         moreText={hp.seeMore}
       />
       <BeautySimBanner />
-      <TattooGenreSection
-        genres={genres}
-        initialPortfolios={genrePortfolios}
-        title={hp.tattooGenres}
-      />
     </>
   );
 }
@@ -176,21 +165,15 @@ async function fetchTopHomeData() {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchBottomHomeData() {
-  const [timeSalePortfolios, eyebrowPortfolios, genres, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
+  const [timeSalePortfolios, eyebrowPortfolios, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
     safe(() => fetchTimeSalePortfolios(10), []),
     safe(() => fetchEyebrowPortfolios(10), []),
-    safe(() => fetchTattooGenres(), []),
     safe(() => fetchLipPortfolios(10), []),
     safe(() => fetchActiveArtists(10), []),
     safe(() => fetchMensEyebrowPortfolios(10), []),
   ]);
 
-  const firstGenreId = genres[0]?.id;
-  const [genrePortfolios] = await Promise.all([
-    firstGenreId ? safe(() => fetchGenrePortfolios(firstGenreId, 10), []) : Promise.resolve([]),
-  ]);
-
-  return { timeSalePortfolios, eyebrowPortfolios, genres, genrePortfolios, lipPortfolios, activeArtists, mensEyebrowPortfolios };
+  return { timeSalePortfolios, eyebrowPortfolios, lipPortfolios, activeArtists, mensEyebrowPortfolios };
 }
 
 function HomeDiscoverySections({
@@ -202,19 +185,15 @@ function HomeDiscoverySections({
   common: Record<string, string>;
   homeData: {
     eyebrowPortfolios: HomePortfolio[];
-    genres: TattooGenre[];
-    genrePortfolios: HomePortfolio[];
   };
 }>): React.ReactElement {
-  const { eyebrowPortfolios, genres, genrePortfolios } = homeData;
+  const { eyebrowPortfolios } = homeData;
   return (
     <LazyHomeSection>
       <DiscoverSections
         hp={hp}
         common={common}
         eyebrowPortfolios={eyebrowPortfolios}
-        genres={genres}
-        genrePortfolios={genrePortfolios}
       />
     </LazyHomeSection>
   );
