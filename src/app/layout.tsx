@@ -44,8 +44,13 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION ?? "",

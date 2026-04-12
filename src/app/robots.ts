@@ -5,10 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
-        disallow: ["/api/", "/auth/", "/admin/"],
+        disallow: ["/"],
       },
     ],
-    sitemap: "https://howtattoo.com/sitemap.xml",
   };
 }
