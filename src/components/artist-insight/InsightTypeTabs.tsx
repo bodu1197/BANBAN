@@ -1,7 +1,7 @@
 // @client-reason: Interactive tab selection with onClick handlers
 "use client";
 
-type InsightTabValue = "ALL" | "TATTOO" | "SEMI_PERMANENT";
+type InsightTabValue = "SEMI_PERMANENT";
 
 interface TabItem {
   value: InsightTabValue;
@@ -9,8 +9,6 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { value: "ALL", label: "전체" },
-  { value: "TATTOO", label: "타투" },
   { value: "SEMI_PERMANENT", label: "반영구" },
 ];
 

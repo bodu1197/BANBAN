@@ -22,17 +22,23 @@ export interface ArtistInsight {
 export async function fetchArtistInsights(options: {
   limit?: number;
   offset?: number;
+  typeArtist?: string;
 }): Promise<{ data: ArtistInsight[]; count: number }> {
-  const { limit = 20, offset = 0 } = options;
+  const { limit = 20, offset = 0, typeArtist } = options;
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- artist_insights not in generated types yet
-  const { data, error, count } = await (supabase as any)
+  let query = (supabase as any)
     .from("artist_insights")
     .select("*", { count: "exact" })
     .eq("published", true)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+    .order("created_at", { ascending: false });
+
+  if (typeArtist) {
+    query = query.eq("type_artist", typeArtist);
+  }
+
+  const { data, error, count } = await query.range(offset, offset + limit - 1);
 
   if (error) {
     // eslint-disable-next-line no-console

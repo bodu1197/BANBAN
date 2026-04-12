@@ -43,7 +43,7 @@ function buildUrl(params: Record<string, string | null | number>): string {
 async function fetchFromApi(
   tab: InsightTabValue, region: string | null, offset: number,
 ): Promise<{ data: ArtistInsight[]; count: number }> {
-  const typeArtist = tab === "ALL" ? null : tab;
+  const typeArtist = tab;
   const params: Record<string, string | null | number> = {
     typeArtist, regionId: region, limit: PER_PAGE, offset,
   };
@@ -52,7 +52,7 @@ async function fetchFromApi(
 }
 
 export function useInsightSearch(initial: InitialData): InsightSearchState & InsightSearchActions {
-  const [tab, setTabState] = useState<InsightTabValue>("ALL");
+  const [tab, setTabState] = useState<InsightTabValue>("SEMI_PERMANENT");
   const [regionId, setRegState] = useState<string | null>(null);
   const [regionSido, setRegSidoState] = useState<string | null>(null);
   const [insights, setInsights] = useState(initial.insights);

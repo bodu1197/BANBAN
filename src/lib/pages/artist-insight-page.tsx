@@ -30,7 +30,7 @@ function buildProfileImageRecord(insights: ArtistInsight[], profileImages: Map<s
 
 export async function renderInsightPage(): Promise<React.ReactElement> {
   const [{ data: insights, count }, regions] = await Promise.all([
-    fetchArtistInsights({ limit: PER_PAGE, offset: 0 }),
+    fetchArtistInsights({ limit: PER_PAGE, offset: 0, typeArtist: "SEMI_PERMANENT" }),
     fetchRegions(),
   ]);
 
