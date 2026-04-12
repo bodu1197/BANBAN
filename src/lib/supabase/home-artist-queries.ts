@@ -190,20 +190,22 @@ async function fetchActiveArtistsInternal(limit: number): Promise<HomeArtist[]> 
     address: string; likes_count: number;
     type_artist: string; profile_image_path: string | null;
     region_name: string | null; portfolio_media_count: number;
-  }>).map((a) => ({
-    id: a.id,
-    title: a.title,
-    description: "",
-    introduce: a.introduce ?? "",
-    address: a.address ?? "",
-    regionName: a.region_name,
-    likesCount: a.likes_count,
-    lat: null,
-    lon: null,
-    typeArtist: a.type_artist as "TATTOO" | "SEMI_PERMANENT" | "BOTH",
-    profileImage: getAvatarUrl(a.profile_image_path),
-    portfolioImage: null,
-  }));
+  }>)
+    .filter((a) => a.type_artist === "SEMI_PERMANENT" || a.type_artist === "BOTH")
+    .map((a) => ({
+      id: a.id,
+      title: a.title,
+      description: "",
+      introduce: a.introduce ?? "",
+      address: a.address ?? "",
+      regionName: a.region_name,
+      likesCount: a.likes_count,
+      lat: null,
+      lon: null,
+      typeArtist: a.type_artist as "TATTOO" | "SEMI_PERMANENT" | "BOTH",
+      profileImage: getAvatarUrl(a.profile_image_path),
+      portfolioImage: null,
+    }));
 
   return secureShuffle(artists).slice(0, limit);
 }
