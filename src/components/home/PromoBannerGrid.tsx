@@ -43,16 +43,20 @@ function CardContent({ banner, imageUrl }: Readonly<{ banner: PromoBanner; image
           loading="lazy"
         />
       ) : null}
-      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-3">
-        <h3 className="text-sm font-bold leading-tight text-white drop-shadow-sm">
-          {banner.title}
-        </h3>
-        {banner.subtitle ? (
-          <p className="mt-0.5 text-[11px] text-white/80 drop-shadow-sm">
-            {banner.subtitle}
-          </p>
-        ) : null}
-      </div>
+      {banner.title || banner.subtitle ? (
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-3">
+          {banner.title ? (
+            <h3 className="text-sm font-bold leading-tight text-white drop-shadow-sm">
+              {banner.title}
+            </h3>
+          ) : null}
+          {banner.subtitle ? (
+            <p className="mt-0.5 text-[11px] text-white/80 drop-shadow-sm">
+              {banner.subtitle}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

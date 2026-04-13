@@ -45,14 +45,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   const body = await request.json() as BannerBody;
-  if (!body.title || !body.image_path) {
-    return NextResponse.json({ error: "title and image_path are required" }, { status: 400 });
+  if (!body.image_path) {
+    return NextResponse.json({ error: "image_path is required" }, { status: 400 });
   }
 
   const { data, error } = await auth.supabase
     .from("promo_banners" as "banners")
     .insert({
-      title: body.title,
+      title: body.title ?? "",
       subtitle: body.subtitle ?? null,
       image_path: body.image_path,
       link_url: body.link_url ?? null,

@@ -179,7 +179,7 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
           className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <X className="h-4 w-4" /> 취소
         </button>
-        <button type="button" onClick={() => onSave(form)} disabled={saving || !form.title || !form.image_path}
+        <button type="button" onClick={() => onSave(form)} disabled={saving || !form.image_path}
           className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40">
           <Save className="h-4 w-4" /> 저장
         </button>
