@@ -11,7 +11,7 @@ import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
-import { fetchActiveBanner, fetchPromoBanners } from "@/lib/supabase/banner-queries";
+import { fetchActiveBanners, fetchPromoBanners } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 
@@ -159,11 +159,11 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const [heroBanner, promoBanners] = await Promise.all([
-    safe(() => fetchActiveBanner(), null),
+  const [heroBanners, promoBanners] = await Promise.all([
+    safe(() => fetchActiveBanners(), []),
     safe(() => fetchPromoBanners(), []),
   ]);
-  return { heroBanner, promoBanners };
+  return { heroBanners, promoBanners };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -251,13 +251,13 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const topData = await fetchTopHomeData();
-  const { heroBanner, promoBanners } = topData;
+  const { heroBanners, promoBanners } = topData;
   const hp = STRINGS.homepage as unknown as Record<string, string>;
 
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
       <div className="mx-auto w-full max-w-[767px]">
-        <ExhibitionBanner banner={heroBanner} />
+        <ExhibitionBanner banners={heroBanners} />
         <PromoBannerGrid banners={promoBanners} />
         <BannerRow hp={hp} />
         <AsyncHomeBottom />

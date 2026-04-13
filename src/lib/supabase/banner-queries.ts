@@ -34,11 +34,11 @@ export async function fetchPromoBanners(): Promise<PromoBannerData[]> {
 }
 
 /**
- * Fetch the first active banner (by order_index) that is within its scheduled window.
- * Returns null if no active banner exists — the component falls back to a static design.
+ * Fetch all active banners (by order_index) within their scheduled window.
+ * Returns empty array if no active banners exist — the component falls back to a static design.
  */
-export async function fetchActiveBanner(): Promise<HeroBannerData | null> {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+export async function fetchActiveBanners(): Promise<HeroBannerData[]> {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const now = new Date().toISOString();
@@ -49,18 +49,15 @@ export async function fetchActiveBanner(): Promise<HeroBannerData | null> {
         .eq("is_active", true)
         .or(`start_at.is.null,start_at.lte.${now}`)
         .or(`end_at.is.null,end_at.gte.${now}`)
-        .order("order_index", { ascending: true })
-        .limit(1)
-        .single();
+        .order("order_index", { ascending: true });
 
-    if (error || !data) return null;
+    if (error || !data) return [];
 
-    const row = data as Record<string, unknown>;
-    return {
+    return (data as Record<string, unknown>[]).map((row) => ({
         id: row.id as string,
         title: row.title as string,
         subtitle: (row.subtitle as string) ?? null,
         image_path: row.image_path as string,
         link_url: (row.link_url as string) ?? null,
-    };
+    }));
 }
