@@ -23,11 +23,11 @@ import {
   TextField,
   TextFieldWithHint,
   AddressField,
-  DescriptionField,
   CategoryCheckboxGroup,
   DaumPostcodeModal,
   buildFormLabelsFromDict,
 } from "@/components/artist-form/ArtistFormFields";
+import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
 
 interface ArtistMedia {
   id: string;
@@ -166,6 +166,10 @@ export function ArtistEditClient({ artist,
       globalThis.alert(t.required);
       return;
     }
+    if (formData.introduce.trim().length < INTRODUCE_MIN_LENGTH) {
+      globalThis.alert(`소개글을 ${INTRODUCE_MIN_LENGTH}자 이상 작성해주세요.`);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -287,8 +291,10 @@ export function ArtistEditClient({ artist,
             <ImageUpload maxLength={1} label={t.profileImageHint} onChange={handleProfileImageChange} defaultImages={existingProfileImage} />
           </div>
 
-          <TextField label={t.introduce} value={formData.introduce} onChange={handleInputChange("introduce")} placeholder={t.introducePlaceholder} required />
-          <DescriptionField value={formData.description} onChange={handleInputChange("description")} t={formLabels} />
+          <GuidedIntroduce
+            value={formData.introduce}
+            onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
+          />
           <CategoryCheckboxGroup label={t.shopInfo} categories={shopCategories} selectedIds={formData.shop_category_ids} onToggle={handleCheckboxChange} field="shop_category_ids" />
         </div>
       </form>
