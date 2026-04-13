@@ -212,7 +212,6 @@ export function ArtistRegisterClient({ categories,
             value={formData.introduce}
             onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
           />
-          <DescriptionField value={formData.description} onChange={handleInputChange("description")} t={formLabels} />
           <CategoryCheckboxGroup label={t.shopInfo} categories={shopCategories} selectedIds={formData.shop_category_ids} onToggle={handleCheckboxChange} field="shop_category_ids" />
         </div>
       </form>

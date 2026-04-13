@@ -129,9 +129,9 @@ export function GuidedIntroduce({ value, onChange }: Readonly<GuidedIntroducePro
         <button
           type="button"
           onClick={isEditing ? switchToGuided : switchToFreeform}
-          className="flex items-center gap-1 text-xs text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
+          className="flex items-center gap-1.5 text-sm font-semibold text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
         >
-          <Pencil className="h-3 w-3" />
+          <Pencil className="h-4 w-4" />
           {isEditing ? "가이드 모드" : "직접 작성"}
         </button>
       </div>
