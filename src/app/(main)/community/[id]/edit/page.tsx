@@ -41,6 +41,8 @@ export default async function Page({ params }: Readonly<PageProps>): Promise<Rea
       initialTitle={post.title}
       initialContent={post.content}
       initialBoard={post.typeBoard}
+      initialImageUrl={post.imageUrl ?? ""}
+      initialYoutubeUrl={post.youtubeUrl ?? ""}
     />
   );
 }

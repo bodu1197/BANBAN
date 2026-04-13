@@ -12,9 +12,10 @@ const t = STRINGS.community;
 
 const BOARD_TABS = [
   { key: "ALL", label: t.allPosts },
-  { key: "QNA", label: t.qna },
-  { key: "FREETALK", label: t.freeTalk },
-  { key: "REVIEW", label: t.review },
+  { key: "PROCEDURE_REVIEW", label: t.procedureReview },
+  { key: "COURSE_REVIEW", label: t.courseReview },
+  { key: "SHOP_RECRUIT", label: t.shopRecruit },
+  { key: "MODEL_RECRUIT", label: t.modelRecruit },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -22,6 +23,20 @@ const SORT_OPTIONS = [
   { key: "popular", label: t.popular },
   { key: "recommended", label: t.recommended },
 ] as const;
+
+const BOARD_LABEL_MAP: Record<string, string> = {
+  PROCEDURE_REVIEW: t.procedureReview,
+  COURSE_REVIEW: t.courseReview,
+  SHOP_RECRUIT: t.shopRecruit,
+  MODEL_RECRUIT: t.modelRecruit,
+  QNA: t.qna,
+  FREETALK: t.freeTalk,
+  REVIEW: t.review,
+};
+
+function boardLabel(typeBoard: string): string {
+  return BOARD_LABEL_MAP[typeBoard] ?? typeBoard;
+}
 
 interface CommunityListClientProps {
   posts: readonly CommunityPost[];
@@ -127,7 +142,7 @@ function PostCard({ post }: Readonly<{ post: CommunityPost }>): React.ReactEleme
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-1.5">
             <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {post.typeBoard === "QNA" ? t.qna : post.typeBoard === "REVIEW" ? t.review : t.freeTalk}
+              {boardLabel(post.typeBoard)}
             </span>
             <h3 className="truncate text-sm font-semibold">{post.title}</h3>
           </div>

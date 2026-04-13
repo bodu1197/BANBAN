@@ -490,6 +490,8 @@ export interface Database {
           updated_at: string
           deleted_at: string | null
           legacy_id: number | null
+          image_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           id?: string
@@ -505,6 +507,8 @@ export interface Database {
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
+          image_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           id?: string
@@ -520,6 +524,8 @@ export interface Database {
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
+          image_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

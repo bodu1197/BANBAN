@@ -114,6 +114,8 @@ export async function createPost(formData: FormData): Promise<{
   const content = formData.get("content") as string;
   const typeBoard = (formData.get("type_board") as string) || "QNA";
   const typePost = (formData.get("type_post") as string) || "TATTOO";
+  const imageUrl = (formData.get("image_url") as string) || null;
+  const youtubeUrl = (formData.get("youtube_url") as string) || null;
 
   if (!title || !content) {
     return { success: false, error: "title and content required" };
@@ -130,6 +132,8 @@ export async function createPost(formData: FormData): Promise<{
       type_board: typeBoard,
       type_post: typePost,
       type_artist: "TATTOO",
+      image_url: imageUrl,
+      youtube_url: youtubeUrl,
     })
     .select("id")
     .single();
@@ -253,7 +257,13 @@ export async function deletePost(postId: string): Promise<{
   redirect(COMMUNITY_PATH);
 }
 
-export async function updatePost(postId: string, title: string, content: string): Promise<{
+export async function updatePost(
+  postId: string,
+  title: string,
+  content: string,
+  imageUrl?: string | null,
+  youtubeUrl?: string | null,
+): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -272,9 +282,13 @@ export async function updatePost(postId: string, title: string, content: string)
     if (!admin) return { success: false, error: "forbidden" };
   }
 
+  const updates: Record<string, unknown> = { title, content };
+  if (imageUrl !== undefined) updates.image_url = imageUrl;
+  if (youtubeUrl !== undefined) updates.youtube_url = youtubeUrl;
+
   const { error } = await supabase
     .from("posts")
-    .update({ title, content })
+    .update(updates)
     .eq("id", postId);
 
   if (error) return { success: false, error: error.message };

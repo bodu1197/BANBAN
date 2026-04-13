@@ -4,6 +4,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Eye, Heart, MessageSquare, Pencil, Trash2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
@@ -18,6 +19,25 @@ import {
 import type { CommunityPostDetail, PostComment } from "@/lib/supabase/community-queries";
 
 const t = STRINGS.community;
+
+const BOARD_LABEL_MAP: Record<string, string> = {
+  PROCEDURE_REVIEW: t.procedureReview,
+  COURSE_REVIEW: t.courseReview,
+  SHOP_RECRUIT: t.shopRecruit,
+  MODEL_RECRUIT: t.modelRecruit,
+  QNA: t.qna,
+  FREETALK: t.freeTalk,
+  REVIEW: t.review,
+};
+
+function boardLabel(typeBoard: string): string {
+  return BOARD_LABEL_MAP[typeBoard] ?? typeBoard;
+}
+
+function extractYoutubeId(url: string): string | null {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match?.[1] ?? null;
+}
 
 interface PostDetailClientProps {
   post: CommunityPostDetail;
@@ -71,7 +91,7 @@ export function PostDetailClient({
       <article className="px-4 py-4">
         <div className="mb-1 flex items-center gap-1.5">
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {post.typeBoard === "QNA" ? t.qna : post.typeBoard === "REVIEW" ? t.review : t.freeTalk}
+            {boardLabel(post.typeBoard)}
           </span>
         </div>
 
@@ -87,6 +107,36 @@ export function PostDetailClient({
         </div>
 
         <div className="whitespace-pre-wrap text-sm leading-relaxed">{post.content}</div>
+
+        {/* Attached Image */}
+        {post.imageUrl ? (
+          <div className="mt-4">
+            <Image
+              src={post.imageUrl}
+              alt="첨부 이미지"
+              width={600}
+              height={400}
+              className="w-full rounded-lg object-cover"
+            />
+          </div>
+        ) : null}
+
+        {/* YouTube Embed */}
+        {post.youtubeUrl ? (() => {
+          const videoId = extractYoutubeId(post.youtubeUrl);
+          if (!videoId) return null;
+          return (
+            <div className="mt-4 aspect-video w-full overflow-hidden rounded-lg">
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title="YouTube 영상"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            </div>
+          );
+        })() : null}
 
         {/* Actions */}
         <div className="mt-6 flex items-center gap-3 border-t border-border pt-4">
