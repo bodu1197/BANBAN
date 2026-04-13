@@ -197,14 +197,22 @@ export function ArtistEditClient({ artist,
         const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
         const profileJson = await profileRes.json() as { success: boolean };
         if (profileJson.success) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-          await (supabase.from("artists") as any).update({ profile_image_path: profilePath }).eq("id", artistId);
+          await fetch("/api/artist-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ artistId, profileImagePath: profilePath }),
+          });
         }
       }
 
-      // Delete removed shop images
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      if (deletedMediaIds.length > 0) await (supabase.from("artist_media") as any).delete().in("id", deletedMediaIds);
+      // Delete removed shop images via server API
+      if (deletedMediaIds.length > 0) {
+        await fetch("/api/artist-media", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ artistId, mediaIds: deletedMediaIds }),
+        });
+      }
 
       // Upload new shop images via server API (bypasses storage RLS)
       const startIndex = existingShopImages.length;
@@ -216,8 +224,11 @@ export function ArtistEditClient({ artist,
         const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
         const shopJson = await shopRes.json() as { success: boolean };
         if (!shopJson.success) throw new Error("이미지 업로드 실패");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-        await (supabase.from("artist_media") as any).insert({ artist_id: artistId, storage_path: path, type: "image", order_index: startIndex + i });
+        await fetch("/api/artist-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ artistId, storagePath: path, type: "image", orderIndex: startIndex + i }),
+        });
       }
 
       // Update categories: delete then insert

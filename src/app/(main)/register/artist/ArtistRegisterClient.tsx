@@ -138,8 +138,11 @@ export function ArtistRegisterClient({ categories,
         const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
         const profileJson = await profileRes.json() as { success: boolean };
         if (profileJson.success) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-          await (supabase.from("artists") as any).update({ profile_image_path: profilePath }).eq("id", artistId);
+          await fetch("/api/artist-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ artistId, profileImagePath: profilePath }),
+          });
         }
       }
 
@@ -152,8 +155,11 @@ export function ArtistRegisterClient({ categories,
         const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
         const shopJson = await shopRes.json() as { success: boolean };
         if (shopJson.success) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-          await (supabase.from("artist_media") as any).insert({ artist_id: artistId, storage_path: shopPath, type: "image", order_index: i });
+          await fetch("/api/artist-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ artistId, storagePath: shopPath, type: "image", orderIndex: i }),
+          });
         }
       }
 
