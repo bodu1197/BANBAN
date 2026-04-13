@@ -9,7 +9,6 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useDaumPostcode } from "@/hooks/useDaumPostcode";
 import { createClient } from "@/lib/supabase/client";
-import { optimizeImage } from "@/lib/utils/image-optimizer";
 import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -190,27 +189,33 @@ export function ArtistEditClient({ artist,
       const { error: artistError } = await (supabase.from("artists") as any).update(updateData).eq("id", artistId);
       if (artistError) throw artistError;
 
-      // Upload new profile image
+      // Upload new profile image via server API (bypasses storage RLS)
       if (newProfileImage.length > 0) {
-        const optimized = await optimizeImage(newProfileImage[0], { maxWidth: 400, maxHeight: 400, quality: 0.85 });
+        const profileForm = new globalThis.FormData();
+        profileForm.append("file", newProfileImage[0]);
         const profilePath = `${artistId}/profile.webp`;
-        await supabase.storage.from("avatars").upload(profilePath, optimized, { upsert: true, contentType: "image/webp" });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-        await (supabase.from("artists") as any).update({ profile_image_path: profilePath }).eq("id", artistId);
+        const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
+        const profileJson = await profileRes.json() as { success: boolean };
+        if (profileJson.success) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+          await (supabase.from("artists") as any).update({ profile_image_path: profilePath }).eq("id", artistId);
+        }
       }
 
       // Delete removed shop images
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
       if (deletedMediaIds.length > 0) await (supabase.from("artist_media") as any).delete().in("id", deletedMediaIds);
 
-      // Upload new shop images
+      // Upload new shop images via server API (bypasses storage RLS)
       const startIndex = existingShopImages.length;
       for (let i = 0; i < newShopImages.length; i++) {
+        const shopForm = new globalThis.FormData();
         // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
-        const optimized = await optimizeImage(newShopImages[i], { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
+        shopForm.append("file", newShopImages[i]);
         const path = `artists/${artistId}/shop_${startIndex + i}_${Date.now()}.webp`;
-        const { error: uploadError } = await supabase.storage.from("portfolios").upload(path, optimized, { upsert: true, contentType: "image/webp" });
-        if (uploadError) throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
+        const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
+        const shopJson = await shopRes.json() as { success: boolean };
+        if (!shopJson.success) throw new Error("이미지 업로드 실패");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
         await (supabase.from("artist_media") as any).insert({ artist_id: artistId, storage_path: path, type: "image", order_index: startIndex + i });
       }

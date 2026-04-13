@@ -10,7 +10,7 @@ import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useDaumPostcode } from "@/hooks/useDaumPostcode";
 import { createClient } from "@/lib/supabase/client";
-import { optimizeImage } from "@/lib/utils/image-optimizer";
+
 import { Button } from "@/components/ui/button";
 import { FullPageSpinner } from "@/components/ui/full-page-spinner";
 import { ImageUpload } from "@/components/ui/image-upload";
@@ -130,22 +130,31 @@ export function ArtistRegisterClient({ categories,
       if (artistError) throw artistError;
       const artistId = artist?.id as string;
 
-      // Upload profile image
+      // Upload profile image via server API (bypasses storage RLS)
       if (profileImage.length > 0) {
-        const optimized = await optimizeImage(profileImage[0], { maxWidth: 400, maxHeight: 400, quality: 0.85 });
-        await supabase.storage.from("avatars").upload(`${artistId}/profile.webp`, optimized, { upsert: true, contentType: "image/webp" });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-        await (supabase.from("artists") as any).update({ profile_image_path: `${artistId}/profile.webp` }).eq("id", artistId);
+        const profileForm = new globalThis.FormData();
+        profileForm.append("file", profileImage[0]);
+        const profilePath = `${artistId}/profile.webp`;
+        const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
+        const profileJson = await profileRes.json() as { success: boolean };
+        if (profileJson.success) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+          await (supabase.from("artists") as any).update({ profile_image_path: profilePath }).eq("id", artistId);
+        }
       }
 
-      // Upload shop images
+      // Upload shop images via server API (bypasses storage RLS)
       for (let i = 0; i < shopImages.length; i++) {
+        const shopForm = new globalThis.FormData();
         // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
-        const optimized = await optimizeImage(shopImages[i], { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
-        const path = `artists/${artistId}/shop_${i}.webp`;
-        await supabase.storage.from("portfolios").upload(path, optimized, { upsert: true, contentType: "image/webp" });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-        await (supabase.from("artist_media") as any).insert({ artist_id: artistId, storage_path: path, type: "image", order_index: i });
+        shopForm.append("file", shopImages[i]);
+        const shopPath = `artists/${artistId}/shop_${i}.webp`;
+        const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
+        const shopJson = await shopRes.json() as { success: boolean };
+        if (shopJson.success) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+          await (supabase.from("artist_media") as any).insert({ artist_id: artistId, storage_path: shopPath, type: "image", order_index: i });
+        }
       }
 
       // Add categories
