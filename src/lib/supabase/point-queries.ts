@@ -1,4 +1,4 @@
-import { createClient } from "./server";
+import { createAdminClient } from "./server";
 import type { PointWallet, PointTransaction, PointTransactionType, PointReason } from "@/types/ads";
 import { todayStartKST } from "@/lib/utils/format";
 
@@ -6,7 +6,7 @@ import { todayStartKST } from "@/lib/utils/format";
 
 /** Get artist type for a user (null if not an artist) */
 export async function getArtistType(userId: string): Promise<string | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
         .from("artists").select("type_artist").eq("user_id", userId).single();
@@ -17,7 +17,7 @@ export async function getArtistType(userId: string): Promise<string | null> {
 
 /** Get point amount from DB policy, considering artist type */
 export async function getPolicyAmount(reason: string, artistType: string | null): Promise<number | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
         .from("point_policies")
@@ -35,7 +35,7 @@ export async function getPolicyAmount(reason: string, artistType: string | null)
 
 /** Get or create a point wallet for a user */
 export async function getOrCreateWallet(userId: string): Promise<PointWallet> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Try to get existing wallet
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,7 +80,7 @@ interface EarnPointsParams {
 export async function earnPoints(params: EarnPointsParams): Promise<PointTransaction> {
     const { userId, amount, reason, description, expiresAt, referenceId } = params;
     const wallet = await getOrCreateWallet(userId);
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Create transaction
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +131,7 @@ export async function spendPoints(params: SpendPointsParams): Promise<PointTrans
         throw new Error("INSUFFICIENT_POINTS");
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Create transaction (negative amount)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -171,7 +171,7 @@ export async function getPointHistory(
     offset = 0,
 ): Promise<{ transactions: PointTransaction[]; total: number }> {
     const wallet = await getOrCreateWallet(userId);
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, count } = await (supabase as any)
@@ -203,7 +203,7 @@ export async function checkDailyLimit(userId: string, reason: PointReason): Prom
     if (!limit) return true; // no limit
 
     const wallet = await getOrCreateWallet(userId);
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { count } = await (supabase as any)
@@ -229,7 +229,7 @@ export async function earnPointsWithLimit(params: EarnPointsParams): Promise<Poi
 /** Grant welcome bonus to a new artist (타투: 100,000P / 반영구: 30,000P) */
 export async function grantWelcomeBonus(userId: string): Promise<PointTransaction> {
     const wallet = await getOrCreateWallet(userId);
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if already granted
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -266,7 +266,7 @@ export async function grantWelcomeBonus(userId: string): Promise<PointTransactio
 
 /** Expire unused welcome bonus points past their expiration date */
 export async function expireOldPoints(): Promise<number> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const now = new Date().toISOString();
 
     // Find unexpired transactions past their expiry

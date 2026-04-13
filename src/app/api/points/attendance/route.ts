@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { earnPoints, getArtistType, getPolicyAmount } from "@/lib/supabase/point-queries";
 import { todayKST } from "@/lib/utils/format";
 import { DEFAULT_POINT_RULES, getPointAmount } from "@/types/ads";
 
 const STREAK_THRESHOLD = 7;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase generic client
-async function getYesterdayStreak(sb: any, userId: string): Promise<number> {
+function getYesterdayStreak(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<number> {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
     now.setDate(now.getDate() - 1);
     const yesterdayKST = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const { data } = await sb.from("attendance_logs").select("streak").eq("user_id", userId).eq("checked_date", yesterdayKST).single();
-    return (data as { streak: number } | null)?.streak ?? 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (admin as any).from("attendance_logs").select("streak").eq("user_id", userId).eq("checked_date", yesterdayKST).single()
+        .then((r: { data: { streak: number } | null }) => r.data?.streak ?? 0);
 }
 
 async function getAttendanceAmounts(artistType: string | null): Promise<{ attendance: number; streak: number }> {
-    // DB 정책 우선, 없으면 코드 기본값 사용
     const policyAttendance = await getPolicyAmount("ATTENDANCE", artistType);
     const policyStreak = await getPolicyAmount("ATTENDANCE_STREAK", artistType);
     const attendanceRule = DEFAULT_POINT_RULES.find(r => r.reason === "ATTENDANCE");
@@ -31,7 +30,7 @@ async function grantStreakBonus(userId: string, streak: number, streakAmount: nu
     let totalEarned = baseAmount;
     let streakBonus = false;
     if (streak % STREAK_THRESHOLD === 0) {
-        await earnPoints({ userId, amount: streakAmount, reason: "ATTENDANCE", description: `${STREAK_THRESHOLD}일 연속 출석 보너스` });
+        await earnPoints({ userId, amount: streakAmount, reason: "ATTENDANCE_STREAK", description: `${STREAK_THRESHOLD}일 연속 출석 보너스` });
         totalEarned += streakAmount;
         streakBonus = true;
     }
@@ -45,16 +44,17 @@ export async function POST(): Promise<NextResponse> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const admin = createAdminClient();
     const today = todayKST();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    const sb = admin as any;
 
     const { data: existing } = await sb.from("attendance_logs").select("id").eq("user_id", user.id).eq("checked_date", today).single();
     if (existing) {
         return NextResponse.json({ error: "이미 출석 체크를 완료했습니다", alreadyChecked: true }, { status: 400 });
     }
 
-    const newStreak = (await getYesterdayStreak(sb, user.id)) + 1;
+    const newStreak = (await getYesterdayStreak(admin, user.id)) + 1;
     const artistType = await getArtistType(user.id);
     const amounts = await getAttendanceAmounts(artistType);
     await sb.from("attendance_logs").insert({ user_id: user.id, checked_date: today, streak: newStreak });
@@ -71,9 +71,10 @@ export async function GET(): Promise<NextResponse> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const admin = createAdminClient();
     const today = todayKST();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    const sb = admin as any;
 
     const { data: todayLog } = await sb.from("attendance_logs").select("streak").eq("user_id", user.id).eq("checked_date", today).single();
     const monthStart = `${today.slice(0, 7)}-01`;
