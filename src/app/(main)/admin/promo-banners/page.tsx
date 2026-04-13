@@ -83,9 +83,10 @@ function BannerImageUpload({ currentPath, onUpload }: Readonly<{
     try {
       const form = new globalThis.FormData();
       form.append("file", file);
-      const res = await fetch("/api/upload?bucket=portfolios&folder=promo-banners", { method: "POST", body: form });
-      const json = await res.json() as { success: boolean; paths?: { original: string }; error?: string };
-      if (json.success && json.paths) onUpload(json.paths.original);
+      const path = `promo-banners/${crypto.randomUUID()}.webp`;
+      const res = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
+      const json = await res.json() as { success: boolean; path?: string; error?: string };
+      if (json.success && json.path) onUpload(json.path);
     } catch { /* upload failed */ }
     setUploading(false);
   }, [onUpload]);
