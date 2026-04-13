@@ -147,6 +147,78 @@ async function isAdmin(supabase: Awaited<ReturnType<typeof createClient>>, userI
   return (data as { is_admin: boolean } | null)?.is_admin === true;
 }
 
+export async function deleteComment(commentId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const user = await getUser();
+  if (!user) return { success: false, error: "unauthorized" };
+
+  const supabase = await createClient();
+
+  const { data: comment } = await supabase
+    .from("comments")
+    .select("user_id, post_id")
+    .eq("id", commentId)
+    .single();
+  if (!comment) return { success: false, error: "not found" };
+
+  const isOwner = (comment as { user_id: string }).user_id === user.id;
+  if (!isOwner) {
+    const admin = await isAdmin(supabase, user.id);
+    if (!admin) return { success: false, error: "forbidden" };
+  }
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", commentId);
+
+  if (error) return { success: false, error: error.message };
+
+  const postId = (comment as { post_id: string }).post_id;
+  revalidatePath(COMMUNITY_PATH);
+  revalidatePath(`${COMMUNITY_PATH}/${postId}`);
+  return { success: true };
+}
+
+export async function updateComment(commentId: string, content: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const user = await getUser();
+  if (!user) return { success: false, error: "unauthorized" };
+
+  if (!content.trim()) return { success: false, error: "content required" };
+
+  const supabase = await createClient();
+
+  const { data: comment } = await supabase
+    .from("comments")
+    .select("user_id, post_id")
+    .eq("id", commentId)
+    .single();
+  if (!comment) return { success: false, error: "not found" };
+
+  const isOwner = (comment as { user_id: string }).user_id === user.id;
+  if (!isOwner) {
+    const admin = await isAdmin(supabase, user.id);
+    if (!admin) return { success: false, error: "forbidden" };
+  }
+
+  const { error } = await supabase
+    .from("comments")
+    .update({ content })
+    .eq("id", commentId);
+
+  if (error) return { success: false, error: error.message };
+
+  const postId = (comment as { post_id: string }).post_id;
+  revalidatePath(COMMUNITY_PATH);
+  revalidatePath(`${COMMUNITY_PATH}/${postId}`);
+  return { success: true };
+}
+
 export async function deletePost(postId: string): Promise<{
   success: boolean;
   error?: string;

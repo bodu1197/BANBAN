@@ -1,0 +1,387 @@
+// @client-reason: comment form interaction, delete/edit actions, like toggle
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Eye, Heart, MessageSquare, Pencil, Trash2, Send } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { STRINGS } from "@/lib/strings";
+import { Button } from "@/components/ui/button";
+import {
+  createComment,
+  deletePost,
+  deleteComment,
+  updateComment,
+  togglePostLike,
+} from "@/lib/actions/community";
+import type { CommunityPostDetail, PostComment } from "@/lib/supabase/community-queries";
+
+const t = STRINGS.community;
+
+interface PostDetailClientProps {
+  post: CommunityPostDetail;
+  userId: string | null;
+  isAdmin: boolean;
+}
+
+export function PostDetailClient({
+  post,
+  userId,
+  isAdmin,
+}: Readonly<PostDetailClientProps>): React.ReactElement {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const isOwner = userId !== null && userId === post.authorId;
+  const canManage = isOwner || isAdmin;
+
+  function handleDelete(): void {
+    if (!confirm(t.deleteConfirm)) return;
+    startTransition(async () => {
+      await deletePost(post.id);
+    });
+  }
+
+  function handleLike(): void {
+    if (!userId) {
+      alert(t.loginRequired);
+      return;
+    }
+    startTransition(async () => {
+      await togglePostLike(post.id);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[767px]">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <Link
+          href="/community"
+          className="rounded-lg p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="뒤로 가기"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="flex-1 truncate text-base font-bold">{t.title}</h1>
+      </div>
+
+      {/* Post Content */}
+      <article className="px-4 py-4">
+        <div className="mb-1 flex items-center gap-1.5">
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {post.typeBoard === "QNA" ? t.qna : post.typeBoard === "REVIEW" ? t.review : t.freeTalk}
+          </span>
+        </div>
+
+        <h2 className="mb-2 text-lg font-bold">{post.title}</h2>
+
+        <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">{post.authorNickname ?? t.anonymous}</span>
+          <span>{new Date(post.createdAt).toLocaleDateString("ko-KR")}</span>
+          <span className="flex items-center gap-0.5">
+            <Eye className="h-3 w-3" aria-hidden="true" />
+            {post.viewsCount}
+          </span>
+        </div>
+
+        <div className="whitespace-pre-wrap text-sm leading-relaxed">{post.content}</div>
+
+        {/* Actions */}
+        <div className="mt-6 flex items-center gap-3 border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={handleLike}
+            disabled={isPending}
+            className="flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-medium transition-colors hover:bg-brand-primary/10 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+            {t.likes} {post.likesCount}
+          </button>
+
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+            {t.comments} {post.commentsCount}
+          </span>
+
+          <div className="ml-auto flex gap-2">
+            {canManage ? (
+              <>
+                <Link
+                  href={`/community/${post.id}/edit`}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t.edit}
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t.delete}
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </article>
+
+      {/* Comments Section */}
+      <section className="border-t border-border" aria-label="댓글">
+        <div className="px-4 py-3">
+          <h3 className="text-sm font-bold">{t.comments} {post.commentsCount}</h3>
+        </div>
+
+        <CommentList
+          comments={post.comments}
+          postId={post.id}
+          userId={userId}
+          isAdmin={isAdmin}
+        />
+
+        {userId ? (
+          <CommentForm postId={post.id} />
+        ) : (
+          <p className="px-4 py-4 text-center text-xs text-muted-foreground">{t.loginRequired}</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* ───── Comment List ───── */
+
+function CommentList({
+  comments,
+  postId,
+  userId,
+  isAdmin,
+}: Readonly<{
+  comments: readonly PostComment[];
+  postId: string;
+  userId: string | null;
+  isAdmin: boolean;
+}>): React.ReactElement {
+  const rootComments = comments.filter((c) => !c.parentId);
+  const childMap = new Map<string, PostComment[]>();
+  for (const c of comments) {
+    if (c.parentId) {
+      const arr = childMap.get(c.parentId) ?? [];
+      arr.push(c);
+      childMap.set(c.parentId, arr);
+    }
+  }
+
+  return (
+    <ul className="divide-y divide-border/50">
+      {rootComments.map((comment) => (
+        <li key={comment.id}>
+          <CommentItem
+            comment={comment}
+            postId={postId}
+            userId={userId}
+            isAdmin={isAdmin}
+            replies={childMap.get(comment.id) ?? []}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ───── Comment Item ───── */
+
+function CommentItem({
+  comment,
+  postId,
+  userId,
+  isAdmin,
+  replies,
+  isReply = false,
+}: Readonly<{
+  comment: PostComment;
+  postId: string;
+  userId: string | null;
+  isAdmin: boolean;
+  replies: readonly PostComment[];
+  isReply?: boolean;
+}>): React.ReactElement {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const isOwner = userId !== null && userId === comment.authorId;
+  const canManage = isOwner || isAdmin;
+
+  function handleDeleteComment(): void {
+    if (!confirm(t.deleteConfirm)) return;
+    startTransition(async () => {
+      await deleteComment(comment.id);
+      router.refresh();
+    });
+  }
+
+  function handleUpdateComment(): void {
+    startTransition(async () => {
+      const result = await updateComment(comment.id, editContent);
+      if (result.success) {
+        setIsEditing(false);
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <div className={cn("px-4 py-3", isReply && "ml-8 border-l-2 border-border/50")}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="font-medium">{comment.authorNickname ?? t.anonymous}</span>
+          <span className="text-muted-foreground">
+            {new Date(comment.createdAt).toLocaleDateString("ko-KR")}
+          </span>
+        </div>
+
+        {canManage ? (
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+              className="rounded p-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="댓글 수정"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteComment}
+              disabled={isPending}
+              className="rounded p-1 text-xs text-destructive transition-colors hover:text-destructive/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="댓글 삭제"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {isEditing ? (
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <Button
+            size="sm"
+            onClick={handleUpdateComment}
+            disabled={isPending || !editContent.trim()}
+          >
+            {STRINGS.common.save}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => { setIsEditing(false); setEditContent(comment.content); }}
+          >
+            {STRINGS.common.cancel}
+          </Button>
+        </div>
+      ) : (
+        <p className="mt-1 text-sm">{comment.content}</p>
+      )}
+
+      {/* Reply button */}
+      {!isReply && userId ? (
+        <button
+          type="button"
+          onClick={() => setShowReplyForm(!showReplyForm)}
+          className="mt-1.5 text-xs text-muted-foreground transition-colors hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t.reply}
+        </button>
+      ) : null}
+
+      {showReplyForm ? (
+        <div className="mt-2">
+          <CommentForm postId={postId} parentId={comment.id} onSubmitted={() => setShowReplyForm(false)} />
+        </div>
+      ) : null}
+
+      {/* Nested replies */}
+      {replies.length > 0 ? (
+        <ul>
+          {replies.map((reply) => (
+            <li key={reply.id}>
+              <CommentItem
+                comment={reply}
+                postId={postId}
+                userId={userId}
+                isAdmin={isAdmin}
+                replies={[]}
+                isReply
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+/* ───── Comment Form ───── */
+
+function CommentForm({
+  postId,
+  parentId,
+  onSubmitted,
+}: Readonly<{
+  postId: string;
+  parentId?: string;
+  onSubmitted?: () => void;
+}>): React.ReactElement {
+  const [content, setContent] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  function handleSubmit(): void {
+    if (!content.trim()) return;
+    startTransition(async () => {
+      const result = await createComment(postId, content.trim(), parentId);
+      if (result.success) {
+        setContent("");
+        router.refresh();
+        onSubmitted?.();
+      }
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-2 border-t border-border px-4 py-3">
+      <input
+        type="text"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder={t.writeComment}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSubmit(); }}
+        className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={isPending || !content.trim()}
+        className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+        aria-label="댓글 등록"
+      >
+        <Send className="h-4 w-4" aria-hidden="true" />
+        {t.submitComment}
+      </button>
+    </div>
+  );
+}

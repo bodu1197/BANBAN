@@ -352,6 +352,7 @@ export const STRINGS ={
     "mensBeauty": "남성 반영구",
     "community": "커뮤니티",
     "exhibition": "기획전",
+    "course": "수강",
     "search": "검색",
     "likes": "좋아요",
     "quoteRequest": "견적요청",

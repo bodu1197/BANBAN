@@ -12,6 +12,8 @@ interface MainMenuLabels {
   womenBeauty: string;
   mensBeauty: string;
   exhibition: string;
+  course: string;
+  community: string;
 }
 
 interface MainMenuBarProps {
@@ -29,6 +31,8 @@ export function MainMenuBar({
     { href: "/exhibition", label: labels.exhibition },
     { href: "/women-beauty", label: labels.womenBeauty },
     { href: "/mens-beauty", label: labels.mensBeauty },
+    { href: "/courses", label: labels.course },
+    { href: "/community", label: labels.community },
   ], [homePath, labels]);
 
   const isActive = (href: string): boolean => isActiveRoute(pathname, href, homePath);
