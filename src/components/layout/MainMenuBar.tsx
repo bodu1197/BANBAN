@@ -49,7 +49,7 @@ export function MainMenuBar({
             href={item.href}
             aria-current={isActive(item.href) ? "page" : undefined}
             className={cn(
-              "relative shrink-0 px-3 py-3 text-sm font-medium transition-colors md:shrink",
+              "relative shrink-0 px-3 py-3 text-base font-bold transition-colors md:shrink",
               "hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none",
               isActive(item.href)
                 ? "text-brand-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-brand-primary"
