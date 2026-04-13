@@ -11,7 +11,6 @@ import {
   ChevronRight,
   LogOut,
   Images,
-  Calculator,
   Heart,
   Star,
   Pencil,
@@ -32,10 +31,8 @@ import {
   type LikedPortfolio,
   type LikedArtist,
 } from "@/lib/supabase/likes-queries";
-import type { QuoteRequestSummary } from "@/lib/supabase/quote-queries";
 import { AnnouncementsBanner } from "@/components/mypage/AnnouncementsBanner";
 const DEFAULT_PROFILE_IMAGE = "/images/default_profile.svg";
-const QUOTE_REQUEST_PATH = "/quote-request";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -48,7 +45,6 @@ interface QuickMenuItem {
 const m = STRINGS.mypage;
 
 const userMenuItems: QuickMenuItem[] = [
-  { icon: Calculator, href: QUOTE_REQUEST_PATH, label: m.estimate },
   { icon: PointCoinIcon, href: "/mypage/points", label: m.pointManage },
   { icon: Heart, href: "/likes", label: m.likedPosts },
   { icon: Star, href: "/mypage/reviews", label: m.myReviews },
@@ -58,7 +54,6 @@ const userMenuItems: QuickMenuItem[] = [
 const artistMenuItems: QuickMenuItem[] = [
   { icon: Images, href: "/mypage/artist/portfolios", label: m.portfolioManage },
   { icon: GraduationCap, href: "/mypage/artist/courses", label: m.courseManage },
-  { icon: Calculator, href: QUOTE_REQUEST_PATH, label: m.estimate },
   { icon: Users, href: "/community?board=RECRUITMENT", label: m.findModel },
   { icon: ShoppingCart, href: "/mypage/artist/ads/purchase", label: m.adPurchase },
   { icon: BarChart3, href: "/mypage/artist/ads", label: m.adManage },
@@ -136,39 +131,6 @@ function LikedSection({ title, children, noData, isEmpty }: Readonly<{
 
 // --- User View ---
 
-function MyQuoteRequests(): React.ReactElement {
-  const [requests, setRequests] = useState<QuoteRequestSummary[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    fetch("/api/quote-requests/my")
-      .then((r) => r.json())
-      .then((data) => { if (mounted) setRequests(data); })
-      .catch(() => {/* ignore */});
-    return () => { mounted = false; };
-  }, []);
-
-  const t = STRINGS.quoteRequest;
-
-  return (
-    <div className="bg-background p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold">{t.myRequests}</h2>
-        <Link href={"/quote-request/create"} className="text-xs text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          + {t.createNew}
-        </Link>
-      </div>
-      {requests.length > 0 ? (
-        <div className="space-y-2">
-          {requests.map((r) => <QuoteRequestCard key={r.id} request={r} timeLabel={formatTimeAgo(r.createdAt)} />)}
-        </div>
-      ) : (
-        <p className="py-4 text-center text-sm text-muted-foreground">{t.noRequests}</p>
-      )}
-    </div>
-  );
-}
-
 function useLikedData(userId: string): { portfolios: LikedPortfolio[]; artists: LikedArtist[] } {
   const [portfolios, setPortfolios] = useState<LikedPortfolio[]>([]);
   const [artists, setArtists] = useState<LikedArtist[]>([]);
@@ -212,7 +174,6 @@ function UserView({ userId }: Readonly<{
 
   return (
     <>
-      <MyQuoteRequests />
       <LikedSection title={STRINGS.mypage.likedPortfolios} noData={STRINGS.common.noData} isEmpty={portfolios.length === 0}>
         <LikedGrid items={portfolios} basePath="portfolios" defaultImg="/placeholder-image.svg" />
         {moreLink}
@@ -250,78 +211,12 @@ function ArtistDashboardCard({ icon: Icon, label, value, href }: Readonly<{
   );
 }
 
-function formatTimeAgo(dateStr: string): string {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000));
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
-
-function QuoteRequestCard({ request, timeLabel }: Readonly<{
-  request: QuoteRequestSummary;
-    timeLabel: string;
-}>): React.ReactElement {
-  return (
-    <Link
-      href={`/quote-request/${request.id}`}
-      className="block rounded-lg border p-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <div className="flex items-start justify-between">
-        <p className="text-sm font-medium line-clamp-1">{request.title}</p>
-        <span className="ml-2 shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">모집중</span>
-      </div>
-      <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs text-muted-foreground">
-        <span>{request.bodyPart}</span>
-        {request.budgetMax ? <span>~{request.budgetMax.toLocaleString()}원</span> : null}
-        <span>·</span>
-        <span>{timeLabel}</span>
-
-      </div>
-    </Link>
-  );
-}
-
-function RecentQuoteRequests(): React.ReactElement {
-  const [requests, setRequests] = useState<QuoteRequestSummary[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    fetch("/api/quote-requests")
-      .then((r) => r.json())
-      .then((data) => { if (mounted) setRequests(data); })
-      .catch(() => {/* ignore */});
-    return () => { mounted = false; };
-  }, []);
-
-  return (
-    <div className="bg-background p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold">새 견적 요청</h2>
-        <Link href={QUOTE_REQUEST_PATH} className="text-xs text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          전체보기
-        </Link>
-      </div>
-      {requests.length > 0 ? (
-        <div className="space-y-2">
-          {requests.map((r) => <QuoteRequestCard key={r.id} request={r} timeLabel={formatTimeAgo(r.createdAt)} />)}
-        </div>
-      ) : (
-        <p className="py-4 text-center text-sm text-muted-foreground">새 견적 요청이 없습니다</p>
-      )}
-    </div>
-  );
-}
-
 function ArtistView({ artistId }: Readonly<{
   artistId: string;
 }>): React.ReactElement {
   const d = STRINGS.mypage;
   return (
     <>
-      {/* Recent Quote Requests for Artists */}
-      <RecentQuoteRequests />
-
       {/* Dashboard Cards – items NOT already in Quick Menu */}
       <div className="space-y-2 bg-background p-4">
         <ArtistDashboardCard icon={Star} label={d.myReviews} href="/mypage/reviews" />

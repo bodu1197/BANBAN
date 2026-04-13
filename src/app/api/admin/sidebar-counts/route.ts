@@ -53,15 +53,6 @@ async function getDormantArtistCount(): Promise<number> {
   return count ?? 0;
 }
 
-async function getOpenQuoteCount(): Promise<number> {
-  const supabase = createAdminClient();
-  const { count } = await supabase
-    .from("quote_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "open") as CountResult;
-  return count ?? 0;
-}
-
 async function getConversationCount(): Promise<number> {
   const supabase = createAdminClient();
   const { count } = await supabase
@@ -75,12 +66,11 @@ export async function GET(): Promise<NextResponse> {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!(await isAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const [inquiries, exhibitions, members, dormant, quotes, chats] = await Promise.all([
+  const [inquiries, exhibitions, members, dormant, chats] = await Promise.all([
     getInquiryCount(),
     getExhibitionPendingCount(),
     getNewMemberCount(),
     getDormantArtistCount(),
-    getOpenQuoteCount(),
     getConversationCount(),
   ]);
 
@@ -90,7 +80,6 @@ export async function GET(): Promise<NextResponse> {
       "/admin/exhibitions": exhibitions,
       "/admin/members": members,
       "/admin/dormant-artists": dormant,
-      "/admin/quotes": quotes,
       "/admin/chats": chats,
     },
   });

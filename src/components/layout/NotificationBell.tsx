@@ -69,10 +69,7 @@ function getNotificationLink(n: Notification): string {
   if (n.type === "NEW_CHAT_MESSAGE") return "/mypage/messages";
   if (n.type === "INCOMING_CALL") return "/mypage/messages";
   if (n.type === "ANNOUNCEMENT") return "/mypage";
-  if ((n.type === "NEW_QUOTE_REQUEST" || n.type === "NEW_BID" || n.type === "BID_ACCEPTED") && data?.quoteRequestId) {
-    return `/quote-request/${data.quoteRequestId}`;
-  }
-  return "/quote-request";
+  return "/mypage";
 }
 
 function NotificationItem({ notification}: Readonly<{
