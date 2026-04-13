@@ -78,7 +78,7 @@ export function GuidedIntroduce({ value, onChange }: Readonly<GuidedIntroducePro
   const [answers, setAnswers] = useState<Answers>(() =>
     value.trim() ? { _freeform: value } : {},
   );
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(() => value.trim().length > 0);
   const [expandedQ, setExpandedQ] = useState<string>(QUESTIONS[0].id);
 
   const combined = useMemo(() => {
