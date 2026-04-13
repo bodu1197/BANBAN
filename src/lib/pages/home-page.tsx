@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
-import { QuickMenu } from "@/components/home/QuickMenu";
+import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
 import { AiBanner } from "@/components/home/AiBanner";
@@ -11,7 +11,7 @@ import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
-import { fetchActiveBanner } from "@/lib/supabase/banner-queries";
+import { fetchActiveBanner, fetchPromoBanners } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 
@@ -159,8 +159,11 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const heroBanner = await safe(() => fetchActiveBanner(), null);
-  return { heroBanner };
+  const [heroBanner, promoBanners] = await Promise.all([
+    safe(() => fetchActiveBanner(), null),
+    safe(() => fetchPromoBanners(), []),
+  ]);
+  return { heroBanner, promoBanners };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -248,14 +251,14 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const topData = await fetchTopHomeData();
-  const { heroBanner } = topData;
+  const { heroBanner, promoBanners } = topData;
   const hp = STRINGS.homepage as unknown as Record<string, string>;
 
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
       <div className="mx-auto w-full max-w-[767px]">
         <ExhibitionBanner banner={heroBanner} />
-        <QuickMenu labels={STRINGS.quickMenu as never} />
+        <PromoBannerGrid banners={promoBanners} />
         <BannerRow hp={hp} />
         <AsyncHomeBottom />
       </div>
