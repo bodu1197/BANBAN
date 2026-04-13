@@ -40,10 +40,9 @@ const INITIAL_FORM: CourseFormData = {
 };
 
 const CATEGORIES = [
-  { value: "COMPREHENSIVE", label: "종합" },
-  { value: "MACHINE", label: "머신" },
-  { value: "DRAWING", label: "드로잉" },
-  { value: "OTHER", label: "기타" },
+  { value: "COMPREHENSIVE", label: "종합반" },
+  { value: "SINGLE_SUBJECT", label: "단과반" },
+  { value: "ONEDAY", label: "원데이" },
 ];
 
 const CLASS_TYPES = [

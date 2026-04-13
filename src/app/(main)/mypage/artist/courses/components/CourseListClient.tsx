@@ -79,10 +79,9 @@ async function deleteCourse(courseId: string): Promise<void> {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  COMPREHENSIVE: "종합",
-  MACHINE: "머신",
-  DRAWING: "드로잉",
-  OTHER: "기타",
+  COMPREHENSIVE: "종합반",
+  SINGLE_SUBJECT: "단과반",
+  ONEDAY: "원데이",
 };
 
 function formatPrice(price: number): string {

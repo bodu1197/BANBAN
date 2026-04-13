@@ -820,8 +820,8 @@ export const STRINGS ={
     "heroSubtitle": "현업 타투이스트와 함께 하는 타투 집중 교육,\n준비 되셨나요?",
     "allCategories": "전체",
     "comprehensive": "종합반",
-    "machineTechnique": "머신 테크닉",
-    "drawing": "드로잉",
+    "singleSubject": "단과반",
+    "oneday": "원데이",
     "filterSubtitle": "전국 수강 정보, 조건별 검색!",
     "totalCount": "전체 {count}",
     "noCourses": "등록된 수강 정보가 없습니다"

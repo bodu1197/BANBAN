@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { GraduationCap, Palette, Cpu, PenTool } from "lucide-react";
+import { GraduationCap, Layers, BookOpen, Zap } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { fetchCourseList, type CourseListItem } from "@/lib/supabase/course-queries";
@@ -30,9 +30,9 @@ export async function renderCoursesPage(): Promise<React.ReactElement> {
 function CategoryIcons(): React.ReactElement {
     const categories = [
         { label: t.allCategories, icon: GraduationCap },
-        { label: t.comprehensive, icon: Palette },
-        { label: t.machineTechnique, icon: Cpu },
-        { label: t.drawing, icon: PenTool },
+        { label: t.comprehensive, icon: Layers },
+        { label: t.singleSubject, icon: BookOpen },
+        { label: t.oneday, icon: Zap },
     ];
 
     return (
