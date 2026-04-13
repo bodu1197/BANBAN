@@ -23,7 +23,7 @@ const BOARD_OPTIONS = [
 export function PostWriteClient(): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [board, setBoard] = useState("PROCEDURE_REVIEW");
+  const [board, setBoard] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -48,7 +48,7 @@ export function PostWriteClient(): React.ReactElement {
   }, []);
 
   function handleSubmit(): void {
-    if (!title.trim() || !content.trim()) return;
+    if (!board || !title.trim() || !content.trim()) return;
 
     startTransition(async () => {
       const formData = new FormData();
@@ -179,7 +179,7 @@ export function PostWriteClient(): React.ReactElement {
         {/* Submit */}
         <Button
           onClick={handleSubmit}
-          disabled={isPending || !title.trim() || !content.trim()}
+          disabled={isPending || !board || !title.trim() || !content.trim()}
           className="w-full"
         >
           {isPending ? STRINGS.common.saving : t.submit}
