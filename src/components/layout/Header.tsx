@@ -1,66 +1,46 @@
 import Link from "next/link";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { STRINGS } from "@/lib/strings";
 import dynamic from "next/dynamic";
-const MobileNav = dynamic(() => import("./NavLinks").then(mod => mod.MobileNav));
+import { STRINGS } from "@/lib/strings";
 import { HeaderSearchIcon } from "./HeaderSearch";
 import { UserMenu } from "./UserMenu";
 import { ThemeToggle } from "./ThemeToggle";
-const NotificationBell = dynamic(() => import("./NotificationBell").then(m => m.NotificationBell));
+
+const NotificationBell = dynamic(() => import("./NotificationBell").then((m) => m.NotificationBell));
+const HeaderMobileMenu = dynamic(() => import("./HeaderMobileMenu").then((m) => m.HeaderMobileMenu));
+
 interface HeaderProps {
-  user: {
-    id: string;
-    email?: string;
-    name?: string;
-    avatarUrl?: string;
-  } | null;
+    user: {
+        id: string;
+        email?: string;
+        name?: string;
+        avatarUrl?: string;
+    } | null;
 }
 
 export function Header({ user }: Readonly<HeaderProps>): React.ReactElement {
-  return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="relative mx-auto flex h-16 max-w-[767px] items-center justify-between px-4">
-        <Link
-          href={"/"}
-          className="flex items-center gap-2 font-bold text-xl"
-        >
-          <span className="ml-[30px] text-brand-primary">반</span>
-          <span>언니</span>
-        </Link>
+    return (
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="relative mx-auto flex h-16 max-w-[767px] items-center justify-between px-4">
+                <Link
+                    href={"/"}
+                    className="flex items-center gap-2 font-bold text-xl"
+                >
+                    <span className="ml-[30px] text-brand-primary">반</span>
+                    <span>언니</span>
+                </Link>
 
-        <div className="flex items-center gap-2">
-          <HeaderSearchIcon placeholder={STRINGS.globalSearch.headerSearchPlaceholder} />
+                <div className="flex items-center gap-2">
+                    <HeaderSearchIcon placeholder={STRINGS.globalSearch.headerSearchPlaceholder} />
 
-          <ThemeToggle />
+                    <ThemeToggle />
 
-          {user ? <NotificationBell /> : null}
+                    {user ? <NotificationBell /> : null}
 
-          <UserMenu user={user} />
+                    <UserMenu user={user} />
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Open menu"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72" aria-describedby={undefined}>
-              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-              <MobileNav labels={STRINGS.nav} loginLabel={STRINGS.common.login} logoutLabel={STRINGS.common.logout} user={user} />
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
-    </header>
-  );
+                    <HeaderMobileMenu user={user} />
+                </div>
+            </div>
+        </header>
+    );
 }

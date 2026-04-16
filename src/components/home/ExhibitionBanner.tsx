@@ -1,8 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Ticket, ArrowRight } from "lucide-react";
-import { HeroBannerCarousel } from "./HeroBannerCarousel";
 import type { HeroBannerData } from "./banner-types";
+
+const HeroBannerCarousel = dynamic(() =>
+    import("./HeroBannerCarousel").then((m) => m.HeroBannerCarousel),
+);
 
 export type { HeroBannerData };
 
