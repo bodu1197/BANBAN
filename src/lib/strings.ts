@@ -404,11 +404,12 @@ export const STRINGS ={
     "mensBeauty": "남성 반영구",
     "exhibition": "기획전",
     "artistSearch": "아티스트 검색",
-    "discount": "할인",
+    "discount": "할인시술",
     "artistInsight": "아티스트 분석",
     "course": "수강",
     "community": "커뮤니티",
-    "blog": "블로그"
+    "blog": "블로그",
+    "benefits": "혜택모음"
   },
   "portfolioSearch": {
     "totalCount": "총 {count}개",
