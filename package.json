@@ -72,12 +72,13 @@
     "zod": "^4.3.6"
   },
   "browserslist": [
-    "last 2 Chrome versions",
-    "last 2 Safari versions",
-    "last 2 Firefox versions",
-    "last 2 Edge versions",
-    "iOS >= 15",
-    "Samsung >= 20"
+    "Chrome >= 100",
+    "Safari >= 15.4",
+    "Firefox >= 100",
+    "Edge >= 100",
+    "iOS >= 15.4",
+    "Samsung >= 20",
+    "not dead"
   ],
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

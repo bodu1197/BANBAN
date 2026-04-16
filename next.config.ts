@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     // Global quality for smaller payloads (component-level overrides still work)
     qualities: [30, 50, 65, 80],
+    // Vercel Image Optimizer cache: 30 days (portfolios use immutable UUID URLs)
+    minimumCacheTTL: 2592000,
   },
 
   // Supabase packages ship ESM — no need to transpile (saves ~20KB parsed size)
