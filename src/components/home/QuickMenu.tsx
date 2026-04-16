@@ -2,12 +2,9 @@ import Link from "next/link";
 import {
   Sparkles,
   LayoutGrid,
-  Search,
-  Percent,
   GraduationCap,
   Crown,
-  BookOpen,
-  UserSearch,
+  MessageCircle,
 } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
 
@@ -31,11 +28,8 @@ const menuItems: MenuItem[] = [
   { key: "exhibition", icon: LayoutGrid, path: "exhibition", highlight: true },
   { key: "womenBeauty", icon: Sparkles, path: "women-beauty" },
   { key: "mensBeauty", icon: Crown, path: "mens-beauty" },
-  { key: "artistSearch", icon: Search, path: "artists" },
-  { key: "discount", icon: Percent, path: "discount", hot: true },
-  { key: "artistInsight", icon: UserSearch, path: "artist-insight" },
   { key: "course", icon: GraduationCap, path: "courses" },
-  { key: "blog", icon: BookOpen, path: "blog" },
+  { key: "community", icon: MessageCircle, path: "community" },
 ];
 
 function getIconBgClass(item: MenuItem): string {

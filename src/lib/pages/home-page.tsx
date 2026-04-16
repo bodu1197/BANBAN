@@ -9,6 +9,7 @@ import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
 import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
+import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
 import { fetchActiveBanners, fetchPromoBanners } from "@/lib/supabase/banner-queries";
@@ -257,6 +258,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
       <div className="mx-auto w-full max-w-[767px]">
+        <QuickMenu />
         <ExhibitionBanner banners={heroBanners} />
         <PromoBannerGrid banners={promoBanners} />
         <BannerRow hp={hp} />

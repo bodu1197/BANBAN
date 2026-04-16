@@ -10,7 +10,6 @@ import {
 import { STRINGS } from "@/lib/strings";
 import dynamic from "next/dynamic";
 const MobileNav = dynamic(() => import("./NavLinks").then(mod => mod.MobileNav));
-import { MainMenuBar } from "./MainMenuBar";
 import { HeaderSearchIcon } from "./HeaderSearch";
 import { UserMenu } from "./UserMenu";
 import { ThemeToggle } from "./ThemeToggle";
@@ -62,8 +61,6 @@ export function Header({ user }: Readonly<HeaderProps>): React.ReactElement {
           </Sheet>
         </div>
       </div>
-
-      <MainMenuBar labels={STRINGS.nav} />
     </header>
   );
 }
