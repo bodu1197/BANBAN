@@ -4,7 +4,7 @@
 import { STRINGS } from "@/lib/strings";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import { Home, CalendarDays, Sparkles, User } from "lucide-react";
+import { Home, CalendarDays, MapPin, Sparkles, User } from "lucide-react";
 import { isActiveRoute } from "@/lib/navigation";
 import { BottomNavItem } from "./BottomNavItem";
 export function BottomNav(): React.ReactElement | null {
@@ -13,6 +13,7 @@ export function BottomNav(): React.ReactElement | null {
   const navItems = useMemo(() => [
     { href: homePath, label: STRINGS.nav.home, icon: Home },
     { href: "/exhibition", label: "이벤트", icon: CalendarDays },
+    { href: "/artists", label: "내주변 샵", icon: MapPin },
     { href: "/beauty-sim", label: "시뮬레이션", icon: Sparkles },
     { href: "/mypage", label: STRINGS.nav.mypage, icon: User },
   ], [homePath]);
