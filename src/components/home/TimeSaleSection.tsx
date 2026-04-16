@@ -67,8 +67,8 @@ export function TimeSaleSection({ items, title, moreLink, moreText }: Readonly<{
         </Link>
       </div>
       <HorizontalScrollList>
-        {items.map((p, i) => (
-          <TimeSaleCard key={p.id} portfolio={p} priority={i === 0} />
+        {items.map((p) => (
+          <TimeSaleCard key={p.id} portfolio={p} />
         ))}
       </HorizontalScrollList>
     </section>
