@@ -249,10 +249,12 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
 
 function HomeBottomSkeleton(): React.ReactElement {
   return (
-    <div
-      aria-hidden="true"
-      className="w-full [contain-intrinsic-size:auto_500px] [content-visibility:auto]"
-    />
+    <>
+      <div aria-hidden="true" className="w-full min-h-[290px]" />
+      <div aria-hidden="true" className="w-full min-h-[400px]" />
+      <div aria-hidden="true" className="w-full min-h-[500px]" />
+      <div aria-hidden="true" className="w-full min-h-[500px]" />
+    </>
   );
 }
 
