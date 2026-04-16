@@ -95,7 +95,7 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
     }
 
     return (
-        <div className="px-4 pt-3 pb-2">
+        <div className="px-4 py-4">
             <Link
                 href="/beauty-sim"
                 className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-900 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

@@ -7,7 +7,6 @@ import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
 import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
-import { BeautySimBanner } from "@/components/home/BeautySimBanner";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
@@ -65,16 +64,13 @@ function DiscoverSections({ hp, eyebrowPortfolios }: Readonly<
   }
 >): React.ReactElement {
   return (
-    <>
-      <ScrollSection
-        items={eyebrowPortfolios}
-        title={hp.eyebrowSection}
-        moreLink="/women-beauty"
-        keyPrefix="eyebrow-"
-        moreText={hp.seeMore}
-      />
-      <BeautySimBanner />
-    </>
+    <ScrollSection
+      items={eyebrowPortfolios}
+      title={hp.eyebrowSection}
+      moreLink="/women-beauty"
+      keyPrefix="eyebrow-"
+      moreText={hp.seeMore}
+    />
   );
 }
 
