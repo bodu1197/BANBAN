@@ -92,7 +92,7 @@ export function QuickMenu({
 }: Readonly<QuickMenuProps> = {}): React.ReactElement {
   return (
     <nav
-      className="grid grid-cols-4 gap-y-4 px-4 py-6 md:grid-cols-8"
+      className="grid grid-cols-4 gap-x-2 gap-y-4 px-4 py-6"
       aria-label="Quick menu"
     >
       {menuItems.map((item) => {
