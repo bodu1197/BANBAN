@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
@@ -246,6 +247,15 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
   );
 }
 
+function HomeBottomSkeleton(): React.ReactElement {
+  return (
+    <div
+      aria-hidden="true"
+      className="w-full [contain-intrinsic-size:auto_500px] [content-visibility:auto]"
+    />
+  );
+}
+
 export async function renderHomePage(): Promise<React.ReactElement> {
   const topData = await fetchTopHomeData();
   const { heroBanners, promoBanners } = topData;
@@ -258,7 +268,9 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         <ExhibitionBanner banners={heroBanners} />
         <PromoBannerGrid banners={promoBanners} />
         <BannerRow hp={hp} />
-        <AsyncHomeBottom />
+        <Suspense fallback={<HomeBottomSkeleton />}>
+          <AsyncHomeBottom />
+        </Suspense>
       </div>
     </main>
   );
