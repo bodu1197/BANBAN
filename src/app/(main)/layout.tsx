@@ -3,7 +3,7 @@ import { Header, Footer, BottomNav } from "@/components/layout";
 import { getWebsiteJsonLd } from "@/lib/seo";
 
 const QueryProvider = dynamic(() => import("@/providers/QueryProvider").then(m => m.QueryProvider));
-const Toaster = dynamic(() => import("sonner").then(m => m.Toaster));
+const IdleToaster = dynamic(() => import("@/components/layout/IdleToaster").then(m => m.IdleToaster));
 
 export default function MainLayout({
   children,
@@ -21,7 +21,7 @@ export default function MainLayout({
         <div className="flex-1 pb-16">{children}</div>
         <Footer />
         <BottomNav />
-        <Toaster position="top-center" richColors />
+        <IdleToaster />
       </div>
     </QueryProvider>
   );

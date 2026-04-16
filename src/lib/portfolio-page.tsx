@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAlternates } from "@/lib/seo";
 import { searchPortfolios, fetchCategoriesByType, fetchActiveRegions } from "@/lib/supabase/portfolio-search-queries";
+import { getActiveAdArtists } from "@/lib/supabase/ad-queries";
 import { PortfolioSearchClient } from "@/components/portfolio-search";
 
 interface PortfolioPageConfig {
@@ -20,10 +21,14 @@ async function renderPortfolioMeta(config: PortfolioPageConfig): Promise<Metadat
 }
 
 async function renderPortfolioContent(config: PortfolioPageConfig): Promise<React.ReactElement> {
-  const [categories, regions] = await Promise.all([
+  const [categories, regions, activeAds] = await Promise.all([
     fetchCategoriesByType(config.typeArtist, config.targetGender),
     fetchActiveRegions(config.typeArtist),
+    getActiveAdArtists(),
   ]);
+
+  const adArtistIds = activeAds.filter(a => a.portfolio_ids.length === 0).map(a => a.artist_id);
+  const adPortfolioIds = activeAds.flatMap(a => a.portfolio_ids);
 
   // For beauty pages, default to the first parent category instead of showing all
   const isBeautyPage = !!config.targetGender;
@@ -48,6 +53,8 @@ async function renderPortfolioContent(config: PortfolioPageConfig): Promise<Reac
         regions={regions}
         targetGender={config.targetGender ?? null}
         initialCategoryIds={firstParentId ? [firstParentId] : undefined}
+        adArtistIds={adArtistIds}
+        adPortfolioIds={adPortfolioIds}
       />
     </main>
   );

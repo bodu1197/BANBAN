@@ -1,9 +1,8 @@
-// @client-reason: Interactive filters, infinite scroll, dynamic API fetching
+// @client-reason: Interactive filters, infinite scroll
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useMemo, Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
-import type { ActiveAdArtist } from "@/types/ads";
 import { usePortfolioFilters } from "@/hooks/usePortfolioFilters";
 import type { HomePortfolio } from "@/lib/supabase/home-queries";
 import type { Region } from "@/types/database";
@@ -20,12 +19,16 @@ interface PortfolioSearchClientProps {
   regions: Region[];
   targetGender?: "MALE" | "FEMALE" | null;
   initialCategoryIds?: string[];
+  // Set는 RSC payload에서 직렬화 불가 — 배열로 받아 클라이언트에서 Set 변환
+  adArtistIds?: string[];
+  adPortfolioIds?: string[];
 }
 
 // --- Main component ---
 
 function PortfolioSearchInner({
   initialData, initialTotalCount, typeArtist, categories, regions, targetGender, initialCategoryIds,
+  adArtistIds: adArtistIdsProp, adPortfolioIds: adPortfolioIdsProp,
 }: Readonly<PortfolioSearchClientProps>): React.ReactElement {
   const d = STRINGS.portfolioSearch;
   const isBeautyPage = !!targetGender;
@@ -34,21 +37,8 @@ function PortfolioSearchInner({
   const { portfolios, isLoading, isLoadingMore, sentinelRef } =
     usePortfolioSearch(initialData, initialTotalCount, typeArtist, hasActiveFilters, filters, targetGender);
 
-  // Fetch active ad artists + portfolio slots
-  const [adArtistIds, setAdArtistIds] = useState<Set<string>>(new Set());
-  const [adPortfolioIds, setAdPortfolioIds] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    fetch("/api/ads/active")
-      .then(r => r.json())
-      .then((data: { activeAds?: ActiveAdArtist[] }) => {
-        const ads = data.activeAds ?? [];
-        const artistsWithNoSlots = new Set(ads.filter(a => a.portfolio_ids.length === 0).map(a => a.artist_id));
-        const portfolioIds = new Set(ads.flatMap(a => a.portfolio_ids));
-        setAdArtistIds(artistsWithNoSlots);
-        setAdPortfolioIds(portfolioIds);
-      })
-      .catch(() => { /* silently ignore */ });
-  }, []);
+  const adArtistIds = useMemo(() => new Set(adArtistIdsProp ?? []), [adArtistIdsProp]);
+  const adPortfolioIds = useMemo(() => new Set(adPortfolioIdsProp ?? []), [adPortfolioIdsProp]);
 
   return (
     <div className="mx-auto w-full max-w-[767px]">

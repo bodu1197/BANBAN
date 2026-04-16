@@ -105,7 +105,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href={SUPABASE_HOST} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={SUPABASE_HOST} />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){if(location.pathname.includes("reset-password"))return;var h=location.hash;if(h.includes("type=recovery"))location.replace("/reset-password"+h);else if(h.includes("error=")&&h.includes("otp_expired"))location.replace("/reset-password?error=link_expired")}())` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var h=location.hash;if(!h)return;if(location.pathname.indexOf("reset-password")>-1)return;if(h.indexOf("type=recovery")>-1)location.replace("/reset-password"+h);else if(h.indexOf("error=")>-1&&h.indexOf("otp_expired")>-1)location.replace("/reset-password?error=link_expired")}())` }} />
       </head>
 
       <body

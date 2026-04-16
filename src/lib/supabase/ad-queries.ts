@@ -1,4 +1,4 @@
-import { createClient } from "./server";
+import { createClient, createStaticClient } from "./server";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
 
 const STATUS_ACTIVE: AdSubscriptionStatus = "ACTIVE";
@@ -164,9 +164,13 @@ export async function cancelSubscription(subscriptionId: string): Promise<void> 
 
 // ─── Active Ads (for rendering) ──────────────────────────
 
-/** Get all currently active ad artists (for search/homepage display) */
+/**
+ * Get all currently active ad artists (for search/homepage display).
+ * 공개 데이터만 읽으므로 cookies()가 필요 없는 createStaticClient 사용 — 호출 페이지가
+ * ISR/Static 으로 prerender 가능. (cookies 사용 시 페이지가 강제 dynamic 으로 전환됨)
+ */
 export async function getActiveAdArtists(): Promise<ActiveAdArtist[]> {
-    const supabase = await createClient();
+    const supabase = createStaticClient();
     const now = new Date().toISOString();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -26,20 +26,44 @@ function getOrCreateVisitorId(): string {
     return id;
 }
 
+function buildPayload(pathname: string, visitorId: string): string {
+    return JSON.stringify({
+        path: pathname,
+        country: "",
+        user_agent: globalThis.navigator?.userAgent?.substring(0, 255) ?? "",
+        referer: globalThis.document?.referrer?.substring(0, 500) ?? "",
+        ip: "",
+        visitor_id: visitorId,
+    });
+}
+
+function trySendBeacon(payload: string): boolean {
+    const beacon = globalThis.navigator?.sendBeacon;
+    if (typeof beacon !== "function") return false;
+    try {
+        const blob = new Blob([payload], { type: "application/json" });
+        return beacon.call(globalThis.navigator, VISIT_API, blob);
+    } catch {
+        return false;
+    }
+}
+
 function sendVisit(pathname: string, visitorId: string): void {
+    const payload = buildPayload(pathname, visitorId);
+    if (trySendBeacon(payload)) return;
+
     void fetch(VISIT_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            path: pathname,
-            country: "",
-            user_agent: globalThis.navigator?.userAgent?.substring(0, 255) ?? "",
-            referer: globalThis.document?.referrer?.substring(0, 500) ?? "",
-            ip: "",
-            visitor_id: visitorId,
-        }),
+        body: payload,
         keepalive: true,
     }).catch(() => { /* non-fatal */ });
+}
+
+function idle(cb: () => void): void {
+    const ric = (globalThis as unknown as { requestIdleCallback?: (fn: () => void, opts?: { timeout?: number }) => number }).requestIdleCallback;
+    if (ric) ric(cb, { timeout: 2000 });
+    else globalThis.setTimeout(cb, 1500);
 }
 
 export function PageViewTracker(): null {
@@ -51,10 +75,11 @@ export function PageViewTracker(): null {
         if (pathname === lastPath.current) return;
         lastPath.current = pathname;
 
-        const visitorId = getOrCreateVisitorId();
-        if (!visitorId) return;
-
-        sendVisit(pathname, visitorId);
+        idle(() => {
+            const visitorId = getOrCreateVisitorId();
+            if (!visitorId) return;
+            sendVisit(pathname, visitorId);
+        });
     }, [pathname]);
 
     return null;
