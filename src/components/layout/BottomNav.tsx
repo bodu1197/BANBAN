@@ -14,7 +14,7 @@ export function BottomNav(): React.ReactElement | null {
     { href: homePath, label: STRINGS.nav.home, icon: Home },
     { href: "/exhibition", label: "이벤트", icon: CalendarDays },
     { href: "/artists", label: "내주변 샵", icon: MapPin },
-    { href: "/beauty-sim", label: "시뮬레이션", icon: Sparkles },
+    { href: "/beauty-sim/my", label: "시뮬레이션", icon: Sparkles },
     { href: "/mypage", label: STRINGS.nav.mypage, icon: User },
   ], [homePath]);
 

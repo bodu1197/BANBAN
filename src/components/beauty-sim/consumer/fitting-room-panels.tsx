@@ -1,8 +1,6 @@
 // @client-reason: Interactive panels with sliders, color pickers, and toggle buttons
 "use client";
 
-import Link from "next/link";
-import { Camera } from "lucide-react";
 import { ShapeSelector } from "@/components/beauty-sim/shared/shape-selector";
 import { AdjustmentSliders } from "@/components/beauty-sim/shared/adjustment-sliders";
 import { ColorPalette, BROW_COLORS, LIP_COLORS } from "@/components/beauty-sim/shared/color-palette";
@@ -85,13 +83,6 @@ export function BottomActions({ onSave }: Readonly<{ onSave: () => void }>): Rea
             >
                 이 스타일로 완성하기
             </button>
-            <Link
-                href="/beauty-sim/my"
-                className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/25"
-            >
-                <Camera className="h-4 w-4" aria-hidden="true" />
-                내 얼굴
-            </Link>
         </div>
     );
 }
