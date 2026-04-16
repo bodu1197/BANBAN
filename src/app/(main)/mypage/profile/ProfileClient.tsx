@@ -18,18 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-interface LanguageOption {
-  code: string;
-  label: string;
-  flagCode: string;
-}
-
-const LANGUAGE_OPTIONS: LanguageOption[] = [
-  { code: "ko", label: "한국어", flagCode: "kr" },
-  { code: "en", label: "English", flagCode: "us" },
-  { code: "ja", label: "日本語", flagCode: "jp" },
-  { code: "zh", label: "中文", flagCode: "cn" },
-];
 
 export function ProfileClient(): React.ReactElement {
   const router = useRouter();
@@ -81,11 +69,6 @@ export function ProfileClient(): React.ReactElement {
   const handleRemoveImage = (): void => {
     setProfileImage(null);
     setNewImageFile(null);
-  };
-
-  const handleLanguageChange = (_langCode: string): void => {
-    // Use window.location for full page navigation to ensure language change works
-    globalThis.location.href = "/mypage/profile";
   };
 
   const handleWithdraw = async (): Promise<void> => {
@@ -370,45 +353,18 @@ export function ProfileClient(): React.ReactElement {
               onCheckedChange={setChatNotification}
             />
           </div>
-
-          {/* Language Setting */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">{STRINGS.mypage.languageSetting}</Label>
-            <div className="grid grid-cols-2 gap-2.5">
-              {LANGUAGE_OPTIONS.map((lang) => (
-                <button
-                  key={lang.code}
-                  type="button"
-                  onClick={() => handleLanguageChange(lang.code)}
-                  className={`flex items-center justify-center gap-2 rounded-lg border-2 px-4 py-3.5 text-[15px] transition-all ${
-                    "ko" === lang.code
-                      ? "border-brand-primary bg-brand-primary/5 font-semibold text-brand-primary"
-                      : "border-border bg-background font-medium text-foreground hover:bg-muted focus-visible:bg-muted"
-                  }`}
-                >
-                  <Image
-                    src={`https://flagcdn.com/24x18/${lang.flagCode}.png`}
-                    alt={lang.label}
-                    width={24}
-                    height={18}
-                    className="rounded-sm object-cover"
-                  />
-                  <span>{lang.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Withdraw */}
-        <div className="mt-8 text-center">
-          <button
+        <div className="mt-8 border-t px-4 pt-6">
+          <Button
             type="button"
+            variant="outline"
             onClick={handleWithdraw}
-            className="text-xs text-muted-foreground underline hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full border-red-500/50 py-6 text-base font-semibold text-red-500 hover:bg-red-500/10 hover:text-red-600 focus-visible:bg-red-500/10 focus-visible:text-red-600"
           >
             {STRINGS.mypage.withdraw}
-          </button>
+          </Button>
         </div>
       </form>
 
