@@ -2,8 +2,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
 
 interface Swing2AppPlugin {
   app: {
@@ -14,17 +12,23 @@ interface Swing2AppPlugin {
   };
 }
 
+interface MinimalUser {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, string>;
+}
+
 function getPlugin(): Swing2AppPlugin | null {
   const w = typeof globalThis !== "undefined" ? globalThis : null;
   return (w as unknown as { swingWebViewPlugin?: Swing2AppPlugin } | null)?.swingWebViewPlugin ?? null;
 }
 
-function getUserDisplayName(user: User): string {
-  const meta = user.user_metadata as Record<string, string> | undefined;
+function getUserDisplayName(user: MinimalUser): string {
+  const meta = user.user_metadata;
   return meta?.username ?? meta?.nickname ?? user.email ?? "user";
 }
 
-function syncLogin(user: User): void {
+function syncLogin(user: MinimalUser): void {
   getPlugin()?.app.login.doAppLogin(user.id, getUserDisplayName(user));
 }
 
@@ -36,13 +40,15 @@ function syncLogout(): void {
  * Swing2App WebView 앱 브릿지
  * - JS SDK 로드
  * - 로그인 상태 동기화 (doAppLogin / doAppLogout)
+ *
+ * Supabase client는 lazy import — 정적 의존성에서 빼서 ~180KB 청크가
+ * 홈 초기 페이로드에서 분리되도록 함.
  */
 export function Swing2AppBridge(): null {
   useEffect(() => {
-    // Only load Swing2App SDK if the user agent indicates it's the Swing2App WebView container
     const ua = navigator.userAgent;
     const isSwingApp = ua.includes("swing2app") || ua.includes("Swing2App");
-    
+
     if (isSwingApp) {
       const script = document.createElement("script");
       script.src = "https://pcdn2.swing2app.co.kr/swing_public_src/v3/2025_10_27_001/js/swing_app_on_web.js";
@@ -50,13 +56,25 @@ export function Swing2AppBridge(): null {
       document.head.appendChild(script);
     }
 
-    const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) syncLogin(session.user);
-      else if (event === "SIGNED_OUT") syncLogout();
+    let unsubscribe: (() => void) | null = null;
+    const idle = (cb: () => void): void => {
+      const ric = (globalThis as unknown as { requestIdleCallback?: (fn: () => void, opts?: { timeout?: number }) => number }).requestIdleCallback;
+      if (ric) ric(cb, { timeout: 2000 });
+      else globalThis.setTimeout(cb, 1500);
+    };
+
+    idle(() => {
+      void import("@/lib/supabase/client").then(({ createClient }) => {
+        const supabase = createClient();
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === "SIGNED_IN" && session?.user) syncLogin(session.user as MinimalUser);
+          else if (event === "SIGNED_OUT") syncLogout();
+        });
+        unsubscribe = () => { subscription.unsubscribe(); };
+      });
     });
 
-    return () => { subscription.unsubscribe(); };
+    return () => { unsubscribe?.(); };
   }, []);
 
   return null;
