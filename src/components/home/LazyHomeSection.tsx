@@ -4,15 +4,16 @@ type ReservedHeight = "sm" | "md" | "lg";
 
 interface LazyHomeSectionProps {
   children: ReactNode;
-  /** Reserved layout height bucket — sm=300px, md=400px, lg=500px. Defaults to lg. */
+  /** Intrinsic size bucket used only while offscreen — sm=300px, md=400px, lg=500px. Defaults to lg. */
   size?: ReservedHeight;
 }
 
 // Static class maps so Tailwind's JIT can detect them.
+// contain-intrinsic-size만 사용: 오프스크린일 때 레이아웃용 예약 크기. 렌더링 후에는 실제 높이로 축소.
 const SIZE_CLASS: Record<ReservedHeight, string> = {
-  sm: "min-h-[300px] [contain-intrinsic-size:auto_300px]",
-  md: "min-h-[400px] [contain-intrinsic-size:auto_400px]",
-  lg: "min-h-[500px] [contain-intrinsic-size:auto_500px]",
+  sm: "[contain-intrinsic-size:auto_300px]",
+  md: "[contain-intrinsic-size:auto_400px]",
+  lg: "[contain-intrinsic-size:auto_500px]",
 };
 
 /**
