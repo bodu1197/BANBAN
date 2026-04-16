@@ -2,14 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Ticket, ArrowRight } from "lucide-react";
 import { HeroBannerCarousel } from "./HeroBannerCarousel";
+import type { HeroBannerData } from "./banner-types";
 
-export interface HeroBannerData {
-    id: string;
-    title: string;
-    subtitle: string | null;
-    image_path: string;
-    link_url: string | null;
-}
+export type { HeroBannerData };
 
 function FallbackBanner(): React.ReactElement {
     return (

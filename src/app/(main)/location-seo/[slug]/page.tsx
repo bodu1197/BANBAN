@@ -126,7 +126,7 @@ export default async function LocationSeoDetailPage(props: PageProps): Promise<R
       ) : null}
 
       <nav className="mb-4 text-xs text-zinc-500">
-        <Link href="/" className="hover:text-white">홈</Link>
+        <Link href="/" className="hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">홈</Link>
         <span className="mx-2">/</span>
         <span className="text-zinc-300">{page.region_name} · {page.style}</span>
       </nav>

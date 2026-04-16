@@ -200,11 +200,7 @@ function HourlyHeatmap({ data }: Readonly<{ data: HourlyStat[] }>): React.ReactE
                         <div key={h.hour} className="group relative flex flex-col items-center">
                             <div
                                 className="aspect-square w-full rounded transition-colors"
-                                style={{
-                                    backgroundColor: total === 0
-                                        ? "rgba(255,255,255,0.03)"
-                                        : `rgba(20, 184, 166, ${intensity})`,
-                                }}
+                                style={{ backgroundColor: total === 0 ? "rgba(255,255,255,0.03)" : `rgba(20, 184, 166, ${intensity})` }}
                             />
                             <span className="mt-0.5 text-xs text-zinc-400">{h.hour}</span>
                             {total > 0 ? (

@@ -253,7 +253,7 @@ function ResultBanner({ result }: Readonly<{ result: RunResponse }>): React.Reac
         href={`/encyclopedia/${result.slug}`}
         target="_blank"
         rel="noreferrer"
-        className="ml-auto flex items-center gap-1 underline hover:text-white"
+        className="ml-auto flex items-center gap-1 underline hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         보기 <ExternalLink className="h-3 w-3" />
       </Link>
@@ -265,7 +265,7 @@ function RecentArticleRow({
   r,
 }: Readonly<{ r: CronStatus["recentArticles"][number] }>): React.ReactElement {
   return (
-    <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-white/5">
+    <div className="flex items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-white/5 focus-visible:bg-white/5">
       <span className="w-10 text-center text-xs text-zinc-500">{r.topic_id}</span>
       <span className="w-20 shrink-0 truncate text-xs text-fuchsia-300 md:w-24">{r.category}</span>
       <span className="min-w-0 flex-1 truncate font-medium text-white">{r.title}</span>
@@ -336,7 +336,7 @@ function UpcomingList({
         {rows.map((t, i) => (
           <li
             key={t.id}
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors hover:bg-white/5"
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors hover:bg-white/5 focus-visible:bg-white/5"
           >
             <span className="w-6 text-center text-xs font-bold text-emerald-400">{i + 1}</span>
             <span className="w-10 text-center text-xs text-zinc-500">#{t.id}</span>

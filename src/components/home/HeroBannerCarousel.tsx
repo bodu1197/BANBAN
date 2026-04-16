@@ -5,7 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { HeroBannerData } from "./ExhibitionBanner";
+import type { HeroBannerData } from "./banner-types";
+import { cn } from "@/lib/utils";
 
 const INTERVAL_MS = 4000;
 
@@ -38,12 +39,10 @@ export function HeroBannerCarousel({ banners }: Readonly<HeroBannerCarouselProps
               href={href}
               aria-hidden={!isActive}
               tabIndex={isActive ? 0 : -1}
-              className="group absolute inset-0 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              style={{
-                opacity: isActive ? 1 : 0,
-                zIndex: isActive ? 10 : 0,
-                transition: "opacity 0.8s ease-in-out",
-              }}
+              className={cn(
+                "group absolute inset-0 block transition-opacity duration-700 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isActive ? "z-10 opacity-100" : "z-0 opacity-0",
+              )}
             >
               <div className="pointer-events-none absolute inset-0">
                 <Image
@@ -51,10 +50,10 @@ export function HeroBannerCarousel({ banners }: Readonly<HeroBannerCarouselProps
                   alt={banner.title}
                   fill
                   sizes="(max-width: 767px) 100vw, 767px"
-                  className="object-cover transition-transform duration-[4000ms] ease-linear"
-                  style={{
-                    transform: isActive ? "scale(1.08)" : "scale(1)",
-                  }}
+                  className={cn(
+                    "object-cover transition-transform duration-[4000ms] ease-linear",
+                    isActive ? "scale-[1.08]" : "scale-100",
+                  )}
                   quality={65}
                   priority={i === 0}
                 />
@@ -88,11 +87,10 @@ export function HeroBannerCarousel({ banners }: Readonly<HeroBannerCarouselProps
                 type="button"
                 onClick={() => setCurrent(i)}
                 aria-label={`배너 ${String(i + 1)}`}
-                className="h-1.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                style={{
-                  width: i === current ? 16 : 6,
-                  backgroundColor: i === current ? "white" : "rgba(255,255,255,0.4)",
-                }}
+                className={cn(
+                  "h-1.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  i === current ? "w-4 bg-white" : "w-1.5 bg-white/40",
+                )}
               />
             ))}
           </div>

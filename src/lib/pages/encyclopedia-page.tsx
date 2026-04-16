@@ -41,7 +41,7 @@ function ArticleCard({
             src={item.cover_image_url}
             alt={item.title}
             fill
-            className="object-cover transition-transform group-hover:scale-105"
+            className="object-cover transition-transform group-hover:scale-105 group-focus-visible:scale-105"
             sizes="(max-width: 768px) 96px, 112px"
             unoptimized
           />
