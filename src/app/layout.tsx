@@ -12,6 +12,19 @@ const SITE_NAME = "반언니";
 const SITE_TITLE = "반언니 - 반영구 화장 가격비교 & 아티스트 추천 | 대한민국 1등 반영구 플랫폼";
 const SITE_DESCRIPTION = "반영구 잘하는 곳 찾을 땐 반언니! 전국 반영구 아티스트 포트폴리오, 눈썹·입술·아이라인 가격비교. 나에게 맞는 반영구 아티스트를 찾아보세요.";
 
+// 공개 준비 중에는 NEXT_PUBLIC_BLOCK_INDEXING=true → meta robots noindex + robots.ts disallow.
+// 공개 시점에 Vercel env 에서 변수 제거(또는 false)로 전환. robots.ts 와 반드시 동기화.
+const BLOCK_INDEXING = process.env.NEXT_PUBLIC_BLOCK_INDEXING === "true";
+
+// Supabase 호스트 (preconnect/dns-prefetch 대상). env 기반이라 오타/교체 위험 없음.
+const SUPABASE_HOST = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://vzhvaweiyztbjaldnxdd.supabase.co").origin;
+  } catch {
+    return "https://vzhvaweiyztbjaldnxdd.supabase.co";
+  }
+})();
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -43,15 +56,27 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: ["/og-image.png"],
   },
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
-  },
+  robots: BLOCK_INDEXING
+    ? {
+        index: false,
+        follow: false,
+        nocache: true,
+        googleBot: {
+          index: false,
+          follow: false,
+        },
+      }
+    : {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
+      },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION ?? "",
     other: {
@@ -78,8 +103,8 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://bhcascuuecgwlxujtpkx.supabase.co" />
-        <link rel="dns-prefetch" href="https://bhcascuuecgwlxujtpkx.supabase.co" />
+        <link rel="preconnect" href={SUPABASE_HOST} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={SUPABASE_HOST} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){if(location.pathname.includes("reset-password"))return;var h=location.hash;if(h.includes("type=recovery"))location.replace("/reset-password"+h);else if(h.includes("error=")&&h.includes("otp_expired"))location.replace("/reset-password?error=link_expired")}())` }} />
       </head>
 

@@ -61,15 +61,11 @@ const nextConfig: NextConfig = {
 
   // Experimental features for performance
   experimental: {
-    // Optimize CSS to reduce render-blocking (critters: extracts critical CSS)
-    optimizeCss: true,
-    // NOTE: inlineCss is intentionally disabled. With Tailwind v4 the full
-    // generated stylesheet is ~173KB; inlining it dumps the entire CSS into
-    // the RSC stream where the browser parses it first as JS and then again
-    // as CSS, ballooning TBT/main-thread "Other" by ~1.2s on the home page.
-    // A normal <link rel="stylesheet"> is cached after first paint and is
-    // strictly faster on repeat views.
-    // Optimize package imports for tree-shaking
+    // NOTE: optimizeCss / inlineCss are App Router 비호환.
+    // - optimizeCss(critters)는 Pages Router 전용 — App Router에서 silent no-op.
+    // - inlineCss는 Tailwind v4 full sheet(~173KB)를 RSC 스트림에 dump해서
+    //   브라우저가 JS로 먼저 parse 후 CSS로 다시 parse → TBT가 ~1.2s 악화됨.
+    // 대신 normal <link rel="stylesheet">는 첫 페인트 후 캐시되어 반복 방문에 더 빠름.
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-avatar",
