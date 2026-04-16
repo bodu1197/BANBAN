@@ -5,6 +5,7 @@ import { ArtistHeroCarouselClient } from "./ArtistHeroCarouselClient";
 import { CollapsibleIntro } from "./CollapsibleIntro";
 import { ArtistLikeButton } from "./ArtistLikeButton";
 import { STRINGS } from "@/lib/strings";
+import { sanitizeHtmlServerSide } from "@/lib/text-utils";
 
 /* eslint-disable max-lines-per-function, complexity */
 interface ArtistHeaderProps {
@@ -28,6 +29,9 @@ export function ArtistHeader({
 
   const introduction = artist.introduce;
   const description = artist.description;
+  const sanitizedDescription = description && description.includes("<")
+    ? sanitizeHtmlServerSide(description)
+    : null;
 
   const firstImage = portfolioImages[0];
 
@@ -114,7 +118,7 @@ export function ArtistHeader({
         {(introduction || description) && (
           <CollapsibleIntro
             text={introduction || ""}
-            htmlContent={description}
+            sanitizedHtml={sanitizedDescription}
             moreLabel={STRINGS.artist.showMore}
             lessLabel={STRINGS.artist.showLess}
           />

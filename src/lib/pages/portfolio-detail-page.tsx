@@ -15,6 +15,8 @@ import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking"
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
 import { PortfolioDetailClient } from "@/components/portfolio/PortfolioDetailClient";
 import { getStorageUrl } from "@/lib/supabase/storage-utils";
+import { parseDescriptionText } from "@/lib/text-utils";
+import { STRINGS } from "@/lib/strings";
 
 function buildHeroMedia(url: string | null, title: string): React.ReactElement | null {
     if (!url) return null;
@@ -118,6 +120,9 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
         { name: portfolio.title, path: `/portfolios/${id}` },
     ]);
 
+    const parsedDescription = parseDescriptionText(portfolio.description);
+    const descriptionHtml = parsedDescription || STRINGS.portfolio.noDescription;
+
     return (
         <main className="mx-auto min-h-screen max-w-[767px] bg-background">
             {preloadUrl ? (
@@ -133,6 +138,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                 artistPortfolioCount={artistPortfolioCount}
                 firstImageUrl={firstImageUrl}
                 heroMedia={heroMedia}
+                descriptionHtml={descriptionHtml}
                 recommendations={recommendations}
             />
         </main>

@@ -1,27 +1,23 @@
-import { parseDescriptionText } from "@/lib/text-utils";
-
 interface PortfolioInfoSectionProps {
   title: string;
   address: string;
   price: number | null;
   priceOrigin: number | null;
   discountRate: number | null;
-  description: string | null;
+  /** Server-side에서 parseDescriptionText로 미리 sanitize된 HTML. 빈값이면 noDescriptionLabel 사용. */
+  descriptionHtml: string;
   currencyUnit?: string;
   discountEventLabel?: string;
-  noDescriptionLabel?: string;
 }
 
 // eslint-disable-next-line complexity
 export function PortfolioInfoSection({
-  title, address, price, priceOrigin, discountRate, description,
+  title, address, price, priceOrigin, discountRate, descriptionHtml,
   currencyUnit = "",
   discountEventLabel = "Discount Event",
-  noDescriptionLabel = "No description available.",
 }: Readonly<PortfolioInfoSectionProps>): React.ReactElement {
   const hasDiscount = Boolean(discountRate && discountRate > 0);
   const showOriginalPrice = Boolean(priceOrigin && priceOrigin > 0 && priceOrigin !== price);
-  const descriptionHtml = parseDescriptionText(description) || noDescriptionLabel;
 
   return (
     <>

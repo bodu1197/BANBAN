@@ -54,6 +54,8 @@ interface PortfolioDetailClientProps {
   artistPortfolioCount: number;
     firstImageUrl?: string | null;
   heroMedia?: React.ReactNode;
+  /** Server pre-sanitized description HTML — sanitize-html을 client 번들에서 제외하기 위함. */
+  descriptionHtml: string;
   recommendations: {
     otherCustomersViewed: PortfolioRecommendation[];
     lowerPrice: PortfolioRecommendation[];
@@ -114,6 +116,7 @@ export function PortfolioDetailClient({
 
   firstImageUrl,
   heroMedia,
+  descriptionHtml,
   recommendations,
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
   const [isLiked, setIsLiked] = useState(Boolean(portfolio.is_liked));
@@ -182,10 +185,9 @@ export function PortfolioDetailClient({
         price={portfolio.price}
         priceOrigin={portfolio.price_origin}
         discountRate={portfolio.discount_rate}
-        description={portfolio.description}
+        descriptionHtml={descriptionHtml}
         currencyUnit={STRINGS.common.currencyUnit}
         discountEventLabel={STRINGS.portfolio.discountEvent}
-        noDescriptionLabel={STRINGS.portfolio.noDescription}
       />
 
       <YouTubeEmbed url={portfolio.youtube_url} />
