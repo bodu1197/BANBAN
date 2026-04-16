@@ -22,15 +22,15 @@ export function PromoBannerGrid({ banners }: Readonly<PromoBannerGridProps>): Re
   return (
     <section className="px-4 py-4">
       <div className="grid grid-cols-2 gap-3">
-        {active.map((banner) => (
-          <PromoBannerCard key={banner.id} banner={banner} />
+        {active.map((banner, i) => (
+          <PromoBannerCard key={banner.id} banner={banner} priority={i === 0} />
         ))}
       </div>
     </section>
   );
 }
 
-function CardContent({ banner, imageUrl }: Readonly<{ banner: PromoBanner; imageUrl: string | null }>): React.ReactElement {
+function CardContent({ banner, imageUrl, priority }: Readonly<{ banner: PromoBanner; imageUrl: string | null; priority: boolean }>): React.ReactElement {
   return (
     <div className="relative aspect-[3/2] w-full bg-muted">
       {imageUrl ? (
@@ -40,7 +40,7 @@ function CardContent({ banner, imageUrl }: Readonly<{ banner: PromoBanner; image
           fill
           sizes="(max-width: 767px) 50vw, 360px"
           className="object-cover"
-          loading="lazy"
+          priority={priority}
         />
       ) : null}
       {banner.title || banner.subtitle ? (
@@ -61,21 +61,21 @@ function CardContent({ banner, imageUrl }: Readonly<{ banner: PromoBanner; image
   );
 }
 
-function PromoBannerCard({ banner }: Readonly<{ banner: PromoBanner }>): React.ReactElement {
+function PromoBannerCard({ banner, priority }: Readonly<{ banner: PromoBanner; priority: boolean }>): React.ReactElement {
   const imageUrl = getStorageUrl(banner.image_path);
   const cls = "block overflow-hidden rounded-xl transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   if (banner.link_url) {
     return (
       <Link href={banner.link_url} className={cls}>
-        <CardContent banner={banner} imageUrl={imageUrl} />
+        <CardContent banner={banner} imageUrl={imageUrl} priority={priority} />
       </Link>
     );
   }
 
   return (
     <div className={cls}>
-      <CardContent banner={banner} imageUrl={imageUrl} />
+      <CardContent banner={banner} imageUrl={imageUrl} priority={priority} />
     </div>
   );
 }

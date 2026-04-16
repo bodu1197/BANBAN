@@ -34,7 +34,7 @@ async function renderPortfolioContent(config: PortfolioPageConfig): Promise<Reac
     typeArtist: config.typeArtist,
     targetGender: config.targetGender,
     categoryIds: firstParentId ? [firstParentId] : undefined,
-    limit: 24,
+    limit: 3,
   });
 
   return (
