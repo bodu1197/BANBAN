@@ -5,7 +5,7 @@ import { useRef, useCallback } from "react";
 import { ZoomIn } from "lucide-react";
 
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 2.5;
+const MAX_ZOOM = 4;
 const TRACK_CLASS = "h-1.5 flex-1 rounded-full bg-white/20";
 const FILL_CLASS = "h-full rounded-full bg-gradient-to-r from-pink-500 to-purple-500 transition-none";
 const THUMB_CLASS = "absolute -top-1.5 h-4.5 w-4.5 rounded-full bg-white shadow-md";
@@ -40,7 +40,7 @@ export function ZoomSlider({ zoom, onZoomChange }: Readonly<{
         dragging.current = false;
     }, []);
 
-    const percent = ((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100;
+    const percent = Math.min(100, Math.max(0, ((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100));
 
     return (
         <div className="flex items-center gap-2.5 px-2 py-1.5">
