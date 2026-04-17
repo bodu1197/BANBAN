@@ -7,7 +7,6 @@ import type { AdjustmentParams, LandmarkData } from "@/lib/eyebrow-renderer";
 import { ALL_TEMPLATES } from "@/lib/eyebrow-templates";
 import type { EyebrowTemplate } from "@/lib/eyebrow-templates";
 import type { LipParams } from "@/lib/lip-renderer";
-import { useEyebrowEraser } from "./use-eyebrow-eraser";
 
 import type { MainTab, BrowSubTab, LipSubTab, BrowSide } from "./fitting-room-types";
 import { DEFAULT_ADJ, DEFAULT_LIP, computeInitialOffsetY, getActiveAdj } from "./fitting-room-types";
@@ -66,10 +65,6 @@ export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack }
     const [dragPointer, setDragPointer] = useState<{ x: number; y: number } | null>(null);
     const [dragSideState, setDragSideState] = useState<"left" | "right">("left");
 
-    // AI eyebrow eraser — produces a base image with eyebrows inpainted to bare skin
-    const eraser = useEyebrowEraser({ originalImage: image, originalImageDataUrl: imageDataUrl, landmarks });
-    const effectiveImage = eraser.active && eraser.cleanImage ? eraser.cleanImage : image;
-
     const activeAdj = getActiveAdj(browSide, leftAdj, rightAdj);
 
     // Derive lipEnabled: true once lip tab visited and not excluded
@@ -85,9 +80,8 @@ export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack }
     // Shake animation
     const startShake = useShakeAnimation(initialOffsetY, setLeftAdj, setRightAdj);
 
-    // Canvas rendering — uses effectiveImage (original or AI-erased base)
     useCanvasRendering({
-        canvasRef, image: effectiveImage, landmarks, selectedTemplate, browColor,
+        canvasRef, image, landmarks, selectedTemplate, browColor,
         leftAdj, rightAdj, browExcluded, lipEnabled, lipExcluded, lipParams, startShake,
     });
 
@@ -151,19 +145,7 @@ export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack }
                 vibeName={vibeName}
                 onBack={onBack}
                 onReset={handleReset}
-                eraseAvailable
-                eraseActive={eraser.active}
-                eraseLoading={eraser.loading}
-                onToggleErase={eraser.toggle}
             />
-
-            {eraser.error ? (
-                <div className="shrink-0 px-4 pt-1">
-                    <p className="mx-auto max-w-lg rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-center text-xs text-red-300">
-                        {eraser.error}
-                    </p>
-                </div>
-            ) : null}
 
             <PhotoArea
                 canvasRef={canvasRef}
