@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { ArrowLeft, Brain, Camera, ImagePlus, Sparkles } from "lucide-react";
+import { ArrowLeft, Brain, Camera, ImagePlus } from "lucide-react";
 import type { LandmarkData } from "@/lib/eyebrow-renderer";
 import { FittingRoom } from "./fitting-room";
 
@@ -74,7 +74,7 @@ function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
 function UploadHeader({ onBack }: Readonly<{ onBack: () => void }>): React.ReactElement {
     return (
         <header className="fixed left-0 right-0 top-0 z-40 px-4 py-4">
-            <div className="mx-auto flex max-w-lg items-center justify-between">
+            <div className="mx-auto flex max-w-lg items-center">
                 <button
                     type="button"
                     aria-label="뒤로 가기"
@@ -83,11 +83,6 @@ function UploadHeader({ onBack }: Readonly<{ onBack: () => void }>): React.React
                 >
                     <ArrowLeft className="h-5 w-5" />
                 </button>
-                <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm">
-                    <Sparkles className="h-4 w-4 text-pink-400" aria-hidden="true" />
-                    <span className="text-sm font-medium text-white/80">My Fitting</span>
-                </div>
-                <div className="h-10 w-10" />
             </div>
         </header>
     );
