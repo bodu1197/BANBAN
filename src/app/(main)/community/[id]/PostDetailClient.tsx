@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Eye, Heart, MessageSquare, Pencil, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Eye, Flag, Heart, MessageSquare, Pencil, Trash2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,17 @@ import {
   deleteComment,
   updateComment,
   togglePostLike,
+  reportPost,
 } from "@/lib/actions/community";
 import type { CommunityPostDetail, PostComment } from "@/lib/supabase/community-queries";
+
+const REPORT_REASONS = [
+  { value: "SPAM", labelKey: "reportReasonSpam" },
+  { value: "ABUSE", labelKey: "reportReasonAbuse" },
+  { value: "ADULT", labelKey: "reportReasonAdult" },
+  { value: "HATE", labelKey: "reportReasonHate" },
+  { value: "OTHER", labelKey: "reportReasonOther" },
+] as const;
 
 const t = STRINGS.community;
 
@@ -52,6 +61,7 @@ export function PostDetailClient({
 }: Readonly<PostDetailClientProps>): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [showReportModal, setShowReportModal] = useState(false);
   const isOwner = userId !== null && userId === post.authorId;
   const canManage = isOwner || isAdmin;
 
@@ -155,6 +165,14 @@ export function PostDetailClient({
             {t.comments} {post.commentsCount}
           </span>
 
+          <ReportButton
+            userId={userId}
+            disabled={isPending || isOwner}
+            count={post.reportsCount}
+            onOpen={() => setShowReportModal(true)}
+          />
+
+
           <div className="ml-auto flex gap-2">
             {canManage ? (
               <>
@@ -199,6 +217,147 @@ export function PostDetailClient({
           <p className="px-4 py-4 text-center text-xs text-muted-foreground">{t.loginRequired}</p>
         )}
       </section>
+
+      {showReportModal ? (
+        <ReportModal
+          postId={post.id}
+          onClose={() => setShowReportModal(false)}
+          onReported={() => {
+            setShowReportModal(false);
+            router.refresh();
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/* ───── Report Button ───── */
+
+function ReportButton({
+  userId,
+  disabled,
+  count,
+  onOpen,
+}: Readonly<{
+  userId: string | null;
+  disabled: boolean;
+  count: number;
+  onOpen: () => void;
+}>): React.ReactElement {
+  function handleClick(): void {
+    if (!userId) {
+      alert(t.loginRequired);
+      return;
+    }
+    onOpen();
+  }
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={disabled}
+      className="flex items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-xs font-medium transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      aria-label={t.report}
+    >
+      <Flag className="h-3.5 w-3.5" aria-hidden="true" />
+      {t.report} {count}
+    </button>
+  );
+}
+
+/* ───── Report Modal ───── */
+
+function ReportModal({
+  postId,
+  onClose,
+  onReported,
+}: Readonly<{
+  postId: string;
+  onClose: () => void;
+  onReported: () => void;
+}>): React.ReactElement {
+  const [reason, setReason] = useState<string>(REPORT_REASONS[0].value);
+  const [description, setDescription] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(): void {
+    startTransition(async () => {
+      const result = await reportPost(postId, reason, description);
+      if (result.alreadyReported) {
+        alert(t.reportAlready);
+        onClose();
+        return;
+      }
+      if (!result.success) {
+        alert(t.reportFailed);
+        return;
+      }
+      alert(t.reportSuccess);
+      onReported();
+    });
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+      className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4"
+    >
+      <button
+        type="button"
+        aria-label={STRINGS.common.close}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60"
+      />
+      <div className="relative w-full max-w-md rounded-t-2xl bg-background p-5 shadow-xl md:rounded-2xl">
+        <h2 id="report-modal-title" className="mb-1 text-base font-bold">{t.reportTitle}</h2>
+        <p className="mb-4 text-xs text-muted-foreground">{t.reportDesc}</p>
+
+        <fieldset className="mb-4 space-y-2">
+          <legend className="sr-only">{t.reportTitle}</legend>
+          {REPORT_REASONS.map((r) => (
+            <label
+              key={r.value}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/5"
+            >
+              <input
+                type="radio"
+                name="report-reason"
+                value={r.value}
+                checked={reason === r.value}
+                onChange={() => setReason(r.value)}
+                className="accent-brand-primary"
+              />
+              <span>{t[r.labelKey]}</span>
+            </label>
+          ))}
+        </fieldset>
+
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t.reportDescriptionPlaceholder}
+          rows={3}
+          maxLength={500}
+          className="mb-4 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isPending}>
+            {STRINGS.common.cancel}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {t.reportSubmit}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

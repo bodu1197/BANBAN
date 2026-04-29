@@ -17,6 +17,7 @@ export interface CommunityPost {
   viewsCount: number;
   likesCount: number;
   commentsCount: number;
+  reportsCount: number;
   createdAt: string;
   imageUrl: string | null;
   youtubeUrl: string | null;
@@ -46,6 +47,7 @@ interface PostRow {
   views_count: number;
   likes_count: number;
   comments_count: number;
+  reports_count: number | null;
   created_at: string;
   user_id: string | null;
   image_url: string | null;
@@ -84,6 +86,7 @@ function mapPostRow(row: PostRow): CommunityPost {
     viewsCount: row.views_count,
     likesCount: row.likes_count,
     commentsCount: row.comments_count,
+    reportsCount: row.reports_count ?? 0,
     createdAt: row.created_at,
     imageUrl: row.image_url,
     youtubeUrl: row.youtube_url,
@@ -117,7 +120,7 @@ async function fetchCommunityPostsInternal(options: {
   let query = supabase
     .from("posts")
     .select(`
-      id, title, content, type_board, type_post, views_count, likes_count, comments_count, created_at, user_id, image_url, youtube_url,
+      id, title, content, type_board, type_post, views_count, likes_count, comments_count, reports_count, created_at, user_id, image_url, youtube_url,
       profile:profiles!user_id(nickname, profile_image_path)
     `)
     .is("deleted_at", null)
@@ -162,7 +165,7 @@ export async function fetchPostById(id: string): Promise<CommunityPostDetail | n
   const { data: post, error: postError } = await supabase
     .from("posts")
     .select(`
-      id, title, content, type_board, type_post, views_count, likes_count, comments_count, created_at, user_id, image_url, youtube_url,
+      id, title, content, type_board, type_post, views_count, likes_count, comments_count, reports_count, created_at, user_id, image_url, youtube_url,
       profile:profiles!user_id(nickname, profile_image_path)
     `)
     .eq("id", id)

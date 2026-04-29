@@ -78,6 +78,63 @@ export async function togglePostLike(postId: string): Promise<{
   return { success: true, isLiked: true };
 }
 
+export interface ReportPostResult {
+  success: boolean;
+  alreadyReported?: boolean;
+  error?: string;
+}
+
+const REPORT_REASON_WHITELIST = new Set(["SPAM", "ABUSE", "ADULT", "HATE", "OTHER"]);
+const REPORT_DESCRIPTION_MAX = 500;
+
+export async function reportPost(
+  postId: string,
+  reason: string,
+  description?: string,
+): Promise<ReportPostResult> {
+  const user = await getUser();
+  if (!user) return { success: false, error: "unauthorized" };
+
+  const trimmedReason = reason.trim();
+  if (!REPORT_REASON_WHITELIST.has(trimmedReason)) {
+    return { success: false, error: "invalid reason" };
+  }
+
+  const trimmedDescription = description?.trim() ?? null;
+  if (trimmedDescription && trimmedDescription.length > REPORT_DESCRIPTION_MAX) {
+    return { success: false, error: "description too long" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("reports")
+    .select("id")
+    .eq("reporter_id", user.id)
+    .eq("reportable_type", "post")
+    .eq("reportable_id", postId)
+    .maybeSingle();
+
+  if (existing) {
+    return { success: true, alreadyReported: true };
+  }
+
+  const { error } = await supabase.from("reports").insert({
+    reporter_id: user.id,
+    reportable_type: "post",
+    reportable_id: postId,
+    reason: trimmedReason,
+    description: trimmedDescription,
+    status: "PENDING",
+  });
+
+  if (error) return { success: false, error: error.message };
+
+  // reports_count is maintained by DB trigger (trg_post_reports_count)
+  revalidatePath(`${COMMUNITY_PATH}/${postId}`);
+  return { success: true };
+}
+
 export async function recordPostView(postId: string, ip?: string): Promise<void> {
   const user = await getUser().catch(() => null);
   const supabase = await createClient();

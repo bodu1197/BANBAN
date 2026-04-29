@@ -474,6 +474,42 @@ export interface Database {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          id: string
+          reporter_id: string
+          reportable_type: string
+          reportable_id: string
+          reason: string | null
+          description: string | null
+          status: string
+          reviewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reporter_id: string
+          reportable_type: string
+          reportable_id: string
+          reason?: string | null
+          description?: string | null
+          status?: string
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reporter_id?: string
+          reportable_type?: string
+          reportable_id?: string
+          reason?: string | null
+          description?: string | null
+          status?: string
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           id: string
@@ -486,6 +522,7 @@ export interface Database {
           likes_count: number
           views_count: number
           comments_count: number
+          reports_count: number
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -504,6 +541,7 @@ export interface Database {
           likes_count?: number
           views_count?: number
           comments_count?: number
+          reports_count?: number
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -521,6 +559,7 @@ export interface Database {
           likes_count?: number
           views_count?: number
           comments_count?: number
+          reports_count?: number
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
