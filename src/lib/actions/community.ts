@@ -65,6 +65,7 @@ export async function togglePostLike(postId: string): Promise<{
     await supabase.from("likes").delete().eq("id", existing.id);
     // likes_count is maintained by DB trigger (trg_post_likes_count)
     revalidatePath(COMMUNITY_PATH);
+    revalidatePath(`${COMMUNITY_PATH}/${postId}`);
     return { success: true, isLiked: false };
   }
 
@@ -75,6 +76,7 @@ export async function togglePostLike(postId: string): Promise<{
   });
   // likes_count is maintained by DB trigger (trg_post_likes_count)
   revalidatePath(COMMUNITY_PATH);
+  revalidatePath(`${COMMUNITY_PATH}/${postId}`);
   return { success: true, isLiked: true };
 }
 
