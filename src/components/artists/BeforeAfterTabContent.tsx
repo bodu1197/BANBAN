@@ -1,4 +1,4 @@
-// @client-reason: No client state, but used within client tab component
+// @client-reason: Rendered inside client-parent ArtistDetailTabs (tab state management)
 "use client";
 
 import Image from "next/image";
@@ -45,24 +45,21 @@ function BeforeAfterCard({
               alt={beforeLabel}
               fill
               className="object-cover"
-              sizes="(max-width: 767px) 50vw, 384px"
+              sizes="(max-width: 767px) 50vw, (max-width: 1023px) 25vw, 192px"
               loading="lazy"
             />
           ) : (
             <div className="h-full w-full bg-muted" />
           )}
-          {/* Before label badge */}
-          <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm md:px-2.5 md:py-1">
             {beforeLabel}
           </span>
         </div>
 
-        {/* Center arrow divider */}
-        <div className="absolute top-1/2 left-1/2 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md">
-          <ChevronRight className="h-4 w-4 text-gray-600" />
+        <div className="absolute top-1/2 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md md:h-8 md:w-8">
+          <ChevronRight className="h-3.5 w-3.5 text-gray-600 md:h-4 md:w-4" />
         </div>
 
-        {/* After Image */}
         <div className="relative aspect-square flex-1">
           {afterUrl ? (
             <Image
@@ -70,14 +67,14 @@ function BeforeAfterCard({
               alt={afterLabel}
               fill
               className="object-cover"
-              sizes="(max-width: 767px) 50vw, 384px"
+              sizes="(max-width: 767px) 50vw, (max-width: 1023px) 25vw, 192px"
               loading="lazy"
             />
           ) : (
             <div className="h-full w-full bg-muted" />
           )}
           {/* After label badge */}
-          <span className="absolute right-2 bottom-2 rounded-md bg-brand-primary/80 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <span className="absolute right-2 bottom-2 rounded-md bg-brand-primary/80 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm md:px-2.5 md:py-1">
             {afterLabel}
           </span>
         </div>
@@ -106,7 +103,7 @@ export function BeforeAfterTabContent({
           <p className="text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
           {photos.map((photo) => (
             <BeforeAfterCard
               key={photo.id}

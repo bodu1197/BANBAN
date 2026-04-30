@@ -12,7 +12,7 @@
 import { cache } from "react";
 import { createClient } from "./server";
 import { getStorageUrl } from "./storage-utils";
-import type { Artist, Portfolio, PortfolioMedia, Region, Review } from "@/types/database";
+import type { Artist, Database, Portfolio, PortfolioMedia, Region, Review } from "@/types/database";
 
 // Re-export storage utilities for backward compatibility
 export { getStorageUrl, getAvatarUrl } from "./storage-utils";
@@ -312,19 +312,7 @@ export async function fetchAllReviews(
   };
 }
 
-/**
- * Before/After photo type
- */
-export interface BeforeAfterPhoto {
-  id: string;
-  artist_id: string;
-  title: string | null;
-  before_image_path: string;
-  after_image_path: string;
-  order_index: number;
-  created_at: string;
-  updated_at: string;
-}
+export type BeforeAfterPhoto = Database["public"]["Tables"]["before_after_photos"]["Row"];
 
 /**
  * Fetch before/after photos for an artist
@@ -346,5 +334,5 @@ export async function fetchBeforeAfterByArtist(
     return [];
   }
 
-  return (data ?? []) as unknown as BeforeAfterPhoto[];
+  return data ?? [];
 }
