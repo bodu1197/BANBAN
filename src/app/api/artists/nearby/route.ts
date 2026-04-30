@@ -50,24 +50,30 @@ export async function GET(request: NextRequest) {
 
   const portfolioMap = new Map<string, string[]>();
   if (artistIds.length > 0) {
-    const { data: portfolios } = await supabase
-      .from("portfolios")
-      .select("artist_id, portfolio_media(storage_path, order_index)")
-      .in("artist_id", artistIds)
-      .is("deleted_at", null)
-      .limit(3);
+    const { data: artistPortfolios } = await supabase
+      .from("artists")
+      .select("id, portfolios(id, portfolio_media(storage_path, order_index))")
+      .in("id", artistIds)
+      .is("portfolios.deleted_at", null)
+      .limit(3, { foreignTable: "portfolios" });
 
-    for (const p of (portfolios ?? []) as Array<{
-      artist_id: string;
-      portfolio_media: Array<{ storage_path: string; order_index: number }>;
+    for (const artist of (artistPortfolios ?? []) as Array<{
+      id: string;
+      portfolios: Array<{
+        id: string;
+        portfolio_media: Array<{ storage_path: string; order_index: number }>;
+      }>;
     }>) {
-      const sorted = [...(p.portfolio_media ?? [])].sort((a, b) => a.order_index - b.order_index);
-      const existing = portfolioMap.get(p.artist_id) ?? [];
-      for (const m of sorted) {
+      const allMedia = (artist.portfolios ?? []).flatMap((p) =>
+        [...(p.portfolio_media ?? [])].sort((a, b) => a.order_index - b.order_index),
+      );
+      const images: string[] = [];
+      for (const m of allMedia) {
+        if (images.length >= 3) break;
         const url = getStorageUrl(m.storage_path);
-        if (url && existing.length < 3) existing.push(url);
+        if (url) images.push(url);
       }
-      portfolioMap.set(p.artist_id, existing);
+      if (images.length > 0) portfolioMap.set(artist.id, images);
     }
   }
 
