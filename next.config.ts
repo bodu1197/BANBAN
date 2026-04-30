@@ -101,8 +101,6 @@ const nextConfig: NextConfig = {
       "@supabase/ssr",
       "@supabase/supabase-js",
       "@tanstack/react-query",
-      "@hookform/resolvers",
-      "react-hook-form",
       "zod",
       "sonner",
       "class-variance-authority",

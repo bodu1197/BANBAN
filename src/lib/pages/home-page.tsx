@@ -12,7 +12,7 @@ import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
-import { fetchActiveBanners, fetchPromoBanners } from "@/lib/supabase/banner-queries";
+import { fetchPromoBanners } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 
@@ -157,11 +157,10 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const [heroBanners, promoBanners] = await Promise.all([
-    safe(() => fetchActiveBanners(), []),
+  const [promoBanners] = await Promise.all([
     safe(() => fetchPromoBanners(), []),
   ]);
-  return { heroBanners, promoBanners };
+  return { promoBanners };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -260,14 +259,14 @@ function HomeBottomSkeleton(): React.ReactElement {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const topData = await fetchTopHomeData();
-  const { heroBanners, promoBanners } = topData;
+  const { promoBanners } = topData;
   const hp = STRINGS.homepage as unknown as Record<string, string>;
 
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
       <div className="mx-auto w-full max-w-[767px]">
         <QuickMenu />
-        <ExhibitionBanner banners={heroBanners} />
+        <ExhibitionBanner />
         <PromoBannerGrid banners={promoBanners} />
         <BannerRow hp={hp} />
         <Suspense fallback={<HomeBottomSkeleton />}>

@@ -1,12 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Ticket, ArrowRight } from "lucide-react";
-import { HeroBannerCarousel } from "./HeroBannerCarousel";
-import type { HeroBannerData } from "./banner-types";
 
-export type { HeroBannerData };
-
-function FallbackBanner(): React.ReactElement {
+export function ExhibitionBanner(): React.ReactElement {
     return (
         <div className="px-4 pt-3 pb-1">
             <Link
@@ -34,56 +29,4 @@ function FallbackBanner(): React.ReactElement {
             </Link>
         </div>
     );
-}
-
-export function ExhibitionBanner({ banners }: Readonly<{ banners?: HeroBannerData[] | null }>): React.ReactElement {
-    if (!banners || banners.length === 0) return <FallbackBanner />;
-
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-    const resolved = banners.map((b) => ({
-        ...b,
-        image_path: b.image_path.startsWith("http")
-            ? b.image_path
-            : `${SUPABASE_URL}/storage/v1/object/public/portfolios/${b.image_path}`,
-    }));
-
-    if (resolved.length === 1) {
-        const banner = resolved[0];
-        const href = banner.link_url ?? "/exhibition";
-        return (
-            <div className="px-4 pt-3 pb-1">
-                <Link
-                    href={href}
-                    className="group relative block overflow-hidden rounded-2xl shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    <div className="pointer-events-none absolute inset-0">
-                        <Image
-                            src={banner.image_path}
-                            alt={banner.title}
-                            fill
-                            sizes="(max-width: 767px) 100vw, 767px"
-                            className="object-cover"
-                            quality={65}
-                            priority
-                            fetchPriority="high"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-                    </div>
-                    <div className="relative z-10 flex h-[160px] items-center gap-5 px-4 lg:h-[200px] lg:px-10">
-                        <div className="min-w-0 flex-1">
-                            <h2 className="text-lg font-extrabold leading-tight text-white drop-shadow-lg lg:text-xl">{banner.title}</h2>
-                            {banner.subtitle ? (
-                                <p className="mt-1 text-xs text-white/80 drop-shadow lg:text-sm">{banner.subtitle}</p>
-                            ) : null}
-                        </div>
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 transition-all group-hover:bg-white/30 group-focus-visible:bg-white/30">
-                            <ArrowRight className="h-5 w-5 text-white transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" aria-hidden="true" />
-                        </div>
-                    </div>
-                </Link>
-            </div>
-        );
-    }
-
-    return <HeroBannerCarousel banners={resolved} />;
 }
