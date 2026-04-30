@@ -6,7 +6,7 @@ const ALLOWED_FIELDS = new Set(["username", "nickname", "email"]);
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
-  const { success } = rateLimit({ key: `check-dup:${ip}`, limit: 30, windowMs: 60_000 });
+  const { success } = rateLimit({ key: `check-dup:${ip}`, limit: 5, windowMs: 60_000 });
   if (!success) return rateLimitResponse() as NextResponse;
 
   const field = request.nextUrl.searchParams.get("field");

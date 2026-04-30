@@ -109,7 +109,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!profile) return NextResponse.json({ success: true });
 
     if (isSocialAccount(profile as ProfileRow)) {
-      return jsonError("SNS 로그인으로 가입된 계정입니다. SNS 로그인을 이용해주세요.", 400);
+      return NextResponse.json({ success: true });
     }
 
     const { error: ensureError } = await ensureAuthUser(adminClient, profile as ProfileRow, normalizedEmail);
@@ -134,8 +134,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
   try {
     const { password, accessToken } = await request.json();
-    if (!password || password.length < 6) {
-      return jsonError("비밀번호는 6자 이상이어야 합니다", 400);
+    if (!password || password.length < 8) {
+      return jsonError("비밀번호는 8자 이상이어야 합니다", 400);
     }
 
     const adminClient = createAdminClient();
