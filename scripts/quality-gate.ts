@@ -2,7 +2,7 @@
 /* eslint-disable sonarjs/no-os-command, no-console, sonarjs/cognitive-complexity */
 
 /**
- * HOWTATTOO Quality Gate Script
+ * 반언니 (banunni) Quality Gate Script
  * -----------------------------
  * Enforces strict code quality standards before push.
  *
@@ -118,7 +118,7 @@ interface Step {
 async function main(): Promise<void> {
     console.clear();
     log("╔════════════════════════════════════════════════════════════╗", "magenta");
-    log("║           🛡️  HOWTATTOO QUALITY GATE  🛡️                  ║", "magenta");
+    log("║           🛡️  반언니 QUALITY GATE  🛡️                     ║", "magenta");
     log("║      Ensuring code excellence before deployment            ║", "magenta");
     log("╚════════════════════════════════════════════════════════════╝", "magenta");
 
@@ -198,7 +198,7 @@ async function main(): Promise<void> {
         process.exit(1);
     } else {
         log("✅  QUALITY GATE PASSED", "green");
-        log("    Code is ready for HOWTATTOO!", "green");
+        log("    Code is ready for 반언니!", "green");
         process.exit(0);
     }
 }

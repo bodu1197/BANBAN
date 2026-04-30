@@ -38,8 +38,6 @@
   ],
   "exclude": [
     "node_modules",
-    "Laravel_howtattoo.com",
-    "laravel-legacy",
     "scripts-temp",
     "backup-src"
   ]

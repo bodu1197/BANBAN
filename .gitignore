@@ -73,3 +73,6 @@ dist/
 
 # CLI ↔ Cowork 에이전트 협업 메시지 (로컬 전용, 푸시 금지)
 .claude-sync/
+
+# /review5 PASS 마커 (로컬 working-tree 상태 해시, 푸시 금지)
+.claude/.review5-hash

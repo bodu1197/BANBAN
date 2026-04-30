@@ -61,7 +61,7 @@
   /* Base radius */
   --radius: 0.625rem;
 
-  /* Brand colors - HOWTATTOO identity (#FF540F orange) */
+  /* Brand colors - 반언니 (banunni) identity (#FF540F orange) */
   --brand-primary: oklch(55% 0.24 38deg);
   --brand-primary-hover: oklch(48% 0.24 38deg);
   --brand-secondary: oklch(75% 0.05 250deg);

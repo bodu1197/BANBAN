@@ -65,7 +65,7 @@ async function sendResetEmail(
   adminClient: SupabaseClient,
   email: string,
 ): Promise<NextResponse> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://howtattoo.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://banunni.com";
   const { error } = await adminClient.auth.resetPasswordForEmail(email, {
     redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
   });

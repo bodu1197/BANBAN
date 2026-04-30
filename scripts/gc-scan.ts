@@ -2,7 +2,7 @@
 /* eslint-disable no-console, sonarjs/no-os-command, sonarjs/cognitive-complexity */
 
 /**
- * HOWTATTOO Garbage Collection Scanner
+ * 반언니 (banunni) Garbage Collection Scanner
  * -------------------------------------
  * Scans the codebase for CLAUDE.md rule violations that ESLint cannot catch.
  * Integrates with quality-gate.ts as an additional check.

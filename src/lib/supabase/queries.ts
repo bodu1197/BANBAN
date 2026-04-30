@@ -311,3 +311,40 @@ export async function fetchAllReviews(
     count: count ?? 0,
   };
 }
+
+/**
+ * Before/After photo type
+ */
+export interface BeforeAfterPhoto {
+  id: string;
+  artist_id: string;
+  title: string | null;
+  before_image_path: string;
+  after_image_path: string;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Fetch before/after photos for an artist
+ */
+export async function fetchBeforeAfterByArtist(
+  artistId: string,
+): Promise<BeforeAfterPhoto[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("before_after_photos")
+    .select("*")
+    .eq("artist_id", artistId)
+    .order("order_index", { ascending: true });
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(`Failed to fetch before/after photos: ${error.message}`);
+    return [];
+  }
+
+  return (data ?? []) as unknown as BeforeAfterPhoto[];
+}

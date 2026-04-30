@@ -99,8 +99,8 @@ export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
             </li>
             <li>
               <strong>이메일:</strong>{" "}
-              <a href="mailto:howtattoo@howtattoo.com" className="text-brand-primary hover:underline focus-visible:underline focus-visible:outline-none">
-                howtattoo@howtattoo.com
+              <a href="mailto:howtattoo@banunni.com" className="text-brand-primary hover:underline focus-visible:underline focus-visible:outline-none">
+                howtattoo@banunni.com
               </a>
             </li>
             <li>

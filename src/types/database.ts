@@ -828,6 +828,47 @@ export interface Database {
           }
         ]
       }
+      before_after_photos: {
+        Row: {
+          id: string
+          artist_id: string
+          title: string | null
+          before_image_path: string
+          after_image_path: string
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          artist_id: string
+          title?: string | null
+          before_image_path: string
+          after_image_path: string
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          artist_id?: string
+          title?: string | null
+          before_image_path?: string
+          after_image_path?: string
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "before_after_photos_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       ai_generated_tattoos: {
         Row: {
           id: string

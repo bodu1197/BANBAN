@@ -66,7 +66,7 @@ function ArticleStructuredData({
     publisher: {
       "@type": "Organization",
       name: "반언니",
-      url: "https://howtattoo.com",
+      url: "https://banunni.com",
     },
     mainEntityOfPage: {
       "@type": "WebPage",

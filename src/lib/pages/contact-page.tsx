@@ -22,7 +22,7 @@ export async function renderContactPage(): Promise<React.ReactElement> {
 
       <div className="grid gap-4 md:grid-cols-3">
         <ContactInfoCard icon={Phone} label={STRINGS.pages.contactPhone.split(":")[0]} value="010-8699-6664" />
-        <ContactInfoCard icon={Mail} label={STRINGS.pages.contactEmail.split(":")[0]} value="howtattoo@howtattoo.com" />
+        <ContactInfoCard icon={Mail} label={STRINGS.pages.contactEmail.split(":")[0]} value="howtattoo@banunni.com" />
         <ContactInfoCard
           icon={Clock}
           label={STRINGS.pages.contactHours.split(":")[0]}

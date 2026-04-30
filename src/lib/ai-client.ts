@@ -1,10 +1,10 @@
 /**
- * AI Client for HowTattoo
+ * AI Client for 반언니 (banunni)
  *
  * Centralized AI client connecting to self-hosted AI servers.
- * - Text AI: vLLM (Qwen) on SORI shared server or HowTattoo AI server
- * - Image AI: ComfyUI (FLUX.2-dev) on HowTattoo AI server
- * - Mask AI: SAM2 on HowTattoo AI server
+ * - Text AI: vLLM (Qwen) on SORI shared server or 반언니 AI server
+ * - Image AI: ComfyUI (FLUX.2-dev) on 반언니 AI server
+ * - Mask AI: SAM2 on 반언니 AI server
  *
  * Environment variables:
  *   SORI_AI_BASE_URL  - vLLM/llama.cpp server base URL

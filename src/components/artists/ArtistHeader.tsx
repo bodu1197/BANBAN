@@ -41,7 +41,7 @@ export function ArtistHeader({
       <div className="relative">
         {/* First image rendered server-side with priority for LCP */}
         {firstImage ? (
-          <div className="relative aspect-[4/3] w-full">
+          <div className="relative h-[170px] w-full">
             <Image
               src={firstImage}
               alt={`${artist.title} 1`}
@@ -53,7 +53,7 @@ export function ArtistHeader({
             />
           </div>
         ) : (
-          <div className="aspect-[4/3] w-full bg-muted" />
+          <div className="h-[170px] w-full bg-muted" />
         )}
 
         {/* Carousel overlay for navigation (handles all images including first) */}

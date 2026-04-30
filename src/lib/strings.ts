@@ -121,7 +121,12 @@ export const STRINGS ={
     "showMore": "더보기",
     "showLess": "접기",
     "totalCount": "총 {count}개",
-    "searchByCondition": "전국 아티스트, 조건별 검색"
+    "searchByCondition": "전국 아티스트, 조건별 검색",
+    "beforeAfter": "시술 전후",
+    "noBeforeAfter": "시술 전후 사진이 없습니다",
+    "beforeLabel": "시술 전",
+    "afterLabel": "시술 후",
+    "beforeAfterCount": "총 {count}개"
   },
   "portfolio": {
     "discountEvent": "할인이벤트",
@@ -277,6 +282,7 @@ export const STRINGS ={
     "editArtistProfile": "아티스트 정보 수정",
     "dashboard": "대시보드",
     "portfolioManage": "작품등록",
+    "beforeAfterManage": "시술 전후 관리",
     "courseManage": "수강관리",
     "adManage": "광고 관리",
     "adPurchase": "광고 구매",

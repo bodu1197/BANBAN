@@ -9,7 +9,7 @@ import { fetchAllReviews, getAvatarUrl, type ReviewWithArtist } from "@/lib/supa
 export async function generateReviewsMetadata(): Promise<Metadata> {
     return {
         title: STRINGS.common.reviews,
-        description: `${STRINGS.common.reviews} - HowTattoo`,
+        description: `${STRINGS.common.reviews} - 반언니`,
         alternates: getAlternates("/reviews"),
     };
 }

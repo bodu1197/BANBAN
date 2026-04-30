@@ -53,6 +53,7 @@ const userMenuItems: QuickMenuItem[] = [
 
 const artistMenuItems: QuickMenuItem[] = [
   { icon: Images, href: "/mypage/artist/portfolios", label: m.portfolioManage },
+  { icon: Pencil, href: "/mypage/artist/before-after", label: m.beforeAfterManage },
   { icon: GraduationCap, href: "/mypage/artist/courses", label: m.courseManage },
   { icon: Users, href: "/community?board=RECRUITMENT", label: m.findModel },
   { icon: ShoppingCart, href: "/mypage/artist/ads/purchase", label: m.adPurchase },

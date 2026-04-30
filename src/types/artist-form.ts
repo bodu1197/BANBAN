@@ -71,7 +71,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; lo
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=kr&limit=1`,
-      { headers: { "User-Agent": "HowTattoo/1.0 (howtattoo@howtattoo.com)" } },
+      { headers: { "User-Agent": "Banunni/1.0 (howtattoo@banunni.com)" } },
     );
     const data = await response.json();
     if (data.length > 0) {

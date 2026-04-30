@@ -56,8 +56,8 @@ function InsightStructuredData({ insight }: Readonly<{ insight: ArtistInsight }>
     description,
     image: insight.cover_image_url ?? undefined,
     datePublished: insight.created_at,
-    author: { "@type": "Organization", name: "HowTattoo" },
-    publisher: { "@type": "Organization", name: "HowTattoo", url: getCanonicalUrl("") },
+    author: { "@type": "Organization", name: "반언니" },
+    publisher: { "@type": "Organization", name: "반언니", url: getCanonicalUrl("") },
     mainEntityOfPage: { "@type": "WebPage", "@id": getCanonicalUrl(`/artist-insight/${insight.slug}`) },
     keywords: insight.tags?.join(", ") ?? "",
   };

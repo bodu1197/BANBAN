@@ -1,4 +1,21 @@
-# HOWTATTOO Project Rules
+# 반언니 (banunni) Project Rules
+
+> **⚠️ 세션 시작 시 0번째로 할 일** (Cowork / CLI 둘 다):
+> 1. `.claude-sync/STATUS.md` 읽기 — 공유 상태 파악
+> 2. `.claude-sync/LESSONS.md` 읽기 — 공유 교훈 (같은 실수 반복 금지)
+> 3. `.claude-sync/to-{cli|cowork}/` 에서 `*OPEN*.md` 쪽지 → **Tier 1 자동 처리**
+> 4. 작업 끝나면 STATUS.md 갱신 + 상대에게 쪽지 남기기
+> → 규칙: `.claude-sync/README.md`, `.claude-sync/PROTOCOL.md` (3단 Tier 시스템 포함)
+
+## 커밋 전 의무 검증 (/review5) — MANDATORY
+
+**코드를 수정했다면 `git commit` 전에 반드시 `/review5` 를 실행한다. 예외 없음.**
+
+- **절차**: 코드 수정 → `/review5` 실행 → 5인 병렬 검증(보안/아키텍처/타입/성능/품질) → PASS → `git commit`
+- **FAIL 또는 CRITICAL 발견 시**: 문제를 수정하고 `/review5` 재실행. PASS 없이 커밋 금지.
+- **게이트**: `.claude/hooks/review5-gate.mjs` 가 `git commit` 을 PreToolUse 에서 가로채 검증 마커(`.claude/.review5-hash`)와 현재 상태를 비교. 마커 없음/불일치면 차단.
+- **우회 금지**: 게이트 우회, `--no-verify` 사용, 마커 파일 수동 조작은 "편법 금지" 규칙 위반.
+- **절차 파일**: `.claude/commands/review5.md`
 
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router)
@@ -152,7 +169,7 @@ export default async function Page() {
 - 의존성 문제 → 패키지 업데이트 또는 호환성 수정
 
 ### 예외 허용 조건
-- 외부 라이브러리/폴더 (예: `Laravel_howtattoo.com`) → `exclude` 허용
+- 외부 라이브러리 → 타당한 사유 있으면 `exclude` 허용
 - 명확한 사유가 있는 `eslint-disable` → 반드시 사유 주석 포함
 
 ## 임시 파일 관리 정책
@@ -161,13 +178,11 @@ export default async function Page() {
 
 ### 임시 파일 저장 위치
 - `scripts-temp/` - 임시 스크립트 (마이그레이션, 디버그, 검증용)
-- `Laravel_howtattoo.com/` - 참조용 Laravel 코드
 - `docs/` - 임시 문서
 
 ### .gitignore에 포함된 항목
 ```
 scripts-temp/
-Laravel_howtattoo.com/
 docs/
 *_dump.txt
 migration_manifest.jsonl
@@ -195,7 +210,7 @@ missing_*.json
 
 ---
 
-## [진행중] SPA 전환 + 레거시 마이그레이션 (2026-02-04 시작)
+## [진행중] SPA 전환 (2026-02-04 시작)
 
 ### 상세 계획서
 📄 **`SPA_MIGRATION_PLAN.md`** 참조
@@ -203,7 +218,6 @@ missing_*.json
 ### 목표
 1. 현재 프로젝트를 하이브리드 SPA로 전환
 2. 이미지 직접 최적화 (Sharp + WebP)
-3. 레거시 홈페이지 기능/디자인 복제
 
 ### 아키텍처
 ```
@@ -211,12 +225,6 @@ missing_*.json
 인터랙션 필요 부분  → Client Component (최소 범위)
 데이터 변경         → Server Actions
 이미지 업로드       → /api/upload → Sharp → WebP 변환
-```
-
-### 레거시 참조 경로
-```
-프론트엔드: laravel-legacy/home/forge/howtattoo.com/releases/62393912/
-API:       laravel-legacy/home/forge/api.howtattoo.com/releases/62256392/
 ```
 
 ### 개발 단계 요약

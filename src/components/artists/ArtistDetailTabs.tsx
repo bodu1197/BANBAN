@@ -3,8 +3,9 @@
 
 import { useState, lazy, Suspense } from "react";
 import Link from "next/link";
-import type { PortfolioWithMedia, ReviewWithUser } from "@/lib/supabase/queries";
+import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import { PortfolioTabContent } from "./PortfolioTabContent";
+import { BeforeAfterTabContent } from "./BeforeAfterTabContent";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Dynamic import for ReviewList (includes date-fns) - only loads when reviews tab is clicked
@@ -41,6 +42,12 @@ interface ArtistDetailTabsProps {
   artistId: string;
   writeReviewLabel?: string;
   isLoggedIn?: boolean;
+  beforeAfterPhotos: BeforeAfterPhoto[];
+  beforeAfterLabel?: string;
+  noBeforeAfterMessage?: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+  beforeAfterCountLabel?: string;
 }
 
 export function ArtistDetailTabs({
@@ -57,8 +64,21 @@ export function ArtistDetailTabs({
   artistId,
   writeReviewLabel = "리뷰 작성",
   isLoggedIn = false,
+  beforeAfterPhotos,
+  beforeAfterLabel = "시술 전후",
+  noBeforeAfterMessage = "시술 전후 사진이 없습니다",
+  beforeLabel = "시술 전",
+  afterLabel = "시술 후",
+  beforeAfterCountLabel = "총 0개",
 }: Readonly<ArtistDetailTabsProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<"portfolio" | "reviews">("portfolio");
+  const [activeTab, setActiveTab] = useState<"portfolio" | "beforeAfter" | "reviews">("portfolio");
+
+  const tabButtonClass = (isActive: boolean): string =>
+    `relative px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      isActive
+        ? "text-brand-primary"
+        : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
+    }`;
 
   return (
     <section className="px-4 py-4">
@@ -67,11 +87,7 @@ export function ArtistDetailTabs({
         <button
           type="button"
           onClick={() => setActiveTab("portfolio")}
-          className={`relative px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            activeTab === "portfolio"
-              ? "text-brand-primary"
-              : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
-          }`}
+          className={tabButtonClass(activeTab === "portfolio")}
           aria-selected={activeTab === "portfolio"}
           aria-controls="tabpanel-portfolio"
           id="tab-portfolio"
@@ -85,12 +101,23 @@ export function ArtistDetailTabs({
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab("beforeAfter")}
+          className={tabButtonClass(activeTab === "beforeAfter")}
+          aria-selected={activeTab === "beforeAfter"}
+          aria-controls="tabpanel-beforeAfter"
+          id="tab-beforeAfter"
+          role="tab"
+          tabIndex={activeTab === "beforeAfter" ? 0 : -1}
+        >
+          {beforeAfterLabel}
+          {activeTab === "beforeAfter" && (
+            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
+          )}
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab("reviews")}
-          className={`relative px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            activeTab === "reviews"
-              ? "text-brand-primary"
-              : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
-          }`}
+          className={tabButtonClass(activeTab === "reviews")}
           aria-selected={activeTab === "reviews"}
           aria-controls="tabpanel-reviews"
           id="tab-reviews"
@@ -115,10 +142,10 @@ export function ArtistDetailTabs({
       {/* Tab Content */}
       <div
         role="tabpanel"
-        id={activeTab === "portfolio" ? "tabpanel-portfolio" : "tabpanel-reviews"}
-        aria-labelledby={activeTab === "portfolio" ? "tab-portfolio" : "tab-reviews"}
+        id={`tabpanel-${activeTab}`}
+        aria-labelledby={`tab-${activeTab}`}
       >
-        {activeTab === "portfolio" ? (
+        {activeTab === "portfolio" && (
           <PortfolioTabContent
             portfolios={portfolios}
             totalCountLabel={totalCountLabel}
@@ -126,7 +153,17 @@ export function ArtistDetailTabs({
             gridViewLabel={gridViewLabel}
             listViewLabel={listViewLabel}
           />
-        ) : (
+        )}
+        {activeTab === "beforeAfter" && (
+          <BeforeAfterTabContent
+            photos={beforeAfterPhotos}
+            totalCountLabel={beforeAfterCountLabel}
+            emptyMessage={noBeforeAfterMessage}
+            beforeLabel={beforeLabel}
+            afterLabel={afterLabel}
+          />
+        )}
+        {activeTab === "reviews" && (
           <Suspense fallback={<ReviewsSkeleton />}>
             <ReviewList reviews={reviews} emptyMessage={noReviewsMessage} />
           </Suspense>

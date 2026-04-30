@@ -97,7 +97,7 @@ export async function notifyUser(
   }
 
   // Swing2App 푸시 발송 (fire-and-forget)
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://howtattoo.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://banunni.com";
   sendPush({
     targetUserIds: userId,
     title: notification.title,
@@ -143,7 +143,7 @@ export async function notifyAllArtists(notification: {
   }
 
   // Swing2App 푸시: 아티스트 개별 발송 (최대 100명씩)
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://howtattoo.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://banunni.com";
   const ids = artists.map((a) => a.user_id);
   for (let i = 0; i < ids.length; i += 100) {
     const chunk = ids.slice(i, i + 100);

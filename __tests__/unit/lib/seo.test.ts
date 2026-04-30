@@ -61,7 +61,7 @@ describe("SEO 유틸리티 (한국어 전용)", () => {
       name: "테스트 아티스트",
       description: "소개글",
       address: "서울 강남구",
-      url: "https://howtattoo.com/artists/1",
+      url: "https://banunni.com/artists/1",
     };
 
     it("LocalBusiness 스키마를 반환함", () => {

@@ -91,7 +91,6 @@ const eslintConfig = defineConfig([
     "node_modules/**",
     "scripts/**",
     "scripts-temp/**",
-    "Laravel_howtattoo.com/**",
   ]),
 ]);
 

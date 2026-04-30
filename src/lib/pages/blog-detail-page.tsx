@@ -59,12 +59,12 @@ function ArticleStructuredData({ post }: Readonly<{ post: BlogPost }>): React.Re
     dateModified: post.created_at,
     author: {
       "@type": "Person",
-      name: post.artist_name ?? "HowTattoo",
+      name: post.artist_name ?? "반언니",
     },
     publisher: {
       "@type": "Organization",
-      name: "HowTattoo",
-      url: "https://howtattoo.com",
+      name: "반언니",
+      url: "https://banunni.com",
     },
     mainEntityOfPage: {
       "@type": "WebPage",

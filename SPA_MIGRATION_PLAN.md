@@ -1,7 +1,7 @@
-# HowTattoo SPA 전환 + 레거시 마이그레이션 계획서
+# 반언니 SPA 전환 계획서
 
 > 작성일: 2026-02-04
-> 목표: 현재 Next.js 16 프로젝트를 하이브리드 SPA로 전환 + 레거시 기능 복제
+> 목표: 현재 Next.js 16 프로젝트를 하이브리드 SPA로 전환
 
 ---
 
@@ -11,13 +11,8 @@
 - **Framework**: Next.js 16.1.4 + TypeScript
 - **Database**: Supabase (PostgreSQL)
 - **Styling**: Tailwind CSS v4
-- **i18n**: ko, en, ja, zh (4개 언어)
+- **언어**: 한국어 전용 (i18n 제거됨)
 - **배포**: Vercel
-
-### 레거시 프로젝트 (참조용)
-- **위치**: `C:\dev\howtattoo\laravel-legacy\home\forge\`
-- **API**: `api.howtattoo.com` - Laravel 10
-- **Frontend**: `howtattoo.com` - Next.js 14 (JavaScript)
 
 ---
 
@@ -220,30 +215,18 @@ portfolios/{id}/
 
 ---
 
-## 8. 레거시 참조 경로
+## 8. 기술 스택
 
-```
-레거시 프론트엔드:
-C:\dev\howtattoo\laravel-legacy\home\forge\howtattoo.com\releases\62393912\
-
-레거시 API:
-C:\dev\howtattoo\laravel-legacy\home\forge\api.howtattoo.com\releases\62256392\
-```
-
----
-
-## 9. 기술 스택 비교
-
-| 항목 | 레거시 | 현재 (목표) |
-|------|--------|-------------|
-| Frontend | Next.js 14 (JS) | Next.js 16 (TS) |
-| Backend | Laravel 10 | Supabase |
-| Database | MySQL | PostgreSQL |
-| 인증 | Laravel Sanctum | Supabase Auth |
-| 실시간 | Pusher + Soketi | Supabase Realtime |
-| 이미지 | 원본 저장 | WebP 최적화 |
-| 스타일링 | CSS/SCSS | Tailwind CSS v4 |
-| i18n | 없음 | 4개 언어 |
+| 항목 | 현재 스택 |
+|------|-----------|
+| Frontend | Next.js 16 (TS) |
+| Backend | Supabase |
+| Database | PostgreSQL |
+| 인증 | Supabase Auth |
+| 실시간 | Supabase Realtime |
+| 이미지 | WebP 최적화 (Sharp) |
+| 스타일링 | Tailwind CSS v4 |
+| 언어 | 한국어 전용 |
 
 ---
 

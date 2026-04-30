@@ -60,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   sendBroadcastPush(
     `📢 ${announcement.title}`,
     announcement.body.slice(0, 100),
-    "https://howtattoo.com/mypage",
+    "https://banunni.com/mypage",
   ).catch(() => { /* non-critical */ });
 
   return NextResponse.json({ announcement });

@@ -6,6 +6,7 @@ import {
   fetchArtistById,
   fetchPortfoliosByArtist,
   fetchReviewsByArtist,
+  fetchBeforeAfterByArtist,
   getStorageUrl,
   getAvatarUrl,
   getArtistMediaUrl,
@@ -99,11 +100,12 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
     notFound();
   }
 
-  const [{ data: portfolios }, { data: reviews }, user, likedIds] = await Promise.all([
+  const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos] = await Promise.all([
     fetchPortfoliosByArtist(id, { limit: 50 }),
     fetchReviewsByArtist(id),
     getUser().catch(() => null),
     fetchLikedArtistIds(),
+    fetchBeforeAfterByArtist(id),
   ]);
 
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
@@ -166,6 +168,12 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
         artistId={id}
         writeReviewLabel={STRINGS.review.writeReview}
         isLoggedIn={!!user}
+        beforeAfterPhotos={beforeAfterPhotos}
+        beforeAfterLabel={STRINGS.artist.beforeAfter}
+        noBeforeAfterMessage={STRINGS.artist.noBeforeAfter}
+        beforeLabel={STRINGS.artist.beforeLabel}
+        afterLabel={STRINGS.artist.afterLabel}
+        beforeAfterCountLabel={STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length))}
       />
 
       <FloatingCTA

@@ -38,7 +38,7 @@ export async function renderPartnershipPage(): Promise<React.ReactElement> {
         <ContactInfoCard
           icon={Mail}
           label={STRINGS.pages.contactEmail.split(":")[0]}
-          value="howtattoo@howtattoo.com"
+          value="howtattoo@banunni.com"
           className="rounded-lg bg-muted/50 p-5"
         />
       </section>
