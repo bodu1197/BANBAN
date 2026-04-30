@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createStaticClient } from "@/lib/supabase/server";
-import { getAvatarUrl } from "@/lib/supabase/queries";
+import { getAvatarUrl, getStorageUrl } from "@/lib/supabase/queries";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -33,29 +33,55 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const artists = (data ?? []).map(
-    (a: {
-      id: string;
-      title: string;
-      address: string;
-      lat: number;
-      lon: number;
-      type_artist: string;
-      likes_count: number;
-      profile_image_path: string | null;
-      region_name: string | null;
-      distance_km: number;
-    }) => ({
-      id: a.id,
-      title: a.title,
-      address: a.address,
-      regionName: a.region_name,
-      likesCount: a.likes_count,
-      typeArtist: a.type_artist,
-      profileImage: getAvatarUrl(a.profile_image_path),
-      distanceKm: a.distance_km,
-    }),
-  );
+  const rows = (data ?? []) as Array<{
+    id: string;
+    title: string;
+    address: string;
+    lat: number;
+    lon: number;
+    type_artist: string;
+    likes_count: number;
+    profile_image_path: string | null;
+    region_name: string | null;
+    distance_km: number;
+  }>;
+
+  const artistIds = rows.map((a) => a.id);
+
+  const portfolioMap = new Map<string, string[]>();
+  if (artistIds.length > 0) {
+    const { data: portfolios } = await supabase
+      .from("portfolios")
+      .select("artist_id, portfolio_media(storage_path, order_index)")
+      .in("artist_id", artistIds)
+      .is("deleted_at", null)
+      .limit(3);
+
+    for (const p of (portfolios ?? []) as Array<{
+      artist_id: string;
+      portfolio_media: Array<{ storage_path: string; order_index: number }>;
+    }>) {
+      const sorted = [...(p.portfolio_media ?? [])].sort((a, b) => a.order_index - b.order_index);
+      const existing = portfolioMap.get(p.artist_id) ?? [];
+      for (const m of sorted) {
+        const url = getStorageUrl(m.storage_path);
+        if (url && existing.length < 3) existing.push(url);
+      }
+      portfolioMap.set(p.artist_id, existing);
+    }
+  }
+
+  const artists = rows.map((a) => ({
+    id: a.id,
+    title: a.title,
+    address: a.address,
+    regionName: a.region_name,
+    likesCount: a.likes_count,
+    typeArtist: a.type_artist,
+    profileImage: getAvatarUrl(a.profile_image_path),
+    portfolioImages: portfolioMap.get(a.id) ?? [],
+    distanceKm: a.distance_km,
+  }));
 
   return NextResponse.json({ artists });
 }

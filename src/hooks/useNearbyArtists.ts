@@ -11,6 +11,7 @@ interface NearbyApiArtist {
   likesCount: number;
   typeArtist: string;
   profileImage: string | null;
+  portfolioImages: string[];
   distanceKm: number;
 }
 
@@ -28,7 +29,7 @@ async function fetchNearby(lat: number, lng: number): Promise<ArtistListItem[]> 
     region: a.regionName ?? "",
     address: a.address,
     profileImage: a.profileImage,
-    portfolioImages: [],
+    portfolioImages: a.portfolioImages,
     rating: 0,
     reviewCount: 0,
     likesCount: a.likesCount,
