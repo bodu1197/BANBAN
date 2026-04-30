@@ -14,6 +14,7 @@ export interface ArtistListItem {
   rating: number;
   reviewCount: number;
   likesCount: number;
+  distanceKm?: number;
 }
 
 interface FetchArtistsResult {

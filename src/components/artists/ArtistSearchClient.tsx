@@ -1,13 +1,16 @@
-// @client-reason: URL-synced filters, category tabs, like toggle for artist search
+// @client-reason: URL-synced filters, category tabs, like toggle, geolocation for nearby artists
 "use client";
 
-import { useState, useCallback, useMemo, Suspense, useTransition } from "react";
+import { useState, useCallback, useMemo, useEffect, Suspense, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { STRINGS } from "@/lib/strings";
 import { useArtistSearch } from "@/hooks/useArtistSearch";
+import { useNearbyArtists } from "@/hooks/useNearbyArtists";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import { toggleLike } from "@/lib/actions/likes";
 import { ArtistListCard } from "./ArtistListCard";
 import { RegionSelector } from "@/components/filters/RegionSelector";
+import { MapPin, Navigation } from "lucide-react";
 import type { Region } from "@/types/database";
 import type { ArtistListItem } from "@/lib/supabase/artist-queries";
 
@@ -87,6 +90,7 @@ function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedId
               rating={artist.rating}
               reviewCount={artist.reviewCount}
               likesCount={artist.likesCount}
+              distance={artist.distanceKm}
               isLiked={likedIds.has(artist.id)}
               onLikeToggle={onLikeToggle}
             />
@@ -115,8 +119,28 @@ function ArtistSearchInner({ initialArtists,
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const { artists, isLoading, isLoadingMore, sentinelRef, regionId, regionSido } =
+  const { artists: searchArtists, isLoading: searchLoading, isLoadingMore, sentinelRef, regionId, regionSido } =
     useArtistSearch(initialArtists, initialTotalCount);
+
+  const geo = useGeolocation();
+  const nearby = useNearbyArtists(
+    geo.position?.latitude ?? null,
+    geo.position?.longitude ?? null,
+  );
+
+  const hasFilters = Boolean(regionId || regionSido || searchParams.get("q"));
+  const isNearbyMode = geo.status === "success" && !hasFilters;
+
+  const artists = isNearbyMode ? nearby.artists : searchArtists;
+  const isLoading = isNearbyMode ? nearby.isLoading : searchLoading;
+  const totalCount = isNearbyMode ? nearby.totalCount : (searchArtists.length || initialTotalCount);
+
+  // 페이지 진입 시 자동으로 위치 요청 (1회)
+  useEffect(() => {
+    if (geo.status === "idle") {
+      geo.request();
+    }
+  }, [geo]);
 
   const [likedIds, setLikedIds] = useState<Set<string>>(() => new Set(initialLikedIds));
 
@@ -134,7 +158,6 @@ function ArtistSearchInner({ initialArtists,
   }, [navigateWithParams]);
 
   const handleLikeToggle = useCallback((artistId: string): void => {
-    // Optimistic update
     setLikedIds((prev) => {
       const next = new Set(prev);
       if (next.has(artistId)) next.delete(artistId);
@@ -142,7 +165,6 @@ function ArtistSearchInner({ initialArtists,
       return next;
     });
 
-    // Server action with revert on failure
     startTransition(async () => {
       const result = await toggleLike(artistId).catch(() => null);
       if (!result?.success) {
@@ -177,18 +199,40 @@ function ArtistSearchInner({ initialArtists,
       />
 
       <section className="px-4 py-2">
+        {/* Nearby mode indicator */}
+        {isNearbyMode && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-brand-primary/10 px-3 py-2 text-sm text-brand-primary">
+            <Navigation className="h-4 w-4" />
+            <span>내 주변 {totalCount}개의 샵 (거리순)</span>
+          </div>
+        )}
+
+        {geo.status === "denied" && !hasFilters && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span>위치 권한이 거부되었습니다. 지역 필터를 사용해주세요.</span>
+          </div>
+        )}
+
+        {geo.status === "loading" && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-brand-primary" />
+            <span>위치를 확인하고 있습니다...</span>
+          </div>
+        )}
+
         <div className="mb-4 h-px bg-border" />
 
         {/* Artist List */}
         <ArtistContent
           artists={artists}
           isLoading={isLoading}
-          isLoadingMore={isLoadingMore}
-          noDataLabel={d.common.noData}
+          isLoadingMore={isNearbyMode ? false : isLoadingMore}
+          noDataLabel={isNearbyMode ? "주변에 등록된 샵이 없습니다" : d.common.noData}
           likedIds={likedIds}
           onLikeToggle={handleLikeToggle}
         />
-        <div ref={sentinelRef} className="h-1" />
+        {!isNearbyMode && <div ref={sentinelRef} className="h-1" />}
       </section>
     </div>
   );
