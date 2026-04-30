@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { escapeIlike } from "@/lib/supabase/queries";
 
 /** Fetch first thumbnail for each portfolio ID */
 async function fetchThumbnails(supabase: SupabaseClient, ids: string[]): Promise<Record<string, string>> {
@@ -23,13 +24,14 @@ async function findArtistIds(supabase: SupabaseClient, search: string): Promise<
     const { data: artists } = await supabase
         .from("artists")
         .select("id, user_id")
-        .ilike("title", `%${search}%`);
+        .ilike("title", `%${escapeIlike(search)}%`);
 
     // Search profiles by username, nickname, email → get their artist IDs
+    const s = escapeIlike(search);
     const { data: profiles } = await supabase
         .from("profiles")
         .select("id")
-        .or(`username.ilike.%${search}%,nickname.ilike.%${search}%,email.ilike.%${search}%`);
+        .or(`username.ilike.%${s}%,nickname.ilike.%${s}%,email.ilike.%${s}%`);
 
     const profileIds = (profiles ?? []).map((p) => (p as { id: string }).id);
     const artistIds = new Set((artists ?? []).map((a) => (a as { id: string }).id));
@@ -47,7 +49,8 @@ async function findArtistIds(supabase: SupabaseClient, search: string): Promise<
 
 /** Build OR filter for portfolio search including artist matches */
 function buildPortfolioFilter(search: string, artistIds: string[]): string {
-    const base = `title.ilike.%${search}%,description.ilike.%${search}%`;
+    const s = escapeIlike(search);
+    const base = `title.ilike.%${s}%,description.ilike.%${s}%`;
     return artistIds.length > 0 ? `${base},artist_id.in.(${artistIds.join(",")})` : base;
 }
 

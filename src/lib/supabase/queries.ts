@@ -236,7 +236,8 @@ export async function searchArtists(options: {
   let dbQuery = buildArtistListQuery(supabase, offset, limit);
 
   if (query) {
-    dbQuery = dbQuery.or(`title.ilike.%${query}%,address.ilike.%${query}%`);
+    const q = escapeIlike(query);
+    dbQuery = dbQuery.or(`title.ilike.%${q}%,address.ilike.%${q}%`);
   }
 
   if (regionId) {
@@ -335,4 +336,8 @@ export async function fetchBeforeAfterByArtist(
   }
 
   return data ?? [];
+}
+
+export function escapeIlike(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
 }

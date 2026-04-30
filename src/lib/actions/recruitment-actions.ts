@@ -73,10 +73,19 @@ export async function updateRecruitment(
   const auth = await getAuthenticatedUser();
   if (!auth) return { success: false, error: "LOGIN_REQUIRED" };
 
+  const { data: artist } = await auth.supabase
+    .from("artists")
+    .select("id")
+    .eq("user_id", auth.userId)
+    .single();
+
+  if (!artist) return { success: false, error: "ARTIST_ONLY" };
+
   const { error } = await auth.supabase
     .from("recruitments")
     .update(buildUpdateData(input))
-    .eq("id", id);
+    .eq("id", id)
+    .eq("artist_id", artist.id);
 
   if (error) return { success: false, error: error.message };
 
@@ -88,10 +97,19 @@ export async function deleteRecruitment(id: string): Promise<ActionResult> {
   const auth = await getAuthenticatedUser();
   if (!auth) return { success: false, error: "LOGIN_REQUIRED" };
 
+  const { data: artist } = await auth.supabase
+    .from("artists")
+    .select("id")
+    .eq("user_id", auth.userId)
+    .single();
+
+  if (!artist) return { success: false, error: "ARTIST_ONLY" };
+
   const { error } = await auth.supabase
     .from("recruitments")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("artist_id", artist.id);
 
   if (error) return { success: false, error: error.message };
 

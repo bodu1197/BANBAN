@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { escapeIlike } from "@/lib/supabase/queries";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ async function searchWalletIds(sb: any, search: string): Promise<string[] | null
     const { data } = await sb
         .from("point_wallets")
         .select("id, profiles:user_id(username, nickname)")
-        .or(`username.ilike.%${search}%,nickname.ilike.%${search}%`, { referencedTable: "profiles" });
+        .or(`username.ilike.%${escapeIlike(search)}%,nickname.ilike.%${escapeIlike(search)}%`, { referencedTable: "profiles" });
     if (!data || data.length === 0) return null;
     return (data as { id: string }[]).map((w) => w.id);
 }

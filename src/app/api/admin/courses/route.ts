@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { escapeIlike } from "@/lib/supabase/queries";
 
 const LIMIT = 20;
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   let query = db.from("courses")
     .select("id, artist_id, title, category, class_type, price, is_active, created_at", { count: "exact" })
     .order("created_at", { ascending: false }).range(offset, offset + LIMIT - 1);
-  if (search) query = query.ilike("title", `%${search}%`);
+  if (search) query = query.ilike("title", `%${escapeIlike(search)}%`);
 
   const { data, count, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

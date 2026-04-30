@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { escapeIlike } from "@/lib/supabase/queries";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -55,13 +56,14 @@ async function findArtistUserIds(supabase: SupabaseClient, search: string): Prom
     const { data: artists } = await supabase
         .from("artists")
         .select("user_id")
-        .ilike("title", `%${search}%`);
+        .ilike("title", `%${escapeIlike(search)}%`);
     return (artists ?? []).map((a) => (a as { user_id: string }).user_id);
 }
 
 /** Build OR filter including artist title matches */
 function buildSearchFilter(search: string, artistUserIds: string[]): string {
-    const base = `username.ilike.%${search}%,nickname.ilike.%${search}%,email.ilike.%${search}%`;
+    const s = escapeIlike(search);
+    const base = `username.ilike.%${s}%,nickname.ilike.%${s}%,email.ilike.%${s}%`;
     return artistUserIds.length > 0 ? `${base},id.in.(${artistUserIds.join(",")})` : base;
 }
 

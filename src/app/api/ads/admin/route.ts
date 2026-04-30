@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getAdRevenueStats } from "@/lib/supabase/ad-queries";
+import { escapeIlike } from "@/lib/supabase/queries";
 
 const PAGE_SIZE = 20;
 
@@ -24,7 +25,7 @@ type ArtistTypeFilter = "TATTOO" | "SEMI_PERMANENT" | undefined;
 function applyFilters(query: any, status: string | null, search: string | null): any {
     let q = query;
     if (status) q = q.eq("status", status);
-    if (search) q = q.ilike("artist.title", `%${search}%`);
+    if (search) q = q.ilike("artist.title", `%${escapeIlike(search)}%`);
     return q;
 }
 

@@ -36,7 +36,8 @@ const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]+$/;
 // 연락처: 010으로 시작
 const CONTACT_REGEX = /^010\d{8}$/;
 // 비밀번호 최소 길이
-const MIN_PASSWORD_LENGTH = 6;
+const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function jsonError(message: string, status: number): NextResponse {
   return NextResponse.json({ error: message }, { status });
@@ -58,7 +59,7 @@ function validateNickname(nickname: string): string | null {
 
 function validatePassword(password: string): string | null {
   if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return "비밀번호는 6자 이상이어야 합니다";
+    return "비밀번호는 8자 이상이어야 합니다";
   }
   return PASSWORD_REGEX.test(password) ? null : "비밀번호는 영문과 숫자를 포함해야 합니다";
 }
@@ -70,7 +71,7 @@ function validateContact(contact: string): string | null {
 }
 
 function validateEmail(email: string): string | null {
-  const isValid = email && email.includes("@");
+  const isValid = email && EMAIL_REGEX.test(email);
   return isValid ? null : "올바른 이메일 주소를 입력해주세요";
 }
 
@@ -165,7 +166,7 @@ async function createUser(
   if (authError) {
     // eslint-disable-next-line no-console
     console.error("Auth user creation failed:", authError);
-    return { error: `회원가입에 실패했습니다: ${authError.message}` };
+    return { error: "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요." };
   }
 
   // profiles 테이블에 사용자 생성 (upsert: handle_new_user 트리거가 먼저 생성할 수 있음)

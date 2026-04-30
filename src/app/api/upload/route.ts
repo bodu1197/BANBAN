@@ -23,6 +23,19 @@ interface UploadResult {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const INTERNAL_SERVER_ERROR = "Internal server error";
+const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media"]);
+
+function sanitizeStoragePath(path: string): string | null {
+  const normalized = path.replace(/\\/g, "/");
+  if (normalized.includes("..") || normalized.startsWith("/") || normalized.includes("//")) {
+    return null;
+  }
+  return normalized;
+}
+
+function validateBucket(bucket: string): boolean {
+  return ALLOWED_BUCKETS.has(bucket);
+}
 
 /**
  * 이미지를 WebP로 변환하고 리사이즈
@@ -125,7 +138,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     if (!auth.ok) return auth.response as NextResponse<UploadResult>;
 
     const bucket = auth.searchParams.get("bucket") ?? "portfolios";
+    if (!validateBucket(bucket)) {
+      return NextResponse.json({ success: false, error: "Invalid bucket" }, { status: 400 }) as NextResponse<UploadResult>;
+    }
     const folder = auth.searchParams.get("folder") ?? "";
+    if (folder && !sanitizeStoragePath(folder)) {
+      return NextResponse.json({ success: false, error: "Invalid folder path" }, { status: 400 }) as NextResponse<UploadResult>;
+    }
     const id = crypto.randomUUID();
     const basePath = folder ? `${folder}/${id}` : id;
 
@@ -150,9 +169,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     if (!auth.ok) return auth.response;
 
     const bucket = auth.searchParams.get("bucket") ?? "portfolios";
-    const path = auth.searchParams.get("path");
-    if (!path) {
+    if (!validateBucket(bucket)) {
+      return NextResponse.json({ success: false, error: "Invalid bucket" }, { status: 400 });
+    }
+    const rawPath = auth.searchParams.get("path");
+    if (!rawPath) {
       return NextResponse.json({ success: false, error: "Path is required" }, { status: 400 });
+    }
+    const path = sanitizeStoragePath(rawPath);
+    if (!path) {
+      return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 });
     }
 
     // WebP로 변환 및 최적화
@@ -197,10 +223,16 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
 
     const { searchParams } = request.nextUrl;
     const bucket = searchParams.get("bucket") ?? "portfolios";
-    const basePath = searchParams.get("path");
-
-    if (!basePath) {
+    if (!validateBucket(bucket)) {
+      return NextResponse.json({ success: false, error: "Invalid bucket" }, { status: 400 });
+    }
+    const rawPath = searchParams.get("path");
+    if (!rawPath) {
       return NextResponse.json({ success: false, error: "Path is required" }, { status: 400 });
+    }
+    const basePath = sanitizeStoragePath(rawPath);
+    if (!basePath) {
+      return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 });
     }
 
     const sizes = Object.keys(IMAGE_SIZES) as ImageSize[];
