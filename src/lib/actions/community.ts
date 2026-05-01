@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { containsProfanity } from "@/lib/utils/profanity-filter";
 
 const COMMUNITY_PATH = "/community";
 
@@ -20,6 +21,10 @@ export async function createComment(
   const user = await getUser();
   if (!user) {
     return { success: false, error: "unauthorized" };
+  }
+
+  if (containsProfanity(content)) {
+    return { success: false, error: "부적절한 표현이 포함되어 있습니다" };
   }
 
   const supabase = await createClient();
@@ -159,6 +164,12 @@ export async function recordPostView(postId: string, ip?: string): Promise<void>
   // views_count is maintained by DB trigger (trg_post_views_count)
 }
 
+function validatePostContent(title: string, content: string): string | null {
+  if (!title || !content) return "title and content required";
+  if (containsProfanity(title) || containsProfanity(content)) return "부적절한 표현이 포함되어 있습니다";
+  return null;
+}
+
 export async function createPost(formData: FormData): Promise<{
   success: boolean;
   postId?: string;
@@ -176,9 +187,8 @@ export async function createPost(formData: FormData): Promise<{
   const imageUrl = (formData.get("image_url") as string) || null;
   const youtubeUrl = (formData.get("youtube_url") as string) || null;
 
-  if (!title || !content) {
-    return { success: false, error: "title and content required" };
-  }
+  const validationError = validatePostContent(title, content);
+  if (validationError) return { success: false, error: validationError };
 
   const supabase = await createClient();
 

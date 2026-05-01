@@ -61,17 +61,27 @@ async function getConversationCount(): Promise<number> {
   return count ?? 0;
 }
 
+async function getPendingReportCount(): Promise<number> {
+  const supabase = createAdminClient();
+  const { count } = await supabase
+    .from("reports")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "PENDING") as CountResult;
+  return count ?? 0;
+}
+
 export async function GET(): Promise<NextResponse> {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!(await isAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const [inquiries, exhibitions, members, dormant, chats] = await Promise.all([
+  const [inquiries, exhibitions, members, dormant, chats, reports] = await Promise.all([
     getInquiryCount(),
     getExhibitionPendingCount(),
     getNewMemberCount(),
     getDormantArtistCount(),
     getConversationCount(),
+    getPendingReportCount(),
   ]);
 
   return NextResponse.json({
@@ -81,6 +91,7 @@ export async function GET(): Promise<NextResponse> {
       "/admin/members": members,
       "/admin/dormant-artists": dormant,
       "/admin/chats": chats,
+      "/admin/reports": reports,
     },
   });
 }

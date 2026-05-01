@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, MessagesSquare, ExternalLink, Home, PhoneCall, BookOpen, FileEdit, UserSearch, MapPin, TrendingUp } from "lucide-react";
+import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, BookOpen, FileEdit, UserSearch, MapPin, TrendingUp, Flag } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -26,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
     { href: "/admin/points", icon: <Coins className="h-5 w-5" />, label: "포인트 관리" },
     { href: "/admin/announcements", icon: <Megaphone className="h-5 w-5" />, label: "전체 공지" },
     { href: "/admin/dormant-artists", icon: <UserX className="h-5 w-5" />, label: "휴면 계정" },
+    { href: "/admin/reports", icon: <Flag className="h-5 w-5" />, label: "신고 관리" },
     { href: "/admin/inquiries", icon: <MessageSquare className="h-5 w-5" />, label: "건의사항" },
     { href: "/admin/contact-clicks", icon: <PhoneCall className="h-5 w-5" />, label: "연락 클릭 현황" },
     // { href: "/admin/chats", icon: <MessagesSquare className="h-5 w-5" />, label: "채팅 모니터링" },

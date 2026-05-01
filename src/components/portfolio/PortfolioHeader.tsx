@@ -32,6 +32,7 @@ interface PortfolioHeaderProps {
   title: string;
   isLiked: boolean;
   onLikeToggle: () => void;
+  onReport?: () => void;
   labels?: Partial<PortfolioHeaderLabels>;
 }
 
@@ -40,6 +41,7 @@ export function PortfolioHeader({
   title,
   isLiked,
   onLikeToggle,
+  onReport,
   labels,
 }: Readonly<PortfolioHeaderProps>): React.ReactElement {
   const router = useRouter();
@@ -53,7 +55,11 @@ export function PortfolioHeader({
   };
 
   const handleReport = (): void => {
-    toast.info(l.reportComingSoon);
+    if (onReport) {
+      onReport();
+    } else {
+      toast.info(l.reportComingSoon);
+    }
   };
 
   return (

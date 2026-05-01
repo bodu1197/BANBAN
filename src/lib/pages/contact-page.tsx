@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Phone, Mail, Clock } from "lucide-react";
+import { Phone, Mail, Clock, ShieldAlert } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { ContactInfoCard } from "@/components/shared/ContactInfoCard";
@@ -30,7 +30,25 @@ export async function renderContactPage(): Promise<React.ReactElement> {
         />
       </div>
 
-      <section className="mt-8 space-y-2 rounded-lg bg-muted/50 p-6">
+      <section className="mt-8 rounded-lg border border-destructive/20 bg-destructive/5 p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-destructive" />
+          <h2 className="text-base font-bold">부적절한 콘텐츠 신고</h2>
+        </div>
+        <p className="mb-2 text-sm text-muted-foreground">
+          불쾌하거나 부적절한 콘텐츠를 발견하셨나요? 각 게시글·포트폴리오의 신고 버튼을 이용하시거나,
+          아래 이메일로 직접 신고해 주세요. 접수된 신고는 24시간 이내에 검토됩니다.
+        </p>
+        <p className="text-sm font-medium">신고 이메일: howtattoo@banunni.com</p>
+        <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
+          <li>스팸, 광고성 콘텐츠</li>
+          <li>욕설, 비방, 혐오 표현</li>
+          <li>음란, 선정적 콘텐츠</li>
+          <li>기타 이용약관 위반 사항</li>
+        </ul>
+      </section>
+
+      <section className="mt-4 space-y-2 rounded-lg bg-muted/50 p-6">
         <p className="text-sm text-muted-foreground">{f.companyName}</p>
         <p className="text-sm text-muted-foreground">{f.companyAddress}</p>
         <p className="text-sm text-muted-foreground">{f.companyRefund}</p>

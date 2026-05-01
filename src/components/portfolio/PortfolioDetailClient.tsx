@@ -2,10 +2,10 @@
 "use client";
 
 import { STRINGS } from "@/lib/strings";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Heart, Edit2, Pencil, Phone } from "lucide-react";
+import { Heart, Edit2, Pencil, Phone, ShieldBan } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { getAvatarUrl, getStorageUrl } from "@/lib/supabase/storage-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { togglePortfolioLike } from "@/lib/actions/portfolio-likes";
+import { reportContent } from "@/lib/actions/report";
+import { blockUser } from "@/lib/actions/block";
 import { useRouter } from "next/navigation";
 // 1:1 채팅 — 당분간 비활성화
 // import dynamic from "next/dynamic";
@@ -108,7 +110,15 @@ function YouTubeEmbed({ url }: Readonly<{ url: string | null }>): React.ReactEle
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
+const REPORT_REASONS = [
+  { value: "SPAM", label: "스팸/광고" },
+  { value: "ABUSE", label: "욕설/비방" },
+  { value: "ADULT", label: "음란/선정성" },
+  { value: "HATE", label: "혐오/차별" },
+  { value: "OTHER", label: "기타" },
+] as const;
+
+// eslint-disable-next-line max-lines-per-function, complexity
 export function PortfolioDetailClient({
   portfolio,
   artistPortfolios,
@@ -121,6 +131,7 @@ export function PortfolioDetailClient({
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
   const [isLiked, setIsLiked] = useState(Boolean(portfolio.is_liked));
   const [likesCount, setLikesCount] = useState(portfolio.likes_count ?? 0);
+  const [showReportModal, setShowReportModal] = useState(false);
   const { user, artist: myArtist } = useAuth();
   const canEdit = useCanEdit(user?.id, myArtist?.id, portfolio.artist_id);
 
@@ -161,12 +172,21 @@ export function PortfolioDetailClient({
 
   const totalCountLabel = STRINGS.artist.totalCount.replace("{count}", String(artistPortfolioCount));
 
+  const handleReport = useCallback(() => {
+    if (!user) {
+      toast.error("로그인이 필요합니다");
+      return;
+    }
+    setShowReportModal(true);
+  }, [user]);
+
   return (
     <div className="flex flex-col pb-24">
       <PortfolioHeader
         title={portfolio.title}
         isLiked={isLiked}
         onLikeToggle={handleLikeToggle}
+        onReport={handleReport}
         labels={headerLabels}
       />
 
@@ -232,6 +252,14 @@ export function PortfolioDetailClient({
         artistId={portfolio.artist_id}
         portfolioId={portfolio.id}
       />
+
+      {showReportModal ? (
+        <PortfolioReportModal
+          portfolioId={portfolio.id}
+          artistUserId={artist.user_id}
+          onClose={() => setShowReportModal(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -340,5 +368,81 @@ function PortfolioBottomBar({ kakaoUrl, contact, artistUserId: _artistUserId, ar
       ) : null}
       */}
     </>
+  );
+}
+
+function ReportReasonFieldset({ reason, onChange }: Readonly<{
+  reason: string; onChange: (v: string) => void;
+}>): React.ReactElement {
+  return (
+    <fieldset className="mb-4 space-y-2">
+      <legend className="sr-only">신고 사유</legend>
+      {REPORT_REASONS.map((r) => (
+        <label
+          key={r.value}
+          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/5"
+        >
+          <input type="radio" name="report-reason" value={r.value} checked={reason === r.value} onChange={() => onChange(r.value)} className="accent-brand-primary" />
+          <span>{r.label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+function ReportModalActions({ isPending, canBlock, onBlock, onClose, onSubmit }: Readonly<{
+  isPending: boolean; canBlock: boolean; onBlock: () => void; onClose: () => void; onSubmit: () => void;
+}>): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between">
+      <Button variant="outline" size="sm" onClick={onBlock} disabled={isPending || !canBlock} className="gap-1 text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring">
+        <ShieldBan className="h-3.5 w-3.5" />사용자 차단
+      </Button>
+      <div className="flex gap-2">
+        <Button variant="ghost" size="sm" onClick={onClose} disabled={isPending}>{STRINGS.common.cancel}</Button>
+        <Button size="sm" onClick={onSubmit} disabled={isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">신고하기</Button>
+      </div>
+    </div>
+  );
+}
+
+function PortfolioReportModal({ portfolioId, artistUserId, onClose }: Readonly<{
+  portfolioId: string; artistUserId: string; onClose: () => void;
+}>): React.ReactElement {
+  const [reason, setReason] = useState<string>(REPORT_REASONS[0].value);
+  const [description, setDescription] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const { user } = useAuth();
+
+  function handleSubmit(): void {
+    startTransition(async () => {
+      const result = await reportContent("portfolio", portfolioId, reason, description);
+      if (result.alreadyReported) { alert("이미 신고한 포트폴리오입니다"); onClose(); return; }
+      if (!result.success) { alert("신고 처리에 실패했습니다"); return; }
+      alert("신고가 접수되었습니다");
+      onClose();
+    });
+  }
+
+  function handleBlock(): void {
+    if (!user) return;
+    startTransition(async () => {
+      const result = await blockUser(artistUserId);
+      if (result.success) { toast.success("사용자를 차단했습니다"); onClose(); }
+      else { toast.error(result.error === "cannot block yourself" ? "자신을 차단할 수 없습니다" : "차단에 실패했습니다"); }
+    });
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="portfolio-report-title" className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4">
+      <button type="button" aria-label={STRINGS.common.close} onClick={onClose} className="absolute inset-0 bg-black/60" />
+      <div className="relative w-full max-w-md rounded-t-2xl bg-background p-5 shadow-xl md:rounded-2xl">
+        <h2 id="portfolio-report-title" className="mb-1 text-base font-bold">포트폴리오 신고</h2>
+        <p className="mb-4 text-xs text-muted-foreground">신고 사유를 선택해주세요. 허위 신고 시 제재될 수 있습니다.</p>
+        <ReportReasonFieldset reason={reason} onChange={setReason} />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="추가 설명 (선택)" rows={3} maxLength={500} className="mb-4 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        <ReportModalActions isPending={isPending} canBlock={user?.id !== artistUserId} onBlock={handleBlock} onClose={onClose} onSubmit={handleSubmit} />
+      </div>
+    </div>
   );
 }
