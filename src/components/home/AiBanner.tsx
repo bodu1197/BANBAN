@@ -77,6 +77,7 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
         return (
             <Link
                 href="/beauty-sim/my"
+                prefetch={false}
                 className="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-900 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-purple-500/30 blur-3xl" />
@@ -98,6 +99,7 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
         <div className="px-4 py-4">
             <Link
                 href="/beauty-sim/my"
+                prefetch={false}
                 className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-900 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <AnimatedBackground />

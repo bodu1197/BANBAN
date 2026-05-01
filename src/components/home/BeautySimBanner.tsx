@@ -6,6 +6,7 @@ export function BeautySimBanner({ compact }: Readonly<{ compact?: boolean }>): R
         return (
             <Link
                 href="/beauty-sim/my"
+                prefetch={false}
                 className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-900/80 via-purple-900/80 to-rose-900/80 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-pink-500/20 blur-3xl" />
@@ -27,6 +28,7 @@ export function BeautySimBanner({ compact }: Readonly<{ compact?: boolean }>): R
         <div className="px-4 py-3">
             <Link
                 href="/beauty-sim/my"
+                prefetch={false}
                 className="relative block overflow-hidden rounded-2xl bg-gradient-to-br from-pink-900/80 via-purple-900/80 to-rose-900/80 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-pink-500/20 blur-3xl" />
