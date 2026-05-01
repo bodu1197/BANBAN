@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { containsProfanity } from "@/lib/utils/profanity-filter";
 
 const COMMUNITY_PATH = "/community";
+const PROFANITY_ERROR = "부적절한 표현이 포함되어 있습니다";
 
 export interface CreateCommentResult {
   success: boolean;
@@ -24,7 +25,7 @@ export async function createComment(
   }
 
   if (containsProfanity(content)) {
-    return { success: false, error: "부적절한 표현이 포함되어 있습니다" };
+    return { success: false, error: PROFANITY_ERROR };
   }
 
   const supabase = await createClient();
@@ -74,7 +75,7 @@ export async function togglePostLike(postId: string): Promise<{
     return { success: true, isLiked: false };
   }
 
-  await (supabase.from("likes").insert as unknown as (data: Record<string, string>) => Promise<{ error: { message: string } | null }>)({
+  await supabase.from("likes").insert({
     user_id: user.id,
     likeable_type: "post",
     likeable_id: postId,
@@ -165,9 +166,11 @@ export async function recordPostView(postId: string, ip?: string): Promise<void>
 }
 
 function validatePostContent(title: string, content: string): string | null {
-  if (!title || !content) return "title and content required";
-  if (containsProfanity(title) || containsProfanity(content)) return "부적절한 표현이 포함되어 있습니다";
-  return null;
+  if (title && content) {
+    if (containsProfanity(title) || containsProfanity(content)) return PROFANITY_ERROR;
+    return null;
+  }
+  return "title and content required";
 }
 
 export async function createPost(formData: FormData): Promise<{
@@ -237,10 +240,8 @@ export async function deleteComment(commentId: string): Promise<{
   if (!comment) return { success: false, error: "not found" };
 
   const isOwner = (comment as { user_id: string }).user_id === user.id;
-  if (!isOwner) {
-    const admin = await isAdmin(supabase, user.id);
-    if (!admin) return { success: false, error: "forbidden" };
-  }
+  const hasPermission = isOwner || await isAdmin(supabase, user.id);
+  if (!hasPermission) return { success: false, error: "forbidden" };
 
   const { error } = await supabase
     .from("comments")
@@ -263,6 +264,7 @@ export async function updateComment(commentId: string, content: string): Promise
   if (!user) return { success: false, error: "unauthorized" };
 
   if (!content.trim()) return { success: false, error: "content required" };
+  if (containsProfanity(content)) return { success: false, error: PROFANITY_ERROR };
 
   const supabase = await createClient();
 
@@ -274,10 +276,8 @@ export async function updateComment(commentId: string, content: string): Promise
   if (!comment) return { success: false, error: "not found" };
 
   const isOwner = (comment as { user_id: string }).user_id === user.id;
-  if (!isOwner) {
-    const admin = await isAdmin(supabase, user.id);
-    if (!admin) return { success: false, error: "forbidden" };
-  }
+  const hasPermission = isOwner || await isAdmin(supabase, user.id);
+  if (!hasPermission) return { success: false, error: "forbidden" };
 
   const { error } = await supabase
     .from("comments")
@@ -308,10 +308,8 @@ export async function deletePost(postId: string): Promise<{
   if (!post) return { success: false, error: "not found" };
 
   const isOwner = (post as { user_id: string }).user_id === user.id;
-  if (!isOwner) {
-    const admin = await isAdmin(supabase, user.id);
-    if (!admin) return { success: false, error: "forbidden" };
-  }
+  const hasPermission = isOwner || await isAdmin(supabase, user.id);
+  if (!hasPermission) return { success: false, error: "forbidden" };
 
   const { error } = await supabase
     .from("posts")
@@ -346,10 +344,11 @@ export async function updatePost(
   if (!post) return { success: false, error: "not found" };
 
   const isOwner = (post as { user_id: string }).user_id === user.id;
-  if (!isOwner) {
-    const admin = await isAdmin(supabase, user.id);
-    if (!admin) return { success: false, error: "forbidden" };
-  }
+  const hasPermission = isOwner || await isAdmin(supabase, user.id);
+  if (!hasPermission) return { success: false, error: "forbidden" };
+
+  const validationError = validatePostContent(title, content);
+  if (validationError) return { success: false, error: validationError };
 
   const updates: Record<string, unknown> = { title, content };
   if (imageUrl !== undefined) updates.image_url = imageUrl;
