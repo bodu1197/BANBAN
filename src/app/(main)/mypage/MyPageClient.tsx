@@ -21,7 +21,6 @@ import {
   GraduationCap,
   MessageSquarePlus,
   ShoppingCart,
-  ShieldBan,
 } from "lucide-react";
 import { PointCoinIcon } from "@/components/icons/PointCoinIcon";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,7 +49,6 @@ const userMenuItems: QuickMenuItem[] = [
   { icon: Heart, href: "/likes", label: m.likedPosts },
   { icon: Star, href: "/mypage/reviews", label: m.myReviews },
   { icon: MessageSquarePlus, href: "/mypage/inquiries", label: m.inquiries },
-  { icon: ShieldBan, href: "/mypage/blocked-users", label: "차단 사용자 관리" },
 ];
 
 const artistMenuItems: QuickMenuItem[] = [
