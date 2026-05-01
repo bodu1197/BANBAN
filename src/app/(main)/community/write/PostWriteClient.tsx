@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, ImagePlus, Youtube, X } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,8 @@ export function PostWriteClient(): React.ReactElement {
       const result = await createPost(formData);
       if (result.success && result.postId) {
         router.push(`/community/${result.postId}`);
+      } else if (result.error) {
+        toast.error(result.error);
       }
     });
   }

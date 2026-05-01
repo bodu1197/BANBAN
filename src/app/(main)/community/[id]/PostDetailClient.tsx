@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Eye, Flag, Heart, MessageSquare, Pencil, Trash2, Send } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
@@ -442,6 +443,8 @@ function CommentItem({
       if (result.success) {
         setIsEditing(false);
         router.refresh();
+      } else if (result.error) {
+        toast.error(result.error);
       }
     });
   }
@@ -567,6 +570,8 @@ function CommentForm({
         setContent("");
         router.refresh();
         onSubmitted?.();
+      } else if (result.error) {
+        toast.error(result.error);
       }
     });
   }

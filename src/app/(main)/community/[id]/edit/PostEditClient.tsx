@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, ImagePlus, Youtube, X } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
 import { updatePost } from "@/lib/actions/community";
@@ -66,6 +67,8 @@ export function PostEditClient({
       );
       if (result.success) {
         router.push(`/community/${postId}`);
+      } else if (result.error) {
+        toast.error(result.error);
       }
     });
   }
