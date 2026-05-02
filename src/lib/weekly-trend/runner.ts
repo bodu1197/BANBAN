@@ -130,13 +130,53 @@ async function isAlreadyGenerated(weekStart: string): Promise<boolean> {
   return !!data;
 }
 
+async function upsertTrend(
+  weekStartStr: string,
+  weekEndStr: string,
+  items: WeeklyTrendItem[],
+): Promise<GenericRunResult> {
+  const ctx: WeeklyTrendContext = {
+    week_start: weekStartStr,
+    week_end: weekEndStr,
+    items,
+    total_likes: items.reduce((sum, it) => sum + it.likes, 0),
+    top_categories: topCategories(items),
+  };
+  const trend = await generateWeeklyTrend(ctx);
+  const slug = `weekly-trend-${weekStartStr}`;
+
+  const supabase = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- weekly_trends not in generated types
+  const { error } = await (supabase as any).from("weekly_trends").upsert(
+    {
+      week_start: weekStartStr,
+      slug,
+      title: trend.title,
+      intro: trend.intro,
+      meta_description: trend.meta_description,
+      cover_image_url: items[0]?.image_url ?? null,
+      items,
+      total_likes: ctx.total_likes,
+      published: true,
+    },
+    { onConflict: "week_start" },
+  );
+  if (error) return { ok: false, error: error.message };
+
+  revalidateTag("weekly-trend", { expire: 0 });
+  return {
+    ok: true,
+    id: weekStartStr,
+    title: trend.title,
+    href: `/weekly-trend/${slug}`,
+    remaining: null,
+  };
+}
+
 export async function runWeeklyTrendGeneration(
   overrideKey: string | null,
 ): Promise<GenericRunResult> {
-  // overrideKey is YYYY-MM-DD (Monday) for re-generating a specific week
   const targetMonday = overrideKey ? new Date(`${overrideKey}T00:00:00Z`) : mondayOf(new Date());
-
-  // We curate the *previous* week (closed week). For "now", that's Monday-7 days.
   const weekStart = overrideKey ? targetMonday : new Date(targetMonday.getTime() - 7 * 86400_000);
   const weekEnd = new Date(weekStart.getTime() + 7 * 86400_000);
   const weekStartStr = ymd(weekStart);
@@ -152,42 +192,7 @@ export async function runWeeklyTrendGeneration(
       return { ok: false, error: `${weekStartStr} 주차에 포트폴리오가 없습니다` };
     }
     const items = await enrichItems(rows);
-    const ctx: WeeklyTrendContext = {
-      week_start: weekStartStr,
-      week_end: weekEndStr,
-      items,
-      total_likes: items.reduce((sum, it) => sum + it.likes, 0),
-      top_categories: topCategories(items),
-    };
-    const trend = await generateWeeklyTrend(ctx);
-    const slug = `weekly-trend-${weekStartStr}`;
-
-    const supabase = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- weekly_trends not in generated types
-    const { error } = await (supabase as any).from("weekly_trends").upsert(
-      {
-        week_start: weekStartStr,
-        slug,
-        title: trend.title,
-        intro: trend.intro,
-        meta_description: trend.meta_description,
-        cover_image_url: items[0]?.image_url ?? null,
-        items,
-        total_likes: ctx.total_likes,
-        published: true,
-      },
-      { onConflict: "week_start" },
-    );
-    if (error) return { ok: false, error: error.message };
-
-    revalidateTag("weekly-trend", { expire: 0 });
-    return {
-      ok: true,
-      id: weekStartStr,
-      title: trend.title,
-      href: `/weekly-trend/${slug}`,
-      remaining: null,
-    };
+    return await upsertTrend(weekStartStr, weekEndStr, items);
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

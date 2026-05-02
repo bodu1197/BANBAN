@@ -65,7 +65,7 @@ function timeAgo(dateStr: string): string {
 }
 
 function getNotificationLink(n: Notification): string {
-  const data = n.data as Record<string, string> | null;
+  const _data = n.data as Record<string, string> | null;
   if (n.type === "NEW_CHAT_MESSAGE") return "/mypage/messages";
   if (n.type === "INCOMING_CALL") return "/mypage/messages";
   if (n.type === "ANNOUNCEMENT") return "/mypage";

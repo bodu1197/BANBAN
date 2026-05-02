@@ -1,7 +1,7 @@
 // @client-reason: Interactive form with state management, file uploads, address search
 "use client";
 import { STRINGS } from "@/lib/strings";
-/* eslint-disable max-lines-per-function, complexity */
+/* eslint-disable max-lines-per-function */
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -57,6 +57,115 @@ interface ArtistEditClientProps {
   artist: ArtistData;
   categoryIds: string[];
   categories: ArtistFormCategory[];
+}
+
+// --- Helper functions ---
+
+async function uploadProfileImage(artistId: string, file: File): Promise<void> {
+  const form = new globalThis.FormData();
+  form.append("file", file);
+  const path = `artists/${artistId}/profile_${Date.now()}.webp`;
+  const res = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
+  const json = await res.json() as { success: boolean };
+  if (!json.success) throw new Error("프로필 이미지 업로드 실패");
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+  await (supabase.from("artists") as any).update({ profile_image_path: path }).eq("id", artistId);
+}
+
+async function deleteArtistMedia(artistId: string, mediaIds: string[]): Promise<void> {
+  await fetch("/api/artist-media", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artistId, mediaIds }),
+  });
+}
+
+async function uploadShopImages(artistId: string, newImages: File[], startIndex: number): Promise<void> {
+  for (let i = 0; i < newImages.length; i++) {
+    const shopForm = new globalThis.FormData();
+    // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
+    shopForm.append("file", newImages[i]);
+    const path = `artists/${artistId}/shop_${startIndex + i}_${Date.now()}.webp`;
+    const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
+    const shopJson = await shopRes.json() as { success: boolean };
+    if (!shopJson.success) throw new Error("이미지 업로드 실패");
+    await fetch("/api/artist-media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artistId, storagePath: path, type: "image", orderIndex: startIndex + i }),
+    });
+  }
+}
+
+function hasRequiredFields(formData: ArtistFormData, hasShopImages: boolean, hasProfileImage: boolean): boolean {
+  const requiredTexts = [formData.title, formData.contact, formData.address, formData.introduce];
+  return requiredTexts.every((v) => v.trim().length > 0) &&
+    Boolean(formData.region_id) && hasShopImages && hasProfileImage;
+}
+
+function validateEditForm(
+  formData: ArtistFormData,
+  existingShopCount: number,
+  newShopCount: number,
+  existingProfileCount: number,
+  newProfileCount: number,
+): string | null {
+  if (!hasRequiredFields(formData, existingShopCount + newShopCount > 0, existingProfileCount + newProfileCount > 0)) {
+    return STRINGS.artistRegister.required;
+  }
+  if (formData.introduce.trim().length < INTRODUCE_MIN_LENGTH) {
+    return `소개글을 ${INTRODUCE_MIN_LENGTH}자 이상 작성해주세요.`;
+  }
+  return null;
+}
+
+function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; lon: number } | null): Record<string, unknown> {
+  const data: Record<string, unknown> = {
+    type_artist: formData.type_artist, title: formData.title,
+    contact: formData.contact, instagram_url: formData.instagram_url || null,
+    kakao_url: formData.kakao_url || null, zipcode: formData.zipcode,
+    address: formData.address,
+    address_detail: formData.address_detail || null, region_id: formData.region_id,
+    introduce: formData.introduce, description: formData.description || null,
+  };
+  if (coords) { data.lat = coords.lat; data.lon = coords.lon; }
+  return data;
+}
+
+async function updateArtistCategories(artistId: string, categoryIds: string[]): Promise<void> {
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+  await (supabase.from("categorizables") as any).delete().eq("categorizable_type", "artist").eq("categorizable_id", artistId);
+  const categorizables = categoryIds.map((catId) => ({
+    category_id: catId, categorizable_type: "artist" as const, categorizable_id: artistId,
+  }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+  if (categorizables.length > 0) await (supabase.from("categorizables") as any).insert(categorizables);
+}
+
+async function saveArtistEdits(
+  artist: Readonly<{ id: string; address: string }>,
+  formData: ArtistFormData,
+  newProfileImage: File[],
+  deletedMediaIds: string[],
+  newShopImages: File[],
+  existingShopCount: number,
+): Promise<void> {
+  const supabase = createClient();
+  const artistId = artist.id;
+
+  const coords = formData.address !== artist.address ? await geocodeAddress(formData.address) : null;
+  const updateData = buildArtistUpdateData(formData, coords);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+  const { error: artistError } = await (supabase.from("artists") as any).update(updateData).eq("id", artistId);
+  if (artistError) throw artistError;
+
+  if (newProfileImage.length > 0) await uploadProfileImage(artistId, newProfileImage[0]);
+  if (deletedMediaIds.length > 0) await deleteArtistMedia(artistId, deletedMediaIds);
+  if (newShopImages.length > 0) await uploadShopImages(artistId, newShopImages, existingShopCount);
+  await updateArtistCategories(artistId, formData.shop_category_ids);
 }
 
 export function ArtistEditClient({ artist,
@@ -158,91 +267,15 @@ export function ArtistEditClient({ artist,
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.contact.trim() || !formData.address.trim() ||
-        !formData.region_id || !formData.introduce.trim() ||
-        (existingShopImages.length === 0 && newShopImages.length === 0) ||
-        (existingProfileImage.length === 0 && newProfileImage.length === 0)) {
-      globalThis.alert(t.required);
-      return;
-    }
-    if (formData.introduce.trim().length < INTRODUCE_MIN_LENGTH) {
-      globalThis.alert(`소개글을 ${INTRODUCE_MIN_LENGTH}자 이상 작성해주세요.`);
+    const validationError = validateEditForm(formData, existingShopImages.length, newShopImages.length, existingProfileImage.length, newProfileImage.length);
+    if (validationError) {
+      globalThis.alert(validationError);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-      const artistId = artist.id;
-
-      // Geocode only if address changed
-      const coords = formData.address !== artist.address ? await geocodeAddress(formData.address) : null;
-
-      const updateData: Record<string, unknown> = {
-        type_artist: formData.type_artist, title: formData.title,
-        contact: formData.contact, instagram_url: formData.instagram_url || null,
-        kakao_url: formData.kakao_url || null, zipcode: formData.zipcode,
-        address: formData.address,
-        address_detail: formData.address_detail || null, region_id: formData.region_id,
-        introduce: formData.introduce, description: formData.description || null,
-      };
-      if (coords) { updateData.lat = coords.lat; updateData.lon = coords.lon; }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      const { error: artistError } = await (supabase.from("artists") as any).update(updateData).eq("id", artistId);
-      if (artistError) throw artistError;
-
-      // Upload new profile image via server API (bypasses storage RLS)
-      if (newProfileImage.length > 0) {
-        const profileForm = new globalThis.FormData();
-        profileForm.append("file", newProfileImage[0]);
-        const profilePath = `${artistId}/profile.webp`;
-        const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
-        const profileJson = await profileRes.json() as { success: boolean };
-        if (profileJson.success) {
-          await fetch("/api/artist-media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ artistId, profileImagePath: profilePath }),
-          });
-        }
-      }
-
-      // Delete removed shop images via server API
-      if (deletedMediaIds.length > 0) {
-        await fetch("/api/artist-media", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ artistId, mediaIds: deletedMediaIds }),
-        });
-      }
-
-      // Upload new shop images via server API (bypasses storage RLS)
-      const startIndex = existingShopImages.length;
-      for (let i = 0; i < newShopImages.length; i++) {
-        const shopForm = new globalThis.FormData();
-        // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
-        shopForm.append("file", newShopImages[i]);
-        const path = `artists/${artistId}/shop_${startIndex + i}_${Date.now()}.webp`;
-        const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
-        const shopJson = await shopRes.json() as { success: boolean };
-        if (!shopJson.success) throw new Error("이미지 업로드 실패");
-        await fetch("/api/artist-media", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ artistId, storagePath: path, type: "image", orderIndex: startIndex + i }),
-        });
-      }
-
-      // Update categories: delete then insert
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      await (supabase.from("categorizables") as any).delete().eq("categorizable_type", "artist").eq("categorizable_id", artistId);
-      const categorizables = [
-        ...formData.shop_category_ids.map((catId) => ({ category_id: catId, categorizable_type: "artist" as const, categorizable_id: artistId })),
-      ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      if (categorizables.length > 0) await (supabase.from("categorizables") as any).insert(categorizables);
-
+      await saveArtistEdits(artist, formData, newProfileImage, deletedMediaIds, newShopImages, existingShopImages.length);
       globalThis.alert(STRINGS.mypage.saved);
       router.push("/mypage");
     } catch (error) {

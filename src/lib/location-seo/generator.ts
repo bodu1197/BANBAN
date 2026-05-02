@@ -107,7 +107,7 @@ export async function generateLocationSeoPage(
   const raw = await callOpenAiJson<RawAi>(buildPrompt(ctx));
   const coverAlt = `${ctx.region_name} ${ctx.style} 타투`;
   const content = buildContent(raw, ctx.cover_image_url, coverAlt);
-  const stripSuffix = (v?: string) =>
+  const stripSuffix = (v?: string): string =>
     (v ?? "").replace(/\s*[-|–—]\s*반언니\s*$/u, "").trim();
   return {
     title: raw.title?.trim() || `${ctx.region_name} ${ctx.style} 타투`,

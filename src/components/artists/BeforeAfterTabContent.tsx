@@ -14,6 +14,31 @@ interface BeforeAfterTabContentProps {
   afterLabel: string;
 }
 
+function ComparisonImage({ url, label, position }: Readonly<{
+  url: string | null; label: string; position: "before" | "after";
+}>): React.ReactElement {
+  const isAfter = position === "after";
+  return (
+    <div className="relative aspect-square flex-1">
+      {url ? (
+        <Image
+          src={url}
+          alt={label}
+          fill
+          className="object-cover"
+          sizes="(max-width: 767px) 50vw, (max-width: 1023px) 25vw, 192px"
+          loading="lazy"
+        />
+      ) : (
+        <div className="h-full w-full bg-muted" />
+      )}
+      <span className={`absolute ${isAfter ? "right-2 bottom-2 bg-brand-primary/80" : "bottom-2 left-2 bg-black/60"} rounded-md px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm md:px-2.5 md:py-1`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
 function BeforeAfterCard({
   photo,
   beforeLabel,
@@ -28,56 +53,17 @@ function BeforeAfterCard({
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      {/* Title if exists */}
       {photo.title && (
         <div className="px-3 pt-2 pb-1">
           <p className="text-sm font-medium text-foreground">{photo.title}</p>
         </div>
       )}
-
-      {/* Side-by-side comparison */}
       <div className="relative flex">
-        {/* Before Image */}
-        <div className="relative aspect-square flex-1">
-          {beforeUrl ? (
-            <Image
-              src={beforeUrl}
-              alt={beforeLabel}
-              fill
-              className="object-cover"
-              sizes="(max-width: 767px) 50vw, (max-width: 1023px) 25vw, 192px"
-              loading="lazy"
-            />
-          ) : (
-            <div className="h-full w-full bg-muted" />
-          )}
-          <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm md:px-2.5 md:py-1">
-            {beforeLabel}
-          </span>
-        </div>
-
+        <ComparisonImage url={beforeUrl} label={beforeLabel} position="before" />
         <div className="absolute top-1/2 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md md:h-8 md:w-8">
           <ChevronRight className="h-3.5 w-3.5 text-gray-600 md:h-4 md:w-4" />
         </div>
-
-        <div className="relative aspect-square flex-1">
-          {afterUrl ? (
-            <Image
-              src={afterUrl}
-              alt={afterLabel}
-              fill
-              className="object-cover"
-              sizes="(max-width: 767px) 50vw, (max-width: 1023px) 25vw, 192px"
-              loading="lazy"
-            />
-          ) : (
-            <div className="h-full w-full bg-muted" />
-          )}
-          {/* After label badge */}
-          <span className="absolute right-2 bottom-2 rounded-md bg-brand-primary/80 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm md:px-2.5 md:py-1">
-            {afterLabel}
-          </span>
-        </div>
+        <ComparisonImage url={afterUrl} label={afterLabel} position="after" />
       </div>
     </div>
   );

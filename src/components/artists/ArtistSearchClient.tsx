@@ -106,6 +106,81 @@ function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedId
   );
 }
 
+// --- Geo status banner ---
+
+type GeoStatus = "idle" | "loading" | "success" | "denied" | "error";
+
+function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount }: Readonly<{
+  geoStatus: GeoStatus; hasFilters: boolean; isNearbyMode: boolean; totalCount: number;
+}>): React.ReactElement | null {
+  if (isNearbyMode) {
+    return (
+      <div className="mb-3 flex items-center gap-2 rounded-lg bg-brand-primary/10 px-3 py-2 text-sm text-brand-primary">
+        <Navigation className="h-4 w-4" />
+        <span>내 주변 {totalCount}개의 샵 (거리순)</span>
+      </div>
+    );
+  }
+
+  if (geoStatus === "denied" && !hasFilters) {
+    return (
+      <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+        <MapPin className="h-4 w-4" />
+        <span>위치 권한이 거부되었습니다. 지역 필터를 사용해주세요.</span>
+      </div>
+    );
+  }
+
+  if (geoStatus === "loading") {
+    return (
+      <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-brand-primary" />
+        <span>위치를 확인하고 있습니다...</span>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// --- Like toggle helper ---
+
+function toggleLikedId(prev: Set<string>, artistId: string): Set<string> {
+  const next = new Set(prev);
+  if (next.has(artistId)) next.delete(artistId);
+  else next.add(artistId);
+  return next;
+}
+
+// --- Search/nearby mode resolution ---
+
+function useResolvedArtists(
+  searchArtists: ArtistListItem[],
+  searchLoading: boolean,
+  isLoadingMore: boolean,
+  initialTotalCount: number,
+  nearby: { artists: ArtistListItem[]; isLoading: boolean; totalCount: number },
+  isNearbyMode: boolean,
+): { artists: ArtistListItem[]; isLoading: boolean; isLoadingMore: boolean; totalCount: number; noDataLabel: string } {
+  const d = STRINGS;
+  if (isNearbyMode) {
+    return {
+      artists: nearby.artists,
+      isLoading: nearby.isLoading,
+      isLoadingMore: false,
+      totalCount: nearby.totalCount,
+      noDataLabel: "주변에 등록된 샵이 없습니다",
+    };
+  }
+  return {
+    artists: searchArtists,
+    isLoading: searchLoading,
+    isLoadingMore,
+    totalCount: searchArtists.length || initialTotalCount,
+    noDataLabel: d.common.noData,
+  };
+}
+
 // --- Inner component ---
 
 /* eslint-disable max-lines-per-function */
@@ -131,9 +206,7 @@ function ArtistSearchInner({ initialArtists,
   const hasFilters = Boolean(regionId || regionSido || searchParams.get("q"));
   const isNearbyMode = geo.status === "success" && !hasFilters;
 
-  const artists = isNearbyMode ? nearby.artists : searchArtists;
-  const isLoading = isNearbyMode ? nearby.isLoading : searchLoading;
-  const totalCount = isNearbyMode ? nearby.totalCount : (searchArtists.length || initialTotalCount);
+  const resolved = useResolvedArtists(searchArtists, searchLoading, isLoadingMore, initialTotalCount, nearby, isNearbyMode);
 
   // 페이지 진입 시 자동으로 위치 요청 (1회)
   useEffect(() => {
@@ -158,22 +231,12 @@ function ArtistSearchInner({ initialArtists,
   }, [navigateWithParams]);
 
   const handleLikeToggle = useCallback((artistId: string): void => {
-    setLikedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(artistId)) next.delete(artistId);
-      else next.add(artistId);
-      return next;
-    });
+    setLikedIds((prev) => toggleLikedId(prev, artistId));
 
     startTransition(async () => {
       const result = await toggleLike(artistId).catch(() => null);
       if (!result?.success) {
-        setLikedIds((prev) => {
-          const reverted = new Set(prev);
-          if (reverted.has(artistId)) reverted.delete(artistId);
-          else reverted.add(artistId);
-          return reverted;
-        });
+        setLikedIds((prev) => toggleLikedId(prev, artistId));
       }
     });
   }, []);
@@ -199,36 +262,21 @@ function ArtistSearchInner({ initialArtists,
       />
 
       <section className="px-4 py-2">
-        {/* Nearby mode indicator */}
-        {isNearbyMode && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-brand-primary/10 px-3 py-2 text-sm text-brand-primary">
-            <Navigation className="h-4 w-4" />
-            <span>내 주변 {totalCount}개의 샵 (거리순)</span>
-          </div>
-        )}
-
-        {geo.status === "denied" && !hasFilters && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>위치 권한이 거부되었습니다. 지역 필터를 사용해주세요.</span>
-          </div>
-        )}
-
-        {geo.status === "loading" && (
-          <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-brand-primary" />
-            <span>위치를 확인하고 있습니다...</span>
-          </div>
-        )}
+        <GeoStatusBanner
+          geoStatus={geo.status}
+          hasFilters={hasFilters}
+          isNearbyMode={isNearbyMode}
+          totalCount={resolved.totalCount}
+        />
 
         <div className="mb-4 h-px bg-border" />
 
         {/* Artist List */}
         <ArtistContent
-          artists={artists}
-          isLoading={isLoading}
-          isLoadingMore={isNearbyMode ? false : isLoadingMore}
-          noDataLabel={isNearbyMode ? "주변에 등록된 샵이 없습니다" : d.common.noData}
+          artists={resolved.artists}
+          isLoading={resolved.isLoading}
+          isLoadingMore={resolved.isLoadingMore}
+          noDataLabel={resolved.noDataLabel}
           likedIds={likedIds}
           onLikeToggle={handleLikeToggle}
         />

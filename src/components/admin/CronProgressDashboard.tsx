@@ -120,6 +120,45 @@ function ProgressBar({
   );
 }
 
+function ManualTriggerButtons({ onRun, running, acceptsItemId, itemIdLabel }: Readonly<{
+  onRun: (id: string | null) => void; running: boolean;
+  acceptsItemId: boolean; itemIdLabel: string;
+}>): React.ReactElement {
+  const [itemInput, setItemInput] = useState("");
+  return (
+    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+      <button
+        type="button"
+        disabled={running}
+        onClick={() => onRun(null)}
+        className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-50"
+      >
+        {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+        다음 항목 지금 생성
+      </button>
+      {acceptsItemId ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={itemInput}
+            onChange={(e) => setItemInput(e.target.value)}
+            placeholder={itemIdLabel}
+            className="w-56 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none"
+          />
+          <button
+            type="button"
+            disabled={running || !itemInput}
+            onClick={() => onRun(itemInput)}
+            className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          >
+            특정 항목 재생성
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ManualTrigger({
   onRun,
   running,
@@ -133,42 +172,12 @@ function ManualTrigger({
   acceptsItemId: boolean;
   itemIdLabel: string;
 }>): React.ReactElement {
-  const [itemInput, setItemInput] = useState("");
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-5">
       <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-emerald-300">
         <PlayCircle className="h-4 w-4" /> 수동 실행
       </h3>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <button
-          type="button"
-          disabled={running}
-          onClick={() => onRun(null)}
-          className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-50"
-        >
-          {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
-          다음 항목 지금 생성
-        </button>
-        {acceptsItemId ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={itemInput}
-              onChange={(e) => setItemInput(e.target.value)}
-              placeholder={itemIdLabel}
-              className="w-56 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-400 focus:outline-none"
-            />
-            <button
-              type="button"
-              disabled={running || !itemInput}
-              onClick={() => onRun(itemInput)}
-              className="rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-            >
-              특정 항목 재생성
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <ManualTriggerButtons onRun={onRun} running={running} acceptsItemId={acceptsItemId} itemIdLabel={itemIdLabel} />
       <p className="mt-2 text-xs text-zinc-500">
         OpenAI 호출 → 이미지/메타 선별 → DB 저장 → 캐시 무효화. 약 20~60초 소요됩니다.
       </p>

@@ -47,13 +47,24 @@ function getIconBgClass(item: MenuItem): string {
   return "bg-muted";
 }
 
+function getIconClass(item: MenuItem): string {
+  if (item.highlight || item.hot) return "h-5 w-5 text-white";
+  if (item.placeholder) return "h-5 w-5 text-muted-foreground/60";
+  return "h-5 w-5";
+}
+
+function getLabelClass(item: MenuItem): string {
+  if (item.highlight || item.hot) return "text-xs font-medium text-orange-500";
+  if (item.placeholder) return "text-xs font-medium text-muted-foreground/60";
+  return "text-xs font-medium";
+}
+
 function QuickMenuItem({ item, label }: Readonly<{
   item: MenuItem; label: string;
 }>): React.ReactElement {
   const Icon = item.icon;
   const isAvailable = item.path !== null;
   const href = isAvailable ? `/${item.path as string}` : "#";
-  const isAccented = item.highlight || item.hot;
 
   return (
     <Link
@@ -69,10 +80,7 @@ function QuickMenuItem({ item, label }: Readonly<{
     >
       <div className="relative">
         <div className={`flex h-12 w-12 items-center justify-center rounded-full ${getIconBgClass(item)}`}>
-          <Icon
-            className={`h-5 w-5 ${isAccented ? "text-white" : ""} ${item.placeholder ? "text-muted-foreground/60" : ""}`}
-            aria-hidden="true"
-          />
+          <Icon className={getIconClass(item)} aria-hidden="true" />
         </div>
         {item.hot ? (
           <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
@@ -80,7 +88,7 @@ function QuickMenuItem({ item, label }: Readonly<{
           </span>
         ) : null}
       </div>
-      <span className={`text-xs font-medium ${isAccented ? "text-orange-500" : ""} ${item.placeholder ? "text-muted-foreground/60" : ""}`}>
+      <span className={getLabelClass(item)}>
         {label}
       </span>
     </Link>

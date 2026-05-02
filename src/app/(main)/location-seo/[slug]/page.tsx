@@ -92,11 +92,7 @@ function renderMarkdown(content: string): React.ReactElement {
   );
 }
 
-export default async function LocationSeoDetailPage(props: PageProps): Promise<React.ReactElement> {
-  const { slug } = await props.params;
-  const page = await fetchPage(slug);
-  if (!page) notFound();
-
+function buildStructuredData(page: LocationSeoPage): { articleSchema: object; faqSchema: object | null } {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -118,6 +114,11 @@ export default async function LocationSeoDetailPage(props: PageProps): Promise<R
     })),
   } : null;
 
+  return { articleSchema, faqSchema };
+}
+
+function LocationSeoArticle({ page }: Readonly<{ page: LocationSeoPage }>): React.ReactElement {
+  const { articleSchema, faqSchema } = buildStructuredData(page);
   return (
     <article className="mx-auto max-w-3xl px-4 py-8 md:py-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
@@ -166,4 +167,11 @@ export default async function LocationSeoDetailPage(props: PageProps): Promise<R
       ) : null}
     </article>
   );
+}
+
+export default async function LocationSeoDetailPage(props: PageProps): Promise<React.ReactElement> {
+  const { slug } = await props.params;
+  const page = await fetchPage(slug);
+  if (!page) notFound();
+  return <LocationSeoArticle page={page} />;
 }

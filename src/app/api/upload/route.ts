@@ -23,6 +23,7 @@ interface UploadResult {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const INTERNAL_SERVER_ERROR = "Internal server error";
+const INVALID_BUCKET = "Invalid bucket";
 const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media"]);
 
 function sanitizeStoragePath(path: string): string | null {
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 
     const bucket = auth.searchParams.get("bucket") ?? "portfolios";
     if (!validateBucket(bucket)) {
-      return NextResponse.json({ success: false, error: "Invalid bucket" }, { status: 400 }) as NextResponse<UploadResult>;
+      return NextResponse.json({ success: false, error: INVALID_BUCKET }, { status: 400 }) as NextResponse<UploadResult>;
     }
     const folder = auth.searchParams.get("folder") ?? "";
     if (folder && !sanitizeStoragePath(folder)) {
@@ -170,7 +171,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     const bucket = auth.searchParams.get("bucket") ?? "portfolios";
     if (!validateBucket(bucket)) {
-      return NextResponse.json({ success: false, error: "Invalid bucket" }, { status: 400 });
+      return NextResponse.json({ success: false, error: INVALID_BUCKET }, { status: 400 });
     }
     const rawPath = auth.searchParams.get("path");
     if (!rawPath) {
@@ -224,7 +225,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const { searchParams } = request.nextUrl;
     const bucket = searchParams.get("bucket") ?? "portfolios";
     if (!validateBucket(bucket)) {
-      return NextResponse.json({ success: false, error: "Invalid bucket" }, { status: 400 });
+      return NextResponse.json({ success: false, error: INVALID_BUCKET }, { status: 400 });
     }
     const rawPath = searchParams.get("path");
     if (!rawPath) {

@@ -255,7 +255,6 @@ export function PortfolioDetailClient({
       {showReportModal ? (
         <PortfolioReportModal
           portfolioId={portfolio.id}
-          artistUserId={artist.user_id}
           onClose={() => setShowReportModal(false)}
         />
       ) : null}
@@ -400,13 +399,12 @@ function ReportModalActions({ isPending, onClose, onSubmit }: Readonly<{
   );
 }
 
-function PortfolioReportModal({ portfolioId, artistUserId, onClose }: Readonly<{
-  portfolioId: string; artistUserId: string; onClose: () => void;
+function PortfolioReportModal({ portfolioId, onClose }: Readonly<{
+  portfolioId: string; onClose: () => void;
 }>): React.ReactElement {
   const [reason, setReason] = useState<string>(REPORT_REASONS[0].value);
   const [description, setDescription] = useState("");
   const [isPending, startTransition] = useTransition();
-  const { user } = useAuth();
 
   function handleSubmit(): void {
     startTransition(async () => {

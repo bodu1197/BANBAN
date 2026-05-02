@@ -23,7 +23,6 @@ import {
   TextField,
   TextFieldWithHint,
   AddressField,
-  DescriptionField,
   CategoryCheckboxGroup,
   DaumPostcodeModal,
   buildFormLabelsFromDict,

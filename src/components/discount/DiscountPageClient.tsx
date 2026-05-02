@@ -14,32 +14,8 @@ interface DiscountPageClientProps {
   regions: Region[];
 }
 
-type CategoryKey = "semi";
-
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "semi", label: "반영구" },
-];
-
-const TAB = "flex-1 py-2.5 text-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const TAB_ACTIVE = "border-b-2 border-brand-primary text-brand-primary";
-const TAB_INACTIVE = "text-muted-foreground hover:text-foreground";
-
 const PRICE_MAX = 500000;
 const PRICE_STEP = 10000;
-
-function CategoryTabs({ value, onChange }: Readonly<{
-  value: CategoryKey; onChange: (v: CategoryKey) => void;
-}>): React.ReactElement {
-  return (
-    <div className="flex border-b border-border">
-      {CATEGORIES.map((c) => (
-        <button key={c.key} onClick={() => onChange(c.key)} className={`${TAB} ${value === c.key ? TAB_ACTIVE : TAB_INACTIVE}`}>
-          {c.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function formatPrice(v: number): string {
   if (v >= 10000) return `${Math.floor(v / 10000)}만원`;
@@ -109,32 +85,43 @@ function filterByRegion(items: HomePortfolio[], regionId: string | null, regionS
   return items;
 }
 
-// eslint-disable-next-line max-lines-per-function
+function buildRegionMap(regions: Region[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const r of regions) map.set(r.name, r.id);
+  return map;
+}
+
+function findActiveRegions(portfolios: HomePortfolio[], regions: Region[], regionMap: Map<string, string>): Region[] {
+  const activeIds = new Set<string>();
+  for (const p of portfolios) {
+    if (p.artistRegion) {
+      const id = regionMap.get(p.artistRegion);
+      if (id) activeIds.add(id);
+    }
+  }
+  return regions.filter((r) => activeIds.has(r.id));
+}
+
+function DiscountResults({ items }: Readonly<{ items: HomePortfolio[] }>): React.ReactElement {
+  if (items.length === 0) return <EmptyState message={STRINGS.common.noData} />;
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      {items.map((p) => (
+        <PortfolioGridCard key={p.id} portfolio={p} showDiscount />
+      ))}
+    </div>
+  );
+}
+
 export function DiscountPageClient({
   portfolios, regions,
 }: Readonly<DiscountPageClientProps>): React.ReactElement {
-  const noDataMessage = STRINGS.common.noData;
-  const [category, setCategory] = useState<CategoryKey>("semi");
   const [regionId, setRegionId] = useState<string | null>(null);
   const [regionSido, setRegionSido] = useState<string | null>(null);
   const [maxPrice, setMaxPrice] = useState(0);
 
-  const regionMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of regions) map.set(r.name, r.id);
-    return map;
-  }, [regions]);
-
-  const activeRegions = useMemo(() => {
-    const activeIds = new Set<string>();
-    for (const p of portfolios) {
-      if (p.artistRegion) {
-        const id = regionMap.get(p.artistRegion);
-        if (id) activeIds.add(id);
-      }
-    }
-    return regions.filter((r) => activeIds.has(r.id));
-  }, [portfolios, regions, regionMap]);
+  const regionMap = useMemo(() => buildRegionMap(regions), [regions]);
+  const activeRegions = useMemo(() => findActiveRegions(portfolios, regions, regionMap), [portfolios, regions, regionMap]);
 
   const handleRegionChange = useCallback((id: string | null, sido: string | null): void => {
     setRegionId(id);
@@ -144,37 +131,19 @@ export function DiscountPageClient({
   const filtered = useMemo(() => {
     let items = portfolios.filter((p) => matchCategory(p));
     if (maxPrice > 0 && maxPrice < PRICE_MAX) items = items.filter((p) => p.price <= maxPrice);
-    items = filterByRegion(items, regionId, regionSido, regionMap, activeRegions);
-    return items;
+    return filterByRegion(items, regionId, regionSido, regionMap, activeRegions);
   }, [portfolios, maxPrice, regionId, regionSido, regionMap, activeRegions]);
 
   return (
     <div className="py-4">
-
-      <RegionSelector
-        regions={activeRegions}
-        selectedId={regionId}
-        selectedSido={regionSido}
-        labels={REGION_LABELS}
-        onSelectRegions={handleRegionChange}
-      />
-
+      <RegionSelector regions={activeRegions} selectedId={regionId} selectedSido={regionSido}
+        labels={REGION_LABELS} onSelectRegions={handleRegionChange} />
       <PriceSlider maxPrice={maxPrice} onChange={setMaxPrice} />
-
       <p className="mb-4 px-4 text-sm text-muted-foreground">
         검색 결과 <span className="font-medium text-foreground">{filtered.length}</span>개
       </p>
-
       <div className="px-4">
-        {filtered.length === 0 ? (
-          <EmptyState message={noDataMessage} />
-        ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {filtered.map((p) => (
-              <PortfolioGridCard key={p.id} portfolio={p} showDiscount />
-            ))}
-          </div>
-        )}
+        <DiscountResults items={filtered} />
       </div>
     </div>
   );

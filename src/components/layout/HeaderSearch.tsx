@@ -1,7 +1,7 @@
 // @client-reason: useState for search toggle/input, keyboard navigation, debounced API calls
 "use client";
 
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, User, Image as ImageIcon, Clock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,50 +61,48 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   );
 }
 
-function SuggestDropdown({ items, query, activeIndex, onSelect, recentSearches, onRecentSelect, onClearRecent, showRecent }: Readonly<{
+function RecentSearchList({ recentSearches, onRecentSelect, onClearRecent }: Readonly<{
+  recentSearches: string[];
+  onRecentSelect: (q: string) => void;
+  onClearRecent: () => void;
+}>): React.ReactElement {
+  return (
+    <div className="absolute left-0 top-full z-50 w-full border-b border-border bg-background shadow-lg">
+      <div className="mx-auto max-w-[767px] px-4 py-2">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">최근 검색어</span>
+          <button
+            type="button"
+            onClick={onClearRecent}
+            className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="최근 검색어 삭제"
+          >
+            <Trash2 className="h-3 w-3" />
+            전체 삭제
+          </button>
+        </div>
+        {recentSearches.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onRecentSelect(s)}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SuggestList({ items, query, activeIndex, onSelect }: Readonly<{
   items: SuggestItem[];
   query: string;
   activeIndex: number;
   onSelect: (item: SuggestItem) => void;
-  recentSearches: string[];
-  onRecentSelect: (q: string) => void;
-  onClearRecent: () => void;
-  showRecent: boolean;
-}>): React.ReactElement | null {
-  if (showRecent && recentSearches.length > 0) {
-    return (
-      <div className="absolute left-0 top-full z-50 w-full border-b border-border bg-background shadow-lg">
-        <div className="mx-auto max-w-[767px] px-4 py-2">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">최근 검색어</span>
-            <button
-              type="button"
-              onClick={onClearRecent}
-              className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="최근 검색어 삭제"
-            >
-              <Trash2 className="h-3 w-3" />
-              전체 삭제
-            </button>
-          </div>
-          {recentSearches.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onRecentSelect(s)}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (items.length === 0 || !query) return null;
-
+}>): React.ReactElement {
   return (
     <div className="absolute left-0 top-full z-50 w-full border-b border-border bg-background shadow-lg">
       <ul role="listbox" className="mx-auto max-w-[767px] px-4 py-2">
@@ -141,32 +139,151 @@ function SuggestDropdown({ items, query, activeIndex, onSelect, recentSearches, 
   );
 }
 
-function SearchPanel({ placeholder, open, onClose }: Readonly<HeaderSearchProps & { open: boolean; onClose: () => void }>): React.ReactElement {
-  const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
+function SuggestDropdown({ items, query, activeIndex, onSelect, recentSearches, onRecentSelect, onClearRecent, showRecent }: Readonly<{
+  items: SuggestItem[];
+  query: string;
+  activeIndex: number;
+  onSelect: (item: SuggestItem) => void;
+  recentSearches: string[];
+  onRecentSelect: (q: string) => void;
+  onClearRecent: () => void;
+  showRecent: boolean;
+}>): React.ReactElement | null {
+  if (showRecent && recentSearches.length > 0) {
+    return <RecentSearchList recentSearches={recentSearches} onRecentSelect={onRecentSelect} onClearRecent={onClearRecent} />;
+  }
+
+  if (items.length === 0 || !query) return null;
+
+  return <SuggestList items={items} query={query} activeIndex={activeIndex} onSelect={onSelect} />;
+}
+
+function ClearQueryButton({ onClick }: Readonly<{ onClick: () => void }>): React.ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label="검색어 지우기"
+    >
+      <X className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function SearchInput({ inputRef, query, onInput, onKeyDown, placeholder, dropdownVisible }: Readonly<{
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  query: string;
+  onInput: (value: string) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+  placeholder: string;
+  dropdownVisible: boolean;
+}>): React.ReactElement {
+  return (
+    <input
+      ref={inputRef}
+      id="header-search"
+      name="search"
+      type="text"
+      value={query}
+      onChange={(e) => onInput(e.target.value)}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+      autoComplete="off"
+      role="combobox"
+      aria-expanded={dropdownVisible}
+      aria-autocomplete="list"
+      aria-controls="search-suggest-list"
+      className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+      aria-label={placeholder}
+    />
+  );
+}
+
+function SearchInputBar({ inputRef, query, onInput, onKeyDown, placeholder, dropdownVisible, onClearQuery, onClose }: Readonly<{
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  query: string;
+  onInput: (value: string) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+  placeholder: string;
+  dropdownVisible: boolean;
+  onClearQuery: () => void;
+  onClose: () => void;
+}>): React.ReactElement {
+  return (
+    <div className="mx-auto flex max-w-[767px] items-center gap-2 px-4 py-2">
+      <div className="flex flex-1 items-center gap-2 rounded-lg bg-muted px-3 py-2">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <SearchInput inputRef={inputRef} query={query} onInput={onInput} onKeyDown={onKeyDown} placeholder={placeholder} dropdownVisible={dropdownVisible} />
+        {query ? <ClearQueryButton onClick={onClearQuery} /> : null}
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="검색 닫기"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function handleSearchKeyDown(
+  e: React.KeyboardEvent,
+  params: Readonly<{
+    items: SuggestItem[];
+    activeIndex: number;
+    query: string;
+    setActiveIndex: (fn: (prev: number) => number) => void;
+    setItems: (items: SuggestItem[]) => void;
+    setQuery: (q: string) => void;
+    onSelect: (item: SuggestItem) => void;
+    onSearch: (q: string) => void;
+    onClose: () => void;
+  }>,
+): void {
+  const totalItems = params.items.length;
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    params.setActiveIndex((prev) => (prev < totalItems - 1 ? prev + 1 : 0));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    params.setActiveIndex((prev) => (prev > 0 ? prev - 1 : totalItems - 1));
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (params.activeIndex >= 0 && params.activeIndex < totalItems) {
+      const selected = params.items.at(params.activeIndex);
+      if (selected) params.onSelect(selected);
+    } else {
+      params.onSearch(params.query);
+    }
+  } else if (e.key === "Escape") {
+    if (params.items.length > 0 || params.query) {
+      params.setItems([]);
+      params.setQuery("");
+    } else {
+      params.onClose();
+    }
+  }
+}
+
+function useSearchSuggestions(): {
+  items: SuggestItem[];
+  activeIndex: number;
+  setItems: (items: SuggestItem[]) => void;
+  setActiveIndex: (fn: (prev: number) => number) => void;
+  resetActiveIndex: () => void;
+  fetchDebounced: (value: string, timerRef: React.RefObject<ReturnType<typeof setTimeout> | null>) => void;
+} {
   const [items, setItems] = useState<SuggestItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
-
-  useEffect(() => {
-    if (open) {
-      inputRef.current?.focus();
-      setRecentSearches(getRecentSearches());
-    } else {
-      setQuery("");
-      setItems([]);
-      setActiveIndex(-1);
-    }
-  }, [open]);
 
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 1) { setItems([]); return; }
-
     const cached = suggestCache.get(q);
     if (cached) { setItems(cached); return; }
-
     try {
       const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);
       const data = await res.json() as { items: SuggestItem[] };
@@ -175,62 +292,100 @@ function SearchPanel({ placeholder, open, onClose }: Readonly<HeaderSearchProps 
     } catch { setItems([]); }
   }, []);
 
-  const handleInput = useCallback((value: string) => {
-    setQuery(value);
-    setActiveIndex(-1);
+  const fetchDebounced = useCallback((value: string, timerRef: React.RefObject<ReturnType<typeof setTimeout> | null>) => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => fetchSuggestions(value.trim()), DEBOUNCE_MS);
+    (timerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | null>).current = setTimeout(() => fetchSuggestions(value.trim()), DEBOUNCE_MS);
   }, [fetchSuggestions]);
+
+  const resetActiveIndex = useCallback(() => setActiveIndex(-1), []);
+
+  return { items, activeIndex, setItems, setActiveIndex, resetActiveIndex, fetchDebounced };
+}
+
+function useSearchNavigation(handleClose: () => void): {
+  executeSearch: (q: string) => void;
+  handleSelect: (item: SuggestItem) => void;
+} {
+  const router = useRouter();
 
   const executeSearch = useCallback((searchQuery: string) => {
     const q = searchQuery.trim();
     if (!q) return;
     saveRecentSearch(q);
     router.push(`/search?q=${encodeURIComponent(q)}`);
-    setQuery("");
-    setItems([]);
-    onClose();
-  }, [router, onClose]);
+    handleClose();
+  }, [router, handleClose]);
 
   const handleSelect = useCallback((item: SuggestItem) => {
     saveRecentSearch(item.title);
     const path = item.type === "artist" ? `/artists/${item.id}` : `/portfolios/${item.id}`;
     router.push(path);
-    setQuery("");
-    setItems([]);
-    onClose();
-  }, [router, onClose]);
+    handleClose();
+  }, [router, handleClose]);
 
-  const handleKeyDown = (e: React.KeyboardEvent): void => {
-    const totalItems = items.length;
+  return { executeSearch, handleSelect };
+}
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev < totalItems - 1 ? prev + 1 : 0));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIndex((prev) => (prev > 0 ? prev - 1 : totalItems - 1));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (activeIndex >= 0 && activeIndex < totalItems) {
-        handleSelect(items[activeIndex] as SuggestItem);
-      } else {
-        executeSearch(query);
-      }
-    } else if (e.key === "Escape") {
-      if (items.length > 0 || query) {
-        setItems([]);
-        setQuery("");
-      } else {
-        onClose();
-      }
-    }
-  };
+function useSearchPanel(open: boolean, onClose: () => void): {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  query: string;
+  items: SuggestItem[];
+  activeIndex: number;
+  recentSearches: string[];
+  handleInput: (value: string) => void;
+  handleSelect: (item: SuggestItem) => void;
+  handleClose: () => void;
+  handleClearRecent: () => void;
+  handleClearQuery: () => void;
+  executeSearch: (q: string) => void;
+  setActiveIndex: (fn: (prev: number) => number) => void;
+  setItems: (items: SuggestItem[]) => void;
+  setQuery: (q: string) => void;
+} {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [recentVersion, setRecentVersion] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const { items, activeIndex, setItems, setActiveIndex, resetActiveIndex, fetchDebounced } = useSearchSuggestions();
 
-  const handleClearRecent = (): void => {
+  const resetState = useCallback(() => { setQuery(""); setItems([]); resetActiveIndex(); }, [setItems, resetActiveIndex]);
+  const handleClose = useCallback(() => { resetState(); onClose(); }, [resetState, onClose]);
+  const { executeSearch, handleSelect } = useSearchNavigation(handleClose);
+
+  const recentSearches = useMemo(() => {
+    if (!open) return [];
+    void recentVersion;
+    return getRecentSearches();
+  }, [open, recentVersion]);
+
+  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
+
+  const handleInput = useCallback((value: string) => {
+    setQuery(value);
+    resetActiveIndex();
+    fetchDebounced(value, timerRef);
+  }, [resetActiveIndex, fetchDebounced]);
+
+  const handleClearRecent = useCallback((): void => {
     clearRecentSearches();
-    setRecentSearches([]);
+    setRecentVersion((v) => v + 1);
+  }, []);
+
+  const handleClearQuery = useCallback(() => { setQuery(""); setItems([]); inputRef.current?.focus(); }, [setItems]);
+
+  return {
+    inputRef, query, items, activeIndex, recentSearches,
+    handleInput, handleSelect, handleClose, handleClearRecent, handleClearQuery,
+    executeSearch, setActiveIndex, setItems, setQuery,
   };
+}
+
+function SearchPanel({ placeholder, open, onClose }: Readonly<HeaderSearchProps & { open: boolean; onClose: () => void }>): React.ReactElement {
+  const {
+    inputRef, query, items, activeIndex, recentSearches,
+    handleInput, handleSelect, handleClose, handleClearRecent, handleClearQuery,
+    executeSearch, setActiveIndex, setItems, setQuery,
+  } = useSearchPanel(open, onClose);
 
   const showRecent = query.length === 0 && open;
   const dropdownVisible = items.length > 0 || (showRecent && recentSearches.length > 0);
@@ -242,46 +397,16 @@ function SearchPanel({ placeholder, open, onClose }: Readonly<HeaderSearchProps 
         open ? "max-h-14 opacity-100" : "max-h-0 opacity-0 border-b-0",
       )}
     >
-      <div className="mx-auto flex max-w-[767px] items-center gap-2 px-4 py-2">
-        <div className="flex flex-1 items-center gap-2 rounded-lg bg-muted px-3 py-2">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <input
-            ref={inputRef}
-            id="header-search"
-            name="search"
-            type="text"
-            value={query}
-            onChange={(e) => handleInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            autoComplete="off"
-            role="combobox"
-            aria-expanded={dropdownVisible}
-            aria-autocomplete="list"
-            aria-controls="search-suggest-list"
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            aria-label={placeholder}
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => { setQuery(""); setItems([]); inputRef.current?.focus(); }}
-              className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="검색어 지우기"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="검색 닫기"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
+      <SearchInputBar
+        inputRef={inputRef}
+        query={query}
+        onInput={handleInput}
+        onKeyDown={(e) => handleSearchKeyDown(e, { items, activeIndex, query, setActiveIndex, setItems, setQuery, onSelect: handleSelect, onSearch: executeSearch, onClose: handleClose })}
+        placeholder={placeholder}
+        dropdownVisible={dropdownVisible}
+        onClearQuery={handleClearQuery}
+        onClose={handleClose}
+      />
       <SuggestDropdown
         items={items}
         query={query}

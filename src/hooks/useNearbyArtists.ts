@@ -37,12 +37,16 @@ async function fetchNearby(lat: number, lng: number): Promise<ArtistListItem[]> 
   }));
 }
 
-export function useNearbyArtists(lat: number | null, lng: number | null) {
+export function useNearbyArtists(lat: number | null, lng: number | null): {
+  artists: ArtistListItem[];
+  isLoading: boolean;
+  totalCount: number;
+} {
   const enabled = lat !== null && lng !== null;
 
   const { data, isLoading } = useQuery({
     queryKey: ["nearby-artists", lat, lng],
-    queryFn: () => fetchNearby(lat!, lng!),
+    queryFn: () => fetchNearby(lat as number, lng as number),
     enabled,
     staleTime: 5 * 60 * 1000,
   });

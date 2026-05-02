@@ -18,6 +18,30 @@ function sanitize(input: string): string {
   return input.replace(/[<>"'&.*+?^${}()|[\]\\]/g, "").trim().slice(0, MAX_QUERY_LEN);
 }
 
+type SupabaseClient = ReturnType<typeof createStaticClient>;
+
+function applyFilter(query: ReturnType<SupabaseClient["from"]>, q: string, isChosung: boolean): void {
+  if (isChosung) {
+    query.filter("title", "~", buildChoseongRegex(q));
+  } else {
+    query.ilike("title", `%${q}%`);
+  }
+}
+
+function mapResults(
+  artists: { id: string; title: string; region: { name: string } | null }[],
+  portfolios: { id: string; title: string; artist: { title: string } }[],
+): SuggestItem[] {
+  const items: SuggestItem[] = [];
+  for (const a of artists) {
+    items.push({ id: a.id, title: a.title, type: "artist", extra: a.region?.name ?? undefined });
+  }
+  for (const p of portfolios) {
+    items.push({ id: p.id, title: p.title, type: "portfolio", extra: p.artist?.title ?? undefined });
+  }
+  return items.slice(0, SUGGEST_LIMIT);
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const raw = request.nextUrl.searchParams.get("q")?.trim();
   if (!raw || raw.length < 1) {
@@ -49,34 +73,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     .order("likes_count", { ascending: false })
     .limit(SUGGEST_LIMIT);
 
-  if (isChosung) {
-    const regex = buildChoseongRegex(q);
-    artistQuery.filter("title", "~", regex);
-    portfolioQuery.filter("title", "~", regex);
-  } else {
-    artistQuery.ilike("title", `%${q}%`);
-    portfolioQuery.ilike("title", `%${q}%`);
-  }
+  applyFilter(artistQuery, q, isChosung);
+  applyFilter(portfolioQuery, q, isChosung);
 
-  const [{ data: artists }, { data: portfolios }] = await Promise.all([
-    artistQuery,
-    portfolioQuery,
-  ]);
+  const [{ data: artists }, { data: portfolios }] = await Promise.all([artistQuery, portfolioQuery]);
 
-  const items: SuggestItem[] = [];
-
-  for (const a of (artists ?? []) as { id: string; title: string; region: { name: string } | null }[]) {
-    items.push({ id: a.id, title: a.title, type: "artist", extra: a.region?.name ?? undefined });
-  }
-
-  for (const p of (portfolios ?? []) as { id: string; title: string; artist: { title: string } }[]) {
-    items.push({ id: p.id, title: p.title, type: "portfolio", extra: p.artist?.title ?? undefined });
-  }
-
-  const sorted = items.slice(0, SUGGEST_LIMIT);
+  const items = mapResults(
+    (artists ?? []) as { id: string; title: string; region: { name: string } | null }[],
+    (portfolios ?? []) as { id: string; title: string; artist: { title: string } }[],
+  );
 
   return NextResponse.json(
-    { items: sorted },
+    { items },
     { headers: { "Cache-Control": `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=60` } },
   );
 }

@@ -9,7 +9,11 @@ export interface GeoPosition {
 
 export type GeoStatus = "idle" | "loading" | "success" | "denied" | "error";
 
-export function useGeolocation() {
+export function useGeolocation(): {
+  readonly position: GeoPosition | null;
+  readonly status: GeoStatus;
+  readonly request: () => void;
+} {
   const [position, setPosition] = useState<GeoPosition | null>(null);
   const [status, setStatus] = useState<GeoStatus>("idle");
 

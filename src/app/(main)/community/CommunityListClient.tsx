@@ -1,7 +1,7 @@
 // @client-reason: tab/sort interaction, router push for filter changes
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MessageSquare, Eye, Heart, PenSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,9 @@ const BOARD_LABEL_MAP: Record<string, string> = {
 };
 
 function boardLabel(typeBoard: string): string {
-  return BOARD_LABEL_MAP[typeBoard] ?? typeBoard;
+  const record = BOARD_LABEL_MAP as Record<string, string>;
+  // eslint-disable-next-line security/detect-object-injection -- typed Record lookup
+  return record[typeBoard] ?? typeBoard;
 }
 
 interface CommunityListClientProps {
@@ -45,6 +47,67 @@ interface CommunityListClientProps {
   userId: string | null;
 }
 
+function BoardTabs({ currentBoard, onNavigate }: Readonly<{
+  currentBoard: string; onNavigate: (board: string) => void;
+}>): React.ReactElement {
+  return (
+    <nav className="flex border-b border-border" aria-label="게시판 카테고리">
+      {BOARD_TABS.map((tab) => (
+        <button
+          key={tab.key}
+          type="button"
+          onClick={() => onNavigate(tab.key)}
+          className={cn(
+            "relative flex-1 px-2 py-3 text-center text-sm font-medium transition-colors",
+            "hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none",
+            currentBoard === tab.key
+              ? "text-brand-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-brand-primary"
+              : "text-muted-foreground",
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+function SortBar({ currentSort, onNavigate, userId }: Readonly<{
+  currentSort: string; onNavigate: (sort: string) => void; userId: string | null;
+}>): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex gap-2">
+        {SORT_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onNavigate(opt.key)}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              "hover:bg-brand-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              currentSort === opt.key
+                ? "bg-brand-primary text-white"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+      {userId ? (
+        <Link
+          href="/community/write"
+          className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />
+          {t.writePost}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 export function CommunityListClient({
   posts,
   currentBoard,
@@ -52,7 +115,6 @@ export function CommunityListClient({
   userId,
 }: Readonly<CommunityListClientProps>): React.ReactElement {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   function navigate(board: string, sort: string): void {
     const params = new URLSearchParams();
@@ -64,67 +126,14 @@ export function CommunityListClient({
 
   return (
     <div className="mx-auto w-full max-w-[767px]">
-      {/* Board Tabs */}
-      <nav className="flex border-b border-border" aria-label="게시판 카테고리">
-        {BOARD_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => navigate(tab.key, currentSort)}
-            className={cn(
-              "relative flex-1 px-2 py-3 text-center text-sm font-medium transition-colors",
-              "hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none",
-              currentBoard === tab.key
-                ? "text-brand-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-brand-primary"
-                : "text-muted-foreground",
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
-      {/* Sort + Write Button */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex gap-2">
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              onClick={() => navigate(currentBoard, opt.key)}
-              className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                "hover:bg-brand-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                currentSort === opt.key
-                  ? "bg-brand-primary text-white"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {userId ? (
-          <Link
-            href="/community/write"
-            className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />
-            {t.writePost}
-          </Link>
-        ) : null}
-      </div>
-
-      {/* Post List */}
+      <BoardTabs currentBoard={currentBoard} onNavigate={(board) => navigate(board, currentSort)} />
+      <SortBar currentSort={currentSort} onNavigate={(sort) => navigate(currentBoard, sort)} userId={userId} />
       {posts.length === 0 ? (
         <p className="py-20 text-center text-sm text-muted-foreground">{t.noPosts}</p>
       ) : (
         <ul className="divide-y divide-border">
           {posts.map((post) => (
-            <li key={post.id}>
-              <PostCard post={post} />
-            </li>
+            <li key={post.id}><PostCard post={post} /></li>
           ))}
         </ul>
       )}

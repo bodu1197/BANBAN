@@ -61,6 +61,33 @@ function validateImageSize(file: File): Promise<{ valid: boolean; width: number;
   });
 }
 
+function ImagePreview({ imageUrl, onChangePick }: Readonly<{
+  imageUrl: string; onChangePick: () => void;
+}>): React.ReactElement {
+  return (
+    <div className="relative aspect-[3/2] w-full max-w-[360px] overflow-hidden rounded-lg border border-white/10">
+      <Image src={imageUrl} alt="배너 미리보기" fill sizes="360px" className="object-cover" />
+      <button type="button" aria-label="이미지 변경" onClick={onChangePick}
+        className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        변경
+      </button>
+    </div>
+  );
+}
+
+function ImagePlaceholder({ uploading, onPick }: Readonly<{
+  uploading: boolean; onPick: () => void;
+}>): React.ReactElement {
+  return (
+    <button type="button" onClick={onPick} disabled={uploading}
+      className="flex w-full max-w-[360px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 bg-white/5 py-10 text-zinc-400 transition-colors hover:border-amber-500/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Upload className="h-8 w-8" />
+      <span className="text-sm">{uploading ? "업로드 중..." : "이미지를 선택하세요"}</span>
+      <span className="text-[10px] text-zinc-500">최소 {SIZE_LABEL} · 3:2 비율 권장</span>
+    </button>
+  );
+}
+
 function BannerImageUpload({ currentPath, onUpload }: Readonly<{
   currentPath: string; onUpload: (path: string) => void;
 }>): React.ReactElement {
@@ -71,13 +98,11 @@ function BannerImageUpload({ currentPath, onUpload }: Readonly<{
 
   const handleFile = useCallback(async (file: File) => {
     setSizeError(null);
-
     const { valid, width, height } = await validateImageSize(file);
     if (!valid) {
       setSizeError(`이미지가 너무 작습니다 (${width}x${height}px). 최소 ${SIZE_LABEL} 이상이어야 합니다.`);
       return;
     }
-
     setUploading(true);
     try {
       const form = new globalThis.FormData();
@@ -100,31 +125,16 @@ function BannerImageUpload({ currentPath, onUpload }: Readonly<{
           권장 {SIZE_LABEL} (3:2 비율)
         </span>
       </label>
-
-      {imageUrl ? (
-        <div className="relative aspect-[3/2] w-full max-w-[360px] overflow-hidden rounded-lg border border-white/10">
-          <Image src={imageUrl} alt="배너 미리보기" fill sizes="360px" className="object-cover" />
-          <button type="button" aria-label="이미지 변경" onClick={openPicker}
-            className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-3 py-1.5 text-xs text-white hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            변경
-          </button>
-        </div>
-      ) : (
-        <button type="button" onClick={openPicker} disabled={uploading}
-          className="flex w-full max-w-[360px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/20 bg-white/5 py-10 text-zinc-400 transition-colors hover:border-amber-500/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <Upload className="h-8 w-8" />
-          <span className="text-sm">{uploading ? "업로드 중..." : "이미지를 선택하세요"}</span>
-          <span className="text-[10px] text-zinc-500">최소 {SIZE_LABEL} · 3:2 비율 권장</span>
-        </button>
-      )}
-
+      {imageUrl
+        ? <ImagePreview imageUrl={imageUrl} onChangePick={openPicker} />
+        : <ImagePlaceholder uploading={uploading} onPick={openPicker} />
+      }
       {sizeError ? (
         <div className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           {sizeError}
         </div>
       ) : null}
-
       <input ref={fileRef} type="file" accept="image/*" className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
     </div>
@@ -254,6 +264,110 @@ function useBanners(initial: PromoBanner[]): { banners: PromoBanner[]; reload: (
   return { banners, reload };
 }
 
+/* ─── Handler helpers (outside component) ──────────────── */
+
+async function createBanner(
+  data: FormData, banners: PromoBanner[], reload: () => Promise<void>,
+  setSaving: (v: boolean) => void, setShowCreate: (v: boolean) => void,
+): Promise<void> {
+  setSaving(true);
+  const maxOrder = banners.reduce((max, b) => Math.max(max, b.order_index), -1);
+  await api("POST", { ...data, subtitle: data.subtitle || null, link_url: data.link_url || null, order_index: maxOrder + 1 });
+  setShowCreate(false);
+  await reload();
+  setSaving(false);
+}
+
+async function updateBanner(
+  editingId: string | null, data: FormData, reload: () => Promise<void>,
+  setSaving: (v: boolean) => void, setEditingId: (v: string | null) => void,
+): Promise<void> {
+  if (!editingId) return;
+  setSaving(true);
+  await api("PATCH", { id: editingId, ...data, subtitle: data.subtitle || null, link_url: data.link_url || null });
+  setEditingId(null);
+  await reload();
+  setSaving(false);
+}
+
+async function deleteBanner(id: string, reload: () => Promise<void>): Promise<void> {
+  if (!globalThis.confirm("배너를 삭제하시겠습니까?")) return;
+  await api("DELETE", { id });
+  await reload();
+}
+
+async function toggleBanner(b: PromoBanner, reload: () => Promise<void>): Promise<void> {
+  await api("PATCH", { id: b.id, is_active: !b.is_active });
+  await reload();
+}
+
+/* eslint-disable security/detect-object-injection -- Safe: accessing array by numeric index */
+async function moveBanner(banners: PromoBanner[], idx: number, dir: "up" | "down", reload: () => Promise<void>): Promise<void> {
+  const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= banners.length) return;
+  const a = banners[idx];
+  const b = banners[swapIdx];
+  await Promise.all([
+    api("PATCH", { id: a.id, order_index: b.order_index }),
+    api("PATCH", { id: b.id, order_index: a.order_index }),
+  ]);
+  await reload();
+}
+/* eslint-enable security/detect-object-injection */
+
+/* ─── Section sub-components ───────────────────────────── */
+
+function CreateBannerSection({ saving, onSave, onCancel }: Readonly<{
+  saving: boolean; onSave: (data: FormData) => void; onCancel: () => void;
+}>): React.ReactElement {
+  return (
+    <section>
+      <h2 className="mb-3 text-sm font-bold text-zinc-300">새 배너 만들기</h2>
+      <BannerForm initial={EMPTY_FORM} onSave={onSave} onCancel={onCancel} saving={saving} />
+    </section>
+  );
+}
+
+function EditBannerSection({ banner, saving, onSave, onCancel }: Readonly<{
+  banner: PromoBanner; saving: boolean; onSave: (data: FormData) => void; onCancel: () => void;
+}>): React.ReactElement {
+  return (
+    <section>
+      <h2 className="mb-3 text-sm font-bold text-zinc-300">배너 수정</h2>
+      <BannerForm
+        initial={{ title: banner.title, subtitle: banner.subtitle ?? "", image_path: banner.image_path, link_url: banner.link_url ?? "", is_active: banner.is_active }}
+        onSave={onSave} onCancel={onCancel} saving={saving} />
+    </section>
+  );
+}
+
+function BannerListSection({ banners, onEdit, onDelete, onToggle, onMove }: Readonly<{
+  banners: PromoBanner[];
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+  onToggle: (b: PromoBanner) => void;
+  onMove: (idx: number, dir: "up" | "down") => void;
+}>): React.ReactElement {
+  return (
+    <section className="space-y-3">
+      {banners.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 py-16 text-zinc-500">
+          <p className="text-sm">등록된 프로모 배너가 없습니다</p>
+          <p className="text-xs">&quot;배너 추가&quot; 버튼을 클릭하여 첫 배너를 만들어보세요</p>
+        </div>
+      ) : null}
+      {banners.map((banner, i) => (
+        <BannerRow key={banner.id} banner={banner}
+          onEdit={() => onEdit(banner.id)}
+          onDelete={() => onDelete(banner.id)}
+          onToggle={() => onToggle(banner)}
+          onMove={(dir) => onMove(i, dir)}
+          isFirst={i === 0} isLast={i === banners.length - 1} />
+      ))}
+    </section>
+  );
+}
+
 /* ─── Main Page ──────────────────────────────────────────── */
 
 export default function PromoBannersClient({ initialBanners }: Readonly<{ initialBanners: PromoBanner[] }>): React.ReactElement {
@@ -263,49 +377,6 @@ export default function PromoBannersClient({ initialBanners }: Readonly<{ initia
   const [showCreate, setShowCreate] = useState(false);
 
   const editingBanner = editingId ? banners.find((b) => b.id === editingId) : null;
-
-  async function handleCreate(data: FormData): Promise<void> {
-    setSaving(true);
-    const maxOrder = banners.reduce((max, b) => Math.max(max, b.order_index), -1);
-    await api("POST", { ...data, subtitle: data.subtitle || null, link_url: data.link_url || null, order_index: maxOrder + 1 });
-    setShowCreate(false);
-    await reload();
-    setSaving(false);
-  }
-
-  async function handleUpdate(data: FormData): Promise<void> {
-    if (!editingId) return;
-    setSaving(true);
-    await api("PATCH", { id: editingId, ...data, subtitle: data.subtitle || null, link_url: data.link_url || null });
-    setEditingId(null);
-    await reload();
-    setSaving(false);
-  }
-
-  async function handleDelete(id: string): Promise<void> {
-    if (!globalThis.confirm("배너를 삭제하시겠습니까?")) return;
-    await api("DELETE", { id });
-    await reload();
-  }
-
-  async function handleToggle(b: PromoBanner): Promise<void> {
-    await api("PATCH", { id: b.id, is_active: !b.is_active });
-    await reload();
-  }
-
-  /* eslint-disable security/detect-object-injection -- Safe: accessing array by numeric index */
-  async function handleMove(idx: number, dir: "up" | "down"): Promise<void> {
-    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= banners.length) return;
-    const a = banners[idx];
-    const b = banners[swapIdx];
-    await Promise.all([
-      api("PATCH", { id: a.id, order_index: b.order_index }),
-      api("PATCH", { id: b.id, order_index: a.order_index }),
-    ]);
-    await reload();
-  }
-  /* eslint-enable security/detect-object-injection */
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -317,7 +388,6 @@ export default function PromoBannersClient({ initialBanners }: Readonly<{ initia
         </button>
       </div>
 
-      {/* Size Guide */}
       <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
         <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
         <p className="text-xs text-amber-300">
@@ -325,38 +395,17 @@ export default function PromoBannersClient({ initialBanners }: Readonly<{ initia
         </p>
       </div>
 
-      {showCreate ? (
-        <section>
-          <h2 className="mb-3 text-sm font-bold text-zinc-300">새 배너 만들기</h2>
-          <BannerForm initial={EMPTY_FORM} onSave={handleCreate} onCancel={() => setShowCreate(false)} saving={saving} />
-        </section>
-      ) : null}
+      {showCreate ? <CreateBannerSection saving={saving} onSave={(data) => createBanner(data, banners, reload, setSaving, setShowCreate)} onCancel={() => setShowCreate(false)} /> : null}
 
-      {editingBanner ? (
-        <section>
-          <h2 className="mb-3 text-sm font-bold text-zinc-300">배너 수정</h2>
-          <BannerForm
-            initial={{ title: editingBanner.title, subtitle: editingBanner.subtitle ?? "", image_path: editingBanner.image_path, link_url: editingBanner.link_url ?? "", is_active: editingBanner.is_active }}
-            onSave={handleUpdate} onCancel={() => setEditingId(null)} saving={saving} />
-        </section>
-      ) : null}
+      {editingBanner ? <EditBannerSection banner={editingBanner} saving={saving} onSave={(data) => updateBanner(editingId, data, reload, setSaving, setEditingId)} onCancel={() => setEditingId(null)} /> : null}
 
-      <section className="space-y-3">
-        {banners.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 py-16 text-zinc-500">
-            <p className="text-sm">등록된 프로모 배너가 없습니다</p>
-            <p className="text-xs">&quot;배너 추가&quot; 버튼을 클릭하여 첫 배너를 만들어보세요</p>
-          </div>
-        ) : null}
-        {banners.map((banner, i) => (
-          <BannerRow key={banner.id} banner={banner}
-            onEdit={() => { setEditingId(banner.id); setShowCreate(false); }}
-            onDelete={() => handleDelete(banner.id)}
-            onToggle={() => handleToggle(banner)}
-            onMove={(dir) => handleMove(i, dir)}
-            isFirst={i === 0} isLast={i === banners.length - 1} />
-        ))}
-      </section>
+      <BannerListSection
+        banners={banners}
+        onEdit={(id) => { setEditingId(id); setShowCreate(false); }}
+        onDelete={(id) => deleteBanner(id, reload)}
+        onToggle={(b) => toggleBanner(b, reload)}
+        onMove={(idx, dir) => moveBanner(banners, idx, dir, reload)}
+      />
     </div>
   );
 }
