@@ -394,7 +394,7 @@ function SearchPanel({ placeholder, open, onClose }: Readonly<HeaderSearchProps 
     <div
       className={cn(
         "absolute left-0 top-full z-50 w-full overflow-visible border-b border-border/50 bg-background transition-all duration-200 ease-out",
-        open ? "max-h-14 opacity-100" : "max-h-0 opacity-0 border-b-0",
+        open ? "max-h-14 opacity-100" : "max-h-0 opacity-0 border-b-0 pointer-events-none",
       )}
     >
       <SearchInputBar
