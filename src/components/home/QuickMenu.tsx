@@ -34,7 +34,7 @@ const menuItems: MenuItem[] = [
   { id: "womenBeauty", labelKey: "womenBeauty", icon: Sparkles, path: "women-beauty" },
   { id: "mensBeauty", labelKey: "mensBeauty", icon: Crown, path: "mens-beauty" },
   { id: "course", labelKey: "course", icon: GraduationCap, path: "courses" },
-  { id: "community", labelKey: "community", icon: MessageCircle, path: "community" },
+  { id: "community", icon: MessageCircle, path: null, placeholder: true },
   { id: "discount", labelKey: "discount", icon: Percent, path: "discount", hot: true },
   { id: "benefits", labelKey: "benefits", icon: Gift, path: "benefits" },
   { id: "empty-1", icon: Plus, path: null, placeholder: true },

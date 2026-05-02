@@ -356,7 +356,6 @@ export const STRINGS ={
     "home": "홈",
     "womenBeauty": "여성 반영구",
     "mensBeauty": "남성 반영구",
-    "community": "커뮤니티",
     "exhibition": "기획전",
     "course": "수강",
     "search": "검색",
