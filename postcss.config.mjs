@@ -14,7 +14,8 @@
 
 // @property 규칙 제거 — Chrome 100+/Safari 15.4+/Firefox 100+ 가
 // @property 를 지원하므로 등록 없이도 CSS custom property 동작.
-const removePropertyRules = (): { postcssPlugin: string; AtRule: Record<string, (rule: { remove: () => void }) => void> } => ({
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- .mjs config file
+const removePropertyRules = () => ({
   postcssPlugin: "remove-property-rules",
   AtRule: {
     property(rule) {
@@ -28,7 +29,8 @@ removePropertyRules.postcss = true;
 // - hyphens:none 패턴: @property 미지원 브라우저 fallback
 // - color-mix/lab 패턴: oklch 미지원 브라우저 색상 fallback
 // - -apple-pay-button 패턴: Safari 구버전 감지
-const unwrapSupportsFallbacks = (): { postcssPlugin: string; AtRule: Record<string, (rule: { params: string; nodes: unknown[]; replaceWith: (nodes: unknown[]) => void }) => void> } => ({
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- .mjs config file
+const unwrapSupportsFallbacks = () => ({
   postcssPlugin: "unwrap-supports-fallbacks",
   AtRule: {
     supports(rule) {
