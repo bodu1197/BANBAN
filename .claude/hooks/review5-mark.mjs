@@ -18,12 +18,12 @@ try {
   const diffTracked = sh("git diff HEAD", repoRoot);
   // untracked files 내용은 실질적으로 status --porcelain 으로 감지 (파일명 변경) + diff HEAD (수정된 파일)
   const hash = createHash("sha256")
-    .update(head + "\n" + status + "\n" + diffTracked)
+    .update(`${head}\n${status}\n${diffTracked}`)
     .digest("hex");
 
   const markFile = join(repoRoot, ".claude", ".review5-hash");
   mkdirSync(dirname(markFile), { recursive: true });
-  writeFileSync(markFile, hash + "\n");
+  writeFileSync(markFile, `${hash}\n`);
   process.stdout.write(`[review5-mark] PASS 기록됨 — ${hash.slice(0, 12)}\n`);
 } catch (e) {
   process.stderr.write(`[review5-mark] 실패: ${e?.message ?? e}\n`);

@@ -32,8 +32,13 @@ function containsGitCommit(command) {
     .replace(/'(?:[^'\\]|\\.)*'/g, "''")
     .replace(/"(?:[^"\\]|\\.)*"/g, '""');
   const segments = stripped.split(/&&|\|\||;|\||\n/).map((s) => s.trim());
-  const pattern = /^git(?:\s+-C\s+\S+)?\s+commit(?:\s|$)/;
-  return segments.some((seg) => pattern.test(seg));
+  return segments.some((seg) => {
+    const words = seg.split(/\s+/);
+    if (words[0] !== "git") return false;
+    let i = 1;
+    if (words[i] === "-C" && words[i + 1]) i += 2;
+    return words[i] === "commit";
+  });
 }
 
 function emitBlock(reason) {
@@ -75,7 +80,7 @@ function emitBlock(reason) {
     const status = sh("git status --porcelain -z", repoRoot);
     const diffTracked = sh("git diff HEAD", repoRoot);
     const current = createHash("sha256")
-      .update(head + "\n" + status + "\n" + diffTracked)
+      .update(`${head}\n${status}\n${diffTracked}`)
       .digest("hex");
 
     const markFile = join(repoRoot, ".claude", ".review5-hash");

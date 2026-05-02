@@ -87,10 +87,15 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "dist/**",
     "next-env.d.ts",
     "node_modules/**",
     "scripts/**",
     "scripts-temp/**",
+    ".sonar-jscpd/**",
+    ".sonar-scan/**",
+    ".claude/hooks/**",
+    "clone-*.mjs",
   ]),
 ]);
 
