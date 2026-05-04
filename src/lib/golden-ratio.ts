@@ -5,6 +5,8 @@
  * Based on the neoclassical canons of facial beauty (1:1.618 golden ratio).
  */
 
+import type { AdjustmentParams, BrowSideParams } from "./eyebrow-renderer";
+
 // ─── Landmark Indices ───────────────────────────────────────────────────────
 
 const FOREHEAD_TOP = 10;
@@ -17,8 +19,13 @@ const R_EYE_INNER = 133;
 const L_EYE_INNER = 362;
 const R_EYE_OUTER = 33;
 const L_EYE_OUTER = 263;
+const R_EYE_TOP = 159;
+const L_EYE_TOP = 386;
 const UPPER_LIP_TOP = 0;
 const LOWER_LIP_BOTTOM = 17;
+
+const R_BROW_UPPER = [70, 63, 105, 66, 107];
+const L_BROW_UPPER = [300, 293, 334, 296, 336];
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -36,6 +43,13 @@ export interface GoldenRatioResult {
     overallScore: number; // 0-100
     measurements: RatioMeasurement[];
     guideLines: GuideLine[];
+}
+
+export interface GoldenRatioComparison {
+    original: GoldenRatioResult;
+    adjusted: GoldenRatioResult;
+    scoreDelta: number;
+    improvements: Array<{ label: string; before: number; after: number; delta: number }>;
 }
 
 export interface GuideLine {
@@ -72,7 +86,20 @@ interface FaceLandmarks {
     forehead: Point; chin: Point; noseTip: Point; noseBridge: Point;
     leftCheek: Point; rightCheek: Point;
     rEyeInner: Point; lEyeInner: Point; rEyeOuter: Point; lEyeOuter: Point;
+    rEyeTop: Point; lEyeTop: Point;
     upperLip: Point; lowerLip: Point;
+    rBrowCenter: Point; lBrowCenter: Point;
+}
+
+function avgPoint(lm: Array<{ x: number; y: number }>, indices: number[], w: number, h: number): Point {
+    let sx = 0;
+    let sy = 0;
+    for (const idx of indices) {
+        const p = lmPx(lm, idx, w, h);
+        sx += p.x;
+        sy += p.y;
+    }
+    return { x: sx / indices.length, y: sy / indices.length };
 }
 
 function extractFaceLandmarks(lm: Array<{ x: number; y: number }>, w: number, h: number): FaceLandmarks {
@@ -87,14 +114,46 @@ function extractFaceLandmarks(lm: Array<{ x: number; y: number }>, w: number, h:
         lEyeInner: lmPx(lm, L_EYE_INNER, w, h),
         rEyeOuter: lmPx(lm, R_EYE_OUTER, w, h),
         lEyeOuter: lmPx(lm, L_EYE_OUTER, w, h),
+        rEyeTop: lmPx(lm, R_EYE_TOP, w, h),
+        lEyeTop: lmPx(lm, L_EYE_TOP, w, h),
         upperLip: lmPx(lm, UPPER_LIP_TOP, w, h),
         lowerLip: lmPx(lm, LOWER_LIP_BOTTOM, w, h),
+        rBrowCenter: avgPoint(lm, R_BROW_UPPER, w, h),
+        lBrowCenter: avgPoint(lm, L_BROW_UPPER, w, h),
     };
 }
 
 function measureRatio(label: string, actual: number, ideal: number): RatioMeasurement {
     const deviation = Math.abs(actual - ideal) / ideal * 100;
     return { label, actual: Math.round(actual * 100) / 100, ideal, deviation: Math.round(deviation), rating: rateDeviation(deviation) };
+}
+
+function computeBrowPositionScore(fl: FaceLandmarks): RatioMeasurement {
+    const faceHeight = dist(fl.forehead, fl.chin);
+    const idealBrowY = fl.forehead.y + faceHeight * 0.33;
+    const actualBrowY = (fl.rBrowCenter.y + fl.lBrowCenter.y) / 2;
+    const deviation = Math.abs(actualBrowY - idealBrowY) / faceHeight * 100;
+    return {
+        label: "눈썹 위치",
+        actual: Math.round((actualBrowY / faceHeight) * 100) / 100,
+        ideal: Math.round((idealBrowY / faceHeight) * 100) / 100,
+        deviation: Math.round(deviation),
+        rating: rateDeviation(deviation),
+    };
+}
+
+function computeBrowSymmetryScore(fl: FaceLandmarks): RatioMeasurement {
+    const rBrowToEye = Math.abs(fl.rBrowCenter.y - fl.rEyeTop.y);
+    const lBrowToEye = Math.abs(fl.lBrowCenter.y - fl.lEyeTop.y);
+    const avg = (rBrowToEye + lBrowToEye) / 2;
+    const asymmetry = Math.abs(rBrowToEye - lBrowToEye) / avg * 100;
+    return {
+        label: "눈썹 대칭",
+        actual: Math.round((1 - asymmetry / 100) * 100) / 100,
+        ideal: 1.0,
+        deviation: Math.round(asymmetry),
+        rating: rateDeviation(asymmetry),
+    };
 }
 
 function computeMeasurements(
@@ -121,6 +180,8 @@ function computeMeasurements(
         measureRatio("눈 간격", eyeSpacing / eyeWidth, 1.0),
         measureRatio("코 너비:눈 간격", noseWidth / eyeSpacing, 1.0),
         measureRatio("입술-턱 비율", dist(fl.upperLip, fl.chin) / dist(fl.noseTip, fl.upperLip), GOLDEN_RATIO),
+        computeBrowPositionScore(fl),
+        computeBrowSymmetryScore(fl),
     ];
 }
 
@@ -136,11 +197,7 @@ function computeGuideLines(fl: FaceLandmarks): GuideLine[] {
     ];
 }
 
-export function computeGoldenRatio(
-    lm: Array<{ x: number; y: number }>,
-    w: number, h: number,
-): GoldenRatioResult {
-    const fl = extractFaceLandmarks(lm, w, h);
+function computeResult(fl: FaceLandmarks, lm: Array<{ x: number; y: number }>, w: number, h: number): GoldenRatioResult {
     const measurements = computeMeasurements(fl, lm, w, h);
     const guideLines = computeGuideLines(fl);
 
@@ -148,4 +205,67 @@ export function computeGoldenRatio(
     const overallScore = Math.max(0, Math.min(100, Math.round(100 - avgDev)));
 
     return { overallScore, measurements, guideLines };
+}
+
+export function computeGoldenRatio(
+    lm: Array<{ x: number; y: number }>,
+    w: number, h: number,
+): GoldenRatioResult {
+    const fl = extractFaceLandmarks(lm, w, h);
+    return computeResult(fl, lm, w, h);
+}
+
+function computeAdjustedBrowCenter(
+    lm: Array<{ x: number; y: number }>,
+    w: number, h: number,
+    eyeInner: number, eyeOuter: number, eyeTop: number,
+    adj: AdjustmentParams,
+): Point {
+    const inner = lmPx(lm, eyeInner, w, h);
+    const outer = lmPx(lm, eyeOuter, w, h);
+    const top = lmPx(lm, eyeTop, w, h);
+    const forehead = lmPx(lm, FOREHEAD_TOP, w, h);
+
+    const browDist = Math.abs(top.y - forehead.y);
+    const browCenterY = top.y - browDist * 0.35;
+    const centerX = (inner.x + outer.x) / 2;
+
+    return {
+        x: centerX + adj.offsetX,
+        y: (browCenterY + adj.offsetY) * adj.scaleY,
+    };
+}
+
+export function computeGoldenRatioWithAdjustment(
+    lm: Array<{ x: number; y: number }>,
+    w: number, h: number,
+    sideParams: BrowSideParams,
+): GoldenRatioComparison {
+    const original = computeGoldenRatio(lm, w, h);
+
+    const fl = extractFaceLandmarks(lm, w, h);
+    const adjustedFl: FaceLandmarks = {
+        ...fl,
+        rBrowCenter: computeAdjustedBrowCenter(lm, w, h, R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP, sideParams.right),
+        lBrowCenter: computeAdjustedBrowCenter(lm, w, h, L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP, sideParams.left),
+    };
+
+    const adjusted = computeResult(adjustedFl, lm, w, h);
+    const scoreDelta = adjusted.overallScore - original.overallScore;
+
+    const improvements: GoldenRatioComparison["improvements"] = [];
+    for (let i = 0; i < original.measurements.length; i++) {
+        const orig = original.measurements[i];
+        const adj = adjusted.measurements[i];
+        if (orig && adj && orig.deviation !== adj.deviation) {
+            improvements.push({
+                label: orig.label,
+                before: orig.deviation,
+                after: adj.deviation,
+                delta: adj.deviation - orig.deviation,
+            });
+        }
+    }
+
+    return { original, adjusted, scoreDelta, improvements };
 }

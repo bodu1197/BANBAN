@@ -15,7 +15,7 @@ import type { AdjustmentParams, BrowSideParams, LandmarkData } from "@/lib/eyebr
 import { ALL_TEMPLATES } from "@/lib/eyebrow-templates";
 import type { EyebrowTemplate } from "@/lib/eyebrow-templates";
 import type { LipParams } from "@/lib/lip-renderer";
-import type { GoldenRatioResult } from "@/lib/golden-ratio";
+import type { GoldenRatioResult, GoldenRatioComparison } from "@/lib/golden-ratio";
 
 // ─── Types & Defaults ───────────────────────────────────────────────────────
 
@@ -210,6 +210,9 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
     const [viewMode, setViewMode] = useState<ViewMode>("preview");
     const [resultDataUrl, setResultDataUrl] = useState<string | null>(null);
 
+    // Golden ratio comparison
+    const [ratioComparison, setRatioComparison] = useState<GoldenRatioComparison | null>(null);
+
     const activeAdj = getActiveAdj(browSide, leftAdj, rightAdj);
 
     // Auto-select first template
@@ -218,6 +221,27 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
         const first = ALL_TEMPLATES[0];
         if (first) setSelectedTemplate(first);
     }, [selectedTemplate]);
+
+    // Recompute golden ratio when brow adjustments change
+    useEffect(() => {
+        const hasAdjustment = leftAdj.offsetX !== 0 || leftAdj.offsetY !== 0 || leftAdj.scaleY !== 1.0
+            || rightAdj.offsetX !== 0 || rightAdj.offsetY !== 0 || rightAdj.scaleY !== 1.0;
+
+        if (!hasAdjustment) {
+            setRatioComparison(null);
+            return;
+        }
+
+        void import("@/lib/golden-ratio").then(({ computeGoldenRatioWithAdjustment }) => {
+            const comparison = computeGoldenRatioWithAdjustment(
+                landmarks.points,
+                canvasSize.w || image.naturalWidth,
+                canvasSize.h || image.naturalHeight,
+                { left: leftAdj, right: rightAdj },
+            );
+            setRatioComparison(comparison);
+        });
+    }, [leftAdj, rightAdj, landmarks.points, canvasSize.w, canvasSize.h, image.naturalWidth, image.naturalHeight]);
 
     // Canvas rendering
     const renderCanvas = useCallback(async () => {
@@ -288,6 +312,7 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
                 {viewMode === "ruler" ? (
                     <GoldenRuler
                         result={goldenRatio}
+                        comparison={ratioComparison ?? undefined}
                         canvasWidth={canvasSize.w}
                         canvasHeight={canvasSize.h}
                         showOverlay
@@ -306,7 +331,13 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
 
             {/* Golden Ratio Panel (below preview when ruler mode) */}
             {viewMode === "ruler" ? (
-                <GoldenRuler result={goldenRatio} canvasWidth={canvasSize.w} canvasHeight={canvasSize.h} showOverlay={false} />
+                <GoldenRuler
+                    result={goldenRatio}
+                    comparison={ratioComparison ?? undefined}
+                    canvasWidth={canvasSize.w}
+                    canvasHeight={canvasSize.h}
+                    showOverlay={false}
+                />
             ) : null}
 
             {/* Tabs */}

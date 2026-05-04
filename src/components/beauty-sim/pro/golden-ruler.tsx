@@ -2,11 +2,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { GoldenRatioResult } from "@/lib/golden-ratio";
+import type { GoldenRatioResult, GoldenRatioComparison } from "@/lib/golden-ratio";
 
 // ─── Score Badge ────────────────────────────────────────────────────────────
 
-function ScoreBadge({ score }: Readonly<{ score: number }>): React.ReactElement {
+function ScoreBadge({ score, delta }: Readonly<{ score: number; delta?: number }>): React.ReactElement {
     const colorMap: Record<string, string> = {
         high: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900",
         mid: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-900",
@@ -22,6 +22,11 @@ function ScoreBadge({ score }: Readonly<{ score: number }>): React.ReactElement 
         <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${color}`}>
             <span className="text-xs font-medium">황금비율 점수</span>
             <span className="text-sm font-bold">{score}점</span>
+            {delta !== undefined && delta !== 0 ? (
+                <span className={`text-xs font-bold ${delta > 0 ? "text-emerald-500" : "text-red-500"}`}>
+                    {delta > 0 ? `+${delta}` : delta}
+                </span>
+            ) : null}
         </div>
     );
 }
@@ -86,30 +91,41 @@ function GuideOverlay({ result, width, height }: Readonly<{
     );
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
+// ─── Comparison Panel ───────────────────────────────────────────────────────
 
-export function GoldenRuler({ result, canvasWidth, canvasHeight, showOverlay }: Readonly<{
-    result: GoldenRatioResult;
-    canvasWidth: number;
-    canvasHeight: number;
-    showOverlay: boolean;
-}>): React.ReactElement {
+function ComparisonPanel({ comparison }: Readonly<{ comparison: GoldenRatioComparison }>): React.ReactElement {
+    const { original, adjusted, scoreDelta, improvements } = comparison;
+    const hasChanges = scoreDelta !== 0 || improvements.length > 0;
+
     return (
-        <div className="flex flex-col gap-3">
-            {/* Overlay canvas (rendered on top of face canvas) */}
-            {showOverlay ? (
-                <GuideOverlay result={result} width={canvasWidth} height={canvasHeight} />
+        <div className="flex flex-col gap-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground">스마트 룰러</p>
+                <ScoreBadge score={adjusted.overallScore} delta={hasChanges ? scoreDelta : undefined} />
+            </div>
+
+            {hasChanges ? (
+                <div className="flex items-center gap-2 rounded-md bg-violet-50 px-3 py-1.5 dark:bg-violet-950/30">
+                    <span className="text-xs text-muted-foreground">원본</span>
+                    <span className="text-sm font-bold text-muted-foreground">{original.overallScore}점</span>
+                    <span className="text-muted-foreground">→</span>
+                    <span className="text-xs text-foreground">보정 후</span>
+                    <span className="text-sm font-bold text-foreground">{adjusted.overallScore}점</span>
+                    {scoreDelta > 0 ? (
+                        <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                            ↑{scoreDelta}점 개선
+                        </span>
+                    ) : null}
+                </div>
             ) : null}
 
-            {/* Score + Measurements */}
-            <div className="flex flex-col gap-2 rounded-lg border p-3">
-                <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-muted-foreground">스마트 룰러</p>
-                    <ScoreBadge score={result.overallScore} />
-                </div>
+            <div className="flex flex-col gap-1.5">
+                {adjusted.measurements.map((m, i) => {
+                    const orig = original.measurements[i];
+                    const improved = orig && orig.deviation > m.deviation;
+                    const worsened = orig && orig.deviation < m.deviation;
 
-                <div className="flex flex-col gap-1.5">
-                    {result.measurements.map((m) => (
+                    return (
                         <div key={m.label} className="flex items-center gap-2 text-xs">
                             <span className="w-24 shrink-0 text-muted-foreground">{m.label}</span>
                             <span className="font-mono tabular-nums">{m.actual}</span>
@@ -117,10 +133,62 @@ export function GoldenRuler({ result, canvasWidth, canvasHeight, showOverlay }: 
                             <span className="font-mono tabular-nums text-muted-foreground">{m.ideal}</span>
                             <span className="text-muted-foreground">({m.deviation}%)</span>
                             <RatingBadge rating={m.rating} />
+                            {improved ? (
+                                <span className="text-[10px] font-bold text-emerald-500">↑</span>
+                            ) : null}
+                            {worsened ? (
+                                <span className="text-[10px] font-bold text-red-500">↓</span>
+                            ) : null}
                         </div>
-                    ))}
-                </div>
+                    );
+                })}
             </div>
         </div>
     );
+}
+
+// ─── Static Panel (no comparison) ───────────────────────────────────────────
+
+function StaticPanel({ result }: Readonly<{ result: GoldenRatioResult }>): React.ReactElement {
+    return (
+        <div className="flex flex-col gap-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground">스마트 룰러</p>
+                <ScoreBadge score={result.overallScore} />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+                {result.measurements.map((m) => (
+                    <div key={m.label} className="flex items-center gap-2 text-xs">
+                        <span className="w-24 shrink-0 text-muted-foreground">{m.label}</span>
+                        <span className="font-mono tabular-nums">{m.actual}</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="font-mono tabular-nums text-muted-foreground">{m.ideal}</span>
+                        <span className="text-muted-foreground">({m.deviation}%)</span>
+                        <RatingBadge rating={m.rating} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
+export function GoldenRuler({ result, comparison, canvasWidth, canvasHeight, showOverlay }: Readonly<{
+    result: GoldenRatioResult;
+    comparison?: GoldenRatioComparison;
+    canvasWidth: number;
+    canvasHeight: number;
+    showOverlay: boolean;
+}>): React.ReactElement {
+    if (showOverlay) {
+        return <GuideOverlay result={comparison?.adjusted ?? result} width={canvasWidth} height={canvasHeight} />;
+    }
+
+    if (comparison) {
+        return <ComparisonPanel comparison={comparison} />;
+    }
+
+    return <StaticPanel result={result} />;
 }
