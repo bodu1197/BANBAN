@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Sparkles } from "lucide-react";
-import { STRINGS } from "@/lib/strings";
+import { X, Home, Sparkles } from "lucide-react";
 import { ProBeautySimClient } from "@/components/beauty-sim/pro/pro-client";
 
 export async function generateProBeautySimMetadata(): Promise<Metadata> {
@@ -14,19 +13,28 @@ export async function generateProBeautySimMetadata(): Promise<Metadata> {
 export async function renderProBeautySimPage(): Promise<React.ReactElement> {
     return (
         <main className="mx-auto min-h-screen max-w-screen-2xl bg-background">
-            <div className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background px-6">
-                <Link
-                    href="/"
-                    className="rounded-full p-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={STRINGS.common.goBack}
-                >
-                    <ArrowLeft className="h-5 w-5" />
-                </Link>
+            <div className="sticky top-0 z-50 flex h-12 items-center justify-between border-b bg-background px-6">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-violet-500" />
-                    <h1 className="text-lg font-semibold">원장님 상담 도구</h1>
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    <span className="text-sm font-semibold">원장님 상담 도구</span>
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900 dark:text-violet-300">PRO</span>
                 </div>
-                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900 dark:text-violet-300">PRO</span>
+                <div className="flex items-center gap-1">
+                    <Link
+                        href="/"
+                        className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="홈으로"
+                    >
+                        <Home className="h-4 w-4" />
+                    </Link>
+                    <Link
+                        href="/"
+                        className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="닫기"
+                    >
+                        <X className="h-4 w-4" />
+                    </Link>
+                </div>
             </div>
 
             <div className="p-6">
