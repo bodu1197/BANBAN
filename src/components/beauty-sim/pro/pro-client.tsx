@@ -325,62 +325,70 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
     }
 
     return (
-        <div className="flex flex-col gap-3">
-            <ProViewModeToggle viewMode={viewMode} onChangeMode={setViewMode} />
-            {previewContent}
+        <div className="flex gap-6">
+            {/* 왼쪽: 사진 프리뷰 (sticky) */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+                <ProViewModeToggle viewMode={viewMode} onChangeMode={setViewMode} />
+                <div className="sticky top-16">
+                    {previewContent}
+                </div>
+            </div>
 
-            {/* Golden Ratio Panel (below preview when ruler mode) */}
-            {viewMode === "ruler" ? (
-                <GoldenRuler
-                    result={goldenRatio}
-                    comparison={ratioComparison ?? undefined}
-                    canvasWidth={canvasSize.w}
-                    canvasHeight={canvasSize.h}
-                    showOverlay={false}
-                />
-            ) : null}
-
-            {/* Tabs */}
-            <Tabs defaultValue="eyebrow" className="w-full">
-                <TabsList className="w-full">
-                    <TabsTrigger value="eyebrow" className="flex-1">눈썹</TabsTrigger>
-                    <TabsTrigger value="lip" className="flex-1">입술</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="eyebrow" className="pt-2">
-                    <ProEyebrowTab
-                        selectedId={selectedTemplate?.id ?? null}
-                        onSelectTemplate={setSelectedTemplate}
-                        activeAdj={activeAdj}
-                        browSide={browSide}
-                        onAdjChange={handleAdjChange}
-                        onSideChange={setBrowSide}
-                        browColor={browColor}
-                        onColorChange={setBrowColor}
+            {/* 오른쪽: 컨트롤 패널 */}
+            <div className="flex w-96 shrink-0 flex-col gap-3">
+                {/* Golden Ratio Panel */}
+                {viewMode === "ruler" ? (
+                    <GoldenRuler
+                        result={goldenRatio}
+                        comparison={ratioComparison ?? undefined}
+                        canvasWidth={canvasSize.w}
+                        canvasHeight={canvasSize.h}
+                        showOverlay={false}
                     />
-                </TabsContent>
+                ) : null}
 
-                <TabsContent value="lip" className="pt-2">
-                    <ProLipTab
-                        lipEnabled={lipEnabled}
-                        onToggleLip={() => setLipEnabled((prev) => !prev)}
-                        lipParams={lipParams}
-                        onLipParamsChange={setLipParams}
-                    />
-                </TabsContent>
-            </Tabs>
+                {/* Tabs */}
+                <Tabs defaultValue="eyebrow" className="w-full">
+                    <TabsList className="w-full">
+                        <TabsTrigger value="eyebrow" className="flex-1">눈썹</TabsTrigger>
+                        <TabsTrigger value="lip" className="flex-1">입술</TabsTrigger>
+                    </TabsList>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={handleSave} aria-label="결과 저장">
-                    <Download className="h-4 w-4" />저장
-                </Button>
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={handleReset} aria-label="초기화">
-                    <RotateCcw className="h-4 w-4" />초기화
-                </Button>
-                <Button variant="outline" className="flex-1 gap-1.5" onClick={onReset} aria-label="새 고객 사진">
-                    <Camera className="h-4 w-4" />새 고객
-                </Button>
+                    <TabsContent value="eyebrow" className="pt-2">
+                        <ProEyebrowTab
+                            selectedId={selectedTemplate?.id ?? null}
+                            onSelectTemplate={setSelectedTemplate}
+                            activeAdj={activeAdj}
+                            browSide={browSide}
+                            onAdjChange={handleAdjChange}
+                            onSideChange={setBrowSide}
+                            browColor={browColor}
+                            onColorChange={setBrowColor}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="lip" className="pt-2">
+                        <ProLipTab
+                            lipEnabled={lipEnabled}
+                            onToggleLip={() => setLipEnabled((prev) => !prev)}
+                            lipParams={lipParams}
+                            onLipParamsChange={setLipParams}
+                        />
+                    </TabsContent>
+                </Tabs>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2">
+                    <Button variant="outline" className="flex-1 gap-1.5" onClick={handleSave} aria-label="결과 저장">
+                        <Download className="h-4 w-4" />저장
+                    </Button>
+                    <Button variant="outline" className="flex-1 gap-1.5" onClick={handleReset} aria-label="초기화">
+                        <RotateCcw className="h-4 w-4" />초기화
+                    </Button>
+                    <Button variant="outline" className="flex-1 gap-1.5" onClick={onReset} aria-label="새 고객 사진">
+                        <Camera className="h-4 w-4" />새 고객
+                    </Button>
+                </div>
             </div>
         </div>
     );
