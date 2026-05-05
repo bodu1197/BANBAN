@@ -307,8 +307,8 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
     let previewContent: React.ReactNode = null;
     if (viewMode === "preview" || viewMode === "ruler") {
         previewContent = (
-            <div className="relative overflow-hidden rounded-xl border">
-                <canvas ref={canvasRef} className="h-auto w-full" />
+            <div className="relative flex h-full items-center justify-center overflow-hidden rounded-xl border">
+                <canvas ref={canvasRef} className="max-h-full max-w-full object-contain" />
                 {viewMode === "ruler" ? (
                     <GoldenRuler
                         result={goldenRatio}
@@ -321,21 +321,25 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
             </div>
         );
     } else if (resultDataUrl) {
-        previewContent = <BeforeAfterSlider beforeSrc={imageDataUrl} afterSrc={resultDataUrl} />;
+        previewContent = (
+            <div className="flex h-full items-center justify-center">
+                <BeforeAfterSlider beforeSrc={imageDataUrl} afterSrc={resultDataUrl} />
+            </div>
+        );
     }
 
     return (
-        <div className="flex gap-6">
-            {/* 왼쪽: 사진 프리뷰 (sticky) */}
-            <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex h-full gap-4">
+            {/* 왼쪽 65%: 사진 프리뷰 */}
+            <div className="flex w-[65%] flex-col gap-2">
                 <ProViewModeToggle viewMode={viewMode} onChangeMode={setViewMode} />
-                <div className="sticky top-16">
+                <div className="min-h-0 flex-1">
                     {previewContent}
                 </div>
             </div>
 
-            {/* 오른쪽: 컨트롤 패널 */}
-            <div className="flex w-[460px] shrink-0 flex-col gap-3">
+            {/* 오른쪽 35%: 컨트롤 패널 (스크롤 가능) */}
+            <div className="flex w-[35%] flex-col gap-3 overflow-y-auto">
                 {/* Golden Ratio Panel */}
                 {viewMode === "ruler" ? (
                     <GoldenRuler
@@ -456,7 +460,7 @@ export function ProBeautySimClient(): React.ReactElement {
     }, []);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className={`flex flex-col ${step === "consultation" ? "h-full" : "h-full items-center justify-center"}`}>
             {error ? (
                 <p className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center text-sm text-destructive">
                     {error}
@@ -466,7 +470,7 @@ export function ProBeautySimClient(): React.ReactElement {
             {step === "upload" ? <ProUploadStep inputRef={inputRef} onFile={onFile} /> : null}
 
             {step === "analyzing" ? (
-                <div className="flex flex-col items-center gap-4 py-16">
+                <div className="flex flex-col items-center gap-4">
                     <Brain className="h-12 w-12 animate-pulse text-violet-500" />
                     <p className="text-lg font-medium">고객 얼굴을 분석하는 중...</p>
                     <p className="text-sm text-muted-foreground">황금비율 측정 + 얼굴형 분석 + 스타일 추천</p>

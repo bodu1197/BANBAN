@@ -12,8 +12,8 @@ export async function generateProBeautySimMetadata(): Promise<Metadata> {
 
 export async function renderProBeautySimPage(): Promise<React.ReactElement> {
     return (
-        <main className="min-h-screen w-full bg-background">
-            <div className="sticky top-0 z-50 flex h-12 items-center justify-between border-b bg-background px-6">
+        <main className="flex h-screen w-full flex-col overflow-hidden bg-background">
+            <div className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-6">
                 <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-violet-500" />
                     <span className="text-sm font-semibold">원장님 상담 도구</span>
@@ -37,7 +37,7 @@ export async function renderProBeautySimPage(): Promise<React.ReactElement> {
                 </div>
             </div>
 
-            <div className="p-6">
+            <div className="flex-1 overflow-hidden p-4">
                 <ProBeautySimClient />
             </div>
         </main>
