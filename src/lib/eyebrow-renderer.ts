@@ -351,6 +351,7 @@ export async function renderEyebrowsToCanvas(
     template: EyebrowTemplate,
     browColor: string,
     sideParams: BrowSideParams = { left: { ...DEFAULT_ADJUSTMENT }, right: { ...DEFAULT_ADJUSTMENT } },
+    options?: Readonly<{ eraseBrows?: boolean }>,
 ): Promise<void> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -363,6 +364,12 @@ export async function renderEyebrowsToCanvas(
     ctx.drawImage(originalImage, 0, 0, w, h);
 
     const lm = landmarks.points;
+
+    if (options?.eraseBrows) {
+        const { eraseBrowRegion } = await import("./brow-eraser");
+        eraseBrowRegion(ctx, canvas, lm, w, h);
+    }
+
     const rightBrow = computePlacement(lm, w, h, R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP, true);
     const leftBrow = computePlacement(lm, w, h, L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP, false);
 
