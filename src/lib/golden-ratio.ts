@@ -130,7 +130,8 @@ function measureRatio(label: string, actual: number, ideal: number): RatioMeasur
 
 function computeBrowPositionScore(fl: FaceLandmarks): RatioMeasurement {
     const faceHeight = dist(fl.forehead, fl.chin);
-    const idealBrowY = fl.forehead.y + faceHeight * 0.33;
+    const upperSection = fl.noseBridge.y - fl.forehead.y;
+    const idealBrowY = fl.noseBridge.y - upperSection * 0.25;
     const actualBrowY = (fl.rBrowCenter.y + fl.lBrowCenter.y) / 2;
     const deviation = Math.abs(actualBrowY - idealBrowY) / faceHeight * 100;
     return {
@@ -186,11 +187,11 @@ function computeMeasurements(
 }
 
 function computeGuideLines(fl: FaceLandmarks): GuideLine[] {
-    const faceHeight = dist(fl.forehead, fl.chin);
-    const browIdealY = fl.forehead.y + faceHeight * 0.33;
+    const centerX = (fl.forehead.x + fl.chin.x) / 2;
+    const browIdealY = fl.noseBridge.y - (fl.noseBridge.y - fl.forehead.y) * 0.25;
 
     return [
-        { label: "얼굴 높이", startX: fl.forehead.x, startY: fl.forehead.y, endX: fl.chin.x, endY: fl.chin.y, color: "#f472b6" },
+        { label: "세로 중심", startX: centerX, startY: fl.forehead.y, endX: centerX, endY: fl.chin.y, color: "#f472b6" },
         { label: "얼굴 너비", startX: fl.leftCheek.x, startY: fl.leftCheek.y, endX: fl.rightCheek.x, endY: fl.rightCheek.y, color: "#60a5fa" },
         { label: "눈 간격", startX: fl.rEyeInner.x, startY: fl.rEyeInner.y, endX: fl.lEyeInner.x, endY: fl.lEyeInner.y, color: "#a78bfa" },
         { label: "이상적 눈썹 위치", startX: fl.rEyeOuter.x - 10, startY: browIdealY, endX: fl.lEyeOuter.x + 10, endY: browIdealY, color: "#fb923c" },
