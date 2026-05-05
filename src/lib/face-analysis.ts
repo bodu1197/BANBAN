@@ -68,9 +68,6 @@ interface FaceLandmarkerModule {
     FaceLandmarker: {
         createFromModelPath: (vision: unknown, url: string) => Promise<FaceLandmarkerInstance>;
     };
-    FaceDetector: {
-        createFromModelPath: (vision: unknown, url: string) => Promise<FaceDetectorInstance>;
-    };
     FilesetResolver: {
         forVisionTasks: (wasmPath: string) => Promise<unknown>;
     };
@@ -82,17 +79,7 @@ interface FaceLandmarkerInstance {
     };
 }
 
-interface FaceDetectorInstance {
-    detect: (image: HTMLImageElement) => {
-        detections?: Array<{
-            boundingBox?: { originX: number; originY: number; width: number; height: number };
-        }>;
-    };
-}
-
-
 let instance: FaceLandmarkerInstance | null = null;
-let detectorInstance: FaceDetectorInstance | null = null;
 let loadPromise: Promise<FaceLandmarkerInstance> | null = null;
 
 export async function initFaceAnalysis(): Promise<FaceLandmarkerInstance> {
@@ -108,12 +95,6 @@ export async function initFaceAnalysis(): Promise<FaceLandmarkerInstance> {
             vision,
             "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
         );
-        try {
-            detectorInstance = await mod.FaceDetector.createFromModelPath(
-                vision,
-                "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
-            );
-        } catch {}
         return instance;
     })();
 
@@ -197,24 +178,9 @@ export function analyzeFace(image: HTMLImageElement): { metrics: FaceMetrics; la
     const w = image.naturalWidth;
     const h = image.naturalHeight;
 
-    let boundingBox: LandmarkData["boundingBox"];
-    if (detectorInstance) {
-        const detResult = detectorInstance.detect(image);
-        const det = detResult.detections?.[0];
-        if (det?.boundingBox) {
-            const bb = det.boundingBox;
-            boundingBox = {
-                topY: bb.originY,
-                bottomY: bb.originY + bb.height,
-                leftX: bb.originX,
-                rightX: bb.originX + bb.width,
-            };
-        }
-    }
-
     return {
         metrics: computeMetrics(lm, w, h),
-        landmarks: { points: lm, imageWidth: w, imageHeight: h, boundingBox },
+        landmarks: { points: lm, imageWidth: w, imageHeight: h },
     };
 }
 

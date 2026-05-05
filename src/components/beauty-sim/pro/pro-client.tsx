@@ -267,11 +267,10 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, viewMo
                 canvasSize.w || image.naturalWidth,
                 canvasSize.h || image.naturalHeight,
                 { left: leftAdj, right: rightAdj },
-                landmarks.boundingBox,
             );
             setRatioComparison(comparison);
         });
-    }, [leftAdj, rightAdj, landmarks.points, landmarks.boundingBox, canvasSize.w, canvasSize.h, image.naturalWidth, image.naturalHeight]);
+    }, [leftAdj, rightAdj, landmarks.points, canvasSize.w, canvasSize.h, image.naturalWidth, image.naturalHeight]);
 
     // Canvas rendering
     const renderCanvas = useCallback(async () => {
@@ -463,7 +462,7 @@ export function ProBeautySimClient(): React.ReactElement {
 
                 // Compute golden ratio
                 const { computeGoldenRatio } = await import("@/lib/golden-ratio");
-                const gr = computeGoldenRatio(result.landmarks.points, img.naturalWidth, img.naturalHeight, result.landmarks.boundingBox);
+                const gr = computeGoldenRatio(result.landmarks.points, img.naturalWidth, img.naturalHeight);
                 setGoldenRatio(gr);
 
                 setStep("consultation");

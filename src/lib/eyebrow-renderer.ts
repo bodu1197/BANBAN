@@ -26,7 +26,6 @@ export interface LandmarkData {
     points: Array<{ x: number; y: number; z: number }>;
     imageWidth: number;
     imageHeight: number;
-    boundingBox?: { topY: number; bottomY: number; leftX: number; rightX: number };
 }
 
 /** Adjustable parameters for real-time fitting room controls */
