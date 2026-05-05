@@ -333,29 +333,24 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, viewMo
     }, []);
 
     // Preview area
-    let previewContent: React.ReactNode = null;
-    if (viewMode === "preview" || viewMode === "ruler") {
-        previewContent = (
-            <div className="relative h-full shrink-0">
-                <canvas ref={canvasRef} className="block h-full w-auto" />
-                {viewMode === "ruler" ? (
-                    <GoldenRuler
-                        result={goldenRatio}
-                        comparison={ratioComparison ?? undefined}
-                        canvasWidth={canvasSize.w}
-                        canvasHeight={canvasSize.h}
-                        showOverlay
-                    />
-                ) : null}
-            </div>
-        );
-    } else if (resultDataUrl) {
-        previewContent = (
-            <div className="h-full shrink-0">
+    const showCompare = viewMode === "compare" && resultDataUrl;
+    const previewContent = (
+        <div className="relative h-full shrink-0">
+            <canvas ref={canvasRef} className={`block h-full w-auto ${showCompare ? "hidden" : ""}`} />
+            {viewMode === "ruler" ? (
+                <GoldenRuler
+                    result={goldenRatio}
+                    comparison={ratioComparison ?? undefined}
+                    canvasWidth={canvasSize.w}
+                    canvasHeight={canvasSize.h}
+                    showOverlay
+                />
+            ) : null}
+            {showCompare ? (
                 <BeforeAfterSlider beforeSrc={imageDataUrl} afterSrc={resultDataUrl} />
-            </div>
-        );
-    }
+            ) : null}
+        </div>
+    );
 
     return (
         <div className="flex h-full gap-4 p-4">
