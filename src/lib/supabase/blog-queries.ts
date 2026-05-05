@@ -1,4 +1,4 @@
-import { createClient } from "./server";
+import { createClient, createAdminClient } from "./server";
 import type { Region } from "@/types/database";
 
 export interface BlogPost {
@@ -72,7 +72,7 @@ function buildRpcParams(params: BlogSearchParams): Record<string, unknown> {
 export async function searchBlogPosts(
   params: BlogSearchParams,
 ): Promise<{ data: BlogPost[]; count: number }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
   const { data, error } = await (supabase as any).rpc("search_blog_posts", buildRpcParams(params));
@@ -104,7 +104,7 @@ export async function fetchBlogCategories(
   typeArtist?: "TATTOO" | "SEMI_PERMANENT" | null,
   targetGender?: "MALE" | "FEMALE" | null,
 ): Promise<BlogCategoryCount[]> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
   const { data, error } = await (supabase as any).rpc("get_blog_category_counts", {

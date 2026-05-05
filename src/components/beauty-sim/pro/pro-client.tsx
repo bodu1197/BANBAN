@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Upload, Brain, Ruler, Eye, Download, RotateCcw, Camera, Share2 } from "lucide-react";
+import Link from "next/link";
+import { Upload, Brain, Ruler, Eye, Download, RotateCcw, Camera, Share2, Sparkles, Home, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShapeSelector } from "@/components/beauty-sim/shared/shape-selector";
@@ -149,11 +150,12 @@ function ProLipTab({ lipEnabled, onToggleLip, lipParams, onLipParamsChange }: Re
     );
 }
 
-// ─── View Mode Toggle (Pro — includes ruler) ────────────────────────────────
+// ─── Header Bar ────────────────────────────────────────────────────────────
 
-function ProViewModeToggle({ viewMode, onChangeMode }: Readonly<{
+function ProHeader({ viewMode, onChangeMode, showViewToggle }: Readonly<{
     viewMode: ViewMode;
     onChangeMode: (mode: ViewMode) => void;
+    showViewToggle: boolean;
 }>): React.ReactElement {
     const modes: Array<{ value: ViewMode; label: string; icon: React.ReactNode }> = [
         { value: "preview", label: "미리보기", icon: <Eye className="h-3 w-3" /> },
@@ -162,22 +164,49 @@ function ProViewModeToggle({ viewMode, onChangeMode }: Readonly<{
     ];
 
     return (
-        <div className="flex gap-1">
-            {modes.map((m) => (
-                <button
-                    key={m.value}
-                    type="button"
-                    aria-pressed={viewMode === m.value}
-                    className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                        viewMode === m.value
-                            ? "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300"
-                            : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
-                    }`}
-                    onClick={() => onChangeMode(m.value)}
+        <div className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-6">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    <span className="text-sm font-semibold">원장님 상담 도구</span>
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900 dark:text-violet-300">PRO</span>
+                </div>
+                {showViewToggle ? (
+                    <div className="flex gap-1 border-l pl-4">
+                        {modes.map((m) => (
+                            <button
+                                key={m.value}
+                                type="button"
+                                aria-pressed={viewMode === m.value}
+                                className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                    viewMode === m.value
+                                        ? "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300"
+                                        : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
+                                }`}
+                                onClick={() => onChangeMode(m.value)}
+                            >
+                                {m.icon}{m.label}
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
+            </div>
+            <div className="flex items-center gap-1">
+                <Link
+                    href="/"
+                    className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="홈으로"
                 >
-                    {m.icon}{m.label}
-                </button>
-            ))}
+                    <Home className="h-4 w-4" />
+                </Link>
+                <Link
+                    href="/"
+                    className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="닫기"
+                >
+                    <X className="h-4 w-4" />
+                </Link>
+            </div>
         </div>
     );
 }
@@ -185,11 +214,12 @@ function ProViewModeToggle({ viewMode, onChangeMode }: Readonly<{
 // ─── Consultation Panel ─────────────────────────────────────────────────────
 
 // eslint-disable-next-line max-lines-per-function -- Pro consultation panel with canvas, tabs, ruler, sliders
-function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onReset }: Readonly<{
+function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, viewMode, onReset }: Readonly<{
     imageDataUrl: string;
     image: HTMLImageElement;
     landmarks: LandmarkData;
     goldenRatio: GoldenRatioResult;
+    viewMode: ViewMode;
     onReset: () => void;
 }>): React.ReactElement {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -207,7 +237,6 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
     const [lipEnabled, setLipEnabled] = useState(false);
 
     // View
-    const [viewMode, setViewMode] = useState<ViewMode>("preview");
     const [resultDataUrl, setResultDataUrl] = useState<string | null>(null);
 
     // Golden ratio comparison
@@ -307,41 +336,34 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
     let previewContent: React.ReactNode = null;
     if (viewMode === "preview" || viewMode === "ruler") {
         previewContent = (
-            <div className="flex h-full items-center justify-center">
-                <div className="relative max-h-full max-w-full overflow-hidden rounded-xl border">
-                    <canvas ref={canvasRef} className="block max-h-full w-auto" />
-                    {viewMode === "ruler" ? (
-                        <GoldenRuler
-                            result={goldenRatio}
-                            comparison={ratioComparison ?? undefined}
-                            canvasWidth={canvasSize.w}
-                            canvasHeight={canvasSize.h}
-                            showOverlay
-                        />
-                    ) : null}
-                </div>
+            <div className="relative h-full shrink-0">
+                <canvas ref={canvasRef} className="block h-full w-auto" />
+                {viewMode === "ruler" ? (
+                    <GoldenRuler
+                        result={goldenRatio}
+                        comparison={ratioComparison ?? undefined}
+                        canvasWidth={canvasSize.w}
+                        canvasHeight={canvasSize.h}
+                        showOverlay
+                    />
+                ) : null}
             </div>
         );
     } else if (resultDataUrl) {
         previewContent = (
-            <div className="flex h-full items-center justify-center">
+            <div className="h-full shrink-0">
                 <BeforeAfterSlider beforeSrc={imageDataUrl} afterSrc={resultDataUrl} />
             </div>
         );
     }
 
     return (
-        <div className="flex h-full gap-4">
-            {/* 왼쪽 65%: 사진 프리뷰 */}
-            <div className="flex w-[65%] flex-col gap-2">
-                <ProViewModeToggle viewMode={viewMode} onChangeMode={setViewMode} />
-                <div className="min-h-0 flex-1">
-                    {previewContent}
-                </div>
-            </div>
+        <div className="flex h-full gap-4 p-4">
+            {/* 왼쪽: 사진 (높이 100%, 너비는 비율 자동) */}
+            {previewContent}
 
-            {/* 오른쪽 35%: 컨트롤 패널 (스크롤 가능) */}
-            <div className="flex w-[35%] flex-col gap-3 overflow-y-auto">
+            {/* 오른쪽: 남은 공간 전부 (스크롤 가능) */}
+            <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto">
                 {/* Golden Ratio Panel */}
                 {viewMode === "ruler" ? (
                     <GoldenRuler
@@ -405,6 +427,7 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
 // eslint-disable-next-line max-lines-per-function -- Pro client with upload + face analysis + golden ratio + consultation
 export function ProBeautySimClient(): React.ReactElement {
     const [step, setStep] = useState<ProStep>("upload");
+    const [viewMode, setViewMode] = useState<ViewMode>("preview");
     const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [landmarks, setLandmarks] = useState<LandmarkData | null>(null);
@@ -462,7 +485,9 @@ export function ProBeautySimClient(): React.ReactElement {
     }, []);
 
     return (
-        <div className={`flex flex-col ${step === "consultation" ? "h-full" : "h-full items-center justify-center"}`}>
+        <>
+            <ProHeader viewMode={viewMode} onChangeMode={setViewMode} showViewToggle={step === "consultation"} />
+            <div className={`flex-1 overflow-hidden ${step !== "consultation" ? "flex items-center justify-center" : ""}`}>
             {error ? (
                 <p className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center text-sm text-destructive">
                     {error}
@@ -485,6 +510,7 @@ export function ProBeautySimClient(): React.ReactElement {
                     image={imageRef.current}
                     landmarks={landmarks}
                     goldenRatio={goldenRatio}
+                    viewMode={viewMode}
                     onReset={onReset}
                 />
             ) : null}
@@ -497,6 +523,7 @@ export function ProBeautySimClient(): React.ReactElement {
                 className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
             />
-        </div>
+            </div>
+        </>
     );
 }

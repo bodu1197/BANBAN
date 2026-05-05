@@ -1,4 +1,4 @@
-import { createClient } from "./server";
+import { createClient, createAdminClient } from "./server";
 
 export interface ArtistInsight {
   id: string;
@@ -62,7 +62,7 @@ export interface ArtistInsightSearchParams {
 export async function searchArtistInsights(
   params: ArtistInsightSearchParams,
 ): Promise<{ data: ArtistInsight[]; count: number }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
   const { data, error } = await (supabase as any).rpc("search_artist_insights", {

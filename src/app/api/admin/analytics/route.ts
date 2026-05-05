@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 
 interface PathRow { path: string; count: number }
-
-function getUntypedClient(): SupabaseClient {
-    return createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-    );
-}
 
 const PERIOD_RPC_MAP: Record<string, string> = {
     hourly: "analytics_hourly",
@@ -44,9 +38,12 @@ async function fetchCounts(supabase: SupabaseClient, period: string): Promise<Co
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
+    const admin = await requireAdmin();
+    if (!admin.ok) return admin.response;
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") ?? "daily";
-    const supabase = getUntypedClient();
+    const supabase = admin.supabase as unknown as SupabaseClient;
 
     const [counts, chartData, pathRes] = await Promise.all([
         fetchCounts(supabase, period),

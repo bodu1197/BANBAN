@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createStaticClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { getAvatarUrl, getStorageUrl } from "@/lib/supabase/queries";
 
 interface NearbyArtistRow {
@@ -59,7 +59,7 @@ function extractPortfolioImages(artist: ArtistPortfolioRow): string[] {
 }
 
 async function fetchPortfolioMap(
-  supabase: ReturnType<typeof createStaticClient>,
+  supabase: ReturnType<typeof createAdminClient>,
   artistIds: string[],
 ): Promise<Map<string, string[]>> {
   const portfolioMap = new Map<string, string[]>();
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: coordError }, { status: 400 });
   }
 
-  const supabase = createStaticClient();
+  const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
   const { data, error } = await (supabase as any).rpc("nearby_artists", {
