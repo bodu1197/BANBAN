@@ -63,11 +63,8 @@ function GuideOverlay({ result, width, height }: Readonly<{
 
         ctx.clearRect(0, 0, width, height);
 
-        const scale = Math.max(width, height) / 500;
-        const lw = Math.max(2, Math.round(scale * 2));
-        const fontSize = Math.max(14, Math.round(scale * 12));
-        const dash = [lw * 4, lw * 2];
-        const pad = Math.round(fontSize * 0.4);
+        const short = Math.min(width, height);
+        const lw = Math.max(2, Math.round(short / 300));
 
         for (const line of result.guideLines) {
             ctx.beginPath();
@@ -75,19 +72,9 @@ function GuideOverlay({ result, width, height }: Readonly<{
             ctx.lineTo(line.endX, line.endY);
             ctx.strokeStyle = line.color;
             ctx.lineWidth = lw;
-            ctx.setLineDash(dash);
+            ctx.setLineDash([lw * 3, lw * 2]);
             ctx.stroke();
             ctx.setLineDash([]);
-
-            const midX = (line.startX + line.endX) / 2;
-            const midY = (line.startY + line.endY) / 2;
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            const textW = ctx.measureText(line.label).width;
-            ctx.fillStyle = "rgba(0,0,0,0.6)";
-            ctx.fillRect(midX - textW / 2 - pad, midY - fontSize - pad, textW + pad * 2, fontSize + pad * 2);
-            ctx.fillStyle = "#ffffff";
-            ctx.textAlign = "center";
-            ctx.fillText(line.label, midX, midY - pad);
         }
     }, [result, width, height]);
 
@@ -111,6 +98,8 @@ function ComparisonPanel({ comparison }: Readonly<{ comparison: GoldenRatioCompa
                 <p className="text-xs font-semibold text-muted-foreground">스마트 룰러</p>
                 <ScoreBadge score={adjusted.overallScore} delta={hasChanges ? scoreDelta : undefined} />
             </div>
+
+            <GuideLegend lines={adjusted.guideLines} />
 
             {hasChanges ? (
                 <div className="flex items-center gap-2 rounded-md bg-violet-50 px-3 py-1.5 dark:bg-violet-950/30">
@@ -157,6 +146,27 @@ function ComparisonPanel({ comparison }: Readonly<{ comparison: GoldenRatioCompa
 
 // ─── Static Panel (no comparison) ───────────────────────────────────────────
 
+const GUIDE_COLOR_CLASS: Record<string, string> = {
+    "#f472b6": "bg-pink-400",
+    "#60a5fa": "bg-blue-400",
+    "#a78bfa": "bg-violet-400",
+    "#fb923c": "bg-orange-400",
+};
+
+function GuideLegend({ lines }: Readonly<{ lines: GoldenRatioResult["guideLines"] }>): React.ReactElement {
+    return (
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {lines.map((l) => (
+                <div key={l.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    {/* eslint-disable-next-line security/detect-object-injection -- Safe: color is from known GuideLine values */}
+                    <span className={`inline-block h-0.5 w-4 rounded ${GUIDE_COLOR_CLASS[l.color] ?? "bg-muted-foreground"}`} />
+                    <span>{l.label}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 function StaticPanel({ result }: Readonly<{ result: GoldenRatioResult }>): React.ReactElement {
     return (
         <div className="flex flex-col gap-2 rounded-lg border p-3">
@@ -164,6 +174,8 @@ function StaticPanel({ result }: Readonly<{ result: GoldenRatioResult }>): React
                 <p className="text-xs font-semibold text-muted-foreground">스마트 룰러</p>
                 <ScoreBadge score={result.overallScore} />
             </div>
+
+            <GuideLegend lines={result.guideLines} />
 
             <div className="flex flex-col gap-1.5">
                 {result.measurements.map((m) => (
