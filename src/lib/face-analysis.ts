@@ -111,7 +111,7 @@ export async function initFaceAnalysis(): Promise<FaceLandmarkerInstance> {
         try {
             detectorInstance = await mod.FaceDetector.createFromModelPath(
                 vision,
-                "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.task",
+                "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
             );
         } catch {}
         return instance;
