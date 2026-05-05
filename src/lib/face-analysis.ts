@@ -104,18 +104,16 @@ export async function initFaceAnalysis(): Promise<FaceLandmarkerInstance> {
         const vision = await mod.FilesetResolver.forVisionTasks(
             "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm",
         );
-        const [landmarker, detector] = await Promise.all([
-            mod.FaceLandmarker.createFromModelPath(
+        instance = await mod.FaceLandmarker.createFromModelPath(
+            vision,
+            "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        );
+        try {
+            detectorInstance = await mod.FaceDetector.createFromModelPath(
                 vision,
-                "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-            ),
-            mod.FaceDetector.createFromModelPath(
-                vision,
-                "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.task",
-            ),
-        ]);
-        instance = landmarker;
-        detectorInstance = detector;
+                "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.task",
+            );
+        } catch {}
         return instance;
     })();
 
