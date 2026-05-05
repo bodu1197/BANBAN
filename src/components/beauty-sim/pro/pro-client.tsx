@@ -336,7 +336,7 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, viewMo
     const showCompare = viewMode === "compare" && resultDataUrl;
     const previewContent = (
         <div className="relative h-full shrink-0">
-            <canvas ref={canvasRef} className={`block h-full w-auto ${showCompare ? "hidden" : ""}`} />
+            <canvas ref={canvasRef} className={`block h-full w-auto ${showCompare ? "invisible" : ""}`} />
             {viewMode === "ruler" ? (
                 <GoldenRuler
                     result={goldenRatio}
@@ -347,7 +347,9 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, viewMo
                 />
             ) : null}
             {showCompare ? (
-                <BeforeAfterSlider beforeSrc={imageDataUrl} afterSrc={resultDataUrl} />
+                <div className="absolute inset-0">
+                    <BeforeAfterSlider beforeSrc={imageDataUrl} afterSrc={resultDataUrl} />
+                </div>
             ) : null}
         </div>
     );
