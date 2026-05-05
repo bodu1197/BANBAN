@@ -63,23 +63,31 @@ function GuideOverlay({ result, width, height }: Readonly<{
 
         ctx.clearRect(0, 0, width, height);
 
+        const scale = Math.max(width, height) / 500;
+        const lw = Math.max(2, Math.round(scale * 2));
+        const fontSize = Math.max(14, Math.round(scale * 12));
+        const dash = [lw * 4, lw * 2];
+        const pad = Math.round(fontSize * 0.4);
+
         for (const line of result.guideLines) {
             ctx.beginPath();
             ctx.moveTo(line.startX, line.startY);
             ctx.lineTo(line.endX, line.endY);
             ctx.strokeStyle = line.color;
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = lw;
+            ctx.setLineDash(dash);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Label
             const midX = (line.startX + line.endX) / 2;
             const midY = (line.startY + line.endY) / 2;
-            ctx.font = "11px sans-serif";
-            ctx.fillStyle = line.color;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            const textW = ctx.measureText(line.label).width;
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(midX - textW / 2 - pad, midY - fontSize - pad, textW + pad * 2, fontSize + pad * 2);
+            ctx.fillStyle = "#ffffff";
             ctx.textAlign = "center";
-            ctx.fillText(line.label, midX, midY - 6);
+            ctx.fillText(line.label, midX, midY - pad);
         }
     }, [result, width, height]);
 

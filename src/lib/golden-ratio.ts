@@ -160,9 +160,11 @@ function computeBrowSymmetryScore(fl: FaceLandmarks): RatioMeasurement {
 interface FaceBounds { topY: number; bottomY: number }
 
 function computeFaceBounds(fl: FaceLandmarks): FaceBounds {
-    const oneThird = (fl.chin.y - fl.noseBridge.y) / 2;
+    const browY = (fl.rBrowCenter.y + fl.lBrowCenter.y) / 2;
+    const lowerTwoThirds = fl.chin.y - browY;
+    const oneThird = lowerTwoThirds / 2;
     return {
-        topY: fl.noseBridge.y - oneThird,
+        topY: browY - oneThird,
         bottomY: fl.chin.y,
     };
 }
