@@ -12,7 +12,7 @@ export async function generateProBeautySimMetadata(): Promise<Metadata> {
 
 export async function renderProBeautySimPage(): Promise<React.ReactElement> {
     return (
-        <main className="mx-auto min-h-screen max-w-screen-2xl bg-background">
+        <main className="min-h-screen w-full bg-background">
             <div className="sticky top-0 z-50 flex h-12 items-center justify-between border-b bg-background px-6">
                 <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-violet-500" />

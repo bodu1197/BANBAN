@@ -335,7 +335,7 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
             </div>
 
             {/* 오른쪽: 컨트롤 패널 */}
-            <div className="flex w-96 shrink-0 flex-col gap-3">
+            <div className="flex w-[460px] shrink-0 flex-col gap-3">
                 {/* Golden Ratio Panel */}
                 {viewMode === "ruler" ? (
                     <GoldenRuler
