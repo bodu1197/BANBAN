@@ -128,11 +128,16 @@ function measureRatio(label: string, actual: number, ideal: number): RatioMeasur
     return { label, actual: Math.round(actual * 100) / 100, ideal, deviation: Math.round(deviation), rating: rateDeviation(deviation) };
 }
 
-function computeBrowPositionScore(fl: FaceLandmarks): RatioMeasurement {
-    const meshHeight = fl.chin.y - fl.forehead.y;
-    const trueTopY = fl.forehead.y - meshHeight * 0.12;
-    const faceHeight = fl.chin.y + meshHeight * 0.05 - trueTopY;
-    const idealBrowY = fl.noseBridge.y - (fl.noseBridge.y - trueTopY) * 0.15;
+function computeBrowPositionScore(fl: FaceLandmarks, lm: Array<{ x: number; y: number }>, h: number): RatioMeasurement {
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const p of lm) {
+        const py = p.y * h;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+    }
+    const faceHeight = maxY - minY;
+    const idealBrowY = fl.noseBridge.y - (fl.noseBridge.y - minY) * 0.15;
     const actualBrowY = (fl.rBrowCenter.y + fl.lBrowCenter.y) / 2;
     const deviation = Math.abs(actualBrowY - idealBrowY) / faceHeight * 100;
     return {
@@ -182,20 +187,24 @@ function computeMeasurements(
         measureRatio("눈 간격", eyeSpacing / eyeWidth, 1.0),
         measureRatio("코 너비:눈 간격", noseWidth / eyeSpacing, 1.0),
         measureRatio("입술-턱 비율", dist(fl.upperLip, fl.chin) / dist(fl.noseTip, fl.upperLip), GOLDEN_RATIO),
-        computeBrowPositionScore(fl),
+        computeBrowPositionScore(fl, lm, h),
         computeBrowSymmetryScore(fl),
     ];
 }
 
-function computeGuideLines(fl: FaceLandmarks): GuideLine[] {
+function computeGuideLines(fl: FaceLandmarks, lm: Array<{ x: number; y: number }>, w: number, h: number): GuideLine[] {
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const p of lm) {
+        const py = p.y * h;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+    }
     const centerX = (fl.forehead.x + fl.chin.x) / 2;
-    const meshHeight = fl.chin.y - fl.forehead.y;
-    const trueTopY = fl.forehead.y - meshHeight * 0.12;
-    const trueBotY = fl.chin.y + meshHeight * 0.05;
-    const browIdealY = fl.noseBridge.y - (fl.noseBridge.y - trueTopY) * 0.15;
+    const browIdealY = fl.noseBridge.y - (fl.noseBridge.y - minY) * 0.15;
 
     return [
-        { label: "세로 중심", startX: centerX, startY: trueTopY, endX: centerX, endY: trueBotY, color: "#f472b6" },
+        { label: "세로 중심", startX: centerX, startY: minY, endX: centerX, endY: maxY, color: "#f472b6" },
         { label: "얼굴 너비", startX: fl.leftCheek.x, startY: fl.leftCheek.y, endX: fl.rightCheek.x, endY: fl.rightCheek.y, color: "#60a5fa" },
         { label: "눈 간격", startX: fl.rEyeInner.x, startY: fl.rEyeInner.y, endX: fl.lEyeInner.x, endY: fl.lEyeInner.y, color: "#a78bfa" },
         { label: "이상적 눈썹 위치", startX: fl.rEyeOuter.x - 10, startY: browIdealY, endX: fl.lEyeOuter.x + 10, endY: browIdealY, color: "#fb923c" },
@@ -204,7 +213,7 @@ function computeGuideLines(fl: FaceLandmarks): GuideLine[] {
 
 function computeResult(fl: FaceLandmarks, lm: Array<{ x: number; y: number }>, w: number, h: number): GoldenRatioResult {
     const measurements = computeMeasurements(fl, lm, w, h);
-    const guideLines = computeGuideLines(fl);
+    const guideLines = computeGuideLines(fl, lm, w, h);
 
     const avgDev = measurements.reduce((sum, m) => sum + m.deviation, 0) / measurements.length;
     const overallScore = Math.max(0, Math.min(100, Math.round(100 - avgDev)));
