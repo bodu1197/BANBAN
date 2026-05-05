@@ -307,17 +307,19 @@ function ConsultationPanel({ imageDataUrl, image, landmarks, goldenRatio, onRese
     let previewContent: React.ReactNode = null;
     if (viewMode === "preview" || viewMode === "ruler") {
         previewContent = (
-            <div className="relative flex h-full items-center justify-center overflow-hidden rounded-xl border">
-                <canvas ref={canvasRef} className="max-h-full max-w-full object-contain" />
-                {viewMode === "ruler" ? (
-                    <GoldenRuler
-                        result={goldenRatio}
-                        comparison={ratioComparison ?? undefined}
-                        canvasWidth={canvasSize.w}
-                        canvasHeight={canvasSize.h}
-                        showOverlay
-                    />
-                ) : null}
+            <div className="flex h-full items-center justify-center">
+                <div className="relative max-h-full max-w-full overflow-hidden rounded-xl border">
+                    <canvas ref={canvasRef} className="block max-h-full w-auto" />
+                    {viewMode === "ruler" ? (
+                        <GoldenRuler
+                            result={goldenRatio}
+                            comparison={ratioComparison ?? undefined}
+                            canvasWidth={canvasSize.w}
+                            canvasHeight={canvasSize.h}
+                            showOverlay
+                        />
+                    ) : null}
+                </div>
             </div>
         );
     } else if (resultDataUrl) {
