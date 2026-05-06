@@ -52,16 +52,15 @@ function drawBrowEllipse(
     const inner = lmPx(lm, eyeInner, w, h);
     const outer = lmPx(lm, eyeOuter, w, h);
     const top = lmPx(lm, eyeTop, w, h);
-    const forehead = lmPx(lm, FOREHEAD_TOP, w, h);
     const browCenter = avgPt(lm, browUpper, w, h);
 
     const eyeWidth = Math.abs(inner.x - outer.x);
     const browToEye = Math.abs(browCenter.y - top.y);
 
     const cx = browCenter.x;
-    const cy = browCenter.y - browToEye * 0.15;
-    const rx = eyeWidth * 0.95;
-    const ry = Math.max(browToEye * 1.8, Math.abs(forehead.y - top.y) * 0.5);
+    const cy = browCenter.y - browToEye * 0.1;
+    const rx = eyeWidth * 0.78;
+    const ry = browToEye * 0.95;
 
     const browStart = lmPx(lm, browUpper.at(0) ?? 0, w, h);
     const browEnd = lmPx(lm, browUpper.at(-1) ?? 0, w, h);
@@ -167,7 +166,7 @@ export function eraseBrowRegion(
     blur2Ctx.filter = "none";
 
     // Pass 3: skin-tone fill
-    blur2Ctx.globalAlpha = 0.55;
+    blur2Ctx.globalAlpha = 0.45;
     blur2Ctx.fillStyle = skinColor;
     drawBothBrows(blur2Ctx, lm, w, h);
     blur2Ctx.fill();
