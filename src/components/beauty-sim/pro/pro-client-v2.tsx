@@ -11,6 +11,7 @@ import { AdjustmentSliders } from "@/components/beauty-sim/shared/adjustment-sli
 import { ColorPalette, BROW_COLORS, LIP_COLORS } from "@/components/beauty-sim/shared/color-palette";
 import { BeforeAfterSlider } from "@/components/beauty-sim/shared/before-after-slider";
 import { GoldenRuler } from "./golden-ruler";
+import { Joystick } from "@/components/beauty-sim/shared/joystick";
 import { Slider } from "@/components/ui/slider";
 import type { AdjustmentParams, BrowSideParams, LandmarkData } from "@/lib/eyebrow-renderer";
 import { ALL_TEMPLATES } from "@/lib/eyebrow-templates";
@@ -70,7 +71,7 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
 // ─── Eyebrow Tab (V2 — with erase toggle) ──────────────────────────────────
 
 // eslint-disable-next-line max-lines-per-function -- Eyebrow tab with auto-erase toggle + manual brush controls
-function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, onAdjChange, onSideChange, browColor, onColorChange, browEraseEnabled, onBrowEraseToggle, brushMode, onBrushModeToggle, brushSize, onBrushSizeChange, onBrushClear }: Readonly<{
+function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, onAdjChange, onSideChange, browColor, onColorChange, browEraseEnabled, onBrowEraseToggle, brushMode, onBrushModeToggle, brushSize, onBrushSizeChange, onBrushClear, onJoystickMove }: Readonly<{
     selectedId: string | null;
     onSelectTemplate: (t: EyebrowTemplate) => void;
     activeAdj: AdjustmentParams;
@@ -86,6 +87,7 @@ function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, on
     brushSize: number;
     onBrushSizeChange: (size: number) => void;
     onBrushClear: () => void;
+    onJoystickMove: (dx: number, dy: number) => void;
 }>): React.ReactElement {
     return (
         <div className="flex flex-col gap-4">
@@ -158,6 +160,13 @@ function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, on
             <div>
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">정밀 조절 (좌/우 개별)</p>
                 <AdjustmentSliders params={activeAdj} side={browSide} onParamsChange={onAdjChange} onSideChange={onSideChange} />
+            </div>
+            <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">위치 이동</p>
+                <div className="flex items-center gap-3">
+                    <Joystick onMove={onJoystickMove} onStart={() => {}} onEnd={() => {}} />
+                    <p className="text-[10px] text-muted-foreground">조이스틱을 드래그하여<br />눈썹 위치를 이동합니다</p>
+                </div>
             </div>
             <div>
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">컬러 (17색)</p>
@@ -295,6 +304,7 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
     onReset: () => void;
 }>): React.ReactElement {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
     // Eyebrow state
@@ -475,6 +485,25 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
         else { setRightAdj(newAdj); }
     }, [browSide]);
 
+    const handleJoystickMove = useCallback((dx: number, dy: number) => {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
+        const scaleX = canvas.width / container.clientWidth;
+        const scaleY = canvas.height / container.clientHeight;
+        const cdx = dx * scaleX;
+        const cdy = dy * scaleY;
+
+        if (browSide === "both") {
+            setLeftAdj((prev) => ({ ...prev, offsetX: prev.offsetX + cdx, offsetY: prev.offsetY + cdy }));
+            setRightAdj((prev) => ({ ...prev, offsetX: prev.offsetX + cdx, offsetY: prev.offsetY + cdy }));
+        } else if (browSide === "left") {
+            setRightAdj((prev) => ({ ...prev, offsetX: prev.offsetX + cdx, offsetY: prev.offsetY + cdy }));
+        } else {
+            setLeftAdj((prev) => ({ ...prev, offsetX: prev.offsetX + cdx, offsetY: prev.offsetY + cdy }));
+        }
+    }, [browSide]);
+
     const handleReset = useCallback(() => {
         setLeftAdj({ ...DEFAULT_ADJ });
         setRightAdj({ ...DEFAULT_ADJ });
@@ -500,7 +529,7 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
     // Preview area
     const showCompare = viewMode === "compare" && resultDataUrl;
     const previewContent = (
-        <div className="relative h-full shrink-0">
+        <div ref={containerRef} className="relative h-full shrink-0">
             <canvas
                 ref={canvasRef}
                 className={`block h-full w-auto ${showCompare ? "invisible" : ""} ${brushMode ? "cursor-crosshair touch-none" : ""}`}
@@ -564,6 +593,7 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
                             brushSize={brushSize}
                             onBrushSizeChange={setBrushSize}
                             onBrushClear={handleBrushClear}
+                            onJoystickMove={handleJoystickMove}
                         />
                     </TabsContent>
 
