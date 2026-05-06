@@ -129,22 +129,13 @@ export function ConcealerClient(): React.ReactElement {
     const [brushSize, setBrushSize] = useState(20);
     const isPaintingRef = useRef(false);
     const blurredRef = useRef<HTMLCanvasElement | null>(null);
+    const skinColorRef = useRef("rgb(210,185,165)");
 
     const prepareBlurred = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const lm = landmarksRef.current;
         const w = canvas.width;
         const h = canvas.height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        let skinColor = "rgb(210,185,165)";
-        if (lm) {
-            void import("@/lib/brow-eraser").then(({ sampleSkinTone }) => {
-                skinColor = sampleSkinTone(ctx, lm.points, w, h);
-            });
-        }
 
         const b1 = document.createElement("canvas");
         b1.width = w; b1.height = h;
@@ -153,8 +144,10 @@ export function ConcealerClient(): React.ReactElement {
         b1c.filter = "blur(20px)";
         b1c.drawImage(canvas, 0, 0);
         b1c.filter = "none";
-        b1c.globalAlpha = 0.35;
-        b1c.fillStyle = skinColor;
+        b1c.globalAlpha = 0.55;
+        b1c.fillStyle = skinColorRef.current;
+        b1c.fillRect(0, 0, w, h);
+        b1c.globalAlpha = 0.3;
         b1c.fillRect(0, 0, w, h);
         b1c.globalAlpha = 1.0;
 
@@ -162,7 +155,7 @@ export function ConcealerClient(): React.ReactElement {
         b2.width = w; b2.height = h;
         const b2c = b2.getContext("2d");
         if (!b2c) return;
-        b2c.filter = "blur(10px)";
+        b2c.filter = "blur(12px)";
         b2c.drawImage(b1, 0, 0);
         b2c.filter = "none";
 
@@ -200,6 +193,9 @@ export function ConcealerClient(): React.ReactElement {
                 if (!ctx) return;
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+                const { sampleSkinTone } = await import("@/lib/brow-eraser");
+                skinColorRef.current = sampleSkinTone(ctx, result.landmarks.points, canvas.width, canvas.height);
+
                 prepareBlurred();
                 setStep("editing");
             } catch {
@@ -216,8 +212,9 @@ export function ConcealerClient(): React.ReactElement {
         if (!canvas || !lm) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
-        const { eraseBrowRegion } = await import("@/lib/brow-eraser");
+        const { eraseBrowRegion, sampleSkinTone } = await import("@/lib/brow-eraser");
         eraseBrowRegion(ctx, canvas, lm.points, canvas.width, canvas.height);
+        skinColorRef.current = sampleSkinTone(ctx, lm.points, canvas.width, canvas.height);
         prepareBlurred();
     }, [prepareBlurred]);
 
