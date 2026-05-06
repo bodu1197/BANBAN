@@ -1,9 +1,9 @@
 /**
  * Eyebrow Eraser — soft-blur natural eyebrows for clean template overlay.
  *
- * V3: Ellipse-based region from eye landmarks (not sparse brow landmarks).
- * Eye corners + forehead define a large elliptical area that fully covers
- * natural eyebrows regardless of thickness or shape.
+ * V4: Horizontal bar (rounded rectangle) aligned to brow angle.
+ * Eye corners define the width, brow landmarks define the thin height.
+ * Bar shape matches natural eyebrow proportions — wide and thin.
  */
 
 const R_BROW_UPPER = [70, 63, 105, 66, 107];
@@ -39,10 +39,11 @@ function avgPt(lm: Array<{ x: number; y: number }>, indices: number[], w: number
 }
 
 /**
- * Draw an ellipse covering the full eyebrow region for one side.
- * Uses eye corners for width and brow-to-eye distance for height.
+ * Draw a horizontal rounded-rect bar covering the eyebrow region.
+ * Width from eye corners, height just enough for brow thickness.
+ * Rotated to match the natural brow angle.
  */
-function drawBrowEllipse(
+function drawBrowBar(
     ctx: CanvasRenderingContext2D,
     lm: Array<{ x: number; y: number }>,
     eyeInner: number, eyeOuter: number, eyeTop: number,
@@ -57,16 +58,21 @@ function drawBrowEllipse(
     const eyeWidth = Math.abs(inner.x - outer.x);
     const browToEye = Math.abs(browCenter.y - top.y);
 
+    const barW = eyeWidth * 1.3;
+    const barH = browToEye * 0.9;
     const cx = browCenter.x;
-    const cy = browCenter.y - browToEye * 0.1;
-    const rx = eyeWidth * 0.78;
-    const ry = browToEye * 0.95;
+    const cy = browCenter.y;
+    const radius = barH * 0.45;
 
     const browStart = lmPx(lm, browUpper.at(0) ?? 0, w, h);
     const browEnd = lmPx(lm, browUpper.at(-1) ?? 0, w, h);
     const angle = Math.atan2(browEnd.y - browStart.y, browEnd.x - browStart.x);
 
-    ctx.ellipse(cx, cy, rx, ry, angle, 0, Math.PI * 2);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.roundRect(-barW / 2, -barH / 2, barW, barH, radius);
+    ctx.restore();
 }
 
 /**
@@ -109,7 +115,7 @@ function sampleSkinTone(
 }
 
 /**
- * Draw both brow ellipses onto the given context (as a single path for fill/clip).
+ * Draw both brow bars onto the given context (as a single path for fill/clip).
  */
 function drawBothBrows(
     ctx: CanvasRenderingContext2D,
@@ -117,8 +123,8 @@ function drawBothBrows(
     w: number, h: number,
 ): void {
     ctx.beginPath();
-    drawBrowEllipse(ctx, lm, R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP, R_BROW_UPPER, w, h);
-    drawBrowEllipse(ctx, lm, L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP, L_BROW_UPPER, w, h);
+    drawBrowBar(ctx, lm, R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP, R_BROW_UPPER, w, h);
+    drawBrowBar(ctx, lm, L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP, L_BROW_UPPER, w, h);
 }
 
 /**
