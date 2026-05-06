@@ -29,8 +29,26 @@ function browContour(
 ): Point[] {
     const uPts = upper.map(i => lmPx(lm, i, w, h));
     const lPts = [...lower].reverse().map(i => lmPx(lm, i, w, h));
-    const all = [...uPts, ...lPts];
 
+    // Extrapolate outer tail — landmarks don't reach the full brow extent
+    const uLast = uPts.at(-1);
+    const uPrev = uPts.at(-2);
+    if (uLast && uPrev) {
+        uPts.push({
+            x: uLast.x + (uLast.x - uPrev.x) * 0.6,
+            y: uLast.y + (uLast.y - uPrev.y) * 0.6,
+        });
+    }
+    const lFirst = lPts.at(0);
+    const lSecond = lPts.at(1);
+    if (lFirst && lSecond) {
+        lPts.unshift({
+            x: lFirst.x + (lFirst.x - lSecond.x) * 0.6,
+            y: lFirst.y + (lFirst.y - lSecond.y) * 0.6,
+        });
+    }
+
+    const all = [...uPts, ...lPts];
     const cx = all.reduce((s, p) => s + p.x, 0) / all.length;
     const cy = all.reduce((s, p) => s + p.y, 0) / all.length;
 
@@ -109,7 +127,7 @@ export function eraseBrowRegion(
     w: number,
     h: number,
 ): void {
-    const expand = 0.4;
+    const expand = 0.5;
     const rBrow = browContour(lm, R_BROW_UPPER, R_BROW_LOWER, w, h, expand);
     const lBrow = browContour(lm, L_BROW_UPPER, L_BROW_LOWER, w, h, expand);
 
