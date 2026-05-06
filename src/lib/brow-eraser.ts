@@ -78,7 +78,7 @@ function drawBrowBar(
 /**
  * Sample average skin color from forehead area (above eyebrows).
  */
-function sampleSkinTone(
+export function sampleSkinTone(
     ctx: CanvasRenderingContext2D,
     lm: Array<{ x: number; y: number }>,
     w: number, h: number,
@@ -209,5 +209,59 @@ export function eraseBrowRegion(
     // Apply mask → composite
     blur3Ctx.globalCompositeOperation = "destination-in";
     blur3Ctx.drawImage(softCvs, 0, 0);
+    ctx.drawImage(blur3, 0, 0);
+}
+
+export function applyBrushMask(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    mask: HTMLCanvasElement,
+    lm: Array<{ x: number; y: number }>,
+    w: number,
+    h: number,
+): void {
+    const faceW = Math.abs(lmPx(lm, LEFT_CHEEK, w, h).x - lmPx(lm, RIGHT_CHEEK, w, h).x);
+    const blurPx = Math.max(12, Math.round(faceW * 0.12));
+    const edgeBlur = Math.max(6, Math.round(blurPx * 0.6));
+    const skinColor = sampleSkinTone(ctx, lm, w, h);
+
+    const blur1 = document.createElement("canvas");
+    blur1.width = w; blur1.height = h;
+    const blur1Ctx = blur1.getContext("2d");
+    if (!blur1Ctx) return;
+    blur1Ctx.filter = `blur(${blurPx}px)`;
+    blur1Ctx.drawImage(canvas, 0, 0);
+    blur1Ctx.filter = "none";
+
+    const blur2 = document.createElement("canvas");
+    blur2.width = w; blur2.height = h;
+    const blur2Ctx = blur2.getContext("2d");
+    if (!blur2Ctx) return;
+    blur2Ctx.filter = `blur(${Math.round(blurPx * 0.6)}px)`;
+    blur2Ctx.drawImage(blur1, 0, 0);
+    blur2Ctx.filter = "none";
+
+    blur2Ctx.globalAlpha = 0.45;
+    blur2Ctx.fillStyle = skinColor;
+    blur2Ctx.fillRect(0, 0, w, h);
+    blur2Ctx.globalAlpha = 1.0;
+
+    const blur3 = document.createElement("canvas");
+    blur3.width = w; blur3.height = h;
+    const blur3Ctx = blur3.getContext("2d");
+    if (!blur3Ctx) return;
+    blur3Ctx.filter = `blur(${Math.round(edgeBlur * 0.5)}px)`;
+    blur3Ctx.drawImage(blur2, 0, 0);
+    blur3Ctx.filter = "none";
+
+    const softMask = document.createElement("canvas");
+    softMask.width = w; softMask.height = h;
+    const softCtx = softMask.getContext("2d");
+    if (!softCtx) return;
+    softCtx.filter = `blur(${edgeBlur}px)`;
+    softCtx.drawImage(mask, 0, 0);
+
+    blur3Ctx.globalCompositeOperation = "destination-in";
+    blur3Ctx.drawImage(softMask, 0, 0);
     ctx.drawImage(blur3, 0, 0);
 }

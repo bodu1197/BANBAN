@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Upload, Brain, Ruler, Eye, Download, RotateCcw, Camera, Share2, Sparkles, Home, X, Eraser } from "lucide-react";
+import { Upload, Brain, Ruler, Eye, Download, RotateCcw, Camera, Share2, Sparkles, Home, X, Eraser, Paintbrush } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShapeSelector } from "@/components/beauty-sim/shared/shape-selector";
@@ -25,6 +25,7 @@ type BrowSide = "left" | "right" | "both";
 type ViewMode = "preview" | "compare" | "ruler";
 
 const DEFAULT_ADJ: AdjustmentParams = { scaleX: 1.0, scaleY: 1.0, angleOffset: 0, opacity: 0.5, offsetX: 0, offsetY: 0 };
+const TOGGLE_OFF_CLASS = "bg-muted text-muted-foreground hover:bg-muted/80 focus-visible:bg-muted/80";
 const DEFAULT_LIP: LipParams = { color: "#c45c6a", saturation: 55 };
 
 function getActiveAdj(side: BrowSide, left: AdjustmentParams, right: AdjustmentParams): AdjustmentParams {
@@ -68,7 +69,8 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
 
 // ─── Eyebrow Tab (V2 — with erase toggle) ──────────────────────────────────
 
-function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, onAdjChange, onSideChange, browColor, onColorChange, browEraseEnabled, onBrowEraseToggle }: Readonly<{
+// eslint-disable-next-line max-lines-per-function -- Eyebrow tab with auto-erase toggle + manual brush controls
+function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, onAdjChange, onSideChange, browColor, onColorChange, browEraseEnabled, onBrowEraseToggle, brushMode, onBrushModeToggle, brushSize, onBrushSizeChange, onBrushClear }: Readonly<{
     selectedId: string | null;
     onSelectTemplate: (t: EyebrowTemplate) => void;
     activeAdj: AdjustmentParams;
@@ -79,26 +81,74 @@ function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, on
     onColorChange: (hex: string) => void;
     browEraseEnabled: boolean;
     onBrowEraseToggle: () => void;
+    brushMode: boolean;
+    onBrushModeToggle: () => void;
+    brushSize: number;
+    onBrushSizeChange: (size: number) => void;
+    onBrushClear: () => void;
 }>): React.ReactElement {
     return (
         <div className="flex flex-col gap-4">
             <div>
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">자연눈썹 처리</p>
-                <button
-                    type="button"
-                    aria-pressed={browEraseEnabled}
-                    className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                        browEraseEnabled
-                            ? "bg-rose-500 text-white"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80 focus-visible:bg-muted/80"
-                    }`}
-                    onClick={onBrowEraseToggle}
-                >
-                    <Eraser className="h-3 w-3" />
-                    {browEraseEnabled ? "자연눈썹 지우기 ON" : "자연눈썹 지우기 OFF"}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        aria-pressed={browEraseEnabled}
+                        className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            browEraseEnabled
+                                ? "bg-rose-500 text-white"
+                                : TOGGLE_OFF_CLASS
+                        }`}
+                        onClick={onBrowEraseToggle}
+                    >
+                        <Eraser className="h-3 w-3" />
+                        {browEraseEnabled ? "자동 지우기 ON" : "자동 지우기 OFF"}
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={brushMode}
+                        className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            brushMode
+                                ? "bg-rose-500 text-white"
+                                : TOGGLE_OFF_CLASS
+                        }`}
+                        onClick={onBrushModeToggle}
+                    >
+                        <Paintbrush className="h-3 w-3" />
+                        {brushMode ? "컨실러 ON" : "컨실러 OFF"}
+                    </button>
+                    {brushMode ? (
+                        <button
+                            type="button"
+                            className="rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted/80"
+                            onClick={onBrushClear}
+                        >
+                            브러시 초기화
+                        </button>
+                    ) : null}
+                </div>
                 {browEraseEnabled ? (
-                    <p className="mt-1.5 text-[10px] text-rose-500">AI가 감지한 눈썹 영역에 가우시안 블러를 적용합니다</p>
+                    <p className="mt-1.5 text-[10px] text-rose-500">AI가 감지한 눈썹 영역에 자동 블러를 적용합니다</p>
+                ) : null}
+                {brushMode ? (
+                    <div className="mt-2">
+                        <p className="mb-1 text-[10px] text-rose-500">사진 위에 직접 칠해서 남은 눈썹을 지웁니다</p>
+                        <div className="flex items-center gap-3">
+                            <span className="w-8 shrink-0 text-xs text-muted-foreground">작게</span>
+                            <Slider
+                                min={5} max={50} step={1}
+                                value={[brushSize]}
+                                onValueChange={(v) => {
+                                    const val = v[0];
+                                    if (val !== undefined) onBrushSizeChange(val);
+                                }}
+                                aria-label="브러시 크기 조절"
+                                className="flex-1"
+                            />
+                            <span className="w-8 shrink-0 text-right text-xs text-muted-foreground">크게</span>
+                        </div>
+                    </div>
                 ) : null}
             </div>
             <div>
@@ -131,7 +181,7 @@ function ProLipTab({ lipEnabled, onToggleLip, lipParams, onLipParamsChange }: Re
                 type="button"
                 aria-pressed={lipEnabled}
                 className={`self-start rounded-full px-4 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    lipEnabled ? "bg-violet-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80 focus-visible:bg-muted/80"
+                    lipEnabled ? "bg-violet-500 text-white" : TOGGLE_OFF_CLASS
                 }`}
                 onClick={onToggleLip}
             >
@@ -235,7 +285,7 @@ function ProHeaderV2({ viewMode, onChangeMode, showViewToggle }: Readonly<{
 
 // ─── Consultation Panel (V2) ───────────────────────────────────────────────
 
-// eslint-disable-next-line max-lines-per-function -- Pro V2 consultation panel with canvas, tabs, ruler, sliders, brow erase
+// eslint-disable-next-line max-lines-per-function, complexity -- Pro V2 consultation panel: canvas, tabs, ruler, sliders, auto-erase + manual brush
 function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, viewMode, onReset }: Readonly<{
     imageDataUrl: string;
     image: HTMLImageElement;
@@ -256,6 +306,13 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
 
     // V2: Brow erase
     const [browEraseEnabled, setBrowEraseEnabled] = useState(false);
+
+    // V2: Manual concealer brush
+    const [brushMode, setBrushMode] = useState(false);
+    const [brushSize, setBrushSize] = useState(20);
+    const brushMaskRef = useRef<HTMLCanvasElement | null>(null);
+    const isPaintingRef = useRef(false);
+    const [brushVersion, setBrushVersion] = useState(0);
 
     // Lip state
     const [lipParams, setLipParams] = useState<LipParams>({ ...DEFAULT_LIP });
@@ -310,7 +367,10 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
         const sideParams: BrowSideParams = { left: leftAdj, right: rightAdj };
         await renderEyebrowsToCanvas(
             canvas, image, landmarks, selectedTemplate, browColor, sideParams,
-            browEraseEnabled ? { eraseBrows: true } : undefined,
+            {
+                eraseBrows: browEraseEnabled,
+                brushMask: brushMaskRef.current ?? undefined,
+            },
         );
 
         if (lipEnabled) {
@@ -319,7 +379,8 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
         }
 
         setResultDataUrl(canvas.toDataURL("image/png"));
-    }, [selectedTemplate, browColor, leftAdj, rightAdj, lipEnabled, lipParams, image, landmarks, browEraseEnabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- brushVersion triggers re-render after brush strokes; ref value is current at call time
+    }, [selectedTemplate, browColor, leftAdj, rightAdj, lipEnabled, lipParams, image, landmarks, browEraseEnabled, brushVersion]);
 
     useEffect(() => {
         const raf = requestAnimationFrame(() => { void renderCanvas(); });
@@ -334,6 +395,78 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
             setCanvasSize({ w: canvas.width, h: canvas.height });
         });
     }, [image]);
+
+    // Brush mask canvas — same resolution as main canvas
+    useEffect(() => {
+        if (canvasSize.w === 0 || canvasSize.h === 0) return;
+        if (!brushMaskRef.current) {
+            brushMaskRef.current = document.createElement("canvas");
+        }
+        const mask = brushMaskRef.current;
+        if (mask.width !== canvasSize.w || mask.height !== canvasSize.h) {
+            mask.width = canvasSize.w;
+            mask.height = canvasSize.h;
+        }
+    }, [canvasSize.w, canvasSize.h]);
+
+    // Pointer handlers for brush painting
+    const paintAtCoord = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        const mask = brushMaskRef.current;
+        if (!canvas || !mask) return;
+        const rect = canvas.getBoundingClientRect();
+        const sx = canvas.width / rect.width;
+        const sy = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * sx;
+        const y = (e.clientY - rect.top) * sy;
+        const r = brushSize * sx;
+
+        const maskCtx = mask.getContext("2d");
+        if (maskCtx) {
+            maskCtx.fillStyle = "#fff";
+            maskCtx.beginPath();
+            maskCtx.arc(x, y, r, 0, Math.PI * 2);
+            maskCtx.fill();
+        }
+
+        const mainCtx = canvas.getContext("2d");
+        if (mainCtx) {
+            mainCtx.save();
+            mainCtx.globalAlpha = 0.25;
+            mainCtx.fillStyle = "rgb(210,185,165)";
+            mainCtx.beginPath();
+            mainCtx.arc(x, y, r, 0, Math.PI * 2);
+            mainCtx.fill();
+            mainCtx.restore();
+        }
+    }, [brushSize]);
+
+    const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!brushMode) return;
+        isPaintingRef.current = true;
+        paintAtCoord(e);
+        e.currentTarget.setPointerCapture(e.pointerId);
+    }, [brushMode, paintAtCoord]);
+
+    const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!brushMode || !isPaintingRef.current) return;
+        paintAtCoord(e);
+    }, [brushMode, paintAtCoord]);
+
+    const handlePointerUp = useCallback(() => {
+        if (!isPaintingRef.current) return;
+        isPaintingRef.current = false;
+        setBrushVersion((v) => v + 1);
+    }, []);
+
+    const handleBrushClear = useCallback(() => {
+        const mask = brushMaskRef.current;
+        if (mask) {
+            const ctx = mask.getContext("2d");
+            if (ctx) ctx.clearRect(0, 0, mask.width, mask.height);
+        }
+        setBrushVersion((v) => v + 1);
+    }, []);
 
     // Handlers
     const handleAdjChange = useCallback((newAdj: AdjustmentParams) => {
@@ -350,6 +483,9 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
         setLipEnabled(false);
         setBrowSide("both");
         setBrowEraseEnabled(false);
+        setBrushMode(false);
+        brushMaskRef.current?.getContext("2d")?.clearRect(0, 0, brushMaskRef.current.width, brushMaskRef.current.height);
+        setBrushVersion(0);
     }, []);
 
     const handleSave = useCallback(() => {
@@ -365,7 +501,14 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
     const showCompare = viewMode === "compare" && resultDataUrl;
     const previewContent = (
         <div className="relative h-full shrink-0">
-            <canvas ref={canvasRef} className={`block h-full w-auto ${showCompare ? "invisible" : ""}`} />
+            <canvas
+                ref={canvasRef}
+                className={`block h-full w-auto ${showCompare ? "invisible" : ""} ${brushMode ? "cursor-crosshair touch-none" : ""}`}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+            />
             {viewMode === "ruler" ? (
                 <GoldenRuler
                     result={goldenRatio}
@@ -416,6 +559,11 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
                             onColorChange={setBrowColor}
                             browEraseEnabled={browEraseEnabled}
                             onBrowEraseToggle={() => setBrowEraseEnabled((prev) => !prev)}
+                            brushMode={brushMode}
+                            onBrushModeToggle={() => setBrushMode((prev) => !prev)}
+                            brushSize={brushSize}
+                            onBrushSizeChange={setBrushSize}
+                            onBrushClear={handleBrushClear}
                         />
                     </TabsContent>
 
