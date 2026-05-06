@@ -1,13 +1,20 @@
 /**
  * Eyebrow Eraser — soft-blur natural eyebrows for clean template overlay.
- * Uses MediaPipe face mesh landmarks to define brow contour polygons,
- * then replaces brow regions with heavily blurred skin + skin-tone fill.
+ *
+ * V3: Ellipse-based region from eye landmarks (not sparse brow landmarks).
+ * Eye corners + forehead define a large elliptical area that fully covers
+ * natural eyebrows regardless of thickness or shape.
  */
 
 const R_BROW_UPPER = [70, 63, 105, 66, 107];
-const R_BROW_LOWER = [46, 53, 52, 65, 55];
 const L_BROW_UPPER = [300, 293, 334, 296, 336];
-const L_BROW_LOWER = [276, 283, 282, 295, 285];
+
+const R_EYE_INNER = 133;
+const R_EYE_OUTER = 33;
+const R_EYE_TOP = 159;
+const L_EYE_INNER = 362;
+const L_EYE_OUTER = 263;
+const L_EYE_TOP = 386;
 
 const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
@@ -20,58 +27,51 @@ function lmPx(lm: Array<{ x: number; y: number }>, idx: number, w: number, h: nu
     return { x: (p?.x ?? 0) * w, y: (p?.y ?? 0) * h };
 }
 
-function browContour(
-    lm: Array<{ x: number; y: number }>,
-    upper: number[],
-    lower: number[],
-    w: number, h: number,
-    expand: number,
-): Point[] {
-    const uPts = upper.map(i => lmPx(lm, i, w, h));
-    const lPts = [...lower].reverse().map(i => lmPx(lm, i, w, h));
-
-    // Extrapolate outer tail — landmarks don't reach the full brow extent
-    const uLast = uPts.at(-1);
-    const uPrev = uPts.at(-2);
-    if (uLast && uPrev) {
-        uPts.push({
-            x: uLast.x + (uLast.x - uPrev.x) * 0.6,
-            y: uLast.y + (uLast.y - uPrev.y) * 0.6,
-        });
+function avgPt(lm: Array<{ x: number; y: number }>, indices: number[], w: number, h: number): Point {
+    let sx = 0;
+    let sy = 0;
+    for (const idx of indices) {
+        const p = lmPx(lm, idx, w, h);
+        sx += p.x;
+        sy += p.y;
     }
-    const lFirst = lPts.at(0);
-    const lSecond = lPts.at(1);
-    if (lFirst && lSecond) {
-        lPts.unshift({
-            x: lFirst.x + (lFirst.x - lSecond.x) * 0.6,
-            y: lFirst.y + (lFirst.y - lSecond.y) * 0.6,
-        });
-    }
-
-    const all = [...uPts, ...lPts];
-    const cx = all.reduce((s, p) => s + p.x, 0) / all.length;
-    const cy = all.reduce((s, p) => s + p.y, 0) / all.length;
-
-    return all.map(p => ({
-        x: cx + (p.x - cx) * (1 + expand),
-        y: cy + (p.y - cy) * (1 + expand),
-    }));
+    return { x: sx / indices.length, y: sy / indices.length };
 }
 
-function tracePath(ctx: CanvasRenderingContext2D, pts: Point[]): void {
-    const first = pts.at(0);
-    if (!first) return;
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < pts.length; i++) {
-        const p = pts.at(i);
-        if (p) ctx.lineTo(p.x, p.y);
-    }
-    ctx.closePath();
+/**
+ * Draw an ellipse covering the full eyebrow region for one side.
+ * Uses eye corners for width and brow-to-eye distance for height.
+ */
+function drawBrowEllipse(
+    ctx: CanvasRenderingContext2D,
+    lm: Array<{ x: number; y: number }>,
+    eyeInner: number, eyeOuter: number, eyeTop: number,
+    browUpper: number[],
+    w: number, h: number,
+): void {
+    const inner = lmPx(lm, eyeInner, w, h);
+    const outer = lmPx(lm, eyeOuter, w, h);
+    const top = lmPx(lm, eyeTop, w, h);
+    const forehead = lmPx(lm, FOREHEAD_TOP, w, h);
+    const browCenter = avgPt(lm, browUpper, w, h);
+
+    const eyeWidth = Math.abs(inner.x - outer.x);
+    const browToEye = Math.abs(browCenter.y - top.y);
+
+    const cx = browCenter.x;
+    const cy = browCenter.y - browToEye * 0.15;
+    const rx = eyeWidth * 0.85;
+    const ry = Math.max(browToEye * 1.6, Math.abs(forehead.y - top.y) * 0.45);
+
+    const browStart = lmPx(lm, browUpper.at(0) ?? 0, w, h);
+    const browEnd = lmPx(lm, browUpper.at(-1) ?? 0, w, h);
+    const angle = Math.atan2(browEnd.y - browStart.y, browEnd.x - browStart.x);
+
+    ctx.ellipse(cx, cy, rx, ry, angle, 0, Math.PI * 2);
 }
 
 /**
  * Sample average skin color from forehead area (above eyebrows).
- * Returns CSS rgba string for blending.
  */
 function sampleSkinTone(
     ctx: CanvasRenderingContext2D,
@@ -110,14 +110,27 @@ function sampleSkinTone(
 }
 
 /**
- * Erase natural eyebrows by replacing brow regions with blurred skin + skin-tone fill.
+ * Draw both brow ellipses onto the given context (as a single path for fill/clip).
+ */
+function drawBothBrows(
+    ctx: CanvasRenderingContext2D,
+    lm: Array<{ x: number; y: number }>,
+    w: number, h: number,
+): void {
+    ctx.beginPath();
+    drawBrowEllipse(ctx, lm, R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP, R_BROW_UPPER, w, h);
+    drawBrowEllipse(ctx, lm, L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP, L_BROW_UPPER, w, h);
+}
+
+/**
+ * Erase natural eyebrows using large elliptical regions + multi-pass blur + skin-tone fill.
  *
  * Pipeline:
- *   1. Sample skin tone from forehead (above brows)
- *   2. Double-blur the canvas for heavy smoothing
- *   3. Overlay semi-transparent skin-tone fill to neutralize dark remnants
- *   4. Build soft-edged mask from brow landmark polygons
- *   5. Composite masked result onto original canvas
+ *   1. Sample skin tone from forehead
+ *   2. Double-blur for heavy smoothing
+ *   3. Skin-tone fill at 45% opacity to neutralize dark remnants
+ *   4. Final blend blur
+ *   5. Soft-edged elliptical mask → composite onto original
  */
 // eslint-disable-next-line max-lines-per-function -- Multi-pass canvas pipeline, splitting would obscure the sequential flow
 export function eraseBrowRegion(
@@ -127,10 +140,6 @@ export function eraseBrowRegion(
     w: number,
     h: number,
 ): void {
-    const expand = 0.5;
-    const rBrow = browContour(lm, R_BROW_UPPER, R_BROW_LOWER, w, h, expand);
-    const lBrow = browContour(lm, L_BROW_UPPER, L_BROW_LOWER, w, h, expand);
-
     const faceW = Math.abs(lmPx(lm, LEFT_CHEEK, w, h).x - lmPx(lm, RIGHT_CHEEK, w, h).x);
     const blurPx = Math.max(12, Math.round(faceW * 0.12));
     const edgeBlur = Math.max(6, Math.round(blurPx * 0.6));
@@ -147,7 +156,7 @@ export function eraseBrowRegion(
     blur1Ctx.drawImage(canvas, 0, 0);
     blur1Ctx.filter = "none";
 
-    // Pass 2: blur the blur for extra smoothing
+    // Pass 2: double blur
     const blur2 = document.createElement("canvas");
     blur2.width = w;
     blur2.height = h;
@@ -157,16 +166,14 @@ export function eraseBrowRegion(
     blur2Ctx.drawImage(blur1, 0, 0);
     blur2Ctx.filter = "none";
 
-    // Pass 3: skin-tone fill to neutralize dark remnants
+    // Pass 3: skin-tone fill
     blur2Ctx.globalAlpha = 0.45;
     blur2Ctx.fillStyle = skinColor;
-    blur2Ctx.beginPath();
-    tracePath(blur2Ctx, rBrow);
-    tracePath(blur2Ctx, lBrow);
+    drawBothBrows(blur2Ctx, lm, w, h);
     blur2Ctx.fill();
     blur2Ctx.globalAlpha = 1.0;
 
-    // Pass 4: one more light blur to blend skin-tone edges
+    // Pass 4: blend blur
     const blur3 = document.createElement("canvas");
     blur3.width = w;
     blur3.height = h;
@@ -176,16 +183,14 @@ export function eraseBrowRegion(
     blur3Ctx.drawImage(blur2, 0, 0);
     blur3Ctx.filter = "none";
 
-    // Soft-edged mask
+    // Soft-edged elliptical mask
     const maskCvs = document.createElement("canvas");
     maskCvs.width = w;
     maskCvs.height = h;
     const maskCtx = maskCvs.getContext("2d");
     if (!maskCtx) return;
     maskCtx.fillStyle = "#fff";
-    maskCtx.beginPath();
-    tracePath(maskCtx, rBrow);
-    tracePath(maskCtx, lBrow);
+    drawBothBrows(maskCtx, lm, w, h);
     maskCtx.fill();
 
     const softCvs = document.createElement("canvas");
@@ -196,10 +201,8 @@ export function eraseBrowRegion(
     softCtx.filter = `blur(${edgeBlur}px)`;
     softCtx.drawImage(maskCvs, 0, 0);
 
-    // Apply mask to blurred+tinted result
+    // Apply mask → composite
     blur3Ctx.globalCompositeOperation = "destination-in";
     blur3Ctx.drawImage(softCvs, 0, 0);
-
-    // Composite onto original
     ctx.drawImage(blur3, 0, 0);
 }
