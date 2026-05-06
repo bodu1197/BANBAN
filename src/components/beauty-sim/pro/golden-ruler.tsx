@@ -150,6 +150,7 @@ const GUIDE_COLOR_CLASS: Record<string, string> = {
     "#f472b6": "bg-pink-400",
     "#60a5fa": "bg-blue-400",
     "#a78bfa": "bg-violet-400",
+    "#34d399": "bg-emerald-400",
     "#fb923c": "bg-orange-400",
 };
 
@@ -158,7 +159,6 @@ function GuideLegend({ lines }: Readonly<{ lines: GoldenRatioResult["guideLines"
         <div className="flex flex-wrap gap-x-3 gap-y-1">
             {lines.map((l) => (
                 <div key={l.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    {/* eslint-disable-next-line security/detect-object-injection -- Safe: color is from known GuideLine values */}
                     <span className={`inline-block h-0.5 w-4 rounded ${GUIDE_COLOR_CLASS[l.color] ?? "bg-muted-foreground"}`} />
                     <span>{l.label}</span>
                 </div>

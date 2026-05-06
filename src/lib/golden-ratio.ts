@@ -26,6 +26,8 @@ const LOWER_LIP_BOTTOM = 17;
 
 const R_BROW_UPPER = [70, 63, 105, 66, 107];
 const L_BROW_UPPER = [300, 293, 334, 296, 336];
+const R_BROW_INNER = 107;
+const L_BROW_INNER = 336;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -89,6 +91,7 @@ interface FaceLandmarks {
     rEyeTop: Point; lEyeTop: Point;
     upperLip: Point; lowerLip: Point;
     rBrowCenter: Point; lBrowCenter: Point;
+    rBrowInner: Point; lBrowInner: Point;
 }
 
 function avgPoint(lm: Array<{ x: number; y: number }>, indices: number[], w: number, h: number): Point {
@@ -120,6 +123,8 @@ function extractFaceLandmarks(lm: Array<{ x: number; y: number }>, w: number, h:
         lowerLip: lmPx(lm, LOWER_LIP_BOTTOM, w, h),
         rBrowCenter: avgPoint(lm, R_BROW_UPPER, w, h),
         lBrowCenter: avgPoint(lm, L_BROW_UPPER, w, h),
+        rBrowInner: lmPx(lm, R_BROW_INNER, w, h),
+        lBrowInner: lmPx(lm, L_BROW_INNER, w, h),
     };
 }
 
@@ -141,6 +146,13 @@ function computeBrowPositionScore(fl: FaceLandmarks, bounds: FaceBounds): RatioM
         deviation: Math.round(deviation),
         rating: rateDeviation(deviation),
     };
+}
+
+function computeGlabellaScore(fl: FaceLandmarks): RatioMeasurement {
+    const glabellaWidth = dist(fl.rBrowInner, fl.lBrowInner);
+    const eyeWidth = dist(fl.rEyeOuter, fl.rEyeInner);
+    const ratio = glabellaWidth / eyeWidth;
+    return measureRatio("미간 간격", ratio, 1.0);
 }
 
 function computeBrowSymmetryScore(fl: FaceLandmarks): RatioMeasurement {
@@ -193,6 +205,7 @@ function computeMeasurements(
         measureRatio("눈 간격", eyeSpacing / eyeWidth, 1.0),
         measureRatio("코 너비:눈 간격", noseWidth / eyeSpacing, 1.0),
         measureRatio("입술-턱 비율", dist(fl.upperLip, fl.chin) / dist(fl.noseTip, fl.upperLip), GOLDEN_RATIO),
+        computeGlabellaScore(fl),
         computeBrowPositionScore(fl, computeFaceBounds(fl)),
         computeBrowSymmetryScore(fl),
     ];
@@ -208,6 +221,7 @@ function computeGuideLines(fl: FaceLandmarks): GuideLine[] {
         { label: "세로 중심", startX: centerX, startY: bounds.topY, endX: centerX, endY: bounds.bottomY, color: "#f472b6" },
         { label: "얼굴 너비", startX: fl.leftCheek.x, startY: fl.leftCheek.y, endX: fl.rightCheek.x, endY: fl.rightCheek.y, color: "#60a5fa" },
         { label: "눈 간격", startX: fl.rEyeInner.x, startY: fl.rEyeInner.y, endX: fl.lEyeInner.x, endY: fl.lEyeInner.y, color: "#a78bfa" },
+        { label: "미간", startX: fl.rBrowInner.x, startY: fl.rBrowInner.y, endX: fl.lBrowInner.x, endY: fl.lBrowInner.y, color: "#34d399" },
         { label: "이상적 눈썹 위치", startX: fl.rEyeOuter.x - 10, startY: browIdealY, endX: fl.lEyeOuter.x + 10, endY: browIdealY, color: "#fb923c" },
     ];
 }
