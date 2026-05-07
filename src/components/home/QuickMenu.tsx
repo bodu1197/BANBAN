@@ -52,9 +52,9 @@ function getIconClass(item: MenuItem): string {
 }
 
 function getLabelClass(item: MenuItem): string {
-  if (item.highlight || item.hot) return "text-xs font-medium text-orange-500";
-  if (item.placeholder) return "text-xs font-medium text-muted-foreground/60";
-  return "text-xs font-medium";
+  if (item.highlight || item.hot) return "text-sm font-semibold text-orange-500";
+  if (item.placeholder) return "text-sm font-semibold text-muted-foreground/60";
+  return "text-sm font-semibold";
 }
 
 function QuickMenuItem({ item, label }: Readonly<{
