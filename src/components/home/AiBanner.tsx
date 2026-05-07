@@ -27,9 +27,9 @@ function AnimatedBackground(): React.ReactElement {
     return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
             {/* Glowing orbs - Optimized with opacity fade instead of blur animation */}
-            <div className="animate-ai-fade absolute right-0 top-2 h-24 w-24 rounded-full bg-purple-500/30 blur-3xl" />
-            <div className="animate-ai-fade absolute left-0 bottom-0 h-20 w-20 rounded-full bg-indigo-400/25 [animation-delay:2s] blur-3xl" />
-            <div className="animate-ai-fade absolute right-1/4 top-1/3 h-14 w-14 rounded-full bg-pink-500/20 [animation-delay:3.5s] blur-3xl" />
+            <div className="animate-ai-fade absolute right-0 top-2 h-24 w-24 rounded-full bg-pink-300/30 blur-3xl" />
+            <div className="animate-ai-fade absolute left-0 bottom-0 h-20 w-20 rounded-full bg-rose-300/25 [animation-delay:2s] blur-3xl" />
+            <div className="animate-ai-fade absolute right-1/4 top-1/3 h-14 w-14 rounded-full bg-white/20 [animation-delay:3.5s] blur-3xl" />
 
 
             {/* Line art motif — drifts up-right */}
@@ -78,14 +78,14 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
             <Link
                 href="/beauty-sim/my"
                 prefetch={false}
-                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-900 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-400 via-rose-400 to-orange-300 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-                <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-purple-500/30 blur-3xl" />
+                <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-white/25 blur-3xl" />
                 <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 shadow-md">
-                        <Sparkles className="h-5 w-5 text-yellow-300" aria-hidden="true" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/25 shadow-md backdrop-blur-sm">
+                        <Sparkles className="h-5 w-5 text-white" aria-hidden="true" />
                     </div>
-                    <div className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-purple-300">
+                    <div className="inline-flex items-center gap-1 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-bold text-white">
                         AI MATCHING
                     </div>
                     <h3 className="text-sm font-bold leading-tight text-white">{labels.aiBannerHeadline}</h3>
@@ -100,22 +100,22 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
             <Link
                 href="/beauty-sim/my"
                 prefetch={false}
-                className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-900 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-pink-400 via-rose-400 to-orange-300 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <AnimatedBackground />
 
                 <div className="relative z-10 flex h-[153px] flex-col items-center justify-center gap-3 px-4 text-center">
-                    <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/10 px-2.5 py-0.5 backdrop-blur-md">
-                        <Sparkles className="h-3 w-3 text-yellow-300" />
-                        <span className="text-[10px] font-semibold tracking-wider text-white/90">AI MATCHING</span>
+                    <div className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/20 px-2.5 py-0.5 backdrop-blur-md">
+                        <Sparkles className="h-3 w-3 text-white" />
+                        <span className="text-[10px] font-semibold tracking-wider text-white">AI MATCHING</span>
                     </div>
 
                     <h2 className="text-lg font-extrabold leading-tight text-white">{labels.aiBannerHeadline}</h2>
                     <p className="text-xs text-white/60">{labels.aiBannerDesc}</p>
 
                     <div className="flex items-center gap-2">
-                        <FeaturePill icon={<Camera className="h-3 w-3 text-purple-300" />} label={labels.aiBannerPhoto} />
-                        <FeaturePill icon={<Search className="h-3 w-3 text-blue-300" />} label={labels.aiBannerText} />
+                        <FeaturePill icon={<Camera className="h-3 w-3 text-white" />} label={labels.aiBannerPhoto} />
+                        <FeaturePill icon={<Search className="h-3 w-3 text-white" />} label={labels.aiBannerText} />
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 transition-all group-hover:bg-white/30 group-focus-visible:bg-white/30">
                             <ArrowRight className="h-3.5 w-3.5 text-white" />
                         </div>

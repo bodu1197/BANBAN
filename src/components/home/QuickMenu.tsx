@@ -39,22 +39,22 @@ const menuItems: MenuItem[] = [
 ];
 
 function getIconBgClass(item: MenuItem): string {
-  if (item.highlight) return "bg-orange-500";
-  if (item.hot) return "bg-orange-500 animate-pulse";
+  if (item.highlight) return "bg-gradient-to-br from-rose-400 to-orange-400";
+  if (item.hot) return "bg-gradient-to-br from-rose-400 to-orange-400 animate-pulse";
   if (item.placeholder) return "bg-muted/50 border border-dashed border-muted-foreground/40";
-  return "bg-muted";
+  return "bg-rose-50 dark:bg-muted";
 }
 
 function getIconClass(item: MenuItem): string {
   if (item.highlight || item.hot) return "h-5 w-5 text-white";
   if (item.placeholder) return "h-5 w-5 text-muted-foreground/60";
-  return "h-5 w-5";
+  return "h-5 w-5 text-rose-400";
 }
 
 function getLabelClass(item: MenuItem): string {
-  if (item.highlight || item.hot) return "text-sm font-semibold text-orange-500";
+  if (item.highlight || item.hot) return "text-sm font-semibold text-rose-500";
   if (item.placeholder) return "text-sm font-semibold text-muted-foreground/60";
-  return "text-sm font-semibold";
+  return "text-sm font-semibold text-foreground";
 }
 
 function QuickMenuItem({ item, label }: Readonly<{
