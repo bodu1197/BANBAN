@@ -30,7 +30,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       .map((a) =>
         buildUrlEntry(
           `/artists/${a.id}`,
-          new Date(a.updated_at).toISOString(),
+          new Date(a.updated_at ?? new Date().toISOString()).toISOString(),
           "weekly",
           "0.7",
         ),

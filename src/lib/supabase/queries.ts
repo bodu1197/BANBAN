@@ -52,8 +52,8 @@ export async function getArtistIdsWithPortfolio(
 interface ArtistMediaRow {
   id: string;
   storage_path: string;
-  type: 'image' | 'video';
-  order_index: number;
+  type: string | null;
+  order_index: number | null;
 }
 
 export interface ArtistWithDetails extends Artist {

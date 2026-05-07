@@ -53,7 +53,7 @@ function PortfolioCard({ portfolio, currencyUnit }: Readonly<PortfolioCardProps>
         <PriceDisplay
           price={portfolio.price ?? 0}
           priceOrigin={portfolio.price_origin}
-          discountRate={portfolio.discount_rate}
+          discountRate={portfolio.discount_rate ?? 0}
           currencyUnit={currencyUnit}
         />
         {regionName ? <span className="truncate text-xs text-muted-foreground">{regionName}</span> : null}

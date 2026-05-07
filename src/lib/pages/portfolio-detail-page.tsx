@@ -71,7 +71,7 @@ async function handleLegacyRedirect(id: string): Promise<void> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchSecondaryData(id: string, portfolio: NonNullable<Awaited<ReturnType<typeof fetchPortfolioById>>>) {
-    const artistType = portfolio.artist.type_artist ?? "SEMI_PERMANENT";
+    const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as import("@/types/database").ArtistType;
     const [
         isLiked,
         { data: artistPortfolios, count: artistPortfolioCount },

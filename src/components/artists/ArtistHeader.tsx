@@ -92,7 +92,7 @@ export function ArtistHeader({
                 <ArtistLikeButton
                   artistId={artist.id}
                   initialIsLiked={isLiked}
-                  initialCount={artist.likes_count}
+                  initialCount={artist.likes_count ?? 0}
                   label={STRINGS.artist.likes}
                 />
               </div>

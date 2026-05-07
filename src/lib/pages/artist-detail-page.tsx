@@ -53,7 +53,7 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
 
 interface MediaItem {
   storage_path: string;
-  order_index: number;
+  order_index: number | null;
 }
 
 function extractPortfolioImages(
@@ -61,7 +61,7 @@ function extractPortfolioImages(
 ): string[] {
   const images: string[] = [];
   for (const p of portfolios) {
-    const sorted = [...p.portfolio_media].sort((a, b) => a.order_index - b.order_index);
+    const sorted = [...p.portfolio_media].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
     for (const m of sorted) {
       const url = getStorageUrl(m.storage_path);
       if (url) images.push(url);
@@ -74,7 +74,7 @@ function extractArtistGalleryImages(
   artistMedia: MediaItem[] | undefined,
 ): string[] {
   if (!artistMedia || artistMedia.length === 0) return [];
-  const sorted = [...artistMedia].sort((a, b) => a.order_index - b.order_index);
+  const sorted = [...artistMedia].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
   const images: string[] = [];
   for (const m of sorted) {
     const url = getArtistMediaUrl(m.storage_path);

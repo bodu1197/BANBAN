@@ -27,7 +27,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       .map((p) =>
         buildUrlEntry(
           `/community/${p.id}`,
-          new Date(p.updated_at).toISOString(),
+          new Date(p.updated_at ?? new Date().toISOString()).toISOString(),
           "daily",
           "0.5",
         ),

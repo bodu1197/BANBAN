@@ -176,8 +176,7 @@ export async function fetchDiscountPortfolios(options?: {
       const supabase = createStaticClient();
       const now = new Date().toISOString();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("portfolios")
         .select(SELECT_WITH_TYPE)
         .is("deleted_at", null)
@@ -225,8 +224,7 @@ export async function fetchLipPortfolios(limit = 10): Promise<HomePortfolio[]> {
       const supabase = createStaticClient();
       const now = new Date().toISOString();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .rpc("search_portfolios_by_category_ids", { p_category_ids: LIP_CATEGORY_IDS, p_type_artist: "SEMI_PERMANENT" })
         .select(SELECT_BASIC)
         .gt("price", 0)
@@ -252,8 +250,7 @@ export async function fetchEyebrowPortfolios(limit = 8): Promise<HomePortfolio[]
       const supabase = createStaticClient();
       const now = new Date().toISOString();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .rpc("search_portfolios_by_category_ids", { p_category_ids: EYEBROW_CATEGORY_IDS, p_type_artist: "SEMI_PERMANENT" })
         .select(SELECT_BASIC)
         .gt("price", 0)
@@ -285,8 +282,7 @@ export async function fetchMensEyebrowPortfolios(limit = 10): Promise<HomePortfo
       const supabase = createStaticClient();
       const now = new Date().toISOString();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .rpc("search_portfolios_by_category_ids", { p_category_ids: MENS_EYEBROW_CATEGORY_IDS, p_type_artist: "SEMI_PERMANENT" })
         .select(SELECT_BASIC)
         .gt("price", 0)

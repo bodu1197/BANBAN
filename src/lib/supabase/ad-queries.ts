@@ -9,8 +9,7 @@ const SELECT_WITH_PLAN = "*, plan:ad_plans(*)";
 /** Get all active ad plans, optionally filtered by artist type */
 export async function getAdPlans(artistType?: "SEMI_PERMANENT"): Promise<AdPlan[]> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = supabase
         .from("ad_plans")
         .select("*")
         .eq("is_active", true);
@@ -26,8 +25,7 @@ export async function getAdPlans(artistType?: "SEMI_PERMANENT"): Promise<AdPlan[
 /** Get all active duration options */
 export async function getAdDurationOptions(): Promise<AdDurationOption[]> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_duration_options")
         .select("*")
         .eq("is_active", true)
@@ -50,8 +48,7 @@ export async function createAdSubscription(params: {
 }): Promise<AdSubscription> {
     const days = params.durationMonths * 30;
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
         .from("ad_subscriptions")
         .insert({
             artist_id: params.artistId,
@@ -78,16 +75,13 @@ export async function activateSubscription(
     impUid: string,
 ): Promise<AdSubscription> {
     const supabase = await createClient();
-    // Read duration_months from the subscription to calculate expiry
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: sub } = await (supabase as any)
+    const { data: sub } = await supabase
         .from("ad_subscriptions").select("duration_months").eq("id", subscriptionId).single();
-    const months = (sub as { duration_months: number } | null)?.duration_months ?? 1;
+    const months = sub?.duration_months ?? 1;
     const now = new Date().toISOString();
     const expiresAt = getExpiryDate(months * 30);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
         .from("ad_subscriptions")
         .update({
             status: STATUS_ACTIVE,
@@ -106,8 +100,7 @@ export async function activateSubscription(
 /** Get subscriptions for an artist */
 export async function getArtistSubscriptions(artistId: string): Promise<AdSubscription[]> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_subscriptions")
         .select(SELECT_WITH_PLAN)
         .eq("artist_id", artistId)
@@ -121,8 +114,7 @@ export async function getActiveSubscription(artistId: string): Promise<AdSubscri
     const supabase = await createClient();
     const now = new Date().toISOString();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_subscriptions")
         .select(SELECT_WITH_PLAN)
         .eq("artist_id", artistId)
@@ -140,8 +132,7 @@ export async function getActiveSubscriptions(artistId: string): Promise<AdSubscr
     const supabase = await createClient();
     const now = new Date().toISOString();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_subscriptions")
         .select(SELECT_WITH_PLAN)
         .eq("artist_id", artistId)
@@ -155,8 +146,7 @@ export async function getActiveSubscriptions(artistId: string): Promise<AdSubscr
 /** Cancel a subscription */
 export async function cancelSubscription(subscriptionId: string): Promise<void> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
         .from("ad_subscriptions")
         .update({ status: "CANCELLED" as AdSubscriptionStatus })
         .eq("id", subscriptionId);
@@ -173,8 +163,7 @@ export async function getActiveAdArtists(): Promise<ActiveAdArtist[]> {
     const supabase = createStaticClient();
     const now = new Date().toISOString();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_subscriptions")
         .select(`
       id,
@@ -207,9 +196,7 @@ export async function recordAdEvent(params: {
 }): Promise<void> {
     const supabase = await createClient();
 
-    // Insert event log
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
         .from("ad_events")
         .insert({
             subscription_id: params.subscriptionId,
@@ -218,10 +205,8 @@ export async function recordAdEvent(params: {
             page_path: params.pagePath ?? null,
         });
 
-    // Update counter on subscription
     const field = params.eventType === "CLICK" ? "click_count" : "impression_count";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: sub } = await (supabase as any)
+    const { data: sub } = await supabase
         .from("ad_subscriptions")
         .select(field)
         .eq("id", params.subscriptionId)
@@ -230,8 +215,7 @@ export async function recordAdEvent(params: {
     if (sub) {
         // eslint-disable-next-line security/detect-object-injection -- Safe: known key lookup
         const currentCount = (sub as Record<string, number>)[field] ?? 0;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        await supabase
             .from("ad_subscriptions")
             .update({ [field]: currentCount + 1 })
             .eq("id", params.subscriptionId);
@@ -245,8 +229,7 @@ export async function expireOldSubscriptions(): Promise<number> {
     const supabase = await createClient();
     const now = new Date().toISOString();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_subscriptions")
         .select("id")
         .eq("status", STATUS_ACTIVE)
@@ -254,9 +237,8 @@ export async function expireOldSubscriptions(): Promise<number> {
 
     if (!data || data.length === 0) return 0;
 
-    const ids = (data as { id: string }[]).map(r => r.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    const ids = data.map(r => r.id);
+    await supabase
         .from("ad_subscriptions")
         .update({ status: "EXPIRED" as AdSubscriptionStatus })
         .in("id", ids);
@@ -275,8 +257,7 @@ export async function getAdRevenueStats(artistType?: "SEMI_PERMANENT"): Promise<
     const supabase = await createClient();
     const now = new Date().toISOString();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = supabase
         .from("ad_subscriptions")
         .select("price_paid, status, expires_at, plan:ad_plans!inner(artist_type)");
 
@@ -299,8 +280,7 @@ export async function getAdRevenueStats(artistType?: "SEMI_PERMANENT"): Promise<
 /** Get portfolio slots for a subscription */
 export async function getAdPortfolioSlots(subscriptionId: string): Promise<AdPortfolioSlot[]> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_portfolio_slots")
         .select("*")
         .eq("subscription_id", subscriptionId)
@@ -316,23 +296,19 @@ export async function setAdPortfolioSlots(
 ): Promise<AdPortfolioSlot[]> {
     const supabase = await createClient();
 
-    // Delete existing slots
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
         .from("ad_portfolio_slots")
         .delete()
         .eq("subscription_id", subscriptionId);
 
     if (portfolioIds.length === 0) return [];
 
-    // Insert new slots
     const rows = portfolioIds.map(pid => ({
         subscription_id: subscriptionId,
         portfolio_id: pid,
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
         .from("ad_portfolio_slots")
         .insert(rows)
         .select();
