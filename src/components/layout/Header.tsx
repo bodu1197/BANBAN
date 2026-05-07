@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import { STRINGS } from "@/lib/strings";
 import { HeaderSearchIcon } from "./HeaderSearch";
@@ -12,10 +13,15 @@ export function Header(): React.ReactElement {
             <div className="relative mx-auto flex h-16 max-w-[767px] items-center justify-between px-4">
                 <Link
                     href={"/"}
-                    className="flex items-center gap-2 font-bold text-xl"
+                    className="ml-[30px] flex items-center"
                 >
-                    <span className="ml-[30px] text-brand-primary">반</span>
-                    <span>언니</span>
+                    <Image
+                        src="/ban_logo.png"
+                        alt="반언니"
+                        width={100}
+                        height={32}
+                        priority
+                    />
                 </Link>
 
                 <div className="flex items-center gap-2">
