@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function Page(): React.ReactElement {
     return (
-        <main className="flex h-screen w-full flex-col overflow-hidden bg-background">
+        <main className="flex h-screen w-full flex-col overflow-hidden bg-black text-white">
             <ProBeautySimClientV2 />
         </main>
     );
