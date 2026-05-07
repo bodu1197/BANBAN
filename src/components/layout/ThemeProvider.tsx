@@ -11,8 +11,8 @@ export function ThemeProvider({ children }: Readonly<ThemeProviderProps>): React
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="dark"
-      enableSystem
+      defaultTheme="light"
+      enableSystem={false}
       disableTransitionOnChange
     >
       {children}
