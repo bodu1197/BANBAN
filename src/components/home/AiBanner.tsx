@@ -78,7 +78,7 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
             <Link
                 href="/beauty-sim/my"
                 prefetch={false}
-                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-400 via-rose-400 to-orange-300 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-white/25 blur-3xl" />
                 <div className="relative z-10 flex flex-col items-center gap-2 text-center">
@@ -100,7 +100,7 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
             <Link
                 href="/beauty-sim/my"
                 prefetch={false}
-                className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-pink-400 via-rose-400 to-orange-300 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 via-rose-500 to-orange-400 shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <AnimatedBackground />
 

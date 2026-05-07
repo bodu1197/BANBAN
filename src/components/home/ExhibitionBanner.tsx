@@ -9,7 +9,7 @@ export function ExhibitionBanner(): React.ReactElement {
                 className="group relative block overflow-hidden rounded-2xl shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-rose-400 via-orange-400 to-amber-300" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-orange-500 to-amber-500" />
                     <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white/25 blur-3xl" />
                     <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-rose-300/30 blur-3xl" />
                 </div>

@@ -7,7 +7,7 @@ export function BeautySimBanner({ compact }: Readonly<{ compact?: boolean }>): R
             <Link
                 href="/beauty-sim/my"
                 prefetch={false}
-                className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-rose-300 via-pink-300 to-orange-200 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 via-pink-500 to-orange-400 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-white/30 blur-3xl" />
                 <div className="relative z-10 flex flex-col items-center gap-2 text-center">
@@ -29,7 +29,7 @@ export function BeautySimBanner({ compact }: Readonly<{ compact?: boolean }>): R
             <Link
                 href="/beauty-sim/my"
                 prefetch={false}
-                className="relative block overflow-hidden rounded-2xl bg-gradient-to-br from-rose-300 via-pink-300 to-orange-200 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="relative block overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 via-pink-500 to-orange-400 p-4 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-white/30 blur-3xl" />
                 <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-rose-200/30 blur-3xl" />
