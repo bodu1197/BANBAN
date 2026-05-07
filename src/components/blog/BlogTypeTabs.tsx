@@ -1,7 +1,7 @@
 // @client-reason: Interactive tab selection with onClick handlers
 "use client";
 
-type TabValue = "ALL" | "TATTOO" | "MALE_SEMI" | "FEMALE_SEMI";
+type TabValue = "ALL" | "MALE_SEMI" | "FEMALE_SEMI";
 
 interface TabItem {
   value: TabValue;

@@ -14,7 +14,7 @@ import { usePortfolioSearch } from "./usePortfolioSearch";
 interface PortfolioSearchClientProps {
   initialData: HomePortfolio[];
   initialTotalCount: number;
-  typeArtist: "TATTOO" | "SEMI_PERMANENT";
+  typeArtist: "SEMI_PERMANENT";
   categories: CategoryItem[];
   regions: Region[];
   targetGender?: "MALE" | "FEMALE" | null;

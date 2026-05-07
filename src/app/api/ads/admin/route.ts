@@ -19,7 +19,7 @@ function computePaymentBreakdown(subs: SubRow[]): { totalCash: number; totalPoin
     };
 }
 
-type ArtistTypeFilter = "TATTOO" | "SEMI_PERMANENT" | undefined;
+type ArtistTypeFilter = "SEMI_PERMANENT" | undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase query builder
 function applyFilters(query: any, status: string | null, search: string | null): any {
@@ -30,7 +30,7 @@ function applyFilters(query: any, status: string | null, search: string | null):
 }
 
 function parseArtistType(param: string | null): ArtistTypeFilter {
-    return param === "TATTOO" || param === "SEMI_PERMANENT" ? param : undefined;
+    return param === "SEMI_PERMANENT" ? param : undefined;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type -- supabase query builder

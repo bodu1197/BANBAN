@@ -18,7 +18,7 @@ export interface HomeArtist {
   likesCount: number;
   lat: number | null;
   lon: number | null;
-  typeArtist: "TATTOO" | "SEMI_PERMANENT" | "BOTH";
+  typeArtist: "SEMI_PERMANENT";
   profileImage: string | null;
   portfolioImage: string | null;
 }
@@ -29,7 +29,7 @@ export interface ReviewedArtist extends HomeArtist {
   portfolioImages: string[];
 }
 
-export type ArtistTypeFilter = "TATTOO" | "SEMI_PERMANENT";
+export type ArtistTypeFilter = "SEMI_PERMANENT";
 
 // === Internal Supabase join result types ===
 
@@ -44,7 +44,7 @@ interface ArtistRow {
   views_count: number;
   lat: number | null;
   lon: number | null;
-  type_artist: "TATTOO" | "SEMI_PERMANENT" | "BOTH";
+  type_artist: "SEMI_PERMANENT";
   profile_image_path: string | null;
   region: { name: string } | null;
 }
@@ -117,7 +117,7 @@ async function fetchPopularArtistsInternal(options?: {
   typeArtist?: ArtistTypeFilter;
   limit?: number;
 }): Promise<HomeArtist[]> {
-  const { typeArtist = "TATTOO", limit = 6 } = options ?? {};
+  const { typeArtist = "SEMI_PERMANENT", limit = 6 } = options ?? {};
   const supabase = createStaticClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
@@ -145,7 +145,7 @@ async function fetchPopularArtistsInternal(options?: {
     likesCount: a.likes_count,
     lat: a.lat,
     lon: a.lon,
-    typeArtist: a.type_artist as "TATTOO" | "SEMI_PERMANENT" | "BOTH",
+    typeArtist: "SEMI_PERMANENT" as const,
     profileImage: getAvatarUrl(a.profile_image_path),
     portfolioImage: null,
   }));
@@ -180,7 +180,7 @@ async function fetchActiveArtistsInternal(limit: number): Promise<HomeArtist[]> 
     .is("deleted_at", null)
     .eq("is_hide", false)
     .eq("status", "active")
-    .or("type_artist.eq.SEMI_PERMANENT,type_artist.eq.BOTH")
+    .eq("type_artist", "SEMI_PERMANENT")
     .limit(limit * 5);
 
   if (error) {
@@ -294,15 +294,12 @@ function filterEntriesByIds(entries: ReviewStatsEntry[], idSet: Set<string>): Re
   return entries.filter(([id]) => idSet.has(id));
 }
 
-function filterArtistsByType(artists: ArtistRow[], typeArtist: ArtistTypeFilter): ArtistRow[] {
-  return typeArtist === "TATTOO"
-    ? artists.filter((a) => a.type_artist === "TATTOO" || a.type_artist === "BOTH")
-    : artists;
+function filterArtistsByType(artists: ArtistRow[]): ArtistRow[] {
+  return artists;
 }
 
 async function getArtistIdsByType(
   supabase: SupabaseInstance,
-  typeArtist: ArtistTypeFilter,
 ): Promise<string[]> {
   const { data } = await supabase
     .from("artists")
@@ -311,7 +308,7 @@ async function getArtistIdsByType(
     .eq("is_hide", false)
     .eq("status", "active")
     .gte("portfolio_media_count", 5)
-    .or(`type_artist.eq.${typeArtist},type_artist.eq.BOTH`);
+    .eq("type_artist", "SEMI_PERMANENT");
 
   return (data ?? []).map((a: { id: string }) => a.id);
 }
@@ -331,7 +328,7 @@ async function getFilteredReviewEntries(
   }
 
   if (typeArtist === "SEMI_PERMANENT") {
-    const semiIds = await getArtistIdsByType(supabase, "SEMI_PERMANENT");
+    const semiIds = await getArtistIdsByType(supabase);
     if (semiIds.length === 0) return null;
     filtered = filterEntriesByIds(filtered, new Set(semiIds));
   }
@@ -375,9 +372,7 @@ async function fetchReviewedArtistsInternal(opts?: {
     .eq("is_hide", false)
     .eq("status", "active");
 
-  const artists = typeArtist
-    ? filterArtistsByType((data ?? []) as ArtistRow[], typeArtist)
-    : ((data ?? []) as ArtistRow[]);
+  const artists = filterArtistsByType((data ?? []) as ArtistRow[]);
 
   const result = await Promise.all(
     artists.map((a) => enrichArtistWithReviews(supabase, a, statsMap)),

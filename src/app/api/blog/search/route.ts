@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { searchBlogPosts, fetchBlogCategories, type BlogSearchParams } from "@/lib/supabase/blog-queries";
 
-const VALID_TYPES = new Set(["TATTOO", "SEMI_PERMANENT"]);
+const VALID_TYPES = new Set(["SEMI_PERMANENT"]);
 const VALID_GENDERS = new Set(["MALE", "FEMALE"]);
 const MAX_LIMIT = 5000;
 

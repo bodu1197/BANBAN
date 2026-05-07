@@ -53,7 +53,7 @@ export async function fetchArtistInsights(options: {
 }
 
 export interface ArtistInsightSearchParams {
-  typeArtist?: "TATTOO" | "SEMI_PERMANENT" | null;
+  typeArtist?: "SEMI_PERMANENT" | null;
   regionId?: string | null;
   limit?: number;
   offset?: number;

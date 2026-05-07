@@ -116,19 +116,17 @@ export function TypeField({ formData, setFormData, t }: Readonly<{
         {t.type} <span className="text-red-500">*</span>
       </Label>
       <div className="flex gap-4">
-        {(["TATTOO", "SEMI_PERMANENT"] as const).map((type) => (
-          <label key={type} className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="type_artist"
-              value={type}
-              checked={formData.type_artist === type}
-              onChange={() => setFormData((prev) => ({ ...prev, type_artist: type }))}
-              className="h-4 w-4 accent-brand-primary"
-            />
-            <span className="text-sm">{type === "TATTOO" ? t.typeTattoo : t.typeSemiPermanent}</span>
-          </label>
-        ))}
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name="type_artist"
+            value="SEMI_PERMANENT"
+            checked={formData.type_artist === "SEMI_PERMANENT"}
+            onChange={() => setFormData((prev) => ({ ...prev, type_artist: "SEMI_PERMANENT" }))}
+            className="h-4 w-4 accent-brand-primary"
+          />
+          <span className="text-sm">{t.typeSemiPermanent}</span>
+        </label>
       </div>
     </div>
   );

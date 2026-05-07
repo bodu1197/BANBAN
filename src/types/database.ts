@@ -9,7 +9,7 @@ export type Json =
 // Type aliases for union types (extracted per SonarCloud recommendation)
 export type ExhibitionEntryStatus = 'pending' | 'approved' | 'rejected';
 export type SexType = 'MALE' | 'FEMALE' | 'OTHER';
-export type ArtistType = 'TATTOO' | 'SEMI_PERMANENT' | 'BOTH';
+export type ArtistType = 'SEMI_PERMANENT';
 export type ChatRoomStatus = 'ACTIVE' | 'CLOSED' | 'REPORTED';
 export type AttachmentType = 'image' | 'file';
 export type LikeableType = 'artist' | 'portfolio' | 'post' | 'Artist' | 'Portfolio' | 'Post';
@@ -141,7 +141,7 @@ export interface Database {
           kakao_url?: string | null
           instagram_url?: string | null
           title?: string
-          type_artist?: 'TATTOO' | 'PIERCING' | 'BOTH'
+          type_artist?: 'SEMI_PERMANENT'
           introduce?: string
           description?: string | null
           zipcode?: string | null

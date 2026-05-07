@@ -15,7 +15,7 @@ interface ArtistSearchResult {
   regionName: string | null;
 }
 
-type ArtistType = "TATTOO" | "SEMI_PERMANENT";
+type ArtistType = "SEMI_PERMANENT";
 
 function buildApiUrl(offset: number, typeArtist: ArtistType, regionId: string | null, regionSido: string | null, searchWord: string): string {
   const params = new URLSearchParams();

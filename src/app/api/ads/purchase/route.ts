@@ -18,8 +18,8 @@ async function getArtist(userId: string): Promise<{ id: string; type_artist: str
     return data as { id: string; type_artist: string } | null;
 }
 
-function getExpectedPlanType(typeArtist: string): "TATTOO" | "SEMI_PERMANENT" {
-    return typeArtist === "SEMI_PERMANENT" ? "SEMI_PERMANENT" : "TATTOO";
+function getExpectedPlanType(): "SEMI_PERMANENT" {
+    return "SEMI_PERMANENT";
 }
 
 async function validatePurchase(body: AdPurchaseRequest): Promise<
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
 
     const { plan, duration, totalPrice } = result;
-    if (plan.artist_type !== getExpectedPlanType(artist.type_artist)) {
+    if (plan.artist_type !== getExpectedPlanType()) {
         return NextResponse.json({ error: "plan_type_mismatch" }, { status: 400 });
     }
 

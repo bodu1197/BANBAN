@@ -51,8 +51,8 @@ function PriceSlider({ maxPrice, onChange }: Readonly<{
 }
 
 function matchCategory(p: HomePortfolio): boolean {
-  const t = p.artistType ?? "TATTOO";
-  return t === "SEMI_PERMANENT" || t === "BOTH";
+  const t = p.artistType ?? "SEMI_PERMANENT";
+  return t === "SEMI_PERMANENT";
 }
 
 const REGION_LABELS = {

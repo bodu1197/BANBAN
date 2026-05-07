@@ -303,7 +303,7 @@ function SubscriptionTable({ subscriptions, onRefund }: Readonly<{
 
 // ─── Main Hook ──────────────────────────────────────────
 
-function useAdminData(authLoading: boolean, user: unknown, artistType?: "TATTOO" | "SEMI_PERMANENT"): {
+function useAdminData(authLoading: boolean, user: unknown, artistType?: "SEMI_PERMANENT"): {
     data: AdminData | null; loading: boolean; error: string | null;
     status: string; search: string;
     setPage: (p: number) => void; setStatus: (s: string) => void; setSearch: (s: string) => void;
@@ -388,7 +388,7 @@ export function DashboardContent({ data, status, search, onPageChange, onStatusC
 // ─── Main Component ──────────────────────────────────────
 
 export default function AdminAdDashboard({ artistType, dashboardTitle }: Readonly<{
-    artistType?: "TATTOO" | "SEMI_PERMANENT";
+    artistType?: "SEMI_PERMANENT";
     dashboardTitle?: string;
 }> = {}): React.ReactElement {
     const { user, isLoading: authLoading } = useAuth();

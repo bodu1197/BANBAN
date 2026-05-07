@@ -5,6 +5,10 @@ import type { Region } from "@/types/database";
 import { type PortfolioRowWithType, mapPortfolioRow } from "./portfolio-common";
 import { secureShuffle } from "@/lib/random";
 
+function escapeIlike(input: string): string {
+  return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applySortOrder(query: any, sort: string): any {
   switch (sort) {
@@ -36,7 +40,7 @@ function applyPriceFilters(query: any, priceMin?: number | null, priceMax?: numb
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveRegionIds(supabase: any, regionSido: string | null | undefined, regionId: string[] | string | null | undefined): Promise<string[] | null> {
   if (regionSido) {
-    const { data: rData } = await supabase.from("regions").select("id").like("name", `${regionSido}%`);
+    const { data: rData } = await supabase.from("regions").select("id").like("name", `${escapeIlike(regionSido)}%`);
     return rData && rData.length > 0 ? rData.map((r: { id: string }) => r.id) : [];
   }
   if (regionId) return Array.isArray(regionId) ? regionId : [regionId];
@@ -51,7 +55,7 @@ async function resolveKeywordCategories(supabase: any, searchWord: string | null
   const { data: keywordCatData } = await supabase
     .from("categories")
     .select("id")
-    .ilike("name", `%${searchWord}%`);
+    .ilike("name", `%${escapeIlike(searchWord)}%`);
 
   if (keywordCatData && keywordCatData.length > 0) {
     const matchedCatIds = keywordCatData.map((c: { id: string }) => c.id);
@@ -81,7 +85,7 @@ async function resolveGenderCategoryIds(supabase: any, targetGender: "MALE" | "F
     .from("categories")
     .select("id")
     .eq("target_gender", targetGender)
-    .or("artist_type.eq.SEMI_PERMANENT,artist_type.eq.BOTH");
+    .eq("artist_type", "SEMI_PERMANENT");
   return (data ?? []).map((c: { id: string }) => c.id);
 }
 
@@ -143,13 +147,12 @@ const SELECT_JOINED = `
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyBaseArtistFilters(query: any, typeArtist: string, regionIds: string[] | null): any {
-  const artistFilter = `type_artist.eq.${typeArtist},type_artist.eq.BOTH`;
   const now = new Date().toISOString();
   let q = query
     .is("deleted_at", null)
     .gt("price", 0)
     .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
-    .or(artistFilter, { foreignTable: "artists" })
+    .eq("artists.type_artist", typeArtist)
     .is("artists.deleted_at", null)
     .eq("artists.is_hide", false)
     .eq("artists.status", "active")
@@ -219,14 +222,14 @@ function matchesGenderFilter(catGender: string | null, targetGender: "MALE" | "F
 }
 
 export async function fetchCategoriesByType(
-  typeArtist: "TATTOO" | "SEMI_PERMANENT",
+  typeArtist: "SEMI_PERMANENT",
   targetGender?: "MALE" | "FEMALE" | null,
 ): Promise<CategoryItem[]> {
   const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("categories")
     .select("id, name, category_type, order_index, parent_id, target_gender, artist_type")
-    .or(`artist_type.eq.${typeArtist},artist_type.eq.BOTH`)
+    .eq("artist_type", typeArtist)
     .order("order_index", { ascending: true });
 
   if (error) {
@@ -250,7 +253,7 @@ export async function fetchCategoriesByType(
 }
 
 export async function fetchActiveRegions(
-  typeArtist: "TATTOO" | "SEMI_PERMANENT",
+  typeArtist: "SEMI_PERMANENT",
 ): Promise<Region[]> {
   const supabase = createStaticClient();
 
@@ -261,7 +264,7 @@ export async function fetchActiveRegions(
     .eq("is_hide", false)
     .eq("status", "active")
     .gte("portfolio_media_count", 5)
-    .or(`type_artist.eq.${typeArtist},type_artist.eq.BOTH`);
+    .eq("type_artist", typeArtist);
 
   const activeRegionIds = [
     ...new Set(

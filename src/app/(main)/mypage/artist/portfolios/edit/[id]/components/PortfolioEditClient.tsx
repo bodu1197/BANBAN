@@ -87,7 +87,7 @@ async function fetchCategoryIds(supabase: SupabaseClient, portfolioId: string): 
 
 async function fetchArtistType(supabase: SupabaseClient, artistId: string): Promise<string> {
     const { data } = await supabase.from("artists").select("type_artist").eq("id", artistId).single();
-    return (data as { type_artist: string } | null)?.type_artist ?? "TATTOO";
+    return (data as { type_artist: string } | null)?.type_artist ?? "SEMI_PERMANENT";
 }
 
 interface ExhibitionEntry { id: string; exhibition_id: string; status: string }

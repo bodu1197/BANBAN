@@ -18,7 +18,7 @@ export interface BlogPost {
 }
 
 export interface BlogSearchParams {
-  typeArtist?: "TATTOO" | "SEMI_PERMANENT" | null;
+  typeArtist?: "SEMI_PERMANENT" | null;
   targetGender?: "MALE" | "FEMALE" | null;
   categoryName?: string | null;
   regionId?: string | null;
@@ -101,7 +101,7 @@ function filterCategoriesByGender(
 }
 
 export async function fetchBlogCategories(
-  typeArtist?: "TATTOO" | "SEMI_PERMANENT" | null,
+  typeArtist?: "SEMI_PERMANENT" | null,
   targetGender?: "MALE" | "FEMALE" | null,
 ): Promise<BlogCategoryCount[]> {
   const supabase = createAdminClient();

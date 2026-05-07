@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { fetchArtistsWithDetails } from "@/lib/supabase/artist-queries";
 
-const VALID_TYPES = new Set(["TATTOO", "SEMI_PERMANENT"]);
+const VALID_TYPES = new Set(["SEMI_PERMANENT"]);
 const MAX_LIMIT = 48;
 
 function parseParams(sp: URLSearchParams): {
-  typeArtist: "TATTOO" | "SEMI_PERMANENT";
+  typeArtist: "SEMI_PERMANENT";
   regionId: string | null;
   regionPrefix: string | null;
   genres: string[];
@@ -18,7 +18,7 @@ function parseParams(sp: URLSearchParams): {
 
   const genresRaw = sp.get("genres");
   return {
-    typeArtist: typeArtist as "TATTOO" | "SEMI_PERMANENT",
+    typeArtist: typeArtist as "SEMI_PERMANENT",
     regionId: sp.get("regionId") || null,
     regionPrefix: sp.get("regionSido") || sp.get("regionPrefix") || null,
     genres: genresRaw ? genresRaw.split(",").filter(Boolean) : [],
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const params = parseParams(request.nextUrl.searchParams);
   if (!params) {
     return NextResponse.json(
-      { error: "typeArtist must be TATTOO or SEMI_PERMANENT" },
+      { error: "typeArtist must be SEMI_PERMANENT" },
       { status: 400 },
     );
   }

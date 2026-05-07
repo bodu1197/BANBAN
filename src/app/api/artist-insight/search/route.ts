@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { searchArtistInsights, type ArtistInsightSearchParams } from "@/lib/supabase/artist-insight-queries";
 
-const VALID_TYPES = new Set(["TATTOO", "SEMI_PERMANENT"]);
+const VALID_TYPES = new Set(["SEMI_PERMANENT"]);
 const MAX_LIMIT = 40;
 
 function parseParams(sp: URLSearchParams): ArtistInsightSearchParams {

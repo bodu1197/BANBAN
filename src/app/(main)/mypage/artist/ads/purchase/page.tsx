@@ -278,8 +278,7 @@ function usePurchaseData(authLoading: boolean, user: unknown): {
                 fetch("/api/ads/my").then(r => r.json()),
                 fetch("/api/points/balance").then(r => r.json()),
             ]);
-            const typeArtist = (myRes as { typeArtist?: string }).typeArtist;
-            const planType = typeArtist === "SEMI_PERMANENT" ? "SEMI_PERMANENT" : "TATTOO";
+            const planType = "SEMI_PERMANENT";
             const plansRes = await fetch(`/api/ads/plans?artistType=${planType}`).then(r => r.json());
             setPlans(plansRes.plans ?? []);
             setDurations(plansRes.durations ?? []);

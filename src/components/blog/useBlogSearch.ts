@@ -39,10 +39,9 @@ interface InitialData {
 }
 
 function tabToParams(tab: TabValue): { typeArtist: string | null; targetGender: string | null } {
-  if (tab === "TATTOO") return { typeArtist: "TATTOO", targetGender: null };
   if (tab === "MALE_SEMI") return { typeArtist: "SEMI_PERMANENT", targetGender: "MALE" };
   if (tab === "FEMALE_SEMI") return { typeArtist: "SEMI_PERMANENT", targetGender: "FEMALE" };
-  return { typeArtist: null, targetGender: null };
+  return { typeArtist: "SEMI_PERMANENT", targetGender: null };
 }
 
 function buildUrl(params: Record<string, string | null | number>): string {

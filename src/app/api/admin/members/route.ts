@@ -98,7 +98,7 @@ async function handlePasswordChange(supabase: SupabaseClient, userId: string, pa
 // ─── Tab Query Builders ──────────────────────────────────
 
 const ARTIST_TYPE_FILTERS: Record<string, string> = {
-    semi_permanent: "type_artist.eq.SEMI_PERMANENT,type_artist.eq.BOTH",
+    semi_permanent: "type_artist.eq.SEMI_PERMANENT",
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

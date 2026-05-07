@@ -21,7 +21,6 @@ type PortfolioQueryModifier = (
 
 async function getArtistIdsByType(
   supabase: SupabaseInstance,
-  typeArtist: ArtistTypeFilter,
 ): Promise<string[]> {
   const { data } = await supabase
     .from("artists")
@@ -30,15 +29,15 @@ async function getArtistIdsByType(
     .eq("is_hide", false)
     .eq("status", "active")
     .gte("portfolio_media_count", 5)
-    .or(`type_artist.eq.${typeArtist},type_artist.eq.BOTH`);
+    .eq("type_artist", "SEMI_PERMANENT");
 
   return (data ?? []).map((a: { id: string }) => a.id);
 }
 
-function isVisibleTattooArtist(row: PortfolioRowWithType): boolean {
+function isVisibleArtist(row: PortfolioRowWithType): boolean {
   const artist = row.artist;
   if (!artist || artist.is_hide || artist.deleted_at || artist.status === "dormant") return false;
-  return artist.portfolio_media_count >= 5 && (artist.type_artist === "TATTOO" || artist.type_artist === "BOTH");
+  return artist.portfolio_media_count >= 5;
 }
 
 function deduplicatePortfolios<T extends { artist_id: string; title: string }>(rows: T[]): T[] {
@@ -63,30 +62,7 @@ async function fetchPortfolios(
 
   const now = new Date().toISOString();
 
-  // SEMI_PERMANENT: Use .in() filter (148 IDs is safe, under 500 limit)
-  // TATTOO: Use client-side filtering (most data is TATTOO anyway)
-  if (typeArtist === "SEMI_PERMANENT") {
-    const artistIds = await getArtistIdsByType(supabase, "SEMI_PERMANENT");
-    if (artistIds.length === 0) return [];
-
-    const base = supabase
-      .from("portfolios")
-      .select(SELECT_BASIC)
-      .is("deleted_at", null)
-      .gt("price", 0)
-      .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
-      .in("artist_id", artistIds);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (modifier(base) as any).limit(limit * fetchMultiplier);
-    if (error) {
-      throw new Error(`Failed to fetch ${label}: ${error.message}`);
-    }
-    const deduplicated = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
-    return deduplicated.slice(0, limit).map(mapPortfolioRow);
-  }
-
-  // TATTOO or no filter: client-side filtering
+  // All artists are now SEMI_PERMANENT — no type filtering needed
   const base = supabase
     .from("portfolios")
     .select(SELECT_WITH_TYPE)
@@ -102,11 +78,7 @@ async function fetchPortfolios(
     throw new Error(`Failed to fetch ${label}: ${error.message}`);
   }
 
-  let rows = (data ?? []) as PortfolioRowWithType[];
-
-  if (typeArtist === "TATTOO") {
-    rows = rows.filter(isVisibleTattooArtist);
-  }
+  const rows = ((data ?? []) as PortfolioRowWithType[]).filter(isVisibleArtist);
 
   const deduplicated = deduplicatePortfolios(rows);
   return deduplicated.slice(0, limit).map(mapPortfolioRow);
@@ -166,7 +138,7 @@ export async function fetchTimeSalePortfolios(limit = 10): Promise<HomePortfolio
   const supabase = createStaticClient();
   const now = new Date().toISOString();
 
-  const artistIds = await getArtistIdsByType(supabase, "SEMI_PERMANENT");
+  const artistIds = await getArtistIdsByType(supabase);
   if (artistIds.length === 0) return [];
 
   const base = supabase
@@ -221,7 +193,7 @@ export async function fetchDiscountPortfolios(options?: {
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRowWithType[]);
       const filtered = rows
         .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at)
-        .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "TATTOO" }));
+        .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "SEMI_PERMANENT" }));
       // Shuffle so every artist gets fair exposure
       return secureShuffle(filtered).slice(0, limit);
     },

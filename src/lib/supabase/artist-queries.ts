@@ -4,6 +4,10 @@ import { fetchAdExemptArtistIds, MIN_PORTFOLIO_MEDIA } from "./artist-visibility
 
 type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
 
+function escapeIlike(input: string): string {
+  return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+}
+
 export interface ArtistListItem {
   id: string;
   name: string;
@@ -28,7 +32,7 @@ interface FetchArtistsOptions {
   offset?: number;
   regionId?: string | null;
   regionPrefix?: string | null;
-  typeArtist?: "TATTOO" | "SEMI_PERMANENT";
+  typeArtist?: "SEMI_PERMANENT";
   genres?: string[];
   searchWord?: string;
 }
@@ -106,7 +110,7 @@ async function fetchRegionIds(supabase: SupabaseInstance, prefix: string): Promi
   const { data } = await supabase
     .from("regions")
     .select("id")
-    .ilike("name", `${prefix}%`);
+    .ilike("name", `${escapeIlike(prefix)}%`);
   return (data ?? []).map((r: { id: string }) => r.id);
 }
 
@@ -117,7 +121,7 @@ async function fetchGenreIds(
 ): Promise<string[] | null> {
   let effective = [...genres];
   if (searchWord) {
-    const { data: catData } = await supabase.from("categories").select("name").ilike("name", `%${searchWord}%`);
+    const { data: catData } = await supabase.from("categories").select("name").ilike("name", `%${escapeIlike(searchWord)}%`);
     if (catData?.length) effective = [...new Set([...effective, ...catData.map((c: { name: string }) => c.name)])];
   }
   if (effective.length === 0) return null;
@@ -139,10 +143,13 @@ const SELECT = [
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder typing
 function applyFilters(q: any, opts: FetchArtistsOptions, regionIds: string[] | null): any {
   const { typeArtist, regionId, searchWord } = opts;
-  if (typeArtist) q = q.or(`type_artist.eq.${typeArtist},type_artist.eq.BOTH`);
+  if (typeArtist) q = q.eq("type_artist", typeArtist);
   if (regionId) q = q.eq("region_id", regionId);
   else if (regionIds?.length) q = q.in("region_id", regionIds);
-  if (searchWord) q = q.or(`title.ilike.%${searchWord}%,description.ilike.%${searchWord}%,introduce.ilike.%${searchWord}%`);
+  if (searchWord) {
+    const escaped = escapeIlike(searchWord);
+    q = q.or(`title.ilike.%${escaped}%,description.ilike.%${escaped}%,introduce.ilike.%${escaped}%`);
+  }
   return q;
 }
 

@@ -186,7 +186,7 @@ export async function createPost(formData: FormData): Promise<{
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const typeBoard = (formData.get("type_board") as string) || "QNA";
-  const typePost = (formData.get("type_post") as string) || "TATTOO";
+  const typePost = (formData.get("type_post") as string) || "BEAUTY";
   const imageUrl = (formData.get("image_url") as string) || null;
   const youtubeUrl = (formData.get("youtube_url") as string) || null;
 
@@ -203,7 +203,7 @@ export async function createPost(formData: FormData): Promise<{
       content,
       type_board: typeBoard,
       type_post: typePost,
-      type_artist: "TATTOO",
+      type_artist: "SEMI_PERMANENT",
       image_url: imageUrl,
       youtube_url: youtubeUrl,
     })

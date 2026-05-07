@@ -14,7 +14,7 @@ export function toCategoryType(value: string | null): CategoryType | null {
 }
 
 export interface PortfolioSearchParams {
-  typeArtist: "TATTOO" | "SEMI_PERMANENT";
+  typeArtist: "SEMI_PERMANENT";
   targetGender?: "MALE" | "FEMALE" | null;
   regionId?: string[] | string | null;
   regionSido?: string | null;

@@ -75,7 +75,7 @@ function filterByArtistType(
   if (!typeArtist) return rows;
   return rows.filter((row) => {
     const artistType = row.artist?.type_artist;
-    return artistType === typeArtist || artistType === "BOTH";
+    return artistType === typeArtist;
   });
 }
 

@@ -3,7 +3,7 @@ import { callOpenAiJson } from "@/lib/cron-jobs/openai-helper";
 export interface InsightArtistContext {
   artist_id: string;
   artist_name: string;
-  type_artist: "TATTOO" | "SEMI_PERMANENT" | string;
+  type_artist: "SEMI_PERMANENT" | string;
   region_name: string | null;
   portfolio_count: number;
   specialties: string[]; // top categories

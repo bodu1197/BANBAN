@@ -7,7 +7,7 @@ const SELECT_WITH_PLAN = "*, plan:ad_plans(*)";
 // ─── Plans ───────────────────────────────────────────────
 
 /** Get all active ad plans, optionally filtered by artist type */
-export async function getAdPlans(artistType?: "TATTOO" | "SEMI_PERMANENT"): Promise<AdPlan[]> {
+export async function getAdPlans(artistType?: "SEMI_PERMANENT"): Promise<AdPlan[]> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = (supabase as any)
@@ -267,7 +267,7 @@ export async function expireOldSubscriptions(): Promise<number> {
 // ─── Admin Stats ─────────────────────────────────────────
 
 /** Get ad revenue stats for admin dashboard, optionally filtered by artist type */
-export async function getAdRevenueStats(artistType?: "TATTOO" | "SEMI_PERMANENT"): Promise<{
+export async function getAdRevenueStats(artistType?: "SEMI_PERMANENT"): Promise<{
     totalRevenue: number;
     activeCount: number;
     totalCount: number;

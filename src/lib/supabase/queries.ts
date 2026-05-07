@@ -151,19 +151,15 @@ export async function fetchArtists(options: {
   limit?: number;
   offset?: number;
   regionId?: string | null;
-  typeArtist?: "TATTOO" | "SEMI_PERMANENT";
+  typeArtist?: "SEMI_PERMANENT";
 }): Promise<{ data: ArtistWithDetails[]; count: number }> {
-  const { limit = 24, offset = 0, regionId, typeArtist } = options;
+  const { limit = 24, offset = 0, regionId } = options;
   const supabase = await createClient();
 
   let query = buildArtistListQuery(supabase, offset, limit);
 
   if (regionId) {
     query = query.eq("region_id", regionId);
-  }
-
-  if (typeArtist) {
-    query = query.or(`type_artist.eq.${typeArtist},type_artist.eq.BOTH`);
   }
 
   return processArtistListResult(supabase, await query, "fetch artists");

@@ -13,7 +13,7 @@ export async function fetchCategories(supabase: SupabaseClient, artistType?: str
         .order("order_index", { ascending: true });
 
     if (artistType) {
-        query = query.or(`artist_type.eq.${artistType},artist_type.eq.BOTH`);
+        query = query.eq("artist_type", artistType);
     }
 
     const { data } = await query;

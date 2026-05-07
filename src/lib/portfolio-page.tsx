@@ -5,7 +5,7 @@ import { getActiveAdArtists } from "@/lib/supabase/ad-queries";
 import { PortfolioSearchClient } from "@/components/portfolio-search";
 
 interface PortfolioPageConfig {
-  typeArtist: "TATTOO" | "SEMI_PERMANENT";
+  typeArtist: "SEMI_PERMANENT";
   slug: string;
   title: string;
   description: string;

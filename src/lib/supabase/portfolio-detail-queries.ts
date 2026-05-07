@@ -37,12 +37,12 @@ export interface PortfolioDetails extends Portfolio {
 export interface PortfolioRecommendation extends Portfolio {
   portfolio_media: PortfolioMedia[];
   artist: {
-    type_artist?: 'TATTOO' | 'SEMI_PERMANENT' | 'BOTH';
+    type_artist?: 'SEMI_PERMANENT';
     region?: { name: string } | null;
   };
 }
 
-type ArtistType = 'TATTOO' | 'SEMI_PERMANENT' | 'BOTH';
+type ArtistType = 'SEMI_PERMANENT';
 
 // Common select clause for portfolio recommendations
 const PORTFOLIO_RECOMMENDATION_SELECT = `*, portfolio_media(*), artist:artists(type_artist, region:regions(name))`;

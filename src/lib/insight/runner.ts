@@ -78,7 +78,7 @@ async function buildContext(row: ArtistRow): Promise<InsightArtistContext> {
   return {
     artist_id: row.id,
     artist_name: row.title ?? "익명 아티스트",
-    type_artist: row.type_artist ?? "TATTOO",
+    type_artist: row.type_artist ?? "SEMI_PERMANENT",
     region_name: regionName,
     portfolio_count: row.portfolio_media_count ?? 0,
     specialties,

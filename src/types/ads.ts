@@ -5,7 +5,7 @@ export interface AdPlan {
     price: number;
     duration_days: number;
     is_active: boolean;
-    artist_type: "TATTOO" | "SEMI_PERMANENT";
+    artist_type: "SEMI_PERMANENT";
     max_portfolios: number;
     created_at: string;
 }

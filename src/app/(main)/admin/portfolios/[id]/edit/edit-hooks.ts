@@ -54,7 +54,7 @@ export function useCategories(artistType?: string): CategoryItem[] {
         const supabase = createClient();
         let query = supabase.from("categories").select("id, name, category_type, artist_type, parent_id, target_gender").order("name", { ascending: true });
         if (artistType) {
-            query = query.or(`artist_type.eq.${artistType},artist_type.eq.BOTH`);
+            query = query.eq("artist_type", artistType);
         }
         query.then(({ data }) => {
             if (!data) return;

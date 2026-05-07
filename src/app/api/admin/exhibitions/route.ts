@@ -33,7 +33,7 @@ function buildInsertRow(body: ExhibitionBody): {
         subtitle: body.subtitle ?? null,
         image_path: body.image_path as string,
         link_url: body.link_url ?? null,
-        category: body.category ?? "TATTOO",
+        category: body.category ?? "SEMI_PERMANENT",
         order_index: body.order_index ?? 0,
         is_active: body.is_active ?? true,
         start_at: body.start_at ?? null,

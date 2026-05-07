@@ -3,7 +3,7 @@ import { searchPortfolios } from "@/lib/supabase/portfolio-search-queries";
 import type { PortfolioSortOption, PortfolioSearchParams } from "@/types/portfolio-search";
 
 const VALID_SORTS = new Set<PortfolioSortOption>(["popular", "price_asc", "price_desc", "newest", "discount", "random"]);
-const VALID_TYPES = new Set(["TATTOO", "SEMI_PERMANENT"]);
+const VALID_TYPES = new Set(["SEMI_PERMANENT"]);
 const MAX_LIMIT = 48;
 
 function parseSort(raw: string | null): PortfolioSortOption {
@@ -27,7 +27,7 @@ function parseSearchParams(sp: URLSearchParams): PortfolioSearchParams | null {
   const validGender = targetGender === "MALE" || targetGender === "FEMALE" ? targetGender : null;
 
   return {
-    typeArtist: typeArtist as "TATTOO" | "SEMI_PERMANENT",
+    typeArtist: typeArtist as "SEMI_PERMANENT",
     targetGender: validGender,
     regionId: splitOrUndefined(sp.get("regionId")),
     regionSido: sp.get("regionSido") || null,
@@ -44,7 +44,7 @@ function parseSearchParams(sp: URLSearchParams): PortfolioSearchParams | null {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const params = parseSearchParams(request.nextUrl.searchParams);
   if (!params) {
-    return NextResponse.json({ error: "typeArtist must be TATTOO or SEMI_PERMANENT" }, { status: 400 });
+    return NextResponse.json({ error: "typeArtist must be SEMI_PERMANENT" }, { status: 400 });
   }
 
   const result = await searchPortfolios(params);
