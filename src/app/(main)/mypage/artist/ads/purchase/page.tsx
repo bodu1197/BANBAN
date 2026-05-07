@@ -27,7 +27,7 @@ function calcTotalPrice(monthlyPrice: number, months: number, discountPercent: n
 function BenefitsList(): React.ReactElement {
     const benefits = [
         { icon: <Crown className="h-5 w-5 text-amber-500" />, title: "프리미엄 배너", desc: "홈 상단 슬라이더 노출" },
-        { icon: <Search className="h-5 w-5 text-blue-500" />, title: "검색 상위 노출", desc: "타투/반영구 검색 결과 최상단" },
+        { icon: <Search className="h-5 w-5 text-blue-500" />, title: "검색 상위 노출", desc: "반영구 검색 결과 최상단" },
         { icon: <Zap className="h-5 w-5 text-orange-500" />, title: "포트폴리오 부스트", desc: "검색 결과 내 높은 빈도 삽입" },
         { icon: <Star className="h-5 w-5 text-purple-500" />, title: "아티스트 추천", desc: "인기 아티스트 섹션 상단 고정" },
     ];

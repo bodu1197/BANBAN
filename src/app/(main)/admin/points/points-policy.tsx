@@ -66,7 +66,7 @@ export default function PolicySection({ policies, onUpdate }: Readonly<{
                         <tr className="border-b border-white/10 bg-white/5 text-xs text-zinc-400">
                             <th className="px-4 py-3 font-medium">활동</th>
                             <th className="px-4 py-3 font-medium">대상</th>
-                            <th className="px-4 py-3 font-medium">타투 포인트</th>
+                            <th className="px-4 py-3 font-medium">기본 포인트</th>
                             <th className="px-4 py-3 font-medium">반영구 포인트</th>
                             <th className="px-4 py-3 font-medium">일일 제한</th>
                             <th className="px-4 py-3 font-medium">상태</th>

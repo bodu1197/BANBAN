@@ -20,7 +20,7 @@ export async function callOpenAiJson<T>(userPrompt: string): Promise<T> {
       {
         role: "system",
         content:
-          "당신은 한국 타투/반영구 메이크업 분야의 전문 에디터입니다. 반드시 한국어로만 작성하세요. 반드시 valid JSON만 반환하세요. 다른 텍스트는 절대 출력하지 마세요.",
+          "당신은 한국 반영구 메이크업 분야의 전문 에디터입니다. 반드시 한국어로만 작성하세요. 반드시 valid JSON만 반환하세요. 다른 텍스트는 절대 출력하지 마세요.",
       },
       { role: "user", content: userPrompt },
     ],

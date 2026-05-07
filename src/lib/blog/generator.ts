@@ -29,7 +29,7 @@ interface RawAi {
 
 function buildPrompt(ctx: BlogPortfolioContext): string {
   return [
-    `당신은 한국 타투 매거진의 에디터입니다.`,
+    `당신은 한국 반영구 뷰티 매거진의 에디터입니다.`,
     `다음 포트폴리오를 소개하는 600~900자 분량의 한국어 SEO 블로그 글을 작성하세요.`,
     ``,
     `# 포트폴리오 정보`,

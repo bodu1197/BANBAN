@@ -32,8 +32,8 @@ interface RawAiOutput {
 
 function buildPrompt(topic: EncyclopediaTopic): string {
   return [
-    `당신은 한국 타투/반영구 메이크업 분야의 전문 에디터이자 SEO 카피라이터입니다.`,
-    `웹사이트 "${SITE_NAME}"의 타투 백과사전 코너에 게시할 1,500~2,000자 분량의 한국어 깊이 있는 정보성 글을 작성하세요.`,
+    `당신은 한국 반영구 메이크업 분야의 전문 에디터이자 SEO 카피라이터입니다.`,
+    `웹사이트 "${SITE_NAME}"의 뷰티 백과사전 코너에 게시할 1,500~2,000자 분량의 한국어 깊이 있는 정보성 글을 작성하세요.`,
     ``,
     `# 주제`,
     `- 카테고리: ${topic.category}`,
@@ -138,7 +138,7 @@ async function callOpenAi(topic: EncyclopediaTopic): Promise<RawAiOutput> {
       {
         role: "system",
         content:
-          "You are a Korean tattoo industry expert writer. Always respond with valid JSON only.",
+          "You are a Korean semi-permanent makeup industry expert writer. Always respond with valid JSON only.",
       },
       { role: "user", content: buildPrompt(topic) },
     ],

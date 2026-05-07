@@ -97,7 +97,7 @@ async function enrichItems(rows: PortfolioRow[]): Promise<WeeklyTrendItem[]> {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   return rows.map((r) => ({
     portfolio_id: r.id,
-    title: r.title ?? "타투 작품",
+    title: r.title ?? "반영구 작품",
     artist_name: artistMap.get(r.artist_id) ?? "익명",
     image_url: mediaMap.has(r.id)
       ? `${baseUrl}/storage/v1/object/public/portfolios/${mediaMap.get(r.id)}`

@@ -35,8 +35,8 @@ interface RawAi {
 
 function buildPrompt(ctx: LocationSeoContext): string {
   return [
-    `당신은 한국 타투 검색 SEO 전문가입니다.`,
-    `"${ctx.region_name} ${ctx.style} 타투" 검색 의도를 만족시키는 1,200~1,800자 한국어 랜딩 페이지를 작성하세요.`,
+    `당신은 한국 반영구 메이크업 검색 SEO 전문가입니다.`,
+    `"${ctx.region_name} ${ctx.style} 반영구" 검색 의도를 만족시키는 1,200~1,800자 한국어 랜딩 페이지를 작성하세요.`,
     ``,
     `# 컨텍스트`,
     `- 지역: ${ctx.region_name}`,
@@ -63,8 +63,8 @@ function buildPrompt(ctx: LocationSeoContext): string {
     `  "introduction": "도입 2~3문단",`,
     `  "sections": [`,
     `    { "heading": "${ctx.style} 스타일의 특징", "body": "..." },`,
-    `    { "heading": "${ctx.region_name}에서 받는 ${ctx.style} 타투", "body": "..." },`,
-    `    { "heading": "추천 부위와 디자인", "body": "..." },`,
+    `    { "heading": "${ctx.region_name}에서 받는 ${ctx.style} 시술", "body": "..." },`,
+    `    { "heading": "시술 과정과 관리법", "body": "..." },`,
     `    { "heading": "시술 전 알아야 할 점", "body": "..." }`,
     `  ],`,
     `  "conclusion": "마무리 1~2문단",`,
@@ -105,15 +105,15 @@ export async function generateLocationSeoPage(
   ctx: LocationSeoContext,
 ): Promise<GeneratedLocationSeo> {
   const raw = await callOpenAiJson<RawAi>(buildPrompt(ctx));
-  const coverAlt = `${ctx.region_name} ${ctx.style} 타투`;
+  const coverAlt = `${ctx.region_name} ${ctx.style} 반영구`;
   const content = buildContent(raw, ctx.cover_image_url, coverAlt);
   const stripSuffix = (v?: string): string =>
     (v ?? "").replace(/\s*[-|–—]\s*반언니\s*$/u, "").trim();
   return {
-    title: raw.title?.trim() || `${ctx.region_name} ${ctx.style} 타투`,
+    title: raw.title?.trim() || `${ctx.region_name} ${ctx.style} 반영구`,
     excerpt: raw.excerpt?.trim() ?? "",
     content,
-    meta_title: stripSuffix(raw.meta_title) || `${ctx.region_name} ${ctx.style} 타투`,
+    meta_title: stripSuffix(raw.meta_title) || `${ctx.region_name} ${ctx.style} 반영구`,
     meta_description: raw.meta_description?.trim() ?? "",
     keywords: Array.isArray(raw.keywords) ? raw.keywords.slice(0, 10) : [],
     faq: Array.isArray(raw.faq) ? raw.faq.slice(0, 6) : [],

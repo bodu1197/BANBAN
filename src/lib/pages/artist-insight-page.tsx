@@ -8,8 +8,8 @@ import InsightSearchClient from "@/components/artist-insight/InsightSearchClient
 const PER_PAGE = 20;
 
 export async function generateInsightMetadata(): Promise<Metadata> {
-  const title = "아티스트 인사이트 — 타투이스트 종합 분석";
-  const description = "대한민국 타투이스트의 작품 스타일, 기술적 강점, 고객 평가를 종합 분석한 아티스트 인사이트.";
+  const title = "아티스트 인사이트 — 반영구 아티스트 종합 분석";
+  const description = "대한민국 반영구 아티스트의 작품 스타일, 기술적 강점, 고객 평가를 종합 분석한 아티스트 인사이트.";
 
   return {
     title,

@@ -210,7 +210,7 @@ function QuickActions(): React.ReactElement {
 // ─── Point Guide ────────────────────────────────────────
 
 function buildEarnRules(isSemi: boolean): { icon: React.ReactElement; label: string; point: string; note: string }[] {
-    const p = (tattoo: number, semi: number): string => `${(isSemi ? semi : tattoo).toLocaleString()}P`;
+    const p = (base: number, semi: number): string => `${(isSemi ? semi : base).toLocaleString()}P`;
     return [
         { icon: <Gift className="h-4 w-4 text-emerald-500" />, label: "회원가입 축하", point: p(30_000, 9_000), note: "전체" },
         { icon: <CalendarCheck className="h-4 w-4 text-blue-500" />, label: "출석 체크", point: p(1_000, 300), note: "매일 1회" },

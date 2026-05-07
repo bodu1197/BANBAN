@@ -68,7 +68,7 @@ export const STRINGS ={
     "likeRemoved": "좋아요를 취소했습니다"
   },
   "home": {
-    "title": "타투 아티스트",
+    "title": "반영구 아티스트",
     "subtitle": "{{count}}명의 아티스트가 활동 중입니다",
     "noResults": "검색 결과가 없습니다",
     "searchPlaceholder": "아티스트, 장르, 지역 검색",
@@ -364,8 +364,7 @@ export const STRINGS ={
     "mypage": "MY"
   },
   "homepage": {
-    "tattoo": "타투",
-    "piercing": "반영구",
+    "semiPermanent": "반영구",
     "popularArtists": "내 고민을 해결할 인기 아티스트",
     "reviewedArtists": "후기가 많은 아티스트 추천",
     "discountedWorks": "할인율이 가장 높은 작품",
@@ -378,13 +377,8 @@ export const STRINGS ={
     "noRecruitment": "모집 중인 모델이 없습니다",
     "searchRegion": "지역을 검색해보세요.",
     "searchGenre": "장르를 검색해보세요.",
-    "trendingNow": "요즘 트렌드",
-    "indieDesign": "헤어져도 쿨한 독립적 디자인",
-    "butlerSection": "상전님 모시는 집사의 처절한 혈서",
     "todayActiveArtists": "오늘의 인기 아티스트",
-    "popularTattoo": "인기 타투 작품",
     "eyebrowSection": "첫인상의 완성은 눈썹",
-    "touchupSection": "지우고 싶은 과거 터치업의 마법",
     "semiPermanentRecommended": "반영구 추천",
     "aiBannerHeadline": "FREE 눈썹 시뮬레이션",
     "aiBannerDesc": "시술 전 미리보기 — 내 얼굴에 맞는 눈썹 찾기",
@@ -475,21 +469,19 @@ export const STRINGS ={
   "pages": {
     "home": "홈",
     "homeDesc": "반언니에 오신 것을 환영합니다",
-    "tattooSearch": "타투 검색",
-    "tattooSearchDesc": "전국 타투 작품을 검색하세요",
     "artistsList": "아티스트",
-    "artistsListDesc": "전국 타투이스트를 검색하세요",
+    "artistsListDesc": "전국 반영구 아티스트를 검색하세요",
     "portfoliosList": "포트폴리오",
-    "portfoliosListDesc": "다양한 타투 작품을 확인하세요",
+    "portfoliosListDesc": "다양한 반영구 작품을 확인하세요",
     "discount": "할인",
     "discountDesc": "할인 중인 포트폴리오를 모아보세요",
     "recruitment": "모델 모집",
-    "recruitmentDesc": "타투 모델 모집 중인 아티스트를 확인하세요",
+    "recruitmentDesc": "모델 모집 중인 아티스트를 확인하세요",
     "about": "반언니 소개",
-    "aboutDesc": "타투 아티스트 검색 플랫폼 반언니를 소개합니다",
-    "aboutContent": "반언니는 전국 타투 아티스트를 연결하는 플랫폼입니다. 고객에게 최적의 타투이스트를 찾아드리고, 아티스트에게는 더 많은 고객을 만날 수 있는 기회를 제공합니다.",
+    "aboutDesc": "반영구 아티스트 검색 플랫폼 반언니를 소개합니다",
+    "aboutContent": "반언니는 전국 반영구 아티스트를 연결하는 플랫폼입니다. 고객에게 최적의 아티스트를 찾아드리고, 아티스트에게는 더 많은 고객을 만날 수 있는 기회를 제공합니다.",
     "terms": "이용약관",
-    "termsContent": "본 약관은 주식회사 플랫폼몬스터(이하 \"회사\")가 운영하는 반언니 서비스(이하 \"서비스\")의 이용에 관한 조건 및 절차, 기타 필요한 사항을 규정함을 목적으로 합니다.\n\n제1조 (목적)\n본 약관은 회사가 제공하는 서비스의 이용조건 및 절차에 관한 기본적인 사항을 규정하는 것을 목적으로 합니다.\n\n제2조 (용어의 정의)\n1. \"서비스\"란 회사가 운영하는 반언니 플랫폼을 통해 제공하는 모든 서비스를 의미합니다.\n2. \"이용자\"란 이 약관에 따라 서비스를 이용하는 회원 및 비회원을 말합니다.\n3. \"회원\"이란 서비스에 회원등록을 하고 서비스를 이용하는 자를 말합니다.\n\n제3조 (약관의 효력 및 변경)\n1. 본 약관은 서비스를 이용하고자 하는 모든 이용자에게 그 효력이 발생합니다.\n2. 회사는 합리적인 사유가 발생한 경우 관련 법령에 위배되지 않는 범위 내에서 약관을 변경할 수 있습니다.\n\n제4조 (서비스의 제공)\n1. 회사는 다음과 같은 서비스를 제공합니다.\n   - 타투 아티스트 검색 및 포트폴리오 열람\n   - 아티스트와 고객 간 예약 중개\n   - 리뷰 및 평점 서비스\n   - 기타 회사가 정하는 서비스",
+    "termsContent": "본 약관은 주식회사 플랫폼몬스터(이하 \"회사\")가 운영하는 반언니 서비스(이하 \"서비스\")의 이용에 관한 조건 및 절차, 기타 필요한 사항을 규정함을 목적으로 합니다.\n\n제1조 (목적)\n본 약관은 회사가 제공하는 서비스의 이용조건 및 절차에 관한 기본적인 사항을 규정하는 것을 목적으로 합니다.\n\n제2조 (용어의 정의)\n1. \"서비스\"란 회사가 운영하는 반언니 플랫폼을 통해 제공하는 모든 서비스를 의미합니다.\n2. \"이용자\"란 이 약관에 따라 서비스를 이용하는 회원 및 비회원을 말합니다.\n3. \"회원\"이란 서비스에 회원등록을 하고 서비스를 이용하는 자를 말합니다.\n\n제3조 (약관의 효력 및 변경)\n1. 본 약관은 서비스를 이용하고자 하는 모든 이용자에게 그 효력이 발생합니다.\n2. 회사는 합리적인 사유가 발생한 경우 관련 법령에 위배되지 않는 범위 내에서 약관을 변경할 수 있습니다.\n\n제4조 (서비스의 제공)\n1. 회사는 다음과 같은 서비스를 제공합니다.\n   - 반영구 아티스트 검색 및 포트폴리오 열람\n   - 아티스트와 고객 간 예약 중개\n   - 리뷰 및 평점 서비스\n   - 기타 회사가 정하는 서비스",
     "privacy": "개인정보처리방침",
     "privacyContent": "주식회사 플랫폼몬스터(이하 \"회사\")는 정보통신망 이용촉진 및 정보보호 등에 관한 법률, 개인정보보호법 등 관련 법령에 따라 이용자의 개인정보를 보호하고 있습니다.\n\n1. 수집하는 개인정보 항목\n- 필수항목: 이메일, 비밀번호, 닉네임\n- 선택항목: 프로필 사진, 연락처\n- 서비스 이용 시 자동 수집: 접속 IP, 접속 일시, 서비스 이용 기록\n\n2. 개인정보의 수집 및 이용 목적\n- 서비스 제공 및 운영\n- 회원 관리 및 본인 확인\n- 서비스 개선 및 신규 서비스 개발\n- 마케팅 및 광고 활용 (동의 시)\n\n3. 개인정보의 보유 및 이용기간\n- 회원 탈퇴 시까지 (관련 법령에 따라 일정 기간 보존이 필요한 경우 해당 기간까지)\n- 전자상거래법에 따른 보존: 계약/청약철회 기록 5년, 대금결제 기록 5년, 소비자불만 기록 3년\n\n4. 개인정보의 제3자 제공\n- 회사는 이용자의 동의 없이 개인정보를 제3자에게 제공하지 않습니다.\n- 단, 법령에 의한 경우는 예외로 합니다.\n\n5. 개인정보 보호책임자\n- 성명: 김대성\n- 연락처: 010-8699-6664\n- 이메일: howtattoo@banunni.com",
     "contact": "고객센터",
@@ -499,7 +491,7 @@ export const STRINGS ={
     "contactHours": "운영시간: 평일 오전 10시 ~ 오후 7시 (주말 및 공휴일 휴무)",
     "partnership": "제휴문의",
     "partnershipDesc": "반언니와 함께할 파트너를 찾고 있습니다",
-    "partnershipContent": "타투 샵, 반영구 샵, 피어싱 샵 등 뷰티 업종 파트너십을 환영합니다. 제휴 문의는 아래 연락처로 부탁드립니다.",
+    "partnershipContent": "반영구 샵, 뷰티 샵 등 뷰티 업종 파트너십을 환영합니다. 제휴 문의는 아래 연락처로 부탁드립니다.",
     "comingSoon": "서비스 준비 중입니다",
     "comingSoonDesc": "더 나은 서비스로 찾아뵙겠습니다",
     "semiPermanent": "반영구",
@@ -511,9 +503,9 @@ export const STRINGS ={
     "exhibition": "기획전",
     "exhibitionDesc": "특별 기획전 모아보기",
     "quoteRequest": "견적 요청",
-    "quoteRequestDesc": "원하는 타투를 설명하고 아티스트들의 견적을 받아보세요",
+    "quoteRequestDesc": "원하는 시술을 설명하고 아티스트들의 견적을 받아보세요",
     "courseDetail": "수강 상세",
-    "courseDetailDesc": "타투 수강 상세 정보"
+    "courseDetailDesc": "수강 상세 정보"
   },
   "quoteRequest": {
     "title": "견적 요청",
@@ -529,7 +521,7 @@ export const STRINGS ={
     "budgetMax": "최대 예산",
     "budgetUnit": "원",
     "description": "상세 설명",
-    "descriptionPlaceholder": "원하는 타투에 대해 자세히 설명해주세요",
+    "descriptionPlaceholder": "원하는 시술에 대해 자세히 설명해주세요",
     "referenceImages": "참고 이미지",
     "referenceImagesDesc": "원하는 스타일의 참고 이미지를 첨부해주세요 (최대 5장)",
     "submit": "견적 요청 등록",
@@ -627,15 +619,15 @@ export const STRINGS ={
     "artistInfo": "아티스트 정보"
   },
   "seo": {
-    "homeTitle": "타투 아티스트 검색 플랫폼",
-    "homeDescription": "전국 타투 아티스트를 검색하고 포트폴리오를 확인하세요. 지역별, 장르별 검색으로 나에게 맞는 타투이스트를 찾아보세요.",
-    "searchTitle": "타투 아티스트 검색",
-    "searchDescription": "지역, 장르, 스타일별로 타투 아티스트를 검색하세요."
+    "homeTitle": "반영구 아티스트 검색 플랫폼",
+    "homeDescription": "전국 반영구 아티스트를 검색하고 포트폴리오를 확인하세요. 지역별, 장르별 검색으로 나에게 맞는 아티스트를 찾아보세요.",
+    "searchTitle": "반영구 아티스트 검색",
+    "searchDescription": "지역, 장르, 스타일별로 반영구 아티스트를 검색하세요."
   },
   "artistRegister": {
     "title": "아티스트 등록",
     "type": "유형",
-    "typeTattoo": "타투",
+    "typeSemiPermanentMakeup": "반영구",
     "typeSemiPermanent": "반영구",
     "artistName": "아티스트 명",
     "artistNamePlaceholder": "아티스트 명을 입력해주세요",
@@ -694,15 +686,15 @@ export const STRINGS ={
     "shareExperience": "시술 경험을 공유해주세요.",
     "invalidAccess": "잘못된 접근입니다. 아티스트 정보가 없습니다.",
     "pageTitle": "리뷰 작성",
-    "pageDescription": "타투 시술 리뷰를 작성해주세요."
+    "pageDescription": "시술 리뷰를 작성해주세요."
   },
   "genreData": {
     "genreTitle": "장르",
-    "genreItems": "치카노,이레즈미,폴리네시안,감성타투,미니타투,수채화,일러스트,리얼리스틱,레터링,트라이벌,블랙워크,올드스쿨,뉴스쿨,블랙앤그레이,라인워크,커버업,기타",
-    "subjectTitle": "주제",
-    "subjectItems": "꽃,장미,고래,맹수,나침반,만다라,한야,해골,뱀,용,잉어,동양철학,인물,다크,커플,가족,반려동물,동물,기타",
+    "genreItems": "눈썹,아이라인,입술,헤어라인,SMP,속눈썹,점제거,흉터커버,유두,기타",
+    "subjectTitle": "시술타입",
+    "subjectItems": "콤보,엠보,머신,수지,파우더,그라데이션,풀립,하프,웨트,드라이,기타",
     "partTitle": "부위",
-    "partItems": "목,귀,배,팔,종아리,발,다리,손등,손목,발목,아랫팔,허벅지,가슴,어깨,쇄골,옆구리,무릎,머리,얼굴,등판,엉덩이,두피,팔꿈치,손가락,긴팔,윗팔"
+    "partItems": "눈썹,눈,입술,헤어라인,두피,볼,이마,턱,목,기타"
   },
   "exhibition": {
     "submitPortfolio": "작품 출품하기",
@@ -723,37 +715,15 @@ export const STRINGS ={
     "portfolioCount": "개 작품"
   },
   "aiStudio": {
-    "comingSoonDesc": "곧 출시됩니다! AI가 당신만의 유니크한 타투 디자인을 생성해 드립니다. 아이디어만 설명하면, 그림 실력이 없어도 됩니다.",
-    "feature1": "텍스트로 타투 디자인 생성",
-    "feature2": "다양한 스타일 선택 (미니멀, 트라이벌, 수채화 등)",
-    "feature3": "크기와 배치 시뮬레이션",
-    "feature4": "디자인 저장 및 아티스트 공유",
-    "title": "AI 타투 스튜디오",
-    "tabGenerate": "디자인 생성",
-    "tabTryon": "가상 착용",
-    "promptPlaceholder": "원하는 타투를 설명하세요 (예: 장미 타투, 미니멀 스타일)",
-    "styleLabel": "스타일",
-    "generateBtn": "타투 생성",
+    "title": "AI 뷰티 시뮬레이션",
+    "comingSoonDesc": "AI가 내 얼굴에 맞는 반영구 시술을 미리 보여드립니다.",
+    "feature1": "눈썹 시뮬레이션",
+    "feature2": "다양한 스타일 선택",
+    "feature3": "실시간 미리보기",
+    "feature4": "결과 저장 및 공유",
     "generating": "생성 중...",
-    "tryonTitle": "내 몸에 타투 입혀보기",
-    "tryonDesc": "신체 사진을 업로드하고, 타투 디자인을 선택하면 실제로 새긴 것처럼 합성해 드립니다.",
-    "uploadBody": "신체 사진 업로드",
-    "uploadTattoo": "타투 디자인 업로드",
-    "clickToMask": "타투를 배치할 부위를 클릭하세요",
-    "applyTattoo": "타투 합성하기",
-    "applying": "합성 중...",
     "downloadResult": "결과 다운로드",
-    "newDesign": "새 디자인",
-    "styles": {
-      "minimal": "미니멀",
-      "blackwork": "블랙워크",
-      "watercolor": "수채화",
-      "traditional": "올드스쿨",
-      "realism": "리얼리즘",
-      "japanese": "일본식",
-      "geometric": "기하학",
-      "dotwork": "도트워크"
-    }
+    "newDesign": "새 디자인"
   },
   "globalSearch": {
     "headerSearchPlaceholder": "포트폴리오, 아티스트 검색",
@@ -766,7 +736,6 @@ export const STRINGS ={
   },
   "community": {
     "title": "커뮤니티",
-    "tattoo": "타투",
     "beauty": "반영구",
     "qna": "QNA",
     "freeTalk": "자유수다",
@@ -834,9 +803,9 @@ export const STRINGS ={
     "inquire": "수강 문의하기",
     "viewInstagram": "인스타그램 보기",
     "courseList": "수강",
-    "courseListDesc": "타투 수강 프로그램을 찾아보세요",
-    "heroTitle": "베테랑 타투이스트들의\n타투 수강 모아보기!",
-    "heroSubtitle": "현업 타투이스트와 함께 하는 타투 집중 교육,\n준비 되셨나요?",
+    "courseListDesc": "반영구 수강 프로그램을 찾아보세요",
+    "heroTitle": "베테랑 아티스트들의\n반영구 수강 모아보기!",
+    "heroSubtitle": "현업 아티스트와 함께 하는 반영구 집중 교육,\n준비 되셨나요?",
     "allCategories": "전체",
     "comprehensive": "종합반",
     "singleSubject": "단과반",

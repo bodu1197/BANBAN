@@ -194,7 +194,7 @@ export async function pickRelatedPortfolioImages(
 ): Promise<{ url: string; alt: string }[]> {
   const supabase = createAdminClient();
   const bucketUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/portfolios`;
-  const cleaned = keyword.replace(/\s*타투\s*$/, "").trim();
+  const cleaned = keyword.replace(/\s*(타투|반영구)\s*$/, "").trim();
 
   const portfolioIds = await findCategoryPortfolioIds(supabase, cleaned, limit);
 

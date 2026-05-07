@@ -11,17 +11,15 @@ function toImageUrl(path: string): string {
 }
 
 const CATEGORY_LABELS: Record<string, Record<string, string>> = {
-    TATTOO: { ko: "타투", en: "Tattoo", ja: "タトゥー", zh: "纹身" },
-    WOMENS_BEAUTY: { ko: "여자뷰티", en: "Women's Beauty", ja: "女性ビューティー", zh: "女性美容" },
-    MENS_BEAUTY: { ko: "남자뷰티", en: "Men's Beauty", ja: "男性ビューティー", zh: "男性美容" },
-    TATTOO_COURSE: { ko: "타투수강", en: "Tattoo Course", ja: "タトゥー講座", zh: "纹身课程" },
+    WOMENS_BEAUTY: { ko: "여자뷰티" },
+    MENS_BEAUTY: { ko: "남자뷰티" },
+    SEMI_PERMANENT: { ko: "반영구" },
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-    TATTOO: "bg-purple-500/80",
+    SEMI_PERMANENT: "bg-purple-500/80",
     WOMENS_BEAUTY: "bg-pink-500/80",
     MENS_BEAUTY: "bg-blue-500/80",
-    TATTOO_COURSE: "bg-amber-500/80",
 };
 
 function getCategoryLabel(category: string): string {

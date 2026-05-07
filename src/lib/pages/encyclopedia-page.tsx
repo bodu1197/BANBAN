@@ -12,9 +12,9 @@ import { getAlternates } from "@/lib/seo";
 const PER_PAGE = 60;
 
 export async function generateEncyclopediaListMetadata(): Promise<Metadata> {
-  const title = "타투 백과사전 — 스타일·관리·역사 가이드";
+  const title = "반영구 백과사전 — 스타일·관리·시술 가이드";
   const description =
-    "타투 스타일, 부위별 가이드, 애프터케어, 역사·문화, 법률·안전, 반영구 메이크업까지 — 타투에 관한 모든 것을 정리한 한국어 백과사전.";
+    "반영구 스타일, 부위별 가이드, 애프터케어, 관리법, 시술 안전 — 반영구 메이크업에 관한 모든 것을 정리한 한국어 백과사전.";
   return {
     title,
     description,
@@ -151,9 +151,9 @@ export async function renderEncyclopediaListPage(options: {
   return (
     <div className="mx-auto w-full max-w-[767px]">
       <header className="border-b border-border px-4 py-5">
-        <h1 className="text-lg font-bold md:text-xl">타투 백과사전</h1>
+        <h1 className="text-lg font-bold md:text-xl">반영구 백과사전</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          전문 에디터가 정리한 타투 지식 {count.toLocaleString()}편 — 매일 새로운 글이
+          전문 에디터가 정리한 반영구 지식 {count.toLocaleString()}편 — 매일 새로운 글이
           업데이트됩니다.
         </p>
       </header>

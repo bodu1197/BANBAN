@@ -76,7 +76,7 @@ async function fetchCategoryId(style: string): Promise<string | null> {
     .from("categories")
     .select("id")
     .eq("name", style)
-    .eq("artist_type", "TATTOO")
+    .eq("artist_type", "SEMI_PERMANENT")
     .limit(1)
     .single();
   return (data as { id: string } | null)?.id ?? null;
@@ -187,7 +187,7 @@ async function generateAndStore(
       meta_description: page.meta_description,
       keywords: page.keywords,
       cover_image_url: ctx.cover_image_url,
-      cover_image_alt: `${ctx.region_name} ${ctx.style} 타투`,
+      cover_image_alt: `${ctx.region_name} ${ctx.style} 반영구`,
       faq: page.faq,
       artist_count: ctx.artist_count,
       portfolio_count: ctx.portfolio_count,

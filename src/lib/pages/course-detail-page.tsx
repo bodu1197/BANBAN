@@ -10,7 +10,7 @@ export async function generateCourseDetailMetadata(id: string): Promise<Metadata
 
     return {
         title: `${course.title} - ${course.artistName}`,
-        description: course.description?.slice(0, 160) ?? `${course.category} 타투 수강`,
+        description: course.description?.slice(0, 160) ?? `${course.category} 반영구 수강`,
         openGraph: {
             images: course.images[0]?.imageUrl ? [course.images[0].imageUrl] : [],
         },

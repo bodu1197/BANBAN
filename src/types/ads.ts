@@ -100,7 +100,7 @@ export interface PointTransaction {
 export interface PointRule {
     reason: PointReason;
     amount: number;
-    /** 반���구 아티스트 전용 지급액 (타투 대비 ~30%). 없으면 amount 사용 */
+    /** 반영구 아티스트 전용 지급액. 없으면 amount 사용 */
     semiAmount?: number;
     label: string;
     /** "ARTIST" 전용, "USER" 전용, "ALL" = 양쪽 */

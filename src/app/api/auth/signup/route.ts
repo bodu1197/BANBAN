@@ -24,7 +24,7 @@ function generateNickname(): string {
   crypto.getRandomValues(buf);
   let suffix = "";
   for (const b of buf) suffix += chars[b % chars.length];
-  return `tattoo_${suffix}`;
+  return `ban_${suffix}`;
 }
 
 // 아이디: 영문자로 시작, 영문+숫자만, 4-12자

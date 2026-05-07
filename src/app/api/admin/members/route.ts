@@ -98,14 +98,13 @@ async function handlePasswordChange(supabase: SupabaseClient, userId: string, pa
 // ─── Tab Query Builders ──────────────────────────────────
 
 const ARTIST_TYPE_FILTERS: Record<string, string> = {
-    tattoo: "type_artist.eq.TATTOO,type_artist.eq.BOTH",
     semi_permanent: "type_artist.eq.SEMI_PERMANENT,type_artist.eq.BOTH",
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, limit: number, sort: { column: string; ascending: boolean }) {
-    if (tab === "tattoo" || tab === "semi_permanent") {
-        const filter = tab === "tattoo" ? ARTIST_TYPE_FILTERS.tattoo : ARTIST_TYPE_FILTERS.semi_permanent;
+    if (tab === "semi_permanent") {
+        const filter = ARTIST_TYPE_FILTERS.semi_permanent;
         return supabase
             .from("profiles")
             .select(`${PROFILE_COLUMNS}, artists!inner(id, type_artist)`, { count: "exact" })

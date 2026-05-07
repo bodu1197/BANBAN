@@ -226,7 +226,7 @@ export async function earnPointsWithLimit(params: EarnPointsParams): Promise<Poi
 
 // ─── Welcome Bonus ──────────────────────────────────────
 
-/** Grant welcome bonus to a new artist (타투: 100,000P / 반영구: 30,000P) */
+/** Grant welcome bonus to a new artist (30,000P) */
 export async function grantWelcomeBonus(userId: string): Promise<PointTransaction> {
     const wallet = await getOrCreateWallet(userId);
     const supabase = createAdminClient();

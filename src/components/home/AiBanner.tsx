@@ -22,7 +22,7 @@ function FeaturePill({ icon, label }: Readonly<{ icon: React.ReactNode; label: s
     );
 }
 
-/** Floating tattoo-inspired SVG motifs */
+/** Floating SVG motifs */
 function AnimatedBackground(): React.ReactElement {
     return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -32,7 +32,7 @@ function AnimatedBackground(): React.ReactElement {
             <div className="animate-ai-fade absolute right-1/4 top-1/3 h-14 w-14 rounded-full bg-pink-500/20 [animation-delay:3.5s] blur-3xl" />
 
 
-            {/* Tattoo needle / line art — drifts up-right */}
+            {/* Line art motif — drifts up-right */}
             <svg className="animate-ai-float-1 absolute bottom-4 left-6 h-16 w-16 text-white/15" viewBox="0 0 64 64" fill="none" aria-hidden="true">
                 <path d="M12 52 L32 12 L36 14 L18 54 Z" fill="currentColor" />
                 <circle cx="34" cy="10" r="3" fill="currentColor" opacity="0.6" />
@@ -54,7 +54,7 @@ function AnimatedBackground(): React.ReactElement {
                 <circle cx="40" cy="20" r="8" stroke="currentColor" strokeWidth="0.5" className="animate-ai-pulse-ring" />
             </svg>
 
-            {/* Mandala / tattoo pattern — slow drift */}
+            {/* Mandala pattern — slow drift */}
             <svg className="animate-ai-float-3 absolute left-1/3 top-1 h-14 w-14 text-white/8" viewBox="0 0 56 56" fill="none" aria-hidden="true">
                 <circle cx="28" cy="28" r="12" stroke="currentColor" strokeWidth="0.8" />
                 <circle cx="28" cy="28" r="20" stroke="currentColor" strokeWidth="0.5" strokeDasharray="4 3" />

@@ -37,7 +37,7 @@ function buildPrompt(ctx: WeeklyTrendContext): string {
     .map((it, i) => `${i + 1}. ${it.title} — ${it.artist_name}${it.category ? ` (${it.category})` : ""} · ❤ ${it.likes}`)
     .join("\n");
   return [
-    `당신은 한국 타투 매거진의 주간 큐레이션 에디터입니다.`,
+    `당신은 한국 반영구 뷰티 매거진의 주간 큐레이션 에디터입니다.`,
     `${ctx.week_start} ~ ${ctx.week_end} 주간 인기 작품을 소개하는 한국어 큐레이션 글을 400~600자로 작성하세요.`,
     ``,
     `# 주간 데이터`,
@@ -54,7 +54,7 @@ function buildPrompt(ctx: WeeklyTrendContext): string {
     ``,
     `# 출력 형식 (반드시 valid JSON)`,
     `{`,
-    `  "title": "${ctx.week_start} 주간 인기 타투 트렌드 (60자 이내)",`,
+    `  "title": "${ctx.week_start} 주간 인기 반영구 트렌드 (60자 이내)",`,
     `  "meta_description": "150자 이내 SEO 설명",`,
     `  "introduction": "이번 주 트렌드 도입 1문단",`,
     `  "trends_analysis": "트렌드 분석 2~3문단",`,
@@ -76,7 +76,7 @@ export async function generateWeeklyTrend(
 ): Promise<GeneratedWeeklyTrend> {
   const raw = await callOpenAiJson<RawAi>(buildPrompt(ctx));
   return {
-    title: raw.title?.trim() || `${ctx.week_start} 주간 인기 타투`,
+    title: raw.title?.trim() || `${ctx.week_start} 주간 인기 반영구`,
     intro: buildIntro(raw),
     meta_description: raw.meta_description?.trim() ?? "",
   };

@@ -321,7 +321,7 @@ function buildBreadcrumbJsonLd(article: EncyclopediaArticle): string {
   return JSON.stringify(
     getBreadcrumbJsonLd([
       { name: "홈", path: "" },
-      { name: "타투 백과사전", path: "/encyclopedia" },
+      { name: "반영구 백과사전", path: "/encyclopedia" },
       { name: article.title, path: `/encyclopedia/${article.slug}` },
     ]),
   );

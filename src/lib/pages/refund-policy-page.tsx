@@ -47,7 +47,7 @@ export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
               <strong>1:1 주문 제작 작품:</strong> 아티스트가 고객님의 요청에 따라 별도로 제작에 착수한 커스텀 도안 및 작품은 작업 시작 후 취소 및 환불이 불가합니다.
             </li>
             <li>
-              <strong>포장 개봉 및 사용:</strong> 타투 보호 필름을 제거했거나, 상품의 포장을 개봉하여 가치가 훼손된 경우.
+              <strong>포장 개봉 및 사용:</strong> 보호 필름을 제거했거나, 상품의 포장을 개봉하여 가치가 훼손된 경우.
             </li>
             <li>
               <strong>복제 가능 상품:</strong> 도안의 특성상 상품을 확인한 것만으로도 디자인 복제가 가능하므로, 단순 변심에 의한 개봉 후 반품은 불가합니다.

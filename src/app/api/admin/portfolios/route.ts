@@ -57,14 +57,13 @@ function buildPortfolioFilter(search: string, artistIds: string[]): string {
 const PORTFOLIO_COLUMNS = "id, title, description, price_origin, price, discount_rate, likes_count, views_count, created_at, deleted_at";
 
 const ARTIST_TYPE_FILTERS: Record<string, string> = {
-    tattoo: "type_artist.eq.TATTOO,type_artist.eq.BOTH",
     semi_permanent: "type_artist.eq.SEMI_PERMANENT,type_artist.eq.BOTH",
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, limit: number) {
-    if (tab === "tattoo" || tab === "semi_permanent") {
-        const filter = tab === "tattoo" ? ARTIST_TYPE_FILTERS.tattoo : ARTIST_TYPE_FILTERS.semi_permanent;
+    if (tab === "semi_permanent") {
+        const filter = ARTIST_TYPE_FILTERS.semi_permanent;
         return supabase
             .from("portfolios")
             .select(`${PORTFOLIO_COLUMNS}, artist:artists!inner(id, title, profile_image_path, type_artist)`, { count: "exact" })

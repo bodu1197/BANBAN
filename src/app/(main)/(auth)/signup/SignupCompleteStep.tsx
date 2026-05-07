@@ -69,13 +69,13 @@ export function SignupCompleteStep({ user,
         <RoleCard
           icon={<User className="h-6 w-6" />}
           title="일반 회원"
-          description="타투 작품 구경 및 아티스트 검색"
+          description="반영구 작품 구경 및 아티스트 검색"
           onClick={onStartService}
           variant="default"
         />
         <RoleCard
           icon={<Palette className="h-6 w-6" />}
-          title="타투 아티스트"
+          title="반영구 아티스트"
           description="포트폴리오 등록 및 고객 관리"
           onClick={onArtistRegister}
           variant="artist"

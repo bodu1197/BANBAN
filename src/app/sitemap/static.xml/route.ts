@@ -1,7 +1,7 @@
 import { buildUrlEntry, wrapUrlset, xmlResponse } from "@/lib/sitemap-utils";
 
 const STATIC_PAGES = [
-  "", "/tattoo", "/artists", "/portfolios", "/about", "/terms",
+  "", "/artists", "/portfolios", "/about", "/terms",
   "/privacy", "/refund-policy", "/contact", "/partnership", "/women-beauty", "/mens-beauty",
   "/exhibition", "/discount", "/community", "/courses", "/blog", "/artist-insight", "/encyclopedia",
 ];

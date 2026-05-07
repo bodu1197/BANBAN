@@ -1503,7 +1503,6 @@ export type Like = Tables<'likes'>
 export type Banner = Tables<'banners'>
 export type Exhibition = Tables<'exhibitions'>
 export type ArtistMedia = Tables<'artist_media'>
-export type AiGeneratedTattoo = Tables<'ai_generated_tattoos'>
 export type PointWalletRow = Tables<'point_wallets'>
 export type PointTransactionRow = Tables<'point_transactions'>
 export type PointPolicy = Tables<'point_policies'>

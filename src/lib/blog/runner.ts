@@ -119,7 +119,7 @@ async function pickPortfolio(
   return {
     ctx: {
       portfolio_id: row.id,
-      portfolio_title: row.title ?? "타투 작품",
+      portfolio_title: row.title ?? "반영구 작품",
       portfolio_description: row.description,
       artist_id: row.artist_id,
       artist_name: row.artists?.title ?? "익명 아티스트",

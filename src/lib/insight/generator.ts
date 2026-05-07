@@ -30,7 +30,7 @@ interface RawAi {
 }
 
 function buildPrompt(ctx: InsightArtistContext): string {
-  const kind = ctx.type_artist === "SEMI_PERMANENT" ? "반영구 메이크업" : "타투";
+  const kind = "반영구 메이크업";
   return [
     `당신은 한국 ${kind} 매거진의 에디터입니다.`,
     `다음 아티스트를 소개하는 700~1000자 분량의 한국어 SEO 인사이트 글을 작성하세요.`,
