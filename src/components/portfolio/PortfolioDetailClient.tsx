@@ -104,7 +104,7 @@ const REPORT_REASONS = [
   { value: "OTHER", label: "기타" },
 ] as const;
 
-// eslint-disable-next-line max-lines-per-function, complexity
+// eslint-disable-next-line max-lines-per-function
 export function PortfolioDetailClient({
   portfolio,
   firstImageUrl,
