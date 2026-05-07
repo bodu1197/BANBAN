@@ -4,7 +4,6 @@
 import { STRINGS } from "@/lib/strings";
 import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { Heart, Edit2, Pencil, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,11 +12,9 @@ import { PortfolioMediaViewer } from "./PortfolioMediaViewer";
 import { PortfolioHeader } from "./PortfolioHeader";
 import { PortfolioInfoSection } from "./PortfolioInfoSection";
 import { extractYouTubeId } from "@/components/portfolio-form/media-upload";
-const PortfolioArtistSection = dynamic(() => import("./PortfolioArtistSection").then(m => m.PortfolioArtistSection));
-const PortfolioRecommendations = dynamic(() => import("./PortfolioRecommendations").then(m => m.PortfolioRecommendations));
-import type { PortfolioDetails, PortfolioWithMedia, PortfolioRecommendation } from "@/lib/supabase/queries";
+import type { PortfolioDetails } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
-import { getAvatarUrl, getStorageUrl } from "@/lib/supabase/storage-utils";
+import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { togglePortfolioLike } from "@/lib/actions/portfolio-likes";
 import { reportContent } from "@/lib/actions/report";
@@ -51,19 +48,9 @@ function useCanEdit(userId: string | undefined, myArtistId: string | undefined, 
 
 interface PortfolioDetailClientProps {
   portfolio: PortfolioDetails;
-  artistPortfolios: PortfolioWithMedia[];
-  artistPortfolioCount: number;
-    firstImageUrl?: string | null;
+  firstImageUrl?: string | null;
   heroMedia?: React.ReactNode;
-  /** Server pre-sanitized description HTML — sanitize-html을 client 번들에서 제외하기 위함. */
   descriptionHtml: string;
-  recommendations: {
-    otherCustomersViewed: PortfolioRecommendation[];
-    lowerPrice: PortfolioRecommendation[];
-    higherPrice: PortfolioRecommendation[];
-    sameBodyPart: PortfolioRecommendation[];
-    styleSuggestions: PortfolioRecommendation[];
-  };
 }
 
 async function handleToggleLike(
@@ -120,13 +107,9 @@ const REPORT_REASONS = [
 // eslint-disable-next-line max-lines-per-function, complexity
 export function PortfolioDetailClient({
   portfolio,
-  artistPortfolios,
-  artistPortfolioCount,
-
   firstImageUrl,
   heroMedia,
   descriptionHtml,
-  recommendations,
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
   const [isLiked, setIsLiked] = useState(Boolean(portfolio.is_liked));
   const [likesCount, setLikesCount] = useState(portfolio.likes_count ?? 0);
@@ -136,8 +119,6 @@ export function PortfolioDetailClient({
 
   const artist = portfolio.artist;
   const address = artist.region?.name ?? artist.address ?? "";
-  const artistHref = `/artists/${artist.id}`;
-  const artistAvatar = getAvatarUrl(artist.profile_image_path ?? null);
 
   const handleLikeToggle = useCallback(
     () => handleToggleLike(portfolio.id, setIsLiked, setLikesCount, STRINGS.common.likeAdded, STRINGS.common.likeRemoved),
@@ -158,18 +139,6 @@ export function PortfolioDetailClient({
     linkCopied: STRINGS.common.linkCopied,
     reportComingSoon: STRINGS.common.reportComingSoon,
   }), []);
-
-  const recommendLabels = useMemo(() => ({
-    recommend: STRINGS.portfolio.recommend,
-    othersViewed: STRINGS.portfolio.othersViewed,
-    lowerPriceTitle: STRINGS.portfolio.lowerPrice,
-    higherPriceTitle: STRINGS.portfolio.higherPrice,
-    samePart: STRINGS.portfolio.samePart,
-    recommended: STRINGS.portfolio.recommended,
-    currencyUnit: STRINGS.common.currencyUnit,
-  }), []);
-
-  const totalCountLabel = STRINGS.artist.totalCount.replace("{count}", String(artistPortfolioCount));
 
   const handleReport = useCallback(() => {
     if (!user) {
@@ -219,27 +188,6 @@ export function PortfolioDetailClient({
         editHref={canEdit ? `/mypage/artist/portfolios/edit/${portfolio.id}` : null}
         likesLabel={STRINGS.artist.likes}
         reviewLabel={STRINGS.portfolio.writeReview}
-      />
-
-      <PortfolioArtistSection
-        artistName={artist.title}
-        artistAvatar={artistAvatar}
-        artistHref={artistHref}
-        address={address}
-        totalCountLabel={totalCountLabel}
-        seeAllLabel={STRINGS.common.seeAll}
-        sectionTitle={STRINGS.pages.artistsList}
-        artistPortfolios={artistPortfolios}
-        artistPortfolioCount={artistPortfolioCount}
-      />
-
-      <PortfolioRecommendations
-        otherCustomersViewed={recommendations.otherCustomersViewed}
-        lowerPrice={recommendations.lowerPrice}
-        higherPrice={recommendations.higherPrice}
-        sameBodyPart={recommendations.sameBodyPart}
-        styleSuggestions={recommendations.styleSuggestions}
-        labels={recommendLabels}
       />
 
       <PortfolioBottomBar

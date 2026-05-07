@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -14,9 +15,11 @@ import {
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
 import { PortfolioDetailClient } from "@/components/portfolio/PortfolioDetailClient";
+import { PortfolioSecondarySection } from "@/components/portfolio/PortfolioSecondarySection";
 import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
+import type { ArtistType } from "@/types/database";
 
 function buildHeroMedia(url: string | null, title: string): React.ReactElement | null {
     if (!url) return null;
@@ -37,20 +40,14 @@ function buildHeroMedia(url: string | null, title: string): React.ReactElement |
 }
 
 export async function generatePortfolioDetailMetadata(id: string): Promise<Metadata> {
-    // Legacy numeric ID → 301 redirect to UUID URL
     if (isLegacyNumericId(id)) {
         const uuid = await findPortfolioByLegacyId(Number(id));
-        if (uuid) {
-            permanentRedirect(`/portfolios/${uuid}`);
-        }
+        if (uuid) permanentRedirect(`/portfolios/${uuid}`);
         return { title: "Portfolio Not Found" };
     }
 
     const portfolio = await fetchPortfolioById(id);
-
-    if (!portfolio) {
-        return { title: "Portfolio Not Found" };
-    }
+    if (!portfolio) return { title: "Portfolio Not Found" };
 
     return {
         title: portfolio.title,
@@ -69,47 +66,77 @@ async function handleLegacyRedirect(id: string): Promise<void> {
     notFound();
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-async function fetchSecondaryData(id: string, portfolio: NonNullable<Awaited<ReturnType<typeof fetchPortfolioById>>>) {
-    const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as import("@/types/database").ArtistType;
+async function StreamedSecondaryData({ id, artistId, artistType, price, artist }: Readonly<{
+    id: string;
+    artistId: string;
+    artistType: ArtistType;
+    price: number;
+    artist: {
+        id: string;
+        title: string;
+        profile_image_path: string | null;
+        address: string;
+        region?: { name: string } | null;
+    };
+}>): Promise<React.ReactElement> {
     const [
-        isLiked,
         { data: artistPortfolios, count: artistPortfolioCount },
         otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions,
     ] = await Promise.all([
-        isPortfolioLiked(id),
-        fetchPortfoliosByArtist(portfolio.artist_id, { limit: 10 }),
+        fetchPortfoliosByArtist(artistId, { limit: 10 }),
         fetchRandomPortfolios(id, artistType, 5),
-        fetchLowerPricePortfolios(portfolio.price ?? 0, id, artistType, 5),
-        fetchHigherPricePortfolios(portfolio.price ?? 0, id, artistType, 5),
+        fetchLowerPricePortfolios(price, id, artistType, 5),
+        fetchHigherPricePortfolios(price, id, artistType, 5),
         fetchSameCategoryPortfolios(id, artistType, 5),
         fetchRandomPortfolios(id, artistType, 5),
     ]);
-    return {
-        isLiked,
-        artistPortfolios: artistPortfolios.filter(p => p.id !== id),
-        artistPortfolioCount,
-        recommendations: { otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions },
-    };
+
+    return (
+        <PortfolioSecondarySection
+            artist={artist}
+            artistPortfolios={artistPortfolios.filter(p => p.id !== id)}
+            artistPortfolioCount={artistPortfolioCount}
+            recommendations={{ otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions }}
+        />
+    );
+}
+
+function RecommendationsSkeleton(): React.ReactElement {
+    return (
+        <div className="space-y-6 px-4 py-6">
+            {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-3">
+                    <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+                    <div className="flex gap-3 overflow-hidden">
+                        {[1, 2, 3, 4].map((j) => (
+                            <div key={j} className="w-32 shrink-0 space-y-2">
+                                <div className="aspect-square w-full animate-pulse rounded-lg bg-muted" />
+                                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                                <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 export async function renderPortfolioDetailPage(id: string): Promise<React.ReactElement> {
     await handleLegacyRedirect(id);
 
-    const portfolio = await fetchPortfolioById(id);
+    const [portfolio, isLiked] = await Promise.all([
+        fetchPortfolioById(id),
+        isPortfolioLiked(id),
+    ]);
 
     if (!portfolio) notFound();
 
     incrementPortfolioViews(id).catch(() => { /* non-fatal */ });
-
-    const { isLiked, artistPortfolios: filteredArtistPortfolios, artistPortfolioCount, recommendations } = await fetchSecondaryData(id, portfolio);
     portfolio.is_liked = isLiked;
 
-    // Extract first media URL for server-side LCP rendering
     const firstImageUrl = getStorageUrl(portfolio.portfolio_media?.[0]?.storage_path ?? null);
     const heroMedia = buildHeroMedia(firstImageUrl, portfolio.title);
-
-    // Preload LCP image in <head> to eliminate resource load delay (~1.4s saving)
     const preloadUrl = firstImageUrl
         ? `/_next/image?url=${encodeURIComponent(firstImageUrl)}&w=828&q=65`
         : null;
@@ -122,6 +149,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     const parsedDescription = parseDescriptionText(portfolio.description);
     const descriptionHtml = parsedDescription || STRINGS.portfolio.noDescription;
+    const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as ArtistType;
 
     return (
         <main className="mx-auto min-h-screen max-w-[767px] bg-background">
@@ -134,13 +162,19 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
             />
             <PortfolioDetailClient
                 portfolio={portfolio}
-                artistPortfolios={filteredArtistPortfolios}
-                artistPortfolioCount={artistPortfolioCount}
                 firstImageUrl={firstImageUrl}
                 heroMedia={heroMedia}
                 descriptionHtml={descriptionHtml}
-                recommendations={recommendations}
             />
+            <Suspense fallback={<RecommendationsSkeleton />}>
+                <StreamedSecondaryData
+                    id={id}
+                    artistId={portfolio.artist_id}
+                    artistType={artistType}
+                    price={portfolio.price ?? 0}
+                    artist={portfolio.artist}
+                />
+            </Suspense>
         </main>
     );
 }
