@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { resolve } from "node:path";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -106,6 +107,19 @@ const nextConfig: NextConfig = {
       "class-variance-authority",
       "tailwind-merge",
     ],
+  },
+
+  // Replace Next.js built-in polyfills with empty module.
+  // Browserslist targets (Chrome 100+, Safari 15.4+, Firefox 100+) natively
+  // support all APIs polyfilled by polyfill-module.js (~14KB savings).
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "next/dist/build/polyfills/polyfill-module": resolve("src/lib/empty-polyfill.js"),
+      };
+    }
+    return config;
   },
 
   // Compiler options
