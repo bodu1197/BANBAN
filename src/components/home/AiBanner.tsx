@@ -27,6 +27,8 @@ export function AiBanner({ imageUrl, linkUrl, altText }: Readonly<AiBannerProps>
         className="h-auto w-full"
         quality={75}
         priority
+        loading="eager"
+        fetchPriority="high"
       />
     </Link>
   );

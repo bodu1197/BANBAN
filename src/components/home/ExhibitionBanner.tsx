@@ -26,6 +26,8 @@ export function ExhibitionBanner({ imageUrl, linkUrl, altText }: Readonly<Exhibi
         className="h-auto w-full"
         quality={75}
         priority
+        loading="eager"
+        fetchPriority="high"
       />
     </Link>
   );
