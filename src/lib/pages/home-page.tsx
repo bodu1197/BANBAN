@@ -12,7 +12,7 @@ import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
-import { fetchPromoBanners, fetchHomeBanners } from "@/lib/supabase/banner-queries";
+import { fetchPromoBanners, fetchHomeBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 
@@ -148,11 +148,12 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const [promoBanners, homeBanners] = await Promise.all([
+  const [promoBanners, homeBanners, quickMenuItems] = await Promise.all([
     safe(() => fetchPromoBanners(), []),
     safe(() => fetchHomeBanners(), []),
+    safe(() => fetchQuickMenuItems(), []),
   ]);
-  return { promoBanners, homeBanners };
+  return { promoBanners, homeBanners, quickMenuItems };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -251,7 +252,7 @@ function HomeBottomSkeleton(): React.ReactElement {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const topData = await fetchTopHomeData();
-  const { promoBanners, homeBanners } = topData;
+  const { promoBanners, homeBanners, quickMenuItems } = topData;
 
   const exhibitionBanner = homeBanners.find((b) => b.slot === "exhibition");
   const aiBanner = homeBanners.find((b) => b.slot === "ai-matching");
@@ -259,7 +260,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
       <div className="mx-auto w-full max-w-[767px]">
-        <QuickMenu />
+        <QuickMenu items={quickMenuItems} />
         {(exhibitionBanner ?? aiBanner) ? (
           <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">
             {exhibitionBanner ? (

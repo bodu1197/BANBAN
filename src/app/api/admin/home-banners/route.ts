@@ -9,7 +9,7 @@ export async function GET(): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   const { data, error } = await auth.supabase
-    .from("home_banners" as "banners")
+    .from("home_banners")
     .select(COLUMNS)
     .order("slot", { ascending: true });
 
@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (body.is_active !== undefined) updates.is_active = body.is_active;
 
   const { data, error } = await auth.supabase
-    .from("home_banners" as "banners")
+    .from("home_banners")
     .update(updates)
     .eq("id", body.id)
     .select(COLUMNS)

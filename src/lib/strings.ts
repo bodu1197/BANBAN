@@ -332,18 +332,7 @@ export const STRINGS ={
     "tattooGenres": "반영구 장르별 인기 작품",
     "allGenre": "전체"
   },
-  "quickMenu": {
-    "womenBeauty": "여성 반영구",
-    "mensBeauty": "남성 반영구",
-    "exhibition": "기획전",
-    "artistSearch": "아티스트 검색",
-    "discount": "할인시술",
-    "artistInsight": "아티스트 분석",
-    "course": "수강",
-    "community": "커뮤니티",
-    "blog": "블로그",
-    "benefits": "혜택모음"
-  },
+  "quickMenu": {},
   "portfolioSearch": {
     "totalCount": "총 {count}개",
     "noResults": "검색 결과가 없습니다",

@@ -9,9 +9,15 @@
       "mcp__filesystem__read_multiple_files",
       "mcp__fetch__fetch_txt",
       "mcp__fetch__fetch_html",
-      "mcp__fetch__fetch_youtube_transcript"
+      "mcp__fetch__fetch_youtube_transcript",
+      "Bash(node *)"
     ]
   },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "sequential-thinking",
+    "context7"
+  ],
   "hooks": {
     "Stop": [
       {
@@ -38,10 +44,5 @@
         ]
       }
     ]
-  },
-  "enabledMcpjsonServers": [
-    "playwright",
-    "sequential-thinking",
-    "context7"
-  ]
+  }
 }

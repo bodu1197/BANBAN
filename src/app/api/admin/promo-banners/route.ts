@@ -31,7 +31,7 @@ export async function GET(): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   const { data, error } = await auth.supabase
-    .from("promo_banners" as "banners")
+    .from("promo_banners")
     .select(COLUMNS)
     .order("order_index", { ascending: true })
     .order("created_at", { ascending: false });
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const { data, error } = await auth.supabase
-    .from("promo_banners" as "banners")
+    .from("promo_banners")
     .insert({
       title: body.title ?? "",
       subtitle: body.subtitle ?? null,
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   }
 
   const { data, error } = await auth.supabase
-    .from("promo_banners" as "banners")
+    .from("promo_banners")
     .update(updates)
     .eq("id", body.id)
     .select(COLUMNS)
@@ -97,7 +97,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const { error } = await auth.supabase
-    .from("promo_banners" as "banners")
+    .from("promo_banners")
     .delete()
     .eq("id", body.id);
 

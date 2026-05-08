@@ -635,6 +635,72 @@ export type Database = {
         }
         Relationships: []
       }
+      home_banners: {
+        Row: {
+          id: string
+          slot: string
+          image_path: string
+          link_url: string
+          alt_text: string
+          is_active: boolean
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slot: string
+          image_path: string
+          link_url?: string
+          alt_text?: string
+          is_active?: boolean
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          slot?: string
+          image_path?: string
+          link_url?: string
+          alt_text?: string
+          is_active?: boolean
+          updated_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      quick_menu_items: {
+        Row: {
+          id: string
+          order_index: number
+          label: string
+          icon_path: string
+          link_url: string
+          is_active: boolean
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_index?: number
+          label: string
+          icon_path: string
+          link_url?: string
+          is_active?: boolean
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_index?: number
+          label?: string
+          icon_path?: string
+          link_url?: string
+          is_active?: boolean
+          updated_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       before_after_photos: {
         Row: {
           after_image_path: string

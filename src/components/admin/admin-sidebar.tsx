@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, BookOpen, FileEdit, UserSearch, MapPin, TrendingUp, Flag } from "lucide-react";
+import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, BookOpen, FileEdit, UserSearch, MapPin, TrendingUp, Flag, Grid3X3 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
     { href: "/admin/members", icon: <UserCog className="h-5 w-5" />, label: "회원 관리" },
     { href: "/admin/portfolios", icon: <Images className="h-5 w-5" />, label: "포트폴리오" },
     { href: "/admin/courses", icon: <GraduationCap className="h-5 w-5" />, label: "수강 관리" },
+    { href: "/admin/quick-menu", icon: <Grid3X3 className="h-5 w-5" />, label: "퀵 메뉴" },
     { href: "/admin/home-banners", icon: <Home className="h-5 w-5" />, label: "홈 배너" },
     { href: "/admin/hero-banners", icon: <ImageIcon className="h-5 w-5" />, label: "히어로 배너" },
     { href: "/admin/promo-banners", icon: <LayoutDashboard className="h-5 w-5" />, label: "프로모 배너" },
