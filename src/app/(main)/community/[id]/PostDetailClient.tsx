@@ -33,8 +33,6 @@ const t = STRINGS.community;
 const BOARD_LABEL_MAP: Record<string, string> = {
   PROCEDURE_REVIEW: t.procedureReview,
   COURSE_REVIEW: t.courseReview,
-  SHOP_RECRUIT: t.shopRecruit,
-  MODEL_RECRUIT: t.modelRecruit,
   QNA: t.qna,
   FREETALK: t.freeTalk,
   REVIEW: t.review,

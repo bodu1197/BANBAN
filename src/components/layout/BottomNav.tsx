@@ -20,7 +20,7 @@ export function BottomNav(): React.ReactElement | null {
 
   // Hide BottomNav on certain pages
   const isHiddenPage = /\/admin(\/|$)/.test(pathname) ||
-    /\/(artists|portfolios|courses|recruitment)\/[^/]+$/.test(pathname) ||
+    /\/(artists|portfolios|courses)\/[^/]+$/.test(pathname) ||
     /\/mypage\/(profile|artist\/edit)$/.test(pathname) ||
     /\/register\/artist$/.test(pathname);
   if (isHiddenPage) return null;

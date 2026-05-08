@@ -138,8 +138,6 @@ function BannerRow({ hp }: Readonly<{ hp: Record<string, string> }>): React.Reac
   const bannerLabels = {
     aiBannerHeadline: hp.aiBannerHeadline,
     aiBannerDesc: hp.aiBannerDesc,
-    aiBannerPhoto: hp.aiBannerPhoto,
-    aiBannerText: hp.aiBannerText,
   };
   return <AiBanner labels={bannerLabels} />;
 }

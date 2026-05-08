@@ -17,8 +17,6 @@ const t = STRINGS.community;
 const BOARD_OPTIONS = [
   { key: "PROCEDURE_REVIEW", label: t.procedureReview },
   { key: "COURSE_REVIEW", label: t.courseReview },
-  { key: "SHOP_RECRUIT", label: t.shopRecruit },
-  { key: "MODEL_RECRUIT", label: t.modelRecruit },
 ] as const;
 
 function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, onFileChange }: Readonly<{

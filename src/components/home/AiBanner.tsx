@@ -4,8 +4,6 @@ import { Sparkles, ArrowRight } from "lucide-react";
 interface AiBannerLabels {
     aiBannerHeadline: string;
     aiBannerDesc: string;
-    aiBannerPhoto: string;
-    aiBannerText: string;
 }
 
 interface AiBannerProps {

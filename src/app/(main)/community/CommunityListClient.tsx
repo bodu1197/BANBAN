@@ -14,8 +14,6 @@ const BOARD_TABS = [
   { key: "ALL", label: t.allPosts },
   { key: "PROCEDURE_REVIEW", label: t.procedureReview },
   { key: "COURSE_REVIEW", label: t.courseReview },
-  { key: "SHOP_RECRUIT", label: t.shopRecruit },
-  { key: "MODEL_RECRUIT", label: t.modelRecruit },
 ] as const;
 
 const SORT_OPTIONS = [
@@ -27,8 +25,6 @@ const SORT_OPTIONS = [
 const BOARD_LABEL_MAP: Record<string, string> = {
   PROCEDURE_REVIEW: t.procedureReview,
   COURSE_REVIEW: t.courseReview,
-  SHOP_RECRUIT: t.shopRecruit,
-  MODEL_RECRUIT: t.modelRecruit,
   QNA: t.qna,
   FREETALK: t.freeTalk,
   REVIEW: t.review,
