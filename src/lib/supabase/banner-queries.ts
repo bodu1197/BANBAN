@@ -12,6 +12,29 @@ export interface PromoBannerData {
   is_active: boolean;
 }
 
+export interface HomeBannerData {
+  slot: string;
+  image_path: string;
+  link_url: string;
+  alt_text: string;
+  is_active: boolean;
+}
+
+export async function fetchHomeBanners(): Promise<HomeBannerData[]> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const { data, error } = await supabase
+    .from("home_banners" as "banners")
+    .select("slot, image_path, link_url, alt_text, is_active")
+    .eq("is_active", true);
+
+  if (error || !data) return [];
+
+  return data as unknown as HomeBannerData[];
+}
+
 export async function fetchPromoBanners(): Promise<PromoBannerData[]> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
 

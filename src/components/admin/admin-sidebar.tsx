@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
     { href: "/admin/members", icon: <UserCog className="h-5 w-5" />, label: "회원 관리" },
     { href: "/admin/portfolios", icon: <Images className="h-5 w-5" />, label: "포트폴리오" },
     { href: "/admin/courses", icon: <GraduationCap className="h-5 w-5" />, label: "수강 관리" },
+    { href: "/admin/home-banners", icon: <Home className="h-5 w-5" />, label: "홈 배너" },
     { href: "/admin/hero-banners", icon: <ImageIcon className="h-5 w-5" />, label: "히어로 배너" },
     { href: "/admin/promo-banners", icon: <LayoutDashboard className="h-5 w-5" />, label: "프로모 배너" },
     { href: "/admin/exhibitions", icon: <Ticket className="h-5 w-5" />, label: "기획전 관리" },

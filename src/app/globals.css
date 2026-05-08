@@ -166,40 +166,4 @@
     scrollbar-width: none;
   }
 }
-
-/* AI Banner animations */
-/* AI Banner animations - Optimized for Performance (Composited only) */
-@keyframes ai-float-1 {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.15; }
-  25% { transform: translate3d(15px, -20px, 0) rotate(5deg); opacity: 0.25; }
-  50% { transform: translate3d(-10px, -35px, 0) rotate(-3deg); opacity: 0.2; }
-  75% { transform: translate3d(20px, -15px, 0) rotate(8deg); opacity: 0.18; }
-}
-
-@keyframes ai-float-2 {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.1; }
-  33% { transform: translate3d(-25px, -15px, 0) rotate(-10deg); opacity: 0.2; }
-  66% { transform: translate3d(10px, -30px, 0) rotate(5deg); opacity: 0.15; }
-}
-
-@keyframes ai-float-3 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.12; }
-  50% { transform: translate3d(-15px, 20px, 0) scale(1.15); opacity: 0.22; }
-}
-
-@keyframes ai-pulse-ring {
-  0% { transform: scale(0.8); opacity: 0.3; }
-  50% { transform: scale(1.2); opacity: 0; }
-  100% { transform: scale(0.8); opacity: 0.3; }
-}
-
-@keyframes ai-fade {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.35; }
-}
-
-.animate-ai-float-1 { animation: ai-float-1 8s ease-in-out infinite; will-change: transform, opacity; }
-.animate-ai-float-2 { animation: ai-float-2 11s ease-in-out infinite; will-change: transform, opacity; }
-.animate-ai-float-3 { animation: ai-float-3 7s ease-in-out infinite; will-change: transform, opacity; }
-.animate-ai-pulse-ring { animation: ai-pulse-ring 3s ease-in-out infinite; will-change: transform, opacity; }
-.animate-ai-fade { animation: ai-fade 5s ease-in-out infinite; will-change: opacity; }
+

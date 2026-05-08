@@ -12,7 +12,7 @@ import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
-import { fetchPromoBanners } from "@/lib/supabase/banner-queries";
+import { fetchPromoBanners, fetchHomeBanners } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 
@@ -134,13 +134,6 @@ function CuratedExhibitions({ hp, activeArtists }: Readonly<{
   );
 }
 
-function BannerRow({ hp }: Readonly<{ hp: Record<string, string> }>): React.ReactElement {
-  const bannerLabels = {
-    aiBannerHeadline: hp.aiBannerHeadline,
-    aiBannerDesc: hp.aiBannerDesc,
-  };
-  return <AiBanner labels={bannerLabels} />;
-}
 
 /** Safely run an async fetch, returning fallback on error to prevent one section from breaking others */
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
@@ -155,10 +148,11 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const [promoBanners] = await Promise.all([
+  const [promoBanners, homeBanners] = await Promise.all([
     safe(() => fetchPromoBanners(), []),
+    safe(() => fetchHomeBanners(), []),
   ]);
-  return { promoBanners };
+  return { promoBanners, homeBanners };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -257,16 +251,34 @@ function HomeBottomSkeleton(): React.ReactElement {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const topData = await fetchTopHomeData();
-  const { promoBanners } = topData;
-  const hp = STRINGS.homepage as unknown as Record<string, string>;
+  const { promoBanners, homeBanners } = topData;
+
+  const exhibitionBanner = homeBanners.find((b) => b.slot === "exhibition");
+  const aiBanner = homeBanners.find((b) => b.slot === "ai-matching");
 
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
       <div className="mx-auto w-full max-w-[767px]">
         <QuickMenu />
-        <ExhibitionBanner />
+        {(exhibitionBanner ?? aiBanner) ? (
+          <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">
+            {exhibitionBanner ? (
+              <ExhibitionBanner
+                imageUrl={exhibitionBanner.image_path}
+                linkUrl={exhibitionBanner.link_url}
+                altText={exhibitionBanner.alt_text}
+              />
+            ) : null}
+            {aiBanner ? (
+              <AiBanner
+                imageUrl={aiBanner.image_path}
+                linkUrl={aiBanner.link_url}
+                altText={aiBanner.alt_text}
+              />
+            ) : null}
+          </div>
+        ) : null}
         <PromoBannerGrid banners={promoBanners} />
-        <BannerRow hp={hp} />
         <Suspense fallback={<HomeBottomSkeleton />}>
           <AsyncHomeBottom />
         </Suspense>
