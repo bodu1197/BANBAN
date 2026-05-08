@@ -103,6 +103,7 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href={SUPABASE_HOST} />
         <link rel="dns-prefetch" href={SUPABASE_HOST} />
         <script dangerouslySetInnerHTML={{ __html: `(function(){var h=location.hash;if(!h)return;if(location.pathname.indexOf("reset-password")>-1)return;if(h.indexOf("type=recovery")>-1)location.replace("/reset-password"+h);else if(h.indexOf("error=")>-1&&h.indexOf("otp_expired")>-1)location.replace("/reset-password?error=link_expired")}())` }} />
       </head>
