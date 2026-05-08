@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, ArrowRight, Search, Camera } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 interface AiBannerLabels {
     aiBannerHeadline: string;
@@ -11,15 +11,6 @@ interface AiBannerLabels {
 interface AiBannerProps {
     labels: AiBannerLabels;
     compact?: boolean;
-}
-
-function FeaturePill({ icon, label }: Readonly<{ icon: React.ReactNode; label: string }>): React.ReactElement {
-    return (
-        <div className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 backdrop-blur-sm">
-            {icon}
-            <span className="text-[10px] font-medium text-white/80">{label}</span>
-        </div>
-    );
 }
 
 /** Floating SVG motifs */
@@ -104,21 +95,17 @@ export function AiBanner({ labels, compact }: Readonly<AiBannerProps>): React.Re
             >
                 <AnimatedBackground />
 
-                <div className="relative z-10 flex h-[153px] flex-col items-center justify-center gap-3 px-4 text-center">
-                    <div className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/20 px-2.5 py-0.5 backdrop-blur-md">
-                        <Sparkles className="h-3 w-3 text-white" />
-                        <span className="text-[10px] font-semibold tracking-wider text-white">AI MATCHING</span>
+                <div className="relative z-10 flex h-[120px] items-center gap-5 px-4 lg:h-[140px] lg:px-10">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/25 shadow-lg backdrop-blur-sm lg:h-14 lg:w-14">
+                        <Sparkles className="h-6 w-6 text-white lg:h-7 lg:w-7" aria-hidden="true" />
                     </div>
-
-                    <h2 className="text-lg font-extrabold leading-tight text-white">{labels.aiBannerHeadline}</h2>
-                    <p className="text-xs text-white/60">{labels.aiBannerDesc}</p>
-
-                    <div className="flex items-center gap-2">
-                        <FeaturePill icon={<Camera className="h-3 w-3 text-white" />} label={labels.aiBannerPhoto} />
-                        <FeaturePill icon={<Search className="h-3 w-3 text-white" />} label={labels.aiBannerText} />
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 transition-all group-hover:bg-white/30 group-focus-visible:bg-white/30">
-                            <ArrowRight className="h-3.5 w-3.5 text-white" />
-                        </div>
+                    <div className="min-w-0 flex-1">
+                        <span className="inline-block rounded-full bg-white/25 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-white backdrop-blur-sm">AI MATCHING</span>
+                        <h2 className="mt-1.5 text-base font-extrabold leading-tight text-white lg:text-lg">{labels.aiBannerHeadline}</h2>
+                        <p className="mt-1 text-xs text-white/70 lg:text-sm">{labels.aiBannerDesc}</p>
+                    </div>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/25 transition-all group-hover:bg-white/40 group-focus-visible:bg-white/40">
+                        <ArrowRight className="h-4 w-4 text-white transition-transform group-hover:translate-x-0.5 group-focus-visible:translate-x-0.5" aria-hidden="true" />
                     </div>
                 </div>
             </Link>
