@@ -23,6 +23,7 @@ function QuickMenuLink({ item }: Readonly<{ item: QuickMenuItemData }>): React.R
           alt={item.label}
           width={48}
           height={48}
+          sizes="40px"
           className="h-10 w-10 object-contain"
         />
       </div>

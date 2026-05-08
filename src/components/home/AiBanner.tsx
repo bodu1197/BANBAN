@@ -23,8 +23,10 @@ export function AiBanner({ imageUrl, linkUrl, altText }: Readonly<AiBannerProps>
         alt={altText}
         width={724}
         height={543}
+        sizes="(min-width: 768px) 362px, calc(100vw - 2rem)"
         className="h-auto w-full"
-        quality={80}
+        quality={75}
+        priority
       />
     </Link>
   );
