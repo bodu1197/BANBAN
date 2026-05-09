@@ -15,6 +15,7 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import type { ArtistType } from "@/types/database";
 import { addressToRegionKey } from "@/lib/regions";
 import { geocodeAddress } from "@/types/artist-form";
+import { normalizeFancyText } from "@/lib/normalize-text";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import {
   useArtistFormHandlers,
@@ -122,12 +123,13 @@ function validateEditForm(
 
 function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; lon: number } | null): Record<string, unknown> {
   const data: Record<string, unknown> = {
-    type_artist: formData.type_artist, title: formData.title,
+    type_artist: formData.type_artist, title: normalizeFancyText(formData.title),
     contact: formData.contact, instagram_url: formData.instagram_url || null,
     kakao_url: formData.kakao_url || null, zipcode: formData.zipcode,
     address: formData.address,
     address_detail: formData.address_detail || null, region_id: formData.region_id,
-    introduce: formData.introduce, description: formData.description || null,
+    introduce: normalizeFancyText(formData.introduce),
+    description: formData.description ? normalizeFancyText(formData.description) : null,
   };
   if (coords) { data.lat = coords.lat; data.lon = coords.lon; }
   return data;

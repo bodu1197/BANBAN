@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BANK_OPTIONS } from "@/types/artist-form";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
+import { normalizeFancyText } from "@/lib/normalize-text";
 
 // --- Shared labels interface (subset of dictionary) ---
 
@@ -70,6 +71,8 @@ function toggleInList(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((id) => id !== value) : [...list, value];
 }
 
+const NORMALIZE_FIELDS = new Set<keyof ArtistFormData>(["title", "introduce", "description"]);
+
 export function useArtistFormHandlers(
   setFormData: React.Dispatch<React.SetStateAction<ArtistFormData>>,
 ): {
@@ -79,7 +82,8 @@ export function useArtistFormHandlers(
   const handleInputChange = useCallback(
     (field: keyof ArtistFormData) =>
       (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+        const value = NORMALIZE_FIELDS.has(field) ? normalizeFancyText(e.target.value) : e.target.value;
+        setFormData((prev) => ({ ...prev, [field]: value }));
       },
     [setFormData],
   );

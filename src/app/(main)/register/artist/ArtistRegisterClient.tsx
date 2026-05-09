@@ -16,6 +16,7 @@ import { FullPageSpinner } from "@/components/ui/full-page-spinner";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { INITIAL_FORM_DATA, geocodeAddress } from "@/types/artist-form";
 import { addressToRegionKey } from "@/lib/regions";
+import { normalizeFancyText } from "@/lib/normalize-text";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import {
   useArtistFormHandlers,
@@ -106,7 +107,7 @@ export function ArtistRegisterClient({ categories,
           user_id: (user as { id: string }).id,
           type_artist: formData.type_artist,
           type_sex: typeSex,
-          title: formData.title,
+          title: normalizeFancyText(formData.title),
           contact: formData.contact,
           instagram_url: formData.instagram_url || null,
           kakao_url: formData.kakao_url || null,
@@ -114,8 +115,8 @@ export function ArtistRegisterClient({ categories,
           address: formData.address,
           address_detail: formData.address_detail || null,
           region_id: formData.region_id,
-          introduce: formData.introduce,
-          description: formData.description || null,
+          introduce: normalizeFancyText(formData.introduce),
+          description: formData.description ? normalizeFancyText(formData.description) : null,
           lat: coords?.lat ?? null,
           lon: coords?.lon ?? null,
           is_hide: false,
