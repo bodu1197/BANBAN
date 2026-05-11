@@ -28,7 +28,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|NaverBot|Yeti|kakaotalk|facebookexternalhit|Twitterbot|Slackbot|Discordbot|TelegramBot|Applebot|LinkedInBot|GPTBot|ChatGPT-User).*"
+          "value": ".*(Googlebot|bingbot|NaverBot|Yeti|kakaotalk|facebookexternalhit|Twitterbot|Slackbot|Discordbot|TelegramBot|Applebot|LinkedInBot|GPTBot|ChatGPT-User|vercel-screenshot|Vercel).*"
         }
       ],
       "mitigate": {
@@ -48,7 +48,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(Googlebot|bingbot|NaverBot|Yeti|kakaotalk|facebookexternalhit|Twitterbot|Slackbot|Discordbot|TelegramBot|Applebot|LinkedInBot|GPTBot|ChatGPT-User).*"
+          "value": ".*(Googlebot|bingbot|NaverBot|Yeti|kakaotalk|facebookexternalhit|Twitterbot|Slackbot|Discordbot|TelegramBot|Applebot|LinkedInBot|GPTBot|ChatGPT-User|vercel-screenshot|Vercel).*"
         }
       ],
       "mitigate": {
