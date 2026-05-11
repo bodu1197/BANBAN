@@ -114,6 +114,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 /**
+ * PATCH /api/before-after
+ * Update a before/after photo entry (title, images)
+ */
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
+  const auth = await authenticateUser();
+  if (!auth.ok) return auth.response;
+
+  const body = await request.json() as {
+    artistId: string;
+    photoId: string;
+    title?: string;
+    beforeImagePath?: string;
+    afterImagePath?: string;
+  };
+
+  if (!body.artistId || !body.photoId) {
+    return NextResponse.json({ error: "artistId and photoId required" }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+
+  if (!await verifyOwnership(admin, body.artistId, auth.userId)) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  const updates: Record<string, string> = {};
+  if (body.title !== undefined) updates.title = body.title.trim() || "";
+  if (body.beforeImagePath) updates.before_image_path = body.beforeImagePath;
+  if (body.afterImagePath) updates.after_image_path = body.afterImagePath;
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "no fields to update" }, { status: 400 });
+  }
+
+  const { error } = await admin
+    .from("before_after_photos")
+    .update(updates)
+    .eq("id", body.photoId)
+    .eq("artist_id", body.artistId);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
+
+/**
  * DELETE /api/before-after
  * Delete a before/after photo entry
  */

@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, Trash2, Plus, ChevronRight } from "lucide-react";
+import { ChevronLeft, Trash2, Plus, ChevronRight, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { STRINGS } from "@/lib/strings";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,68 +21,265 @@ interface BeforeAfterEntry {
   order_index: number;
 }
 
+function EditableImage({
+  currentUrl,
+  newPreview,
+  label,
+  onFileSelect,
+  onClear,
+  isEditing,
+}: Readonly<{
+  currentUrl: string | null;
+  newPreview: string | null;
+  label: string;
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClear: () => void;
+  isEditing: boolean;
+}>): React.ReactElement {
+  const displayUrl = newPreview ?? currentUrl;
+  const isAfter = label === "시술 후";
+
+  return (
+    <div className="relative aspect-square flex-1">
+      {displayUrl && (
+        <Image
+          src={displayUrl}
+          alt={label}
+          fill
+          className="object-cover"
+          sizes="(max-width: 767px) 50vw, 384px"
+        />
+      )}
+      <span className={`absolute ${isAfter ? "right-2 bottom-2 bg-brand-primary/80" : "bottom-2 left-2 bg-black/60"} rounded-md px-2 py-0.5 text-xs font-medium text-white`}>
+        {label}
+      </span>
+      {isEditing && (
+        <label className="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center bg-black/40 transition-colors hover:bg-black/50 focus-within:ring-2 focus-within:ring-ring">
+          <Plus className="h-6 w-6 text-white" />
+          <span className="mt-1 text-xs text-white">변경</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={onFileSelect}
+            className="sr-only"
+          />
+        </label>
+      )}
+      {isEditing && newPreview && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="absolute top-1 right-1 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white"
+          aria-label="변경 취소"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function BeforeAfterPreviewCard({
   entry,
+  artistId,
   onDelete,
+  onUpdate,
   deleting,
 }: Readonly<{
   entry: BeforeAfterEntry;
+  artistId: string;
   onDelete: (id: string) => void;
+  onUpdate: () => void;
   deleting: boolean;
 }>): React.ReactElement {
   const beforeUrl = getStorageUrl(entry.before_image_path);
   const afterUrl = getStorageUrl(entry.after_image_path);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(entry.title ?? "");
+  const [beforeFile, setBeforeFile] = useState<File | null>(null);
+  const [afterFile, setAfterFile] = useState<File | null>(null);
+  const [beforePreview, setBeforePreview] = useState<string | null>(null);
+  const [afterPreview, setAfterPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleStartEdit = (): void => {
+    setEditTitle(entry.title ?? "");
+    setBeforeFile(null);
+    setAfterFile(null);
+    setBeforePreview(null);
+    setAfterPreview(null);
+    setIsEditing(true);
+  };
+
+  const handleCancel = (): void => {
+    setIsEditing(false);
+  };
+
+  const handleFileSelect = (type: "before" | "after") => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const preview = ev.target?.result as string;
+      if (type === "before") {
+        setBeforeFile(file);
+        setBeforePreview(preview);
+      } else {
+        setAfterFile(file);
+        setAfterPreview(preview);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleSave = async (): Promise<void> => {
+    if (!editTitle.trim()) {
+      globalThis.alert("제목을 입력해주세요.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      let newBeforePath: string | undefined;
+      let newAfterPath: string | undefined;
+
+      if (beforeFile) {
+        const form = new globalThis.FormData();
+        form.append("file", beforeFile);
+        const path = `before-after/${artistId}/before_${Date.now()}.webp`;
+        const res = await fetch(
+          `/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`,
+          { method: "PUT", body: form },
+        );
+        const json = (await res.json()) as { success: boolean };
+        if (!json.success) throw new Error("시술 전 이미지 업로드 실패");
+        newBeforePath = path;
+      }
+
+      if (afterFile) {
+        const form = new globalThis.FormData();
+        form.append("file", afterFile);
+        const path = `before-after/${artistId}/after_${Date.now()}.webp`;
+        const res = await fetch(
+          `/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`,
+          { method: "PUT", body: form },
+        );
+        const json = (await res.json()) as { success: boolean };
+        if (!json.success) throw new Error("시술 후 이미지 업로드 실패");
+        newAfterPath = path;
+      }
+
+      const patchRes = await fetch("/api/before-after", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistId,
+          photoId: entry.id,
+          title: editTitle.trim(),
+          ...(newBeforePath ? { beforeImagePath: newBeforePath } : {}),
+          ...(newAfterPath ? { afterImagePath: newAfterPath } : {}),
+        }),
+      });
+
+      const patchJson = (await patchRes.json()) as { success: boolean };
+      if (!patchJson.success) throw new Error("수정 실패");
+
+      setIsEditing(false);
+      onUpdate();
+    } catch (error) {
+      console.error("Edit error:", error); // eslint-disable-line no-console
+      globalThis.alert(STRINGS.common.error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      {entry.title && (
+      {isEditing ? (
         <div className="px-3 pt-2 pb-1">
-          <p className="text-sm font-medium">{entry.title}</p>
+          <input
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            placeholder="제목 입력"
+            className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
         </div>
+      ) : (
+        entry.title && (
+          <div className="px-3 pt-2 pb-1">
+            <p className="text-sm font-medium">{entry.title}</p>
+          </div>
+        )
       )}
       <div className="relative flex">
-        <div className="relative aspect-square flex-1">
-          {beforeUrl && (
-            <Image
-              src={beforeUrl}
-              alt="시술 전"
-              fill
-              className="object-cover"
-              sizes="(max-width: 767px) 50vw, 384px"
-            />
-          )}
-          <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
-            시술 전
-          </span>
-        </div>
+        <EditableImage
+          currentUrl={beforeUrl}
+          newPreview={beforePreview}
+          label="시술 전"
+          onFileSelect={handleFileSelect("before")}
+          onClear={() => { setBeforeFile(null); setBeforePreview(null); }}
+          isEditing={isEditing}
+        />
         <div className="absolute top-1/2 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-md">
           <ChevronRight className="h-3.5 w-3.5 text-gray-600" />
         </div>
-        <div className="relative aspect-square flex-1">
-          {afterUrl && (
-            <Image
-              src={afterUrl}
-              alt="시술 후"
-              fill
-              className="object-cover"
-              sizes="(max-width: 767px) 50vw, 384px"
-            />
-          )}
-          <span className="absolute right-2 bottom-2 rounded-md bg-brand-primary/80 px-2 py-0.5 text-xs font-medium text-white">
-            시술 후
-          </span>
-        </div>
+        <EditableImage
+          currentUrl={afterUrl}
+          newPreview={afterPreview}
+          label="시술 후"
+          onFileSelect={handleFileSelect("after")}
+          onClear={() => { setAfterFile(null); setAfterPreview(null); }}
+          isEditing={isEditing}
+        />
       </div>
-      {/* Delete button */}
-      <button
-        type="button"
-        onClick={() => onDelete(entry.id)}
-        disabled={deleting}
-        className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/90 text-white transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-        aria-label="삭제"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {isEditing ? (
+        <div className="flex gap-2 p-2">
+          <Button
+            type="button"
+            onClick={handleCancel}
+            disabled={isSaving}
+            variant="outline"
+            className="flex-1 text-sm"
+          >
+            <X className="mr-1 h-3.5 w-3.5" />
+            취소
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving || !editTitle.trim()}
+            className="flex-1 bg-brand-primary text-sm text-white hover:bg-brand-primary-hover"
+          >
+            <Check className="mr-1 h-3.5 w-3.5" />
+            {isSaving ? "저장 중..." : "저장"}
+          </Button>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={handleStartEdit}
+            disabled={deleting}
+            className="absolute top-2 right-11 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-blue-500/90 text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            aria-label="수정"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(entry.id)}
+            disabled={deleting}
+            className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-red-500/90 text-white transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            aria-label="삭제"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -355,7 +552,9 @@ function BeforeAfterManageContent({
             <BeforeAfterPreviewCard
               key={entry.id}
               entry={entry}
+              artistId={artistId}
               onDelete={handleDelete}
+              onUpdate={loadEntries}
               deleting={deleting}
             />
           ))}
