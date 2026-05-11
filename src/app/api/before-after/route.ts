@@ -4,9 +4,6 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 const ARTIST_SELECT = "id, user_id" as const;
 
-/**
- * Verify the artist belongs to the authenticated user
- */
 async function verifyOwnership(
   admin: ReturnType<typeof createAdminClient>,
   artistId: string,
@@ -21,37 +18,27 @@ async function verifyOwnership(
   return Boolean(artist && (artist as { user_id: string }).user_id === userId);
 }
 
-/**
- * Authenticate and return user ID, or an error response
- */
-async function authenticateUser(): Promise<
-  | { ok: true; userId: string }
-  | { ok: false; response: NextResponse }
-> {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { ok: false, response: NextResponse.json({ error: "unauthorized" }, { status: 401 }) };
-  }
-  return { ok: true, userId: user.id };
-}
-
-/**
- * GET /api/before-after?artistId=...
- * Fetch before/after photos for an artist
- */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await authenticateUser();
-  if (!auth.ok) return auth.response;
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
   const artistId = request.nextUrl.searchParams.get("artistId");
   if (!artistId) {
-    return NextResponse.json({ error: "artistId is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "artistId is required" },
+      { status: 400 },
+    );
   }
 
   const admin = createAdminClient();
 
-  if (!await verifyOwnership(admin, artistId, auth.userId)) {
+  if (!(await verifyOwnership(admin, artistId, user.id))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
@@ -66,121 +53,4 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json({ data: data ?? [] });
-}
-
-/**
- * POST /api/before-after
- * Create a new before/after photo entry
- */
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await authenticateUser();
-  if (!auth.ok) return auth.response;
-
-  const body = await request.json() as {
-    artistId: string;
-    title?: string;
-    beforeImagePath: string;
-    afterImagePath: string;
-    orderIndex?: number;
-  };
-
-  if (!body.artistId || !body.beforeImagePath || !body.afterImagePath || !body.title?.trim()) {
-    return NextResponse.json({ error: "artistId, title, beforeImagePath, and afterImagePath are required" }, { status: 400 });
-  }
-
-  const admin = createAdminClient();
-
-  if (!await verifyOwnership(admin, body.artistId, auth.userId)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  const { data, error } = await admin
-    .from("before_after_photos")
-    .insert({
-      artist_id: body.artistId,
-      title: body.title ?? null,
-      before_image_path: body.beforeImagePath,
-      after_image_path: body.afterImagePath,
-      order_index: body.orderIndex ?? 0,
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true, id: data?.id });
-}
-
-/**
- * PATCH /api/before-after
- * Update a before/after photo entry (title, images)
- */
-export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  const auth = await authenticateUser();
-  if (!auth.ok) return auth.response;
-
-  const body = await request.json() as {
-    artistId: string;
-    photoId: string;
-    title?: string;
-    beforeImagePath?: string;
-    afterImagePath?: string;
-  };
-
-  if (!body.artistId || !body.photoId) {
-    return NextResponse.json({ error: "artistId and photoId required" }, { status: 400 });
-  }
-
-  const admin = createAdminClient();
-
-  if (!await verifyOwnership(admin, body.artistId, auth.userId)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  const updates: Record<string, string> = {};
-  if (body.title !== undefined) updates.title = body.title.trim() || "";
-  if (body.beforeImagePath) updates.before_image_path = body.beforeImagePath;
-  if (body.afterImagePath) updates.after_image_path = body.afterImagePath;
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: "no fields to update" }, { status: 400 });
-  }
-
-  const { error } = await admin
-    .from("before_after_photos")
-    .update(updates)
-    .eq("id", body.photoId)
-    .eq("artist_id", body.artistId);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true });
-}
-
-/**
- * DELETE /api/before-after
- * Delete a before/after photo entry
- */
-export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const auth = await authenticateUser();
-  if (!auth.ok) return auth.response;
-
-  const body = await request.json() as { artistId: string; photoId: string };
-  if (!body.artistId || !body.photoId) {
-    return NextResponse.json({ error: "artistId and photoId required" }, { status: 400 });
-  }
-
-  const admin = createAdminClient();
-
-  if (!await verifyOwnership(admin, body.artistId, auth.userId)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  await admin.from("before_after_photos").delete().eq("id", body.photoId);
-
-  return NextResponse.json({ success: true });
 }
