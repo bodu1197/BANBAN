@@ -20,7 +20,7 @@ function ConcealerUpload({ inputRef, onFile, error }: Readonly<{
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
             <button
                 type="button"
-                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input px-12 py-16 transition-colors hover:border-rose-400 hover:bg-rose-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-rose-950/20"
+                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input px-12 py-16 transition-colors hover:border-rose-400 hover:bg-rose-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
@@ -298,7 +298,7 @@ export function ConcealerClient(): React.ReactElement {
                     <div className="flex items-center gap-2">
                         <Eraser className="h-4 w-4 text-rose-500" />
                         <span className="text-sm font-semibold">눈썹 컨실러</span>
-                        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900 dark:text-rose-300">독립 도구</span>
+                        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-700">독립 도구</span>
                     </div>
                 </div>
                 <Link

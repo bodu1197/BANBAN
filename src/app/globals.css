@@ -2,8 +2,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   /* Base theme colors */
   --color-background: var(--background);
@@ -101,49 +99,6 @@
   --sidebar-accent-foreground: #171717;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #a1a1a1;
-}
-
-.dark {
-  /* Brand colors */
-  --brand-primary: #ff5818;
-  --brand-primary-hover: #db4500;
-  --brand-secondary: #6a839d;
-  --brand-accent: #bb9951;
-  --brand-kakao: #e4cd77;
-  --brand-kakao-foreground: #2b1311;
-
-  /* Base colors */
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
-  --primary: #e5e5e5;
-  --primary-foreground: #171717;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a1a1a1;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
-  --destructive: #ff6568;
-  --border: rgb(255 255 255 / 10%);
-  --input: rgb(255 255 255 / 15%);
-  --ring: #737373;
-  --chart-1: #1447e6;
-  --chart-2: #00b981;
-  --chart-3: #f69e00;
-  --chart-4: #ab4eff;
-  --chart-5: #ff2357;
-  --sidebar: #171717;
-  --sidebar-foreground: #fafafa;
-  --sidebar-primary: #1447e6;
-  --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #262626;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: rgb(255 255 255 / 10%);
-  --sidebar-ring: #737373;
 }
 
 @layer base {

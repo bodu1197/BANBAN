@@ -42,10 +42,10 @@ interface WalletData {
 // ─── Status Badge ────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { icon: React.ReactElement; label: string; className: string }> = {
-    ACTIVE: { icon: <CheckCircle2 className="h-4 w-4" />, label: "활성", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" },
-    PENDING: { icon: <Clock className="h-4 w-4" />, label: "대기", className: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400" },
-    EXPIRED: { icon: <XCircle className="h-4 w-4" />, label: "만료", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-500/20 dark:text-zinc-400" },
-    CANCELLED: { icon: <XCircle className="h-4 w-4" />, label: "취소", className: "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400" },
+    ACTIVE: { icon: <CheckCircle2 className="h-4 w-4" />, label: "활성", className: "bg-emerald-100 text-emerald-700" },
+    PENDING: { icon: <Clock className="h-4 w-4" />, label: "대기", className: "bg-amber-100 text-amber-700" },
+    EXPIRED: { icon: <XCircle className="h-4 w-4" />, label: "만료", className: "bg-zinc-100 text-zinc-600" },
+    CANCELLED: { icon: <XCircle className="h-4 w-4" />, label: "취소", className: "bg-red-100 text-red-700" },
 };
 
 function StatusBadge({ status }: Readonly<{ status: string }>): React.ReactElement {
@@ -106,14 +106,14 @@ function ActiveSubscriptionCard({ sub }: Readonly<{ sub: AdSubscription }>): Rea
     const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - now) / 86400000)) : 0;
 
     return (
-        <div className="overflow-hidden rounded-2xl border border-emerald-300 shadow-md dark:border-emerald-500/30">
-            <div className="flex items-center justify-between border-b border-emerald-200 bg-emerald-50 px-6 py-4 dark:border-emerald-500/20 dark:bg-emerald-950/30">
+        <div className="overflow-hidden rounded-2xl border border-emerald-300 shadow-md">
+            <div className="flex items-center justify-between border-b border-emerald-200 bg-emerald-50 px-6 py-4">
                 <div className="flex items-center gap-3">
-                    <Shield className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    <Shield className="h-6 w-6 text-emerald-600" />
                     <div>
                         <h3 className="text-lg font-bold text-foreground">프리미엄 광고 활성 중</h3>
                         <p className="text-sm text-muted-foreground">
-                            만료까지 <span className="font-bold text-emerald-600 dark:text-emerald-400">{daysLeft}일</span> 남음
+                            만료까지 <span className="font-bold text-emerald-600">{daysLeft}일</span> 남음
                             {expiresAt ? <span className="ml-1">({expiresAt.toLocaleDateString("ko-KR")})</span> : null}
                         </p>
                     </div>
@@ -146,7 +146,7 @@ function SubscriptionHistoryItem({ sub }: Readonly<{ sub: AdSubscription }>): Re
             <div className="text-right text-xs text-muted-foreground">
                 {new Date(sub.created_at).toLocaleDateString("ko-KR")}
                 {sub.paid_by_points > 0 ? (
-                    <span className="ml-1 font-medium text-amber-600 dark:text-amber-400">(P {sub.paid_by_points.toLocaleString()})</span>
+                    <span className="ml-1 font-medium text-amber-600">(P {sub.paid_by_points.toLocaleString()})</span>
                 ) : null}
             </div>
         </div>
@@ -185,7 +185,7 @@ function PurchaseCTA(): React.ReactElement {
     return (
         <Link
             href="/mypage/artist/ads/purchase"
-            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 px-6 py-5 text-base font-bold text-amber-700 transition-all hover:border-amber-500 hover:bg-amber-100 focus-visible:border-amber-500 focus-visible:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-amber-500/40 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/40 dark:focus-visible:bg-amber-950/40"
+            className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 px-6 py-5 text-base font-bold text-amber-700 transition-all hover:border-amber-500 hover:bg-amber-100 focus-visible:border-amber-500 focus-visible:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
             <ShoppingCart className="h-5 w-5" />
             <span>추가 광고 구매하기</span>

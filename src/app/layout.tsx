@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import { SITE_URL } from "@/lib/seo";
-import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
 
 const Analytics = dynamic(() => import("@vercel/analytics/next").then(m => m.Analytics));
@@ -89,10 +88,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -101,7 +97,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.ReactElement {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko">
       <head>
         <link rel="preconnect" href={SUPABASE_HOST} />
         <link rel="dns-prefetch" href={SUPABASE_HOST} />
@@ -111,7 +107,7 @@ export default function RootLayout({
       <body
         className="font-sans"
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
         <PageViewTracker />
         <Swing2AppBridge />
         <Analytics />

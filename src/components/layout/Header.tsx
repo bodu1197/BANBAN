@@ -3,7 +3,6 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { STRINGS } from "@/lib/strings";
 import { HeaderSearchIcon } from "./HeaderSearch";
-import { ThemeToggle } from "./ThemeToggle";
 
 const HeaderUserSection = dynamic(() => import("./HeaderUserSection").then((m) => m.HeaderUserSection));
 
@@ -26,8 +25,6 @@ export function Header(): React.ReactElement {
 
                 <div className="flex items-center gap-2">
                     <HeaderSearchIcon placeholder={STRINGS.globalSearch.headerSearchPlaceholder} />
-
-                    <ThemeToggle />
 
                     <HeaderUserSection />
                 </div>

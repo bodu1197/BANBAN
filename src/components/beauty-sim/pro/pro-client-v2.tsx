@@ -48,7 +48,7 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
             </div>
             <button
                 type="button"
-                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input px-6 py-12 transition-colors hover:border-violet-400 hover:bg-violet-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-violet-400 dark:hover:bg-violet-950/20"
+                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input px-6 py-12 transition-colors hover:border-violet-400 hover:bg-violet-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-violet-400"
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
@@ -57,9 +57,9 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
                 <p className="text-sm text-muted-foreground">고객의 정면 얼굴 사진을 올려주세요</p>
                 <p className="text-xs text-muted-foreground">JPG, PNG, WebP (카메라 촬영 가능)</p>
             </button>
-            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/30">
-                <p className="text-xs font-medium text-rose-800 dark:text-rose-200">V2 실험 — 자연눈썹 블러 기능</p>
-                <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                <p className="text-xs font-medium text-rose-800">V2 실험 — 자연눈썹 블러 기능</p>
+                <p className="mt-1 text-xs text-rose-600">
                     자연 눈썹을 자동 감지하여 가우시안 블러로 지운 후 새 눈썹 템플릿을 오버레이합니다.
                     기존 기능 + 눈썹 지우기 실험 페이지입니다.
                 </p>
@@ -250,7 +250,7 @@ function ProHeaderV2({ viewMode, onChangeMode, showViewToggle }: Readonly<{
                 <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-rose-500" />
                     <span className="text-sm font-semibold">원장님 상담 도구</span>
-                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900 dark:text-rose-300">V2 실험</span>
+                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-700">V2 실험</span>
                 </div>
                 {showViewToggle ? (
                     <div className="flex gap-1 border-l pl-4">
@@ -261,7 +261,7 @@ function ProHeaderV2({ viewMode, onChangeMode, showViewToggle }: Readonly<{
                                 aria-pressed={viewMode === m.value}
                                 className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                     viewMode === m.value
-                                        ? "bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300"
+                                        ? "bg-rose-100 text-rose-700"
                                         : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
                                 }`}
                                 onClick={() => onChangeMode(m.value)}

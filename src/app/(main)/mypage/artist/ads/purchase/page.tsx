@@ -66,8 +66,8 @@ function PlanCard({ plan, isSelected, onSelect }: Readonly<{
             onClick={onSelect}
             className={`relative rounded-xl border-2 p-4 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isSelected
-                    ? "border-amber-500 bg-amber-50 shadow-md dark:border-amber-400 dark:bg-amber-950/30"
-                    : "border-border bg-card hover:border-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/10 focus-visible:border-amber-300 focus-visible:bg-amber-50/50 dark:focus-visible:bg-amber-950/10"
+                    ? "border-amber-500 bg-amber-50 shadow-md"
+                    : "border-border bg-card hover:border-amber-300 hover:bg-amber-50/50 focus-visible:border-amber-300 focus-visible:bg-amber-50/50"
             }`}
         >
             {isSelected ? (
@@ -75,7 +75,7 @@ function PlanCard({ plan, isSelected, onSelect }: Readonly<{
                     선택
                 </span>
             ) : null}
-            <p className="text-lg font-black text-amber-600 dark:text-amber-400">
+            <p className="text-lg font-black text-amber-600">
                 {(plan.price / 10000).toFixed(0)}<span className="text-xs font-semibold">만원</span>
             </p>
             <p className="mt-1 text-xs font-semibold text-foreground">{getPlanPhotoLabel(plan.name)}</p>
@@ -110,8 +110,8 @@ function DurationButton({ d, isSelected, monthlyPrice, onSelect }: Readonly<{
             onClick={onSelect}
             className={`relative rounded-xl border-2 px-2 py-3 text-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isSelected
-                    ? "border-amber-500 bg-amber-50 shadow-md dark:border-amber-400 dark:bg-amber-950/30"
-                    : "border-border bg-card hover:border-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/10 focus-visible:border-amber-300 focus-visible:bg-amber-50/50 dark:focus-visible:bg-amber-950/10"
+                    ? "border-amber-500 bg-amber-50 shadow-md"
+                    : "border-border bg-card hover:border-amber-300 hover:bg-amber-50/50 focus-visible:border-amber-300 focus-visible:bg-amber-50/50"
             }`}
         >
             {d.discount_percent > 0 ? (
@@ -120,7 +120,7 @@ function DurationButton({ d, isSelected, monthlyPrice, onSelect }: Readonly<{
                 </span>
             ) : null}
             <p className="text-sm font-bold text-foreground">{d.label}</p>
-            <p className="mt-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-[10px] font-medium text-amber-600">
                 {(total / 10000).toFixed(0)}만원
             </p>
         </button>
@@ -149,8 +149,8 @@ function DurationSelector({ durations, selectedMonths, monthlyPrice, onSelect }:
 
 function PurchaseHeader({ planName, durationLabel }: Readonly<{ planName: string; durationLabel: string }>): React.ReactElement {
     return (
-        <div className="flex items-center gap-3 border-b border-amber-200 bg-amber-100/60 px-6 py-4 dark:border-amber-500/20 dark:bg-amber-500/10">
-            <Shield className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+        <div className="flex items-center gap-3 border-b border-amber-200 bg-amber-100/60 px-6 py-4">
+            <Shield className="h-6 w-6 text-amber-600" />
             <div>
                 <h3 className="text-lg font-bold text-foreground">{planName}</h3>
                 <p className="text-sm text-muted-foreground">{durationLabel} 이용권 - 4대 프리미엄 혜택 모두 포함</p>
@@ -170,7 +170,7 @@ function PointSlider({ usePoints, maxPoints, walletBalance, cashNeeded, onChange
                 <span className="flex items-center gap-1.5 font-medium text-foreground">
                     <Coins className="h-4 w-4 text-amber-500" /> 포인트 사용
                 </span>
-                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{usePoints.toLocaleString()}P</span>
+                <span className="font-mono font-bold text-amber-600">{usePoints.toLocaleString()}P</span>
             </div>
             <input
                 type="range"
@@ -222,7 +222,7 @@ function PriceDisplay({ totalPrice, originalPrice, discount, durationDays }: Rea
             {discount > 0 ? (
                 <p className="text-sm text-muted-foreground line-through">{originalPrice.toLocaleString()}원</p>
             ) : null}
-            <p className="text-4xl font-black text-amber-600 dark:text-amber-400">
+            <p className="text-4xl font-black text-amber-600">
                 {totalPrice.toLocaleString()}<span className="text-lg font-semibold">원</span>
             </p>
             {discount > 0 ? (
@@ -248,7 +248,7 @@ function PurchaseSection({ plan, duration, walletBalance, onPurchase, isPurchasi
     const cashNeeded = Math.max(0, totalPrice - usePoints);
 
     return (
-        <div className="overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md dark:border-amber-500/30 dark:from-amber-950/30 dark:to-orange-950/30">
+        <div className="overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md">
             <PurchaseHeader planName={plan.name} durationLabel={duration.label} />
             <div className="space-y-5 p-6">
                 <PriceDisplay totalPrice={totalPrice} originalPrice={originalPrice} discount={discount} durationDays={duration.months * 30} />

@@ -30,7 +30,7 @@ function StarRating({ rating }: Readonly<{ rating: number }>): React.ReactElemen
             {[1, 2, 3, 4, 5].map(s => (
                 <Star
                     key={s}
-                    className={`h-4 w-4 ${s <= rating ? "fill-amber-400 text-amber-400" : "text-zinc-300 dark:text-zinc-600"}`}
+                    className={`h-4 w-4 ${s <= rating ? "fill-amber-400 text-amber-400" : "text-zinc-300"}`}
                 />
             ))}
             <span className="ml-1 text-sm font-semibold text-foreground">{rating}.0</span>

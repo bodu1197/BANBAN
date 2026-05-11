@@ -46,7 +46,7 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
             </div>
             <button
                 type="button"
-                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input px-6 py-12 transition-colors hover:border-violet-400 hover:bg-violet-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-violet-400 dark:hover:bg-violet-950/20"
+                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-input px-6 py-12 transition-colors hover:border-violet-400 hover:bg-violet-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-violet-400"
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f); }}
@@ -55,9 +55,9 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
                 <p className="text-sm text-muted-foreground">고객의 정면 얼굴 사진을 올려주세요</p>
                 <p className="text-xs text-muted-foreground">JPG, PNG, WebP (카메라 촬영 가능)</p>
             </button>
-            <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 dark:border-violet-900 dark:bg-violet-950/30">
-                <p className="text-xs font-medium text-violet-800 dark:text-violet-200">원장님 전용 상담 도구</p>
-                <p className="mt-1 text-xs text-violet-600 dark:text-violet-400">
+            <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
+                <p className="text-xs font-medium text-violet-800">원장님 전용 상담 도구</p>
+                <p className="mt-1 text-xs text-violet-600">
                     황금비율 스마트 룰러 + 눈썹/입술 실시간 시뮬레이션 + 비포/애프터 비교.
                     고객 앞에서 즉시 시뮬레이션하여 상담 전환율을 높이세요.
                 </p>
@@ -169,7 +169,7 @@ function ProHeader({ viewMode, onChangeMode, showViewToggle }: Readonly<{
                 <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-violet-500" />
                     <span className="text-sm font-semibold">원장님 상담 도구</span>
-                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900 dark:text-violet-300">PRO</span>
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">PRO</span>
                 </div>
                 {showViewToggle ? (
                     <div className="flex gap-1 border-l pl-4">
@@ -180,7 +180,7 @@ function ProHeader({ viewMode, onChangeMode, showViewToggle }: Readonly<{
                                 aria-pressed={viewMode === m.value}
                                 className={`flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                     viewMode === m.value
-                                        ? "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300"
+                                        ? "bg-violet-100 text-violet-700"
                                         : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
                                 }`}
                                 onClick={() => onChangeMode(m.value)}

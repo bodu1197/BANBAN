@@ -72,11 +72,11 @@ export function ResetPasswordForm(): React.ReactElement {
   if (success && !isUpdateMode) {
     return (
       <div className="space-y-4 text-center">
-        <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-          <p className="text-green-800 dark:text-green-200">
+        <div className="rounded-lg bg-green-50 p-4">
+          <p className="text-green-800">
             {STRINGS.auth.resetEmailSent}
           </p>
-          <p className="mt-2 text-sm text-green-700 dark:text-green-300">
+          <p className="mt-2 text-sm text-green-700">
             {STRINGS.auth.checkEmailToReset}
           </p>
         </div>
@@ -90,8 +90,8 @@ export function ResetPasswordForm(): React.ReactElement {
   if (success && isUpdateMode) {
     return (
       <div className="space-y-4 text-center">
-        <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-          <p className="text-green-800 dark:text-green-200">
+        <div className="rounded-lg bg-green-50 p-4">
+          <p className="text-green-800">
             {STRINGS.auth.passwordChanged}
           </p>
         </div>

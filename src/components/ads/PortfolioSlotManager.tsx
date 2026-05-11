@@ -82,7 +82,7 @@ function SlotHeader({ planName, priceLabel, count, max }: Readonly<{
             </div>
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
                 atLimit
-                    ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+                    ? "bg-amber-100 text-amber-700"
                     : "bg-muted text-muted-foreground"
             }`}>
                 {count} / {max}
@@ -129,7 +129,7 @@ function SubscriptionSlotSection({ sub, portfolios, onSave, savingId }: Readonly
     }, []);
 
     return (
-        <div className="rounded-2xl border border-amber-300 bg-card p-5 shadow-sm dark:border-amber-500/30">
+        <div className="rounded-2xl border border-amber-300 bg-card p-5 shadow-sm">
             <SlotHeader planName={sub.planName} priceLabel={priceLabel} count={selected.size} max={sub.maxPortfolios} />
             <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
                 {portfolios.map(p => (

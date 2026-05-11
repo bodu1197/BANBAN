@@ -22,13 +22,13 @@ interface ReportWithReporter {
 }
 
 const STATUS_LABELS = new Map<string, { label: string; className: string }>([
-  ["PENDING", { label: "대기중", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" }],
-  ["REVIEWED", { label: "검토완료", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" }],
-  ["RESOLVED", { label: "처리완료", className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" }],
-  ["DISMISSED", { label: "반려", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400" }],
+  ["PENDING", { label: "대기중", className: "bg-yellow-100 text-yellow-800" }],
+  ["REVIEWED", { label: "검토완료", className: "bg-blue-100 text-blue-800" }],
+  ["RESOLVED", { label: "처리완료", className: "bg-green-100 text-green-800" }],
+  ["DISMISSED", { label: "반려", className: "bg-zinc-100 text-zinc-600" }],
 ]);
 
-const PENDING_CONFIG = { label: "대기중", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" };
+const PENDING_CONFIG = { label: "대기중", className: "bg-yellow-100 text-yellow-800" };
 
 const REASON_LABELS = new Map<string, string>([
   ["SPAM", "스팸/광고"],

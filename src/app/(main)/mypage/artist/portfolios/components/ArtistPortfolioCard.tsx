@@ -37,7 +37,7 @@ export default function ArtistPortfolioCard({
     const expired = isExpiredSale(portfolio.saleEndedAt);
 
     return (
-        <li className={`border rounded-lg overflow-hidden mb-3 ${expired ? "border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/10" : "border-border bg-card"}`}>
+        <li className={`border rounded-lg overflow-hidden mb-3 ${expired ? "border-amber-400/50 bg-amber-50/30" : "border-border bg-card"}`}>
             <Link href={`/portfolios/${portfolio.id}`} className="flex gap-4 p-3">
                 <div className="relative">
                     <PortfolioThumbnail src={imgSrc} alt={imgAlt} />

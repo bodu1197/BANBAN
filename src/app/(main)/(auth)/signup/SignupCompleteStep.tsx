@@ -50,8 +50,8 @@ export function SignupCompleteStep({ user,
 }: Readonly<SignupCompleteStepProps>): React.ReactElement {
   return (
     <div className="flex flex-col items-center space-y-6 py-8">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-        <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+        <CheckCircle className="h-12 w-12 text-green-600" />
       </div>
 
       <div className="space-y-2 text-center">

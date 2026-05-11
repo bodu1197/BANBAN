@@ -8,9 +8,9 @@ import type { GoldenRatioResult, GoldenRatioComparison } from "@/lib/golden-rati
 
 function ScoreBadge({ score, delta }: Readonly<{ score: number; delta?: number }>): React.ReactElement {
     const colorMap: Record<string, string> = {
-        high: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-900",
-        mid: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-900",
-        low: "text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950/30 dark:border-red-900",
+        high: "text-emerald-600 bg-emerald-50 border-emerald-200",
+        mid: "text-amber-600 bg-amber-50 border-amber-200",
+        low: "text-red-600 bg-red-50 border-red-200",
     };
     let tier = "low";
     if (score >= 80) tier = "high";
@@ -35,9 +35,9 @@ function ScoreBadge({ score, delta }: Readonly<{ score: number; delta?: number }
 
 function RatingBadge({ rating }: Readonly<{ rating: string }>): React.ReactElement {
     const ratingMap: Record<string, { label: string; cls: string }> = {
-        excellent: { label: "우수", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300" },
-        good: { label: "양호", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" },
-        fair: { label: "보통", cls: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" },
+        excellent: { label: "우수", cls: "bg-emerald-100 text-emerald-700" },
+        good: { label: "양호", cls: "bg-amber-100 text-amber-700" },
+        fair: { label: "보통", cls: "bg-red-100 text-red-700" },
     };
     // eslint-disable-next-line security/detect-object-injection -- Safe: rating is a string literal from RatioMeasurement union type
     const r = ratingMap[rating] ?? ratingMap.fair;
@@ -102,14 +102,14 @@ function ComparisonPanel({ comparison }: Readonly<{ comparison: GoldenRatioCompa
             <GuideLegend lines={adjusted.guideLines} />
 
             {hasChanges ? (
-                <div className="flex items-center gap-2 rounded-md bg-violet-50 px-3 py-1.5 dark:bg-violet-950/30">
+                <div className="flex items-center gap-2 rounded-md bg-violet-50 px-3 py-1.5">
                     <span className="text-xs text-muted-foreground">원본</span>
                     <span className="text-sm font-bold text-muted-foreground">{original.overallScore}점</span>
                     <span className="text-muted-foreground">→</span>
                     <span className="text-xs text-foreground">보정 후</span>
                     <span className="text-sm font-bold text-foreground">{adjusted.overallScore}점</span>
                     {scoreDelta > 0 ? (
-                        <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                        <span className="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                             ↑{scoreDelta}점 개선
                         </span>
                     ) : null}

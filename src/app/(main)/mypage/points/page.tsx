@@ -89,13 +89,13 @@ function BalanceCard({ balance, totalEarned, totalSpent }: Readonly<{
     totalSpent: number;
 }>): React.ReactElement {
     return (
-        <div className="overflow-hidden rounded-2xl border border-amber-300 shadow-md dark:border-amber-500/30">
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-5 dark:from-amber-950/30 dark:to-orange-950/30">
+        <div className="overflow-hidden rounded-2xl border border-amber-300 shadow-md">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-5">
                 <div className="flex items-center gap-2">
                     <PointCoinIcon className="h-6 w-6 text-amber-500" />
                     <p className="text-sm font-medium text-muted-foreground">보유 포인트</p>
                 </div>
-                <p className="mt-1 text-3xl font-black text-amber-600 dark:text-amber-400">
+                <p className="mt-1 text-3xl font-black text-amber-600">
                     {balance.toLocaleString()}<span className="text-lg font-semibold">P</span>
                 </p>
             </div>
@@ -171,7 +171,7 @@ function AttendanceSection({ state, onCheck, attendancePoints, streakPoints }: R
                 disabled={state.checkedToday || state.loading}
                 className={`flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     state.checkedToday
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                        ? "bg-emerald-100 text-emerald-700"
                         : "bg-blue-500 text-white shadow-lg hover:bg-blue-600 focus-visible:bg-blue-600 active:scale-[0.98]"
                 } disabled:opacity-70`}
             >
@@ -192,10 +192,10 @@ function QuickActions(): React.ReactElement {
             <h3 className="mb-3 text-sm font-bold text-foreground">포인트 사용</h3>
             <Link
                 href="/mypage/artist/ads"
-                className="flex items-center gap-4 rounded-xl border border-border bg-gradient-to-r from-amber-50 to-orange-50 p-4 transition-colors hover:from-amber-100 hover:to-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:from-amber-950/20 dark:to-orange-950/20 dark:hover:from-amber-950/40 dark:hover:to-orange-950/40"
+                className="flex items-center gap-4 rounded-xl border border-border bg-gradient-to-r from-amber-50 to-orange-50 p-4 transition-colors hover:from-amber-100 hover:to-orange-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/20">
-                    <Megaphone className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <Megaphone className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="flex-1">
                     <p className="text-sm font-bold text-foreground">광고 구매하기</p>
@@ -234,16 +234,16 @@ function PointGuideSection({ isSemi }: Readonly<{ isSemi: boolean }>): React.Rea
                     <li key={rule.label} className="flex items-center gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">{rule.icon}</div>
                         <span className="flex-1 text-sm text-foreground">{rule.label}</span>
-                        <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{rule.point}</span>
+                        <span className="text-sm font-bold text-amber-600">{rule.point}</span>
                         <span className="w-14 text-right text-[11px] text-muted-foreground">{rule.note}</span>
                     </li>
                 ))}
             </ul>
-            <div className="mt-4 rounded-xl bg-amber-50 p-3.5 dark:bg-amber-950/20">
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+            <div className="mt-4 rounded-xl bg-amber-50 p-3.5">
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
                     <Megaphone className="h-3.5 w-3.5" /> 포인트 사용처
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-amber-600 dark:text-amber-400/80">
+                <p className="mt-1 text-xs leading-relaxed text-amber-600">
                     적립된 포인트는 홈페이지 내 <strong>광고 구매 시 현금 대신 결제 수단</strong>으로 사용할 수 있습니다.
                 </p>
             </div>
@@ -270,10 +270,10 @@ function TransactionItem({ tx }: Readonly<{ tx: PointTransaction }>): React.Reac
                 <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-foreground">{config.label}</p>
                     {isExpired && (
-                        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:bg-red-500/20 dark:text-red-400">소멸</span>
+                        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600">소멸</span>
                     )}
                     {tx.type === "EXPIRE" && (
-                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 dark:bg-zinc-500/20 dark:text-zinc-400">기한만료</span>
+                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600">기한만료</span>
                     )}
                 </div>
                 {tx.description && (
@@ -283,7 +283,7 @@ function TransactionItem({ tx }: Readonly<{ tx: PointTransaction }>): React.Reac
                     <span>{formatDate(tx.created_at)}</span>
                     <span>{formatTime(tx.created_at)}</span>
                     {tx.expires_at && !isExpired && (
-                        <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                        <span className="flex items-center gap-0.5 text-amber-600">
                             <Timer className="h-3 w-3" />
                             {formatDate(tx.expires_at)} 만료
                         </span>
@@ -291,7 +291,7 @@ function TransactionItem({ tx }: Readonly<{ tx: PointTransaction }>): React.Reac
                 </div>
             </div>
             <div className="shrink-0 text-right">
-                <div className={`flex items-center gap-1 text-sm font-bold ${isEarn ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                <div className={`flex items-center gap-1 text-sm font-bold ${isEarn ? "text-emerald-600" : "text-red-600"}`}>
                     {isEarn ? <ArrowUpCircle className="h-4 w-4" /> : <ArrowDownCircle className="h-4 w-4" />}
                     {isEarn ? "+" : ""}{tx.amount.toLocaleString()}P
                 </div>

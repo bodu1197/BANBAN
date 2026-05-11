@@ -11,10 +11,6 @@ vi.mock("@/components/layout/HeaderSearch", () => ({
   HeaderSearchIcon: () => <div data-testid="header-search" />,
 }));
 
-vi.mock("@/components/layout/ThemeToggle", () => ({
-  ThemeToggle: () => <div data-testid="theme-toggle" />,
-}));
-
 describe("Header", () => {
   it("반언니 로고가 렌더링됨", () => {
     render(<Header />);
@@ -33,8 +29,4 @@ describe("Header", () => {
     expect(screen.getByTestId("header-search")).toBeInTheDocument();
   });
 
-  it("테마 토글이 렌더링됨", () => {
-    render(<Header />);
-    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
-  });
 });
