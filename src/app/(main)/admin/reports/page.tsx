@@ -22,13 +22,13 @@ interface ReportWithReporter {
 }
 
 const STATUS_LABELS = new Map<string, { label: string; className: string }>([
-  ["PENDING", { label: "대기중", className: "bg-yellow-100 text-yellow-800" }],
-  ["REVIEWED", { label: "검토완료", className: "bg-blue-100 text-blue-800" }],
-  ["RESOLVED", { label: "처리완료", className: "bg-green-100 text-green-800" }],
-  ["DISMISSED", { label: "반려", className: "bg-zinc-100 text-zinc-600" }],
+  ["PENDING", { label: "대기중", className: "bg-yellow-900/30 text-yellow-300" }],
+  ["REVIEWED", { label: "검토완료", className: "bg-blue-900/30 text-blue-300" }],
+  ["RESOLVED", { label: "처리완료", className: "bg-green-900/30 text-green-300" }],
+  ["DISMISSED", { label: "반려", className: "bg-zinc-800 text-zinc-400" }],
 ]);
 
-const PENDING_CONFIG = { label: "대기중", className: "bg-yellow-100 text-yellow-800" };
+const PENDING_CONFIG = { label: "대기중", className: "bg-yellow-900/30 text-yellow-300" };
 
 const REASON_LABELS = new Map<string, string>([
   ["SPAM", "스팸/광고"],
@@ -70,18 +70,18 @@ function ReportHeader({ report, expanded }: Readonly<{
     <>
       <div className="flex flex-1 items-center gap-2 overflow-hidden">
         <StatusBadge status={report.status} />
-        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">
+        <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs font-medium">
           {TYPE_LABELS.get(report.reportable_type) ?? report.reportable_type}
         </span>
         <span className="truncate text-sm font-medium">
           {REASON_LABELS.get(report.reason ?? "") ?? report.reason ?? "사유 없음"}
         </span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-zinc-400">
           — {report.reporter?.nickname ?? "알 수 없음"}
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">{formatDate(report.created_at)}</span>
+        <span className="text-xs text-zinc-400">{formatDate(report.created_at)}</span>
         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </div>
     </>
@@ -131,7 +131,7 @@ function ReportDetails({ report }: Readonly<{ report: ReportWithReporter }>): Re
       <p><span className="font-medium">신고 사유:</span> {REASON_LABELS.get(reasonKey) ?? report.reason}</p>
       {report.description ? <p><span className="font-medium">상세 설명:</span> {report.description}</p> : null}
       <ReportContentLink type={report.reportable_type} id={report.reportable_id} />
-      {report.reviewed_at ? <p className="text-xs text-muted-foreground">검토일: {formatDate(report.reviewed_at)}</p> : null}
+      {report.reviewed_at ? <p className="text-xs text-zinc-400">검토일: {formatDate(report.reviewed_at)}</p> : null}
     </div>
   );
 }
@@ -154,7 +154,7 @@ function ReportBody({ report, onRefresh }: Readonly<{
   report: ReportWithReporter; onRefresh: () => void;
 }>): React.ReactElement {
   return (
-    <div className="border-t border-border px-4 pb-4 pt-3">
+    <div className="border-t border-white/10 px-4 pb-4 pt-3">
       <ReportDetails report={report} />
       <ReportActions report={report} onRefresh={onRefresh} />
     </div>
@@ -167,7 +167,7 @@ function ReportRow({ report, onRefresh }: Readonly<{
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl border border-border bg-background">
+    <div className="rounded-xl border border-white/10 bg-white/5">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -221,7 +221,7 @@ export default function AdminReportsPage(): React.ReactElement {
     <div className="space-y-4 p-4 md:p-6">
       <AdminPageHeader title="신고 관리" count={pendingCount} countLabel="대기중" />
       {reports.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">등록된 신고가 없습니다</p>
+        <p className="py-12 text-center text-zinc-400">등록된 신고가 없습니다</p>
       ) : (
         <div className="space-y-2">
           {reports.map((report) => (

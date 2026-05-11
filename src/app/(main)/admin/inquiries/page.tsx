@@ -24,9 +24,9 @@ interface InquiryWithUser {
 }
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  OPEN: { label: "대기중", className: "bg-yellow-100 text-yellow-800" },
-  REPLIED: { label: "답변완료", className: "bg-green-100 text-green-800" },
-  CLOSED: { label: "종료", className: "bg-zinc-100 text-zinc-600" },
+  OPEN: { label: "대기중", className: "bg-yellow-900/30 text-yellow-300" },
+  REPLIED: { label: "답변완료", className: "bg-green-900/30 text-green-300" },
+  CLOSED: { label: "종료", className: "bg-zinc-800 text-zinc-400" },
 };
 
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
@@ -75,7 +75,7 @@ function ReplyForm({ inquiryId, userId, currentReply, currentImages, onDone }: R
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 space-y-2">
-      <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="답변을 입력해주세요" rows={3} required disabled={submitting} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" />
+      <textarea value={reply} onChange={(e) => setReply(e.target.value)} placeholder="답변을 입력해주세요" rows={3} required disabled={submitting} className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" />
       <ImageUploader images={images} onChange={setImages} disabled={submitting} />
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={submitting}>{submitting ? "..." : "답변 등록"}</Button>
@@ -93,10 +93,10 @@ function InquiryHeader({ inquiry, expanded }: Readonly<{
       <div className="flex flex-1 items-center gap-2 overflow-hidden">
         <StatusBadge status={inquiry.status} />
         <span className="truncate text-sm font-medium">{inquiry.title}</span>
-        <span className="text-xs text-muted-foreground">— {userName}</span>
+        <span className="text-xs text-zinc-400">— {userName}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">{formatDate(inquiry.created_at)}</span>
+        <span className="text-xs text-zinc-400">{formatDate(inquiry.created_at)}</span>
         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </div>
     </>
@@ -130,7 +130,7 @@ function AdminReplyBlock({ reply, repliedAt, images }: Readonly<{
       <p className="text-xs font-semibold text-brand-primary">관리자 답변</p>
       <p className="mt-1 whitespace-pre-wrap text-sm">{reply}</p>
       <ImageList images={images} />
-      {repliedAt ? <p className="mt-1 text-xs text-muted-foreground">{formatDate(repliedAt)}</p> : null}
+      {repliedAt ? <p className="mt-1 text-xs text-zinc-400">{formatDate(repliedAt)}</p> : null}
     </div>
   );
 }
@@ -144,7 +144,7 @@ function InquiryContent({ inquiry }: Readonly<{ inquiry: InquiryWithUser }>): Re
   const userEmail = inquiry.user?.email ?? "";
   return (
     <>
-      <div className="mb-2 text-xs text-muted-foreground">작성자: {userName} {userEmail ? `(${userEmail})` : ""}</div>
+      <div className="mb-2 text-xs text-zinc-400">작성자: {userName} {userEmail ? `(${userEmail})` : ""}</div>
       <p className="whitespace-pre-wrap text-sm">{inquiry.body}</p>
       <ImageList images={inquiry.image_urls ?? []} />
       {inquiry.admin_reply ? <AdminReplyBlock reply={inquiry.admin_reply} repliedAt={inquiry.admin_replied_at} images={inquiry.admin_reply_image_urls ?? []} /> : null}
@@ -170,7 +170,7 @@ function InquiryBody({ inquiry, onRefresh }: Readonly<{
   };
 
   return (
-    <div className="border-t border-border px-4 pb-4 pt-3">
+    <div className="border-t border-white/10 px-4 pb-4 pt-3">
       <InquiryContent inquiry={inquiry} />
 
       <InquiryActions
@@ -198,7 +198,7 @@ function InquiryRow({ inquiry, onRefresh }: Readonly<{
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-xl border border-border bg-background">
+    <div className="rounded-xl border border-white/10 bg-white/5">
       <button type="button" onClick={() => setExpanded(!expanded)} className="flex w-full items-center justify-between p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-expanded={expanded}>
         <InquiryHeader inquiry={inquiry} expanded={expanded} />
       </button>
@@ -248,7 +248,7 @@ export default function AdminInquiriesPage(): React.ReactElement {
     <div className="space-y-4 p-4 md:p-6">
       <AdminPageHeader title="건의사항 관리" count={openCount} countLabel="대기중" />
       {inquiries.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">등록된 건의사항이 없습니다</p>
+        <p className="py-12 text-center text-zinc-400">등록된 건의사항이 없습니다</p>
       ) : (
         <div className="space-y-2">
           {inquiries.map((item) => (

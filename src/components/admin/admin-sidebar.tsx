@@ -105,7 +105,7 @@ export function AdminSidebar(): React.ReactElement {
     const counts = useSidebarCounts();
 
     return (
-        <aside className="hidden w-60 shrink-0 border-r border-white/10 bg-background lg:flex lg:flex-col">
+        <aside className="hidden w-60 shrink-0 border-r border-white/10 bg-zinc-900 lg:flex lg:flex-col">
             <div className="flex items-center gap-2 border-b border-white/10 px-4 py-4">
                 <LayoutDashboard className="h-5 w-5 text-brand-primary" />
                 <span className="text-sm font-bold text-white">Admin</span>
