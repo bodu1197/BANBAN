@@ -84,8 +84,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     orderIndex?: number;
   };
 
-  if (!body.artistId || !body.beforeImagePath || !body.afterImagePath) {
-    return NextResponse.json({ error: "artistId, beforeImagePath, and afterImagePath are required" }, { status: 400 });
+  if (!body.artistId || !body.beforeImagePath || !body.afterImagePath || !body.title?.trim()) {
+    return NextResponse.json({ error: "artistId, title, beforeImagePath, and afterImagePath are required" }, { status: 400 });
   }
 
   const admin = createAdminClient();

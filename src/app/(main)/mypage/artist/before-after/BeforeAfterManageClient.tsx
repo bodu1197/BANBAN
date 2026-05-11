@@ -123,6 +123,10 @@ function UploadForm({
   );
 
   const handleSubmit = async (): Promise<void> => {
+    if (!title.trim()) {
+      globalThis.alert("제목을 입력해주세요.");
+      return;
+    }
     if (!beforeFile || !afterFile) {
       globalThis.alert("시술 전/후 이미지를 모두 선택해주세요.");
       return;
@@ -189,7 +193,7 @@ function UploadForm({
       {/* Title input */}
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">
-          제목 (선택)
+          제목 <span className="text-destructive">*</span>
         </label>
         <input
           type="text"
@@ -284,7 +288,7 @@ function UploadForm({
       <Button
         type="button"
         onClick={handleSubmit}
-        disabled={isUploading || !beforeFile || !afterFile}
+        disabled={isUploading || !title.trim() || !beforeFile || !afterFile}
         className="w-full bg-brand-primary py-5 text-sm font-semibold text-white hover:bg-brand-primary-hover"
       >
         {isUploading ? "업로드 중..." : "등록하기"}
