@@ -37,7 +37,7 @@ interface ArtistRegisterClientProps {
 export function ArtistRegisterClient({ categories,
 }: Readonly<ArtistRegisterClientProps>): React.ReactElement {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isArtist } = useAuth();
   const { isOpen: isAddressOpen, open: openAddress, close: closeAddress } = useDaumPostcode();
 
   const [formData, setFormData] = useState<ArtistFormData>(INITIAL_FORM_DATA);
@@ -49,12 +49,16 @@ export function ArtistRegisterClient({ categories,
   const { handleInputChange, handleCheckboxChange } = useArtistFormHandlers(setFormData);
   const { shopCategories } = useArtistCategories(categories);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
       globalThis.location.href = "/login";
+      return;
     }
-  }, [authLoading, user]);
+    if (!authLoading && isArtist) {
+      globalThis.alert("이미 아티스트로 등록되어 있습니다.");
+      router.push("/mypage");
+    }
+  }, [authLoading, user, isArtist, router]);
 
   const handleAddressSearch = async (): Promise<void> => {
     const result = await openAddress();
@@ -93,18 +97,16 @@ export function ArtistRegisterClient({ categories,
 
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
       const coords = await geocodeAddress(formData.address);
 
-      // Derive type_sex from selected shop categories
       const MALE_ARTIST_CAT = "5c66b31c-8853-4cf5-864f-6bb84ec2c2ae";
       const isMale = formData.shop_category_ids.includes(MALE_ARTIST_CAT);
       const typeSex = isMale ? "MALE" : "FEMALE";
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      const { data: artist, error: artistError } = await (supabase.from("artists") as any)
-        .insert({
-          user_id: (user as { id: string }).id,
+      const registerRes = await fetch("/api/artist-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           type_artist: formData.type_artist,
           type_sex: typeSex,
           title: normalizeFancyText(formData.title),
@@ -119,16 +121,17 @@ export function ArtistRegisterClient({ categories,
           description: formData.description ? normalizeFancyText(formData.description) : null,
           lat: coords?.lat ?? null,
           lon: coords?.lon ?? null,
-          is_hide: false,
-          likes_count: 0,
-          views_count: 0,
-          approved_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
+        }),
+      });
 
-      if (artistError) throw artistError;
-      const artistId = artist?.id as string;
+      if (registerRes.status === 409) {
+        globalThis.alert("이미 아티스트로 등록되어 있습니다.");
+        router.push("/mypage");
+        return;
+      }
+      if (!registerRes.ok) throw new Error("Registration failed");
+
+      const { artistId } = await registerRes.json() as { artistId: string };
 
       // Upload profile image via server API (bypasses storage RLS)
       if (profileImage.length > 0) {
@@ -163,12 +166,13 @@ export function ArtistRegisterClient({ categories,
         }
       }
 
-      // Add categories
-      const categorizables = [
-        ...formData.shop_category_ids.map((catId) => ({ category_id: catId, categorizable_type: "artist" as const, categorizable_id: artistId })),
-      ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      if (categorizables.length > 0) await (supabase.from("categorizables") as any).insert(categorizables);
+      if (formData.shop_category_ids.length > 0) {
+        await fetch("/api/artist-register", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ artistId, categoryIds: formData.shop_category_ids }),
+        });
+      }
 
       // 신규 아티스트 웰컴 포인트
       void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "WELCOME_BONUS" }) });
