@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { QuickMenuItem as QuickMenuItemData } from "@/lib/supabase/banner-queries";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 
 function getIconUrl(iconPath: string): string {
   if (iconPath.startsWith("http")) return iconPath;

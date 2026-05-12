@@ -12,7 +12,7 @@ import pg from "pg";
 /** Allow up to 300s for batch embedding processing */
 export const maxDuration = 300;
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const STORAGE_BUCKET = "portfolios";
 const BATCH_SIZE = 10;

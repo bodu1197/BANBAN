@@ -185,7 +185,7 @@ export async function fetchArtistProfileImage(artistId: string): Promise<string 
   const path = (data as { profile_image_path: string | null })?.profile_image_path;
   if (!path) return null;
 
-  const bucketUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars`;
+  const bucketUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/avatars`;
   return `${bucketUrl}/${path}`;
 }
 
@@ -200,7 +200,7 @@ export async function fetchArtistProfileImages(artistIds: string[]): Promise<Map
 
   if (error) return new Map();
 
-  const bucketUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars`;
+  const bucketUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/avatars`;
   const map = new Map<string, string>();
   for (const row of (data ?? []) as { id: string; profile_image_path: string | null }[]) {
     if (row.profile_image_path) {

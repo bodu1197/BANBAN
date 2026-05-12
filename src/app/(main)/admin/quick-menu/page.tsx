@@ -17,7 +17,7 @@ interface MenuItem {
   updated_at: string;
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const API = "/api/admin/quick-menu";
 const JSON_H = { "Content-Type": "application/json" };
 

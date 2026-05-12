@@ -7,7 +7,7 @@ interface ExhibitionBannerProps {
   altText: string;
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 
 export function ExhibitionBanner({ imageUrl, linkUrl, altText }: Readonly<ExhibitionBannerProps>): React.ReactElement {
   const src = imageUrl.startsWith("http") ? imageUrl : `${SUPABASE_URL}/storage/v1/object/public/banners/${imageUrl}`;

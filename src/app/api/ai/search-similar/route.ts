@@ -12,7 +12,7 @@ import { CLIP_URL } from "@/lib/ai-client";
 import { createClient as createSupabaseDirectClient } from "@supabase/supabase-js";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 function getClientIp(request: NextRequest): string {

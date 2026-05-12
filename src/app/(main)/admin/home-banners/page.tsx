@@ -17,7 +17,7 @@ interface HomeBanner {
   updated_at: string;
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const API_PATH = "/api/admin/home-banners";
 
 const SLOT_LABELS: Record<string, { title: string; description: string }> = {
