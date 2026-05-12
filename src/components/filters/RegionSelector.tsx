@@ -70,34 +70,33 @@ export function RegionSelector({
   };
 
   return (
-    <section className="px-4 py-3">
-      <h2 className="mb-2 text-base font-bold">{labels.regionView}</h2>
-      <div className="flex items-center gap-2">
+    <>
+      <div className="flex items-center gap-2 md:gap-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
           className={cn(
-            "flex flex-1 items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             selectedId ? "border-brand-primary" : "border-border hover:border-brand-primary",
           )}
         >
           <span className={selectedId ? "font-medium text-brand-primary" : "text-muted-foreground"}>
             {selectedName}
           </span>
-          <span className="text-muted-foreground">&gt;</span>
+          <span className="ml-2 text-muted-foreground">&gt;</span>
         </button>
         {(selectedId || selectedSido) && (
           <button
             type="button"
             onClick={() => { onSelectRegions(null, null); }}
             aria-label={labels.resetRegion}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="text-base leading-none">&times;</span>
+            <span className="text-sm leading-none">&times;</span>
           </button>
         )}
       </div>
       {open && <RegionModal groups={groups} selectedId={selectedId} selectedSido={selectedSido} labels={labels} onSelectRegions={handleSelectRegions} onClose={() => setOpen(false)} />}
-    </section>
+    </>
   );
 }

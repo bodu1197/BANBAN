@@ -133,10 +133,10 @@ function PriceSlider({ value, onCommit, labels }: Readonly<{
     ? labels.priceUnlimited
     : `${formatSliderPrice(local)} ${labels.priceUnder}`;
   return (
-    <div className="px-4 py-3">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">{labels.price}</span>
-        <span className="text-sm text-muted-foreground">{label}</span>
+    <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-foreground">{labels.price}</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
       </div>
       <input
         type="range"
@@ -148,10 +148,6 @@ function PriceSlider({ value, onCommit, labels }: Readonly<{
         className="w-full accent-brand-primary"
         aria-label={labels.price}
       />
-      <div className="mt-1 flex justify-between text-xs text-muted-foreground">
-        <span>{labels.priceUnlimited}</span>
-        <span>{formatSliderPrice(PRICE_MAX)}</span>
-      </div>
     </div>
   );
 }
@@ -283,14 +279,16 @@ export function PortfolioFilterControls({ categories, regions, d, filters, setRe
         ? <BeautyFilterSection categories={categories} filters={filters} setCategoryIds={setCategoryIds} />
         : <StandardFilterSection categories={categories} filters={filters} setCategoryIds={setCategoryIds} labels={d.categoryTabs} />
       }
-      <RegionSelector
-        regions={regions}
-        selectedId={filters.regionId}
-        selectedSido={filters.regionSido}
-        labels={d}
-        onSelectRegions={setRegions}
-      />
-      <PriceSlider value={filters.priceMax} onCommit={setPriceMax} labels={priceLabels} />
+      <div className="flex items-center gap-3 px-4 py-3 md:gap-4">
+        <RegionSelector
+          regions={regions}
+          selectedId={filters.regionId}
+          selectedSido={filters.regionSido}
+          labels={d}
+          onSelectRegions={setRegions}
+        />
+        <PriceSlider value={filters.priceMax} onCommit={setPriceMax} labels={priceLabels} />
+      </div>
       <SelectedTags categories={categories} selectedIds={filters.categoryIds} onRemove={removeCategory} />
       {hasActiveFilters && <ResetButton label={d.resetAll} onClick={resetFilters} />}
     </>
