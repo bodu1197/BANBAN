@@ -7,7 +7,34 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CheckCircle2, XCircle, Circle } from "lucide-react";
 import { resetPassword, updatePassword } from "@/lib/supabase/auth-client";
+
+function ResetPasswordChecklist({ password, confirmPassword }: Readonly<{ password: string; confirmPassword: string }>): React.ReactElement | null {
+  if (!password) return null;
+  const rules = [
+    { label: "8자 이상 입력", met: password.length >= 8 },
+    { label: "영문(a-z, A-Z) 포함", met: /[A-Za-z]/.test(password) },
+    { label: "숫자(0-9) 포함", met: /\d/.test(password) },
+  ];
+  const showMatch = confirmPassword.length > 0;
+  return (
+    <ul className="space-y-1 pt-1">
+      {rules.map((rule) => (
+        <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-blue-600" : "text-muted-foreground"}`}>
+          {rule.met ? <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" /> : <Circle className="h-3 w-3 shrink-0" aria-hidden="true" />}
+          {rule.label}
+        </li>
+      ))}
+      {showMatch && (
+        <li className={`flex items-center gap-1.5 text-xs ${password === confirmPassword ? "text-blue-600" : "text-destructive"}`}>
+          {password === confirmPassword ? <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" /> : <XCircle className="h-3 w-3 shrink-0" aria-hidden="true" />}
+          비밀번호 일치
+        </li>
+      )}
+    </ul>
+  );
+}
 /* eslint-disable max-lines-per-function */
 export function ResetPasswordForm(): React.ReactElement {
   const [isPending, startTransition] = useTransition();
@@ -54,7 +81,7 @@ export function ResetPasswordForm(): React.ReactElement {
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       setError(STRINGS.auth.passwordMinError);
       return;
     }
@@ -121,7 +148,7 @@ export function ResetPasswordForm(): React.ReactElement {
             required
             disabled={isPending}
             autoComplete="new-password"
-            minLength={6}
+            minLength={8}
           />
         </div>
 
@@ -135,9 +162,11 @@ export function ResetPasswordForm(): React.ReactElement {
             required
             disabled={isPending}
             autoComplete="new-password"
-            minLength={6}
+            minLength={8}
           />
         </div>
+
+        <ResetPasswordChecklist password={newPassword} confirmPassword={confirmPassword} />
 
         {error && (
           <p className="text-sm text-destructive">{error}</p>

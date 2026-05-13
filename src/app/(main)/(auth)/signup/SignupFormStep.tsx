@@ -97,9 +97,9 @@ function PasswordChecklist({ password, confirmPassword }: Readonly<{ password: s
   if (!password) return null;
 
   const rules: PasswordRule[] = [
-    { label: "6자 이상", met: password.length >= 6 },
-    { label: "영문 포함", met: /[A-Za-z]/.test(password) },
-    { label: "숫자 포함", met: /\d/.test(password) },
+    { label: "8자 이상 입력", met: password.length >= 8 },
+    { label: "영문(a-z, A-Z) 포함", met: /[A-Za-z]/.test(password) },
+    { label: "숫자(0-9) 포함", met: /\d/.test(password) },
   ];
 
   const showMatch = confirmPassword.length > 0;
@@ -107,7 +107,7 @@ function PasswordChecklist({ password, confirmPassword }: Readonly<{ password: s
   return (
     <ul className="space-y-1 pt-1">
       {rules.map((rule) => (
-        <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-emerald-600" : "text-muted-foreground"}`}>
+        <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-blue-600" : "text-muted-foreground"}`}>
           {rule.met
             ? <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
             : <Circle className="h-3 w-3 shrink-0" aria-hidden="true" />}
@@ -115,7 +115,7 @@ function PasswordChecklist({ password, confirmPassword }: Readonly<{ password: s
         </li>
       ))}
       {showMatch && (
-        <li className={`flex items-center gap-1.5 text-xs ${password === confirmPassword ? "text-emerald-600" : "text-destructive"}`}>
+        <li className={`flex items-center gap-1.5 text-xs ${password === confirmPassword ? "text-blue-600" : "text-destructive"}`}>
           {password === confirmPassword
             ? <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
             : <XCircle className="h-3 w-3 shrink-0" aria-hidden="true" />}
@@ -158,7 +158,7 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
     if (isPending) return;
     setError(null);
     if (formData.password !== confirmPassword) { setError(STRINGS.auth.passwordMismatch); return; }
-    if (formData.password.length < 6) { setError(STRINGS.auth.passwordMinError); return; }
+    if (formData.password.length < 8) { setError(STRINGS.auth.passwordMinError); return; }
     if (Object.values(dupStatus).includes("taken")) { setError("중복된 항목을 수정해주세요"); return; }
 
     startTransition(async () => {
@@ -177,8 +177,8 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
     <form onSubmit={handleSubmit} className="space-y-4">
       <FormField id="username" label={STRINGS.auth.username} type="text" value={formData.username} onChange={updateField("username")} placeholder={STRINGS.auth.usernameRule} disabled={isPending} autoComplete="username" minLength={4} maxLength={12} pattern="^[A-Za-z][A-Za-z0-9]*$" dupStatus={dupStatus.username} onBlurCheck={() => checkDuplicate("username", formData.username)} />
       <FormField id="email" label={STRINGS.auth.email} type="email" value={formData.email} onChange={updateField("email")} placeholder="email@example.com" disabled={isPending} autoComplete="email" dupStatus={dupStatus.email} onBlurCheck={() => checkDuplicate("email", formData.email)} />
-      <FormField id="password" label={STRINGS.auth.password} type="password" value={formData.password} onChange={updateField("password")} placeholder={STRINGS.auth.passwordRule} disabled={isPending} autoComplete="new-password" minLength={6} />
-      <FormField id="confirmPassword" label={STRINGS.auth.confirmPassword} type="password" value={confirmPassword} onChange={setConfirmPassword} disabled={isPending} autoComplete="new-password" minLength={6} />
+      <FormField id="password" label={STRINGS.auth.password} type="password" value={formData.password} onChange={updateField("password")} placeholder={STRINGS.auth.passwordRule} disabled={isPending} autoComplete="new-password" minLength={8} />
+      <FormField id="confirmPassword" label={STRINGS.auth.confirmPassword} type="password" value={confirmPassword} onChange={setConfirmPassword} disabled={isPending} autoComplete="new-password" minLength={8} />
       <PasswordChecklist password={formData.password} confirmPassword={confirmPassword} />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-3 pt-2">
