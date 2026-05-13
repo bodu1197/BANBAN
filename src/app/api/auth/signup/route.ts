@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
 import bcrypt from "bcryptjs";
-import { v4 as uuidv4 } from "uuid";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import type { Database } from "@/types/database";
 
@@ -141,35 +140,50 @@ async function checkDuplicates(
   return null;
 }
 
-async function createUser(
-  supabase: AdminClient,
+async function signUpAuth(
   data: SignupData
 ): Promise<{ userId: string } | { error: string }> {
-  const userId = uuidv4();
-  const hashedPassword = await bcrypt.hash(data.password, 10);
-  const normalizedContact = data.contact?.replaceAll("-", "") ?? "";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL as string).trim();
+  const anonClient = createServerClient<Database>(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL as string).trim(),
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string).trim(),
+    { cookies: { getAll() { return []; }, setAll() { /* noop */ } } },
+  );
 
-  // Supabase Auth에 사용자 생성 (이메일 미인증 상태)
-  const { error: authError } = await supabase.auth.admin.createUser({
-    id: userId,
+  const { data: signUpData, error: signUpError } = await anonClient.auth.signUp({
     email: data.email,
     password: data.password,
-    email_confirm: false,
-    user_metadata: {
-      username: data.username,
-      nickname: data.nickname,
+    options: {
+      data: { username: data.username, nickname: data.nickname },
+      emailRedirectTo: `${siteUrl}/login`,
     },
   });
 
-  if (authError) {
+  if (signUpError || !signUpData.user) {
     // eslint-disable-next-line no-console
-    console.error("Auth user creation failed:", authError);
-    return { error: "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요." };
+    console.error("Signup failed:", signUpError);
+    return { error: signUpError?.message ?? "회원가입에 실패했습니다" };
   }
 
-  // profiles 테이블에 사용자 생성 (upsert: handle_new_user 트리거가 먼저 생성할 수 있음)
+  if (signUpData.user.identities?.length === 0) {
+    return { error: "이미 가입된 이메일입니다" };
+  }
+
+  return { userId: signUpData.user.id };
+}
+
+async function createUser(
+  adminClient: AdminClient,
+  data: SignupData
+): Promise<{ userId: string } | { error: string }> {
+  const authResult = await signUpAuth(data);
+  if ("error" in authResult) return authResult;
+
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+  const normalizedContact = data.contact?.replaceAll("-", "") ?? "";
+
   const profileData = {
-    id: userId,
+    id: authResult.userId,
     username: data.username,
     nickname: data.nickname,
     email: data.email,
@@ -180,19 +194,18 @@ async function createUser(
     language: "ko",
     message_push_enabled: true,
   };
-  const { error: profileError } = await supabase
+  const { error: profileError } = await adminClient
     .from("profiles")
     .upsert(profileData, { onConflict: "id" });
 
   if (profileError) {
     // eslint-disable-next-line no-console
     console.error("Profile creation failed:", profileError);
-    // Auth 사용자 삭제 (롤백)
-    await supabase.auth.admin.deleteUser(userId);
+    await adminClient.auth.admin.deleteUser(authResult.userId);
     return { error: `회원가입에 실패했습니다: ${profileError.message}` };
   }
 
-  return { userId };
+  return { userId: authResult.userId };
 }
 
 function parseRequestBody(body: Record<string, unknown>): SignupData {
@@ -227,7 +240,6 @@ async function processSignup(data: SignupData): Promise<NextResponse> {
 
   const supabase = createAdminClient();
 
-  // 이전 시도에서 이미 가입 완료된 경우
   const existingUser = await findExistingUser(supabase, data);
   if (existingUser) return jsonSuccess({ message: "이미 가입된 계정입니다. 로그인해주세요.", user: existingUser });
 
@@ -236,18 +248,6 @@ async function processSignup(data: SignupData): Promise<NextResponse> {
 
   const result = await createUser(supabase, data);
   if ("error" in result) return jsonError(result.error, 500);
-
-  // 인증 이메일 발송 (anon 클라이언트로 resend)
-  const anonClient = createServerClient<Database>(
-    (process.env.NEXT_PUBLIC_SUPABASE_URL as string).trim(),
-    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string).trim(),
-    { cookies: { getAll() { return []; }, setAll() { /* noop */ } } },
-  );
-  await anonClient.auth.resend({
-    type: "signup",
-    email: data.email,
-    options: { emailRedirectTo: `${(process.env.NEXT_PUBLIC_SITE_URL as string).trim()}/login` },
-  });
 
   return jsonSuccess({
     message: "이메일 인증 후 로그인할 수 있습니다",
