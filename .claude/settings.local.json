@@ -11,7 +11,8 @@
       "mcp__fetch__fetch_html",
       "mcp__fetch__fetch_youtube_transcript",
       "Bash(node *)",
-      "mcp__playwright__browser_click"
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_navigate"
     ]
   },
   "enabledMcpjsonServers": [
