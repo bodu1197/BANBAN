@@ -3,10 +3,11 @@
 
 import { STRINGS } from "@/lib/strings";
 import React, { useState, useTransition, useRef, useCallback } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, XCircle, Loader2, Circle } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Circle, Mail } from "lucide-react";
 import type { SignupFormData, CreatedUser } from "./types";
 
 interface SignupFormStepProps {
@@ -19,6 +20,7 @@ interface SignupFormStepProps {
 interface SignupResponse {
   success?: boolean;
   error?: string;
+  emailVerificationRequired?: boolean;
   user?: { id: string; username: string; nickname: string; email: string };
 }
 
@@ -26,7 +28,7 @@ async function signUpLegacy(data: {
   username: string;
   password: string;
   email: string;
-}): Promise<{ error: Error | null; user?: { id: string; username: string } }> {
+}): Promise<{ error: Error | null; emailVerificationRequired?: boolean; user?: { id: string; username: string } }> {
   try {
     const response = await fetch("/api/auth/signup", {
       method: "POST",
@@ -35,7 +37,7 @@ async function signUpLegacy(data: {
     });
     const result: SignupResponse = await response.json();
     if (!response.ok) return { error: new Error(result.error ?? "Registration failed") };
-    return { error: null, user: result.user ? { id: result.user.id, username: result.user.username } : undefined };
+    return { error: null, emailVerificationRequired: result.emailVerificationRequired, user: result.user ? { id: result.user.id, username: result.user.username } : undefined };
   } catch (err) {
     return { error: err instanceof Error ? err : new Error("An error occurred during registration") };
   }
@@ -131,6 +133,7 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
   const [isPending, startTransition] = useTransition();
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
   const [dupStatus, setDupStatus] = useState<Record<string, DupStatus>>({});
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -162,16 +165,33 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
     if (Object.values(dupStatus).includes("taken")) { setError("중복된 항목을 수정해주세요"); return; }
 
     startTransition(async () => {
-      const { error: signupError, user } = await signUpLegacy({
+      const { error: signupError, emailVerificationRequired, user } = await signUpLegacy({
         username: formData.username, password: formData.password,
         email: formData.email,
       });
       if (signupError || !user) { setError(signupError?.message ?? "Registration failed"); return; }
+      if (emailVerificationRequired) { setEmailSent(true); return; }
       onComplete(user);
     });
   };
 
   const updateField = (field: keyof SignupFormData) => (v: string) => setFormData((prev) => ({ ...prev, [field]: v }));
+
+  if (emailSent) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="flex justify-center">
+          <Mail className="h-12 w-12 text-blue-600" aria-hidden="true" />
+        </div>
+        <h3 className="text-lg font-semibold">{STRINGS.auth.signupEmailSent}</h3>
+        <p className="text-sm text-muted-foreground">{STRINGS.auth.checkEmailToComplete}</p>
+        <p className="text-xs text-muted-foreground">({formData.email})</p>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/login">{STRINGS.auth.backToLogin}</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

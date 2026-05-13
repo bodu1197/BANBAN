@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
-import { earnPoints } from "@/lib/supabase/point-queries";
 import type { Database } from "@/types/database";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -151,12 +149,12 @@ async function createUser(
   const hashedPassword = await bcrypt.hash(data.password, 10);
   const normalizedContact = data.contact?.replaceAll("-", "") ?? "";
 
-  // Supabase Auth에 사용자 생성
+  // Supabase Auth에 사용자 생성 (이메일 미인증 상태)
   const { error: authError } = await supabase.auth.admin.createUser({
     id: userId,
     email: data.email,
     password: data.password,
-    email_confirm: true,
+    email_confirm: false,
     user_metadata: {
       username: data.username,
       nickname: data.nickname,
@@ -208,18 +206,6 @@ function parseRequestBody(body: Record<string, unknown>): SignupData {
   };
 }
 
-function buildSuccessResponse(userId: string, data: SignupData): NextResponse {
-  return jsonSuccess({
-    message: "회원가입이 완료되었습니다",
-    user: {
-      id: userId,
-      username: data.username,
-      nickname: data.nickname,
-      email: data.email,
-    },
-  });
-}
-
 async function findExistingUser(
   supabase: AdminClient,
   data: SignupData
@@ -235,50 +221,15 @@ async function findExistingUser(
   return existing ? { id: existing.id as string, username: existing.username as string } : null;
 }
 
-async function autoLogin(supabase: AdminClient, email: string): Promise<void> {
-  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-    options: { redirectTo: "/" },
-  });
-
-  if (linkError || !linkData.properties?.hashed_token) return;
-
-  const { data: sessionData, error: sessionError } = await supabase.auth.verifyOtp({
-    token_hash: linkData.properties.hashed_token,
-    type: "magiclink",
-  });
-
-  if (sessionError || !sessionData.session) return;
-
-  const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-
-  const supabaseWithCookies = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll: () => cookieStore.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-      },
-    },
-  });
-
-  await supabaseWithCookies.auth.setSession({
-    access_token: sessionData.session.access_token,
-    refresh_token: sessionData.session.refresh_token,
-  });
-}
-
 async function processSignup(data: SignupData): Promise<NextResponse> {
   const validationError = validateSignupData(data);
   if (validationError) return jsonError(validationError, 400);
 
   const supabase = createAdminClient();
 
-  // 이전 시도에서 이미 가입 완료된 경우 → 성공 반환
+  // 이전 시도에서 이미 가입 완료된 경우
   const existingUser = await findExistingUser(supabase, data);
-  if (existingUser) return buildSuccessResponse(existingUser.id, data);
+  if (existingUser) return jsonSuccess({ message: "이미 가입된 계정입니다. 로그인해주세요.", user: existingUser });
 
   const duplicateError = await checkDuplicates(supabase, data);
   if (duplicateError) return jsonError(duplicateError, 400);
@@ -286,13 +237,28 @@ async function processSignup(data: SignupData): Promise<NextResponse> {
   const result = await createUser(supabase, data);
   if ("error" in result) return jsonError(result.error, 500);
 
-  // 자동 로그인 (세션 쿠키 설정)
-  await autoLogin(supabase, data.email);
+  // 인증 이메일 발송 (anon 클라이언트로 resend)
+  const anonClient = createServerClient<Database>(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL as string).trim(),
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string).trim(),
+    { cookies: { getAll() { return []; }, setAll() { /* noop */ } } },
+  );
+  await anonClient.auth.resend({
+    type: "signup",
+    email: data.email,
+    options: { emailRedirectTo: `${(process.env.NEXT_PUBLIC_SITE_URL as string).trim()}/login` },
+  });
 
-  // 회원가입 축하 포인트
-  void earnPoints({ userId: result.userId, amount: 30_000, reason: "SIGNUP_BONUS", description: "회원가입 축하 포인트" });
-
-  return buildSuccessResponse(result.userId, data);
+  return jsonSuccess({
+    message: "이메일 인증 후 로그인할 수 있습니다",
+    emailVerificationRequired: true,
+    user: {
+      id: result.userId,
+      username: data.username,
+      nickname: data.nickname,
+      email: data.email,
+    },
+  });
 }
 
 /**
