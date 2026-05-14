@@ -262,10 +262,9 @@ async function processSignup(data: SignupData): Promise<NextResponse> {
 }
 
 /**
- * 레거시 호환 회원가입 API
- * - username, nickname, password, contact, email 필수
- * - bcrypt로 비밀번호 해시
- * - profiles 테이블과 Supabase Auth에 동시 생성
+ * 회원가입 API
+ * - username, nickname, password, email 필수 (contact 선택)
+ * - Supabase Auth + profiles 테이블 동시 생성
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { migrateLegacySocialProfile } from "@/lib/supabase/legacy-social-migration";
 
 function getRedirectUrl(request: Request, origin: string, path: string): string {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -33,14 +32,10 @@ async function handleCallback(request: Request, code: string | null, next: strin
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const adminClient = createAdminClient();
-      // Update last login + reactivate dormant artist
       await adminClient.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", user.id);
       await adminClient.from("artists").update({ status: "active" }).eq("user_id", user.id).eq("status", "dormant");
-      // Link legacy social login profile if applicable
-      await migrateLegacySocialProfile(adminClient, user);
     }
   } catch {
-    // Non-fatal: post-login tasks failure should not block login
     // eslint-disable-next-line no-console
     console.error("[Auth Callback] Post-login tasks failed");
   }

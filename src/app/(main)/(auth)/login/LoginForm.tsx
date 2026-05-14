@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { loginWithProvider } from "./actions";
-import { signInWithIdentifier } from "@/lib/supabase/auth-client";
+import { signInWithEmail } from "@/lib/supabase/auth-client";
 import type { OAuthProvider } from "@/lib/supabase/auth";
 
 interface OAuthProviderConfig {
@@ -46,10 +46,10 @@ const OAUTH_PROVIDERS: OAuthProviderConfig[] = [
 export function LoginForm(): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isIdLogin, setIsIdLogin] = useState(false);
+  const [isEmailLogin, setIsEmailLogin] = useState(false);
   const [pendingProvider, setPendingProvider] = useState<OAuthProvider | null>(null);
 
   const handleOAuthLogin = (provider: OAuthProvider): void => {
@@ -72,12 +72,12 @@ export function LoginForm(): React.ReactElement {
     });
   };
 
-  const handleIdLogin = (e: React.FormEvent): void => {
+  const handleEmailLogin = (e: React.FormEvent): void => {
     e.preventDefault();
     setError(null);
 
     startTransition(async () => {
-      const { error: loginError } = await signInWithIdentifier(username, password);
+      const { error: loginError } = await signInWithEmail(email, password);
       if (loginError) {
         setError(loginError.message);
       } else {
@@ -89,22 +89,19 @@ export function LoginForm(): React.ReactElement {
 
   return (
     <div className="space-y-4">
-      {/* ID Login Form */}
-      {isIdLogin ? (
-        <form onSubmit={handleIdLogin} className="space-y-4">
+      {isEmailLogin ? (
+        <form onSubmit={handleEmailLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">{STRINGS.auth.username}</Label>
+            <Label htmlFor="email">{STRINGS.auth.email}</Label>
             <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="username"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@example.com"
               required
               disabled={isPending}
-              autoComplete="username"
-              minLength={4}
-              maxLength={12}
+              autoComplete="email"
             />
           </div>
           <div className="space-y-2">
@@ -118,7 +115,7 @@ export function LoginForm(): React.ReactElement {
               required
               disabled={isPending}
               autoComplete="current-password"
-              minLength={4}
+              minLength={8}
             />
           </div>
 
@@ -143,7 +140,7 @@ export function LoginForm(): React.ReactElement {
             type="button"
             variant="ghost"
             className="w-full"
-            onClick={() => setIsIdLogin(false)}
+            onClick={() => setIsEmailLogin(false)}
           >
             {STRINGS.auth.loginWithSns}
           </Button>
@@ -180,9 +177,9 @@ export function LoginForm(): React.ReactElement {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => setIsIdLogin(true)}
+            onClick={() => setIsEmailLogin(true)}
           >
-            {STRINGS.auth.loginWithId}
+            {STRINGS.auth.loginWithEmail}
           </Button>
         </>
       )}

@@ -40,25 +40,11 @@ async function ensureAuthUser(
     user_metadata: { username: profile.username, nickname: profile.nickname },
   });
 
-  if (!createError) return { error: null };
-
-  // 이메일 충돌 시 fallback 이메일로 재시도
-  if (!createError.message?.includes("already been registered")) {
+  if (createError) {
     return { error: "사용자 생성에 실패했습니다. 고객센터에 문의해주세요." };
   }
 
-  const fallbackEmail = `${profile.username}@legacy.howtattoo.com`;
-  const { error: retryError } = await adminClient.auth.admin.createUser({
-    id: profile.id,
-    email: fallbackEmail,
-    password: tempPassword,
-    email_confirm: true,
-    user_metadata: { username: profile.username, nickname: profile.nickname },
-  });
-
-  return retryError
-    ? { error: "사용자 생성에 실패했습니다. 고객센터에 문의해주세요." }
-    : { error: null };
+  return { error: null };
 }
 
 async function sendResetEmail(
@@ -80,9 +66,7 @@ async function sendResetEmail(
 }
 
 /**
- * 레거시 호환 비밀번호 재설정 이메일 발송
- * - profiles 테이블에서 이메일로 사용자 조회
- * - auth.users에 없으면 생성 후 재설정 이메일 발송
+ * 비밀번호 재설정 이메일 발송
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
@@ -105,7 +89,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .is("deleted_at", null)
       .single();
 
-    // 보안상 이메일 존재 여부를 알려주지 않음
     if (!profile) return NextResponse.json({ success: true });
 
     if (isSocialAccount(profile as ProfileRow)) {
@@ -124,8 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 /**
- * 레거시 호환 비밀번호 변경
- * - auth.users와 profiles 테이블 모두 업데이트
+ * 비밀번호 변경
  */
 export async function PUT(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
@@ -148,7 +130,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(user.id, { password });
     if (updateAuthError) return jsonError("비밀번호 변경에 실패했습니다", 500);
 
-    // profiles 테이블 bcrypt 비밀번호도 동기화
     const hashedPassword = await bcrypt.hash(password, 10);
     await adminClient.from("profiles").update({ password: hashedPassword }).eq("id", user.id);
 

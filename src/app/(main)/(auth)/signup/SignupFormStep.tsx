@@ -24,7 +24,7 @@ interface SignupResponse {
   user?: { id: string; username: string; nickname: string; email: string };
 }
 
-async function signUpLegacy(data: {
+async function signUp(data: {
   username: string;
   password: string;
   email: string;
@@ -165,7 +165,7 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
     if (Object.values(dupStatus).includes("taken")) { setError("중복된 항목을 수정해주세요"); return; }
 
     startTransition(async () => {
-      const { error: signupError, emailVerificationRequired, user } = await signUpLegacy({
+      const { error: signupError, emailVerificationRequired, user } = await signUp({
         username: formData.username, password: formData.password,
         email: formData.email,
       });

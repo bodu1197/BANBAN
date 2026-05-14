@@ -3,41 +3,25 @@
 
 import { createClient } from "./client";
 
-interface LegacyLoginResult {
-  error: Error | null;
-  needsPasswordReset?: boolean;
-}
-
 /**
- * 아이디(username)로 로그인 (레거시 호환)
+ * 이메일+비밀번호 로그인 (Supabase Auth)
  */
-export async function signInWithIdentifier(
-  username: string,
+export async function signInWithEmail(
+  email: string,
   password: string
-): Promise<LegacyLoginResult> {
-  try {
-    const response = await fetch(`${globalThis.location.origin}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+): Promise<{ error: Error | null }> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      const needsPasswordReset = data.error?.includes("비밀번호 재설정") || false;
-      return {
-        error: new Error(data.error || "로그인에 실패했습니다"),
-        needsPasswordReset,
-      };
-    }
-
-    return { error: null };
-  } catch (err) {
-    return {
-      error: err instanceof Error ? err : new Error("로그인 중 오류가 발생했습니다"),
+  if (error) {
+    const messageMap: Record<string, string> = {
+      "Invalid login credentials": "이메일 또는 비밀번호가 일치하지 않습니다",
+      "Email not confirmed": "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.",
     };
+    return { error: new Error(messageMap[error.message] ?? error.message) };
   }
+
+  return { error: null };
 }
 
 /**
@@ -50,7 +34,7 @@ export async function signOut(): Promise<{ error: Error | null }> {
 }
 
 /**
- * 비밀번호 재설정 이메일 보내기 (서버 API 경유 - 레거시 호환)
+ * 비밀번호 재설정 이메일 보내기
  */
 export async function resetPassword(
   email: string
