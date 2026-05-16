@@ -14,14 +14,22 @@ const PRECACHE_URLS = [
   "/manifest.webmanifest",
   "/icon-192.png",
   "/icon-512.png",
+  "/icon-maskable-512.png",
   "/apple-icon.png",
   "/ban_logo.png",
 ];
 
+// 인증·관리·API·동적 API 경로는 SW 캐시 금지 — 다른 사용자 세션 누출 방지.
 const SCOPE_BYPASS = [
   "/api/",
   "/admin/",
-  "/_next/static/", // Next.js가 자체 long-cache headers 적용
+  "/mypage",          // 사용자 개인 대시보드
+  "/likes",           // 좋아요 목록
+  "/messages",        // 메시지
+  "/inquiries",       // 문의
+  "/points",          // 포인트
+  "/reset-password",  // 비밀번호 재설정
+  "/_next/static/",   // Next.js 가 자체 long-cache headers 적용
 ];
 
 self.addEventListener("install", (event) => {
