@@ -30,9 +30,9 @@
   <button id="retry-btn" type="button">다시 시도</button>
   <p class="sub">반언니 · banunni.com</p>
   <script>
-    // CSP-strict 환경 호환: inline onclick 대신 별도 핸들러 + online 이벤트 자동 복귀
+    // CSP-strict 환경 호환: inline onclick 대신 별도 핸들러.
+    // 자동 reload 의도적 미사용 — 사용자가 offline 안내를 읽는 도중 인터럽트 방지.
     document.getElementById("retry-btn").addEventListener("click", function () { location.reload(); });
-    window.addEventListener("online", function () { location.reload(); });
   </script>
 </body>
 </html>
