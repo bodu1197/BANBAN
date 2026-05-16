@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
 
 interface ProfileRow {
   id: string;
@@ -116,8 +117,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
   try {
     const { password, accessToken } = await request.json();
-    if (!password || password.length < 8) {
-      return jsonError("비밀번호는 8자 이상이어야 합니다", 400);
+    if (!password || password.length < PASSWORD_MIN_LENGTH) {
+      return jsonError(`비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다`, 400);
     }
 
     const adminClient = createAdminClient();

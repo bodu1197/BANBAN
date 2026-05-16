@@ -1,7 +1,7 @@
-// @client-reason: 파일 미리보기, 수정 상태 관리, 이미지 선택 등 브라우저 인터랙션 필수
+// @client-reason: 시술 전/후 이미지 미리보기, 인라인 편집, 업로드를 단일 카드에서 즉시 반영해야 하므로 클라이언트 인터랙션이 본질이다.
 "use client";
 
-/* eslint-disable max-lines-per-function */
+/* eslint-disable max-lines-per-function -- 카드 단위 폼·미리보기·업로드 흐름이 한 컴포넌트에서 묶여야 사용자 경험이 자연스럽다. 분할은 prop 전달만 늘어나고 가독성을 해친다. */
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -95,7 +95,7 @@ function EditableImage({
         {label}
       </span>
       {isEditing && (
-        <label className="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center bg-black/40 transition-colors hover:bg-black/50 focus-within:ring-2 focus-within:ring-ring">
+        <label className="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center bg-black/40 transition-colors hover:bg-black/50 focus-within:bg-black/60 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
           <Plus className="h-6 w-6 text-white" />
           <span className="mt-1 text-xs text-white">변경</span>
           <input
@@ -151,6 +151,11 @@ function BeforeAfterPreviewCard({
     setAfterFile(null);
     setBeforePreview(null);
     setAfterPreview(null);
+  }, [beforePreview, afterPreview]);
+
+  useEffect(() => () => {
+    revokePreview(beforePreview);
+    revokePreview(afterPreview);
   }, [beforePreview, afterPreview]);
 
   const handleStartEdit = (): void => {
@@ -214,7 +219,7 @@ function BeforeAfterPreviewCard({
       clearPreviews();
       setIsEditing(false);
       onUpdate();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Edit error:", error); // eslint-disable-line no-console
       globalThis.alert(STRINGS.common.error);
     } finally {
@@ -332,6 +337,11 @@ function UploadForm({
   const [afterPreview, setAfterPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  useEffect(() => () => {
+    revokePreview(beforePreview);
+    revokePreview(afterPreview);
+  }, [beforePreview, afterPreview]);
+
   const handleFileSelect = useCallback(
     (type: "before" | "after") =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,7 +396,7 @@ function UploadForm({
       setBeforePreview(null);
       setAfterPreview(null);
       onSuccess();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Upload error:", error); // eslint-disable-line no-console
       globalThis.alert(STRINGS.common.error);
     } finally {
@@ -438,7 +448,7 @@ function UploadForm({
               </button>
             </div>
           ) : (
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:ring-2 focus-within:ring-ring">
+            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring">
               <Plus className="h-6 w-6 text-muted-foreground" />
               <span className="mt-1 text-xs text-muted-foreground">
                 업로드
@@ -479,7 +489,7 @@ function UploadForm({
               </button>
             </div>
           ) : (
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:ring-2 focus-within:ring-ring">
+            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring">
               <Plus className="h-6 w-6 text-muted-foreground" />
               <span className="mt-1 text-xs text-muted-foreground">
                 업로드

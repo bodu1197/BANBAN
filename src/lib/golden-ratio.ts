@@ -284,7 +284,9 @@ export function computeGoldenRatioWithAdjustment(
 
     const improvements: GoldenRatioComparison["improvements"] = [];
     for (let i = 0; i < original.measurements.length; i++) {
+        // eslint-disable-next-line security/detect-object-injection -- i 는 length 안에서만 증가, 정수 인덱스.
         const orig = original.measurements[i];
+        // eslint-disable-next-line security/detect-object-injection -- 위와 같다.
         const adj = adjusted.measurements[i];
         if (orig && adj && orig.deviation !== adj.deviation) {
             improvements.push({

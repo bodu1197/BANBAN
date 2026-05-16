@@ -32,7 +32,7 @@ export async function fetchHomeBanners(): Promise<HomeBannerData[]> {
 
   if (error || !data) return [];
 
-  return data as unknown as HomeBannerData[];
+  return data as HomeBannerData[];
 }
 
 export interface QuickMenuItem {
@@ -57,7 +57,7 @@ export async function fetchQuickMenuItems(): Promise<QuickMenuItem[]> {
 
   if (error || !data) return [];
 
-  return data as unknown as QuickMenuItem[];
+  return data as QuickMenuItem[];
 }
 
 export async function fetchPromoBanners(): Promise<PromoBannerData[]> {
@@ -73,5 +73,5 @@ export async function fetchPromoBanners(): Promise<PromoBannerData[]> {
 
   if (error || !data) return [];
 
-  return data as unknown as PromoBannerData[];
+  return data as PromoBannerData[];
 }

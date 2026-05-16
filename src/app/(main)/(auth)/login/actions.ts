@@ -1,7 +1,7 @@
 "use server";
 
-import { getOAuthUrl, type OAuthProvider } from "@/lib/supabase/auth";
+import { getOAuthUrl, type OAuthProvider, type OAuthResult } from "@/lib/supabase/auth";
 
-export async function loginWithProvider(provider: OAuthProvider): Promise<string> {
+export async function loginWithProvider(provider: OAuthProvider): Promise<OAuthResult> {
   return getOAuthUrl(provider);
 }

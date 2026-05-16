@@ -6,9 +6,13 @@ import type { User, Session } from "@supabase/supabase-js";
 
 export type OAuthProvider = "kakao" | "google" | "apple";
 
-export async function getOAuthUrl(provider: OAuthProvider): Promise<string> {
+export type OAuthResult =
+  | { ok: true; url: string }
+  | { ok: false; error: string };
+
+export async function getOAuthUrl(provider: OAuthProvider): Promise<OAuthResult> {
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://banunni.com";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://banunni.com").trim();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
@@ -19,10 +23,10 @@ export async function getOAuthUrl(provider: OAuthProvider): Promise<string> {
   });
 
   if (error || !data.url) {
-    return `/login?error=oauth_error`;
+    return { ok: false, error: error?.message ?? "oauth_error" };
   }
 
-  return data.url;
+  return { ok: true, url: data.url };
 }
 
 export async function signOut(): Promise<never> {

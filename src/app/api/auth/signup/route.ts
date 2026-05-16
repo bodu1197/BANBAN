@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
 import bcrypt from "bcryptjs";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
 import type { Database } from "@/types/database";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -32,8 +33,6 @@ const NICKNAME_REGEX = /^[가-힣A-Za-z0-9_]{2,12}$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]+$/;
 // 연락처: 010으로 시작
 const CONTACT_REGEX = /^010\d{8}$/;
-// 비밀번호 최소 길이
-const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function jsonError(message: string, status: number): NextResponse {
@@ -55,8 +54,8 @@ function validateNickname(nickname: string): string | null {
 }
 
 function validatePassword(password: string): string | null {
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return "비밀번호는 8자 이상이어야 합니다";
+  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+    return `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다`;
   }
   return PASSWORD_REGEX.test(password) ? null : "비밀번호는 영문과 숫자를 포함해야 합니다";
 }

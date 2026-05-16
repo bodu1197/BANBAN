@@ -6,6 +6,9 @@
 export const PAGE_SIZE = 24;
 export const INFINITE_SCROLL_THRESHOLD = 0.8;
 
+// Auth — 비밀번호 최소 길이는 signup/login/reset-password 폼·서버 검증에서 공유한다.
+export const PASSWORD_MIN_LENGTH = 8;
+
 // Region codes
 export const REGIONS = [
   "seoul", "gyeonggi", "incheon", "daejeon", "sejong",

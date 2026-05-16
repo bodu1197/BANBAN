@@ -1,6 +1,7 @@
 // @client-reason: Interactive profile form with state management
 "use client";
 import { STRINGS } from "@/lib/strings";
+import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
 /* eslint-disable max-lines-per-function, complexity, sonarjs/cognitive-complexity */
 
 import { useState, useEffect } from "react";
@@ -108,8 +109,8 @@ export function ProfileClient(): React.ReactElement {
       return;
     }
 
-    if (password && password.length < 8) {
-      globalThis.alert("비밀번호는 8자 이상이어야 합니다.");
+    if (password && password.length < PASSWORD_MIN_LENGTH) {
+      globalThis.alert(`비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다.`);
       return;
     }
 

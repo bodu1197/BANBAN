@@ -97,7 +97,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.ReactElement {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href={SUPABASE_HOST} />
         <link rel="dns-prefetch" href={SUPABASE_HOST} />

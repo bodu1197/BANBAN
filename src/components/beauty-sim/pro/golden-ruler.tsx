@@ -118,6 +118,7 @@ function ComparisonPanel({ comparison }: Readonly<{ comparison: GoldenRatioCompa
 
             <div className="flex flex-col gap-1.5">
                 {adjusted.measurements.map((m, i) => {
+                    // eslint-disable-next-line security/detect-object-injection -- i 는 map 인덱스, 정수 범위 안전.
                     const orig = original.measurements[i];
                     const improved = orig && orig.deviation > m.deviation;
                     const worsened = orig && orig.deviation < m.deviation;

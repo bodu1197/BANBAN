@@ -6,6 +6,7 @@
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const STORAGE_BUCKET = "portfolios";
 const AVATARS_BUCKET = "avatars";
+const BANNERS_BUCKET = "banners";
 
 /**
  * Get the public URL for a storage path (portfolios bucket)
@@ -30,6 +31,15 @@ export function getAvatarUrl(path: string | null): string | null {
  * Note: Artist media paths already include 'artists/' prefix, so we use the same bucket as portfolios
  */
 export const getArtistMediaUrl = getStorageUrl;
+
+/**
+ * Get the public URL for a banners-bucket asset (home banners, quick menu icons).
+ */
+export function getBannerStorageUrl(path: string | null): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${SUPABASE_URL}/storage/v1/object/public/${BANNERS_BUCKET}/${path}`;
+}
 
 /**
  * 이미지 사이즈 타입

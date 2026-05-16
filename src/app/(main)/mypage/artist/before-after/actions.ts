@@ -1,6 +1,9 @@
 "use server";
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
+
+type BeforeAfterUpdate = Database["public"]["Tables"]["before_after_photos"]["Update"];
 
 interface ActionResult {
   success: boolean;
@@ -32,7 +35,7 @@ async function authenticateAndVerify(
     .eq("id", artistId)
     .single();
 
-  if (!artist || (artist as { user_id: string }).user_id !== user.id) {
+  if (!artist || artist.user_id !== user.id) {
     return { success: false, error: "forbidden" };
   }
 
@@ -91,8 +94,8 @@ export async function updateBeforeAfterPhoto(input: Readonly<{
   const auth = await authenticateAndVerify(input.artistId);
   if (!auth.success) return auth;
 
-  const updates: Record<string, string> = {};
-  if (input.title !== undefined) updates.title = input.title.trim() || "";
+  const updates: BeforeAfterUpdate = {};
+  if (input.title !== undefined) updates.title = input.title.trim() || null;
   if (input.beforeImagePath) updates.before_image_path = input.beforeImagePath;
   if (input.afterImagePath) updates.after_image_path = input.afterImagePath;
 
@@ -119,11 +122,12 @@ export async function deleteBeforeAfterPhoto(
   if (!auth.success) return auth;
 
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .from("before_after_photos")
     .delete()
     .eq("id", photoId)
     .eq("artist_id", artistId);
 
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }

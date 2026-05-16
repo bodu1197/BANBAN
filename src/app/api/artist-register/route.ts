@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { isHttpUrl } from "@/lib/url-utils";
 import type { Database } from "@/types/database";
 
 interface RegisterBody {
@@ -19,6 +20,70 @@ interface RegisterBody {
   description: string | null;
   lat: number | null;
   lon: number | null;
+}
+
+const MAX_TITLE_LENGTH = 200;
+const MAX_INTRODUCE_LENGTH = 5000;
+const MAX_URL_LENGTH = 500;
+
+function isValidSocialUrl(value: string): boolean {
+  return value.length <= MAX_URL_LENGTH && isHttpUrl(value);
+}
+
+function checkTitleField(body: RegisterBody): string | null {
+  if (!body.title?.trim() || body.title.length > MAX_TITLE_LENGTH) {
+    return "title is required and must be <= 200 chars";
+  }
+  return null;
+}
+
+function checkIntroduceField(body: RegisterBody): string | null {
+  if (!body.introduce?.trim() || body.introduce.length > MAX_INTRODUCE_LENGTH) {
+    return "introduce is required and must be <= 5000 chars";
+  }
+  return null;
+}
+
+function checkRequiredStringField(value: string | null | undefined, name: string): string | null {
+  return value?.trim() ? null : `${name} is required`;
+}
+
+function validateRequiredStrings(body: RegisterBody): string | null {
+  return (
+    checkTitleField(body) ??
+    checkRequiredStringField(body.contact, "contact") ??
+    checkRequiredStringField(body.address, "address") ??
+    checkRequiredStringField(body.region_id, "region_id") ??
+    checkIntroduceField(body)
+  );
+}
+
+function validateOptionalUrls(body: RegisterBody): string | null {
+  if (body.instagram_url && !isValidSocialUrl(body.instagram_url)) {
+    return "instagram_url must be a valid http(s) URL";
+  }
+  if (body.kakao_url && !isValidSocialUrl(body.kakao_url)) {
+    return "kakao_url must be a valid http(s) URL";
+  }
+  return null;
+}
+
+function validateCoordinates(body: RegisterBody): string | null {
+  if (body.lat !== null && (!Number.isFinite(body.lat) || body.lat < -90 || body.lat > 90)) {
+    return "lat out of range";
+  }
+  if (body.lon !== null && (!Number.isFinite(body.lon) || body.lon < -180 || body.lon > 180)) {
+    return "lon out of range";
+  }
+  return null;
+}
+
+function validateRegisterBody(body: RegisterBody): string | null {
+  return (
+    validateRequiredStrings(body) ??
+    validateOptionalUrls(body) ??
+    validateCoordinates(body)
+  );
 }
 
 interface PatchBody {
@@ -73,12 +138,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (existing) {
     return NextResponse.json(
-      { error: "already_registered", artistId: (existing as { id: string }).id },
+      { error: "already_registered", artistId: existing.id },
       { status: 409 },
     );
   }
 
   const body = await request.json() as RegisterBody;
+  const validationError = validateRegisterBody(body);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
+  }
+
   const { data: artist, error: insertError } = await admin
     .from("artists")
     .insert(buildArtistRow(auth.user.id, body))
@@ -92,7 +162,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ artistId: (artist as { id: string }).id });
+  return NextResponse.json({ artistId: artist.id });
 }
 
 async function verifyArtistOwnership(
@@ -104,7 +174,7 @@ async function verifyArtistOwnership(
     .eq("id", artistId)
     .single();
 
-  if (!artist || (artist as { user_id: string }).user_id !== userId) {
+  if (!artist || artist.user_id !== userId) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   return null;

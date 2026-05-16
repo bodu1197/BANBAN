@@ -274,7 +274,7 @@ function usePurchaseData(authLoading: boolean, user: unknown): {
 
     const fetchData = useCallback(async () => {
         try {
-            const [myRes, walletRes] = await Promise.all([
+            const [, walletRes] = await Promise.all([
                 fetch("/api/ads/my").then(r => r.json()),
                 fetch("/api/points/balance").then(r => r.json()),
             ]);

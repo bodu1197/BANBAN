@@ -1,7 +1,8 @@
-// @client-reason: useTransition hook for form submission state, useState for form inputs
+// @client-reason: OAuth 리다이렉트 + 이메일 폼 토글 흐름이 클라이언트 상태 머신을 필요로 한다(provider별 로딩 상태, 에러 인라인 표시).
 "use client";
 
 import { STRINGS } from "@/lib/strings";
+import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -58,15 +59,15 @@ export function LoginForm(): React.ReactElement {
     setError(null);
     startTransition(async () => {
       try {
-        const url = await loginWithProvider(provider);
-        if (!url || url.includes("error=")) {
-          setError(`OAuth failed: ${url}`);
+        const result = await loginWithProvider(provider);
+        if (!result.ok) {
+          setError(`OAuth 로그인 실패: ${result.error}`);
           setPendingProvider(null);
           return;
         }
-        globalThis.location.href = url;
-      } catch (err) {
-        setError(`OAuth error: ${err instanceof Error ? err.message : String(err)}`);
+        globalThis.location.href = result.url;
+      } catch (err: unknown) {
+        setError(`OAuth 오류: ${err instanceof Error ? err.message : String(err)}`);
         setPendingProvider(null);
       }
     });
@@ -115,7 +116,7 @@ export function LoginForm(): React.ReactElement {
               required
               disabled={isPending}
               autoComplete="current-password"
-              minLength={8}
+              minLength={PASSWORD_MIN_LENGTH}
             />
           </div>
 

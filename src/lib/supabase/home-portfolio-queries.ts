@@ -54,7 +54,6 @@ async function fetchPortfolios(
   modifier: PortfolioQueryModifier,
   limit: number,
   label: string,
-  typeArtist?: ArtistTypeFilter,
 ): Promise<HomePortfolio[]> {
   const supabase = createStaticClient();
 
@@ -101,7 +100,6 @@ export async function fetchLowestPricePortfolios(options?: {
         (q) => q.gt("price", 0).order("price", { ascending: true }),
         limit,
         "lowest price portfolios",
-        typeArtist,
       ),
     [cacheKey],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -125,7 +123,6 @@ export async function fetchPopularPortfolios(options?: {
         (q) => q.order("likes_count", { ascending: false }),
         limit,
         "popular portfolios",
-        typeArtist,
       ),
     [cacheKey],
     { revalidate: 60, tags: ["home", "portfolios"] },

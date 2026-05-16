@@ -152,6 +152,7 @@ function ProLipTab({ lipEnabled, onToggleLip, lipParams, onLipParamsChange }: Re
 
 // ─── Header Bar ────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line max-lines-per-function -- 헤더는 모드 토글/로고/액션이 한 줄에 묶이고, 모드별 분기가 헤더 안에서 표현돼야 가독성이 좋다.
 function ProHeader({ viewMode, onChangeMode, showViewToggle }: Readonly<{
     viewMode: ViewMode;
     onChangeMode: (mode: ViewMode) => void;

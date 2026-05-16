@@ -1,11 +1,13 @@
-// @client-reason: Admin home banner management with image upload
+// @client-reason: 관리자가 배너를 즉시 미리보고 토글·교체할 수 있어야 하므로 폼/업로드/슬라이드 토글이 한 화면에서 인터랙티브하게 동작해야 한다.
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import { Upload, Check, ImageIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminLoadingSpinner, AdminPageHeader } from "@/components/admin/admin-shared";
+import { getBannerStorageUrl } from "@/lib/supabase/storage-utils";
+import { sanitizeLinkUrl } from "@/lib/url-utils";
 
 interface HomeBanner {
   id: string;
@@ -17,8 +19,8 @@ interface HomeBanner {
   updated_at: string;
 }
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const API_PATH = "/api/admin/home-banners";
+const JSON_HEADERS = { "Content-Type": "application/json" } as const;
 
 const SLOT_LABELS: Record<string, { title: string; description: string }> = {
   exhibition: {
@@ -31,28 +33,49 @@ const SLOT_LABELS: Record<string, { title: string; description: string }> = {
   },
 };
 
-function getBannerImageUrl(imagePath: string): string {
-  if (imagePath.startsWith("http")) return imagePath;
-  return `${SUPABASE_URL}/storage/v1/object/public/banners/${imagePath}`;
-}
-
-function BannerCard({
-  banner,
-  onSave,
-}: Readonly<{
+interface BannerCardProps {
   banner: HomeBanner;
   onSave: (id: string, updates: Partial<HomeBanner>) => Promise<void>;
-}>): React.ReactElement {
+}
+
+function getSaveButtonClass(saved: boolean, hasChanges: boolean): string {
+  if (saved) return "bg-emerald-500 text-white";
+  if (hasChanges) return "bg-pink-500 text-white hover:bg-pink-600 focus-visible:bg-pink-600";
+  return "bg-white/10 text-zinc-500 cursor-not-allowed";
+}
+
+function SaveButtonContent({ saved, saving }: Readonly<{ saved: boolean; saving: boolean }>): React.ReactElement {
+  if (saved) {
+    return (
+      <>
+        <Check className="h-4 w-4" aria-hidden="true" />
+        저장 완료!
+      </>
+    );
+  }
+  if (saving) {
+    return <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />;
+  }
+  return <>저장하기</>;
+}
+
+/* eslint-disable max-lines-per-function, complexity -- 배너 카드 한 장의 폼/업로드/토글 인터랙션을 한 컴포넌트에서 응집해서 표현하는 것이 가장 자연스럽다. 분할은 prop 전달만 늘어나고 가독성을 해친다. */
+function BannerCard({ banner, onSave }: Readonly<BannerCardProps>): React.ReactElement {
   const [linkUrl, setLinkUrl] = useState(banner.link_url);
   const [altText, setAltText] = useState(banner.alt_text);
   const [isActive, setIsActive] = useState(banner.is_active);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(getBannerImageUrl(banner.image_path));
   const [currentImagePath, setCurrentImagePath] = useState(banner.image_path);
   const fileRef = useRef<HTMLInputElement>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  useEffect(() => () => {
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+  }, []);
+
+  const previewUrl = useMemo(() => getBannerStorageUrl(currentImagePath), [currentImagePath]);
   const meta = SLOT_LABELS[banner.slot] ?? { title: banner.slot, description: "" };
 
   const hasChanges =
@@ -67,19 +90,18 @@ function BannerCard({
 
     setUploading(true);
     try {
-      const formData = new FormData();
+      const formData = new globalThis.FormData();
       formData.append("file", file);
 
       const storagePath = `home/${banner.slot}-${Date.now()}.webp`;
       const res = await fetch(
         `/api/upload?bucket=banners&path=${encodeURIComponent(storagePath)}`,
-        { method: "PUT", body: formData }
+        { method: "PUT", body: formData },
       );
       const json = (await res.json()) as { success: boolean; path?: string; error?: string };
 
       if (json.success && json.path) {
         setCurrentImagePath(json.path);
-        setPreviewUrl(getBannerImageUrl(json.path));
       }
     } finally {
       setUploading(false);
@@ -87,7 +109,7 @@ function BannerCard({
     }
   }, [banner.slot]);
 
-  const safeLinkUrl = linkUrl.startsWith("/") ? linkUrl : `/${linkUrl}`;
+  const safeLinkUrl = sanitizeLinkUrl(linkUrl);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -99,7 +121,8 @@ function BannerCard({
         is_active: isActive,
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
     } finally {
       setSaving(false);
     }
@@ -116,7 +139,7 @@ function BannerCard({
           <button
             type="button"
             onClick={() => { setIsActive(!isActive); }}
-            className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               isActive ? "bg-emerald-500" : "bg-zinc-600"
             }`}
             role="switch"
@@ -139,6 +162,7 @@ function BannerCard({
               src={previewUrl}
               alt={altText || meta.title}
               fill
+              sizes="(max-width: 768px) 90vw, 50vw"
               className="object-cover"
               unoptimized
             />
@@ -152,7 +176,7 @@ function BannerCard({
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="absolute bottom-3 right-3 flex items-center gap-2 rounded-lg bg-white/90 px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white disabled:opacity-50"
+            className="absolute bottom-3 right-3 flex items-center gap-2 rounded-lg bg-white/90 px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Upload className="h-4 w-4" aria-hidden="true" />
             이미지 변경
@@ -178,7 +202,7 @@ function BannerCard({
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="/exhibition"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-pink-500 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <p className="mt-1 text-xs text-zinc-500">
               예: /exhibition, /beauty-sim/my, /discount
@@ -195,7 +219,7 @@ function BannerCard({
               value={altText}
               onChange={(e) => setAltText(e.target.value)}
               placeholder="특별 기획전 — 인기 아티스트 콜라보까지"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-pink-500 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-pink-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
         </div>
@@ -205,24 +229,9 @@ function BannerCard({
             type="button"
             onClick={handleSave}
             disabled={saving || !hasChanges}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              saved
-                ? "bg-emerald-500 text-white"
-                : hasChanges
-                  ? "bg-pink-500 text-white hover:bg-pink-600 focus-visible:bg-pink-600"
-                  : "bg-white/10 text-zinc-500 cursor-not-allowed"
-            }`}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${getSaveButtonClass(saved, hasChanges)}`}
           >
-            {saved ? (
-              <>
-                <Check className="h-4 w-4" aria-hidden="true" />
-                저장 완료!
-              </>
-            ) : saving ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              "저장하기"
-            )}
+            <SaveButtonContent saved={saved} saving={saving} />
           </button>
         </div>
       </div>
@@ -238,13 +247,14 @@ function BannerCard({
   );
 }
 
+/* eslint-disable max-lines-per-function -- 페이지 본문(상단 헤더 + 안내 카드 + 그리드 + 카드 매핑)이 한 흐름으로 표현되어야 가독성이 좋다. */
 export default function AdminHomeBannersPage(): React.ReactElement {
   const { isLoading: authLoading } = useAuth();
   const [banners, setBanners] = useState<HomeBanner[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBanners = useCallback(async () => {
-    const res = await fetch(API_PATH);
+    const res = await fetch(API_PATH, { cache: "no-store" });
     if (!res.ok) { setLoading(false); return; }
     const json = (await res.json()) as { banners?: HomeBanner[] };
     setBanners(json.banners ?? []);
@@ -252,18 +262,22 @@ export default function AdminHomeBannersPage(): React.ReactElement {
   }, []);
 
   useEffect(() => {
-    if (!authLoading) fetchBanners();
+    if (!authLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 인증 로딩이 끝난 후 1회 데이터 페칭. fetch 응답 도착 시점에 setState 가 일어나므로 cascading render 가 아니다.
+      void fetchBanners();
+    }
   }, [authLoading, fetchBanners]);
 
   const handleSave = useCallback(async (id: string, updates: Partial<HomeBanner>) => {
     const res = await fetch(API_PATH, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: JSON_HEADERS,
       body: JSON.stringify({ id, ...updates }),
     });
     if (!res.ok) return;
     const json = (await res.json()) as { banner?: HomeBanner };
-    if (json.banner) setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, ...json.banner as HomeBanner } : b)));
+    const updated = json.banner;
+    if (updated) setBanners((prev) => prev.map((b) => (b.id === id ? updated : b)));
   }, []);
 
   if (authLoading || loading) return <AdminLoadingSpinner />;
