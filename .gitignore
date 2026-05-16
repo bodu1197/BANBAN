@@ -92,10 +92,11 @@ scripts/migrate-*.mjs
 scripts/run-migration.mjs
 
 # 개발 산출물 (PNG 스크린샷, diff 파일, 사용자 폴더)
-apple-*.png
-banunni-*.png
-google-*.png
-swing2app.png
+# `/` prefix = repo root 한정 — public/apple-icon.png 같은 PWA 자산 차단 안 함
+/apple-*.png
+/banunni-*.png
+/google-*.png
+/swing2app.png
 *devbandiff.txt
 *tempdiff*.txt
 매/
