@@ -72,7 +72,7 @@ async function sendResetEmail(
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   const { success } = rateLimit({ key: `reset-pw:${ip}`, limit: 3, windowMs: 60_000 });
-  if (!success) return rateLimitResponse() as NextResponse;
+  if (!success) return rateLimitResponse();
 
   try {
     const { email } = await request.json();
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 export async function PUT(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   const { success } = rateLimit({ key: `update-pw:${ip}`, limit: 5, windowMs: 60_000 });
-  if (!success) return rateLimitResponse() as NextResponse;
+  if (!success) return rateLimitResponse();
 
   try {
     const { password, accessToken } = await request.json();

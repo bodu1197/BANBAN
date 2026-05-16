@@ -28,7 +28,7 @@ function preflight(request: NextRequest): NextResponse | null {
     // Public endpoint — rate-limit by IP to prevent abuse.
     const ip = getClientIp(request);
     const { success: rateLimitOk } = rateLimit({ key: `search-similar:${ip}`, limit: 15, windowMs: 60_000 });
-    if (!rateLimitOk) return rateLimitResponse() as NextResponse;
+    if (!rateLimitOk) return rateLimitResponse();
     return null;
 }
 

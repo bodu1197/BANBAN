@@ -46,7 +46,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             limit: RATE_LIMIT_PER_MIN,
             windowMs: 60_000,
         });
-        if (!limit.success) return rateLimitResponse() as NextResponse;
+        if (!limit.success) return rateLimitResponse();
 
         const body = await request.json() as VisitBody;
 

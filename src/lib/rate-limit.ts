@@ -2,7 +2,14 @@
  * In-memory sliding window rate limiter.
  * No external dependencies (Redis, etc.) — uses a simple Map.
  * Expired entries are auto-cleaned on each call.
+ *
+ * ⚠️ Vercel serverless: store는 instance 별로 격리되므로
+ * 동일 IP가 여러 instance에 라우팅되면 실효 limit이 `limit × N`이 된다.
+ * 분석(idempotent insert)·로그인 시도(보안 fail-safe)에는 허용 범위이나,
+ * 결제·미션 크리티컬 보호에는 Redis 백엔드 필요.
  */
+import { NextResponse } from "next/server";
+
 
 interface RateLimitEntry {
   timestamps: number[];
@@ -87,8 +94,8 @@ export function getClientIp(request: Request): string {
 }
 
 /** Standard 429 JSON response */
-export function rateLimitResponse(): Response {
-  return Response.json(
+export function rateLimitResponse(): NextResponse {
+  return NextResponse.json(
     { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
     { status: 429 },
   );

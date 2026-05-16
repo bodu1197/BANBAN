@@ -268,7 +268,7 @@ async function processSignup(data: SignupData): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   const { success } = rateLimit({ key: `signup:${ip}`, limit: 3, windowMs: 60_000 });
-  if (!success) return rateLimitResponse() as NextResponse;
+  if (!success) return rateLimitResponse();
 
   try {
     const body = await request.json();

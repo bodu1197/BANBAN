@@ -155,7 +155,7 @@ async function checkRateLimit(request: NextRequest): Promise<NextResponse | null
     const { data: { user } } = await supabase.auth.getUser();
     const rateLimitKey = `beauty-sim:${user?.id ?? getClientIp(request)}`;
     const { success } = rateLimit({ key: rateLimitKey, limit: 10, windowMs: 60_000 });
-    if (!success) return rateLimitResponse() as NextResponse;
+    if (!success) return rateLimitResponse();
     return null;
 }
 
