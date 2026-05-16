@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-
-function getClient(): SupabaseClient {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-    );
-}
+import { createAdminClient } from "@/lib/supabase/server";
 
 interface VisitBody {
     path: string;
@@ -15,22 +8,32 @@ interface VisitBody {
     visitor_id: string;
 }
 
+const BOT_PATTERN = /bot|spider|crawl|slurp|fetch|monitor|preview|scan/i;
+
 function extractIp(request: Request): string {
     return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
         ?? request.headers.get("x-real-ip")
         ?? "";
 }
 
-async function insertVisit(request: Request, body: VisitBody): Promise<void> {
-    const supabase = getClient();
-    await supabase.from("page_visits" as "profiles").insert({
+async function insertVisit(request: Request, body: Readonly<VisitBody>): Promise<{ ok: boolean }> {
+    const supabase = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- page_visits 테이블이 generated types 에 미포함
+    const { error } = await (supabase as any).from("page_visits").insert({
         path: body.path,
         country: request.headers.get("x-vercel-ip-country") ?? "",
         user_agent: body.user_agent || null,
         referer: body.referer || null,
         ip: extractIp(request),
         visitor_id: body.visitor_id,
-    } as never);
+    });
+    if (error) {
+        // 서버 로깅만, 클라이언트엔 DB 스키마/제약 노출 안 함
+        // eslint-disable-next-line no-console
+        console.error("[analytics/visit] insert failed:", error.message);
+        return { ok: false };
+    }
+    return { ok: true };
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -38,12 +41,22 @@ export async function POST(request: Request): Promise<NextResponse> {
         const body = await request.json() as VisitBody;
 
         if (!body.path || !body.visitor_id) {
-            return NextResponse.json({ error: "path and visitor_id required" }, { status: 400 });
+            return NextResponse.json({ error: "invalid payload" }, { status: 400 });
         }
 
-        await insertVisit(request, body);
+        // 봇 사전 필터링 — DB 깨끗하게 유지 (통계 SQL은 추가로 필터링)
+        if (body.user_agent && BOT_PATTERN.test(body.user_agent)) {
+            return NextResponse.json({ ok: true, skipped: "bot" });
+        }
+
+        const result = await insertVisit(request, body);
+        if (!result.ok) {
+            return NextResponse.json({ error: "failed to record visit" }, { status: 500 });
+        }
         return NextResponse.json({ ok: true });
-    } catch {
-        return NextResponse.json({ error: "failed" }, { status: 500 });
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[analytics/visit] handler error:", e instanceof Error ? e.message : e);
+        return NextResponse.json({ error: "failed to record visit" }, { status: 500 });
     }
 }
