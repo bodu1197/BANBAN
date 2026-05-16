@@ -39,9 +39,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/review5-gate.mjs",
+            "command": "node .claude/hooks/review8-gate.mjs",
             "timeout": 10,
-            "statusMessage": "review5 게이트 검사 중..."
+            "statusMessage": "review8 게이트 검사 중..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/post-push-trigger-review8.mjs",
+            "timeout": 10,
+            "statusMessage": "8-리뷰어 자동 트리거 확인..."
           }
         ]
       }

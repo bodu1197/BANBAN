@@ -7,15 +7,15 @@
 > 4. 작업 끝나면 STATUS.md 갱신 + 상대에게 쪽지 남기기
 > → 규칙: `.claude-sync/README.md`, `.claude-sync/PROTOCOL.md` (3단 Tier 시스템 포함)
 
-## 커밋 전 의무 검증 (/review5) — MANDATORY
+## 커밋 전 의무 검증 (/review8) — MANDATORY
 
-**코드를 수정했다면 `git commit` 전에 반드시 `/review5` 를 실행한다. 예외 없음.**
+**코드를 수정했다면 `git commit` 전에 반드시 `/review8` 을 실행한다. 예외 없음.**
 
-- **절차**: 코드 수정 → `/review5` 실행 → 5인 병렬 검증(보안/아키텍처/타입/성능/품질) → PASS → `git commit`
-- **FAIL 또는 CRITICAL 발견 시**: 문제를 수정하고 `/review5` 재실행. PASS 없이 커밋 금지.
-- **게이트**: `.claude/hooks/review5-gate.mjs` 가 `git commit` 을 PreToolUse 에서 가로채 검증 마커(`.claude/.review5-hash`)와 현재 상태를 비교. 마커 없음/불일치면 차단.
+- **절차**: 코드 수정 → `/review8` 실행 → 8인 병렬 검증(보안/SEO/성능/UX/유지보수/품질/아키텍처/타입) → PASS → `git commit`
+- **FAIL 또는 CRITICAL/HIGH 발견 시**: 문제를 수정하고 `/review8` 재실행. PASS 없이 커밋 금지.
+- **게이트**: `.claude/hooks/review8-gate.mjs` 가 `git commit` 을 PreToolUse 에서 가로채 검증 마커(`.claude/.review8-hash`)와 현재 상태를 비교. 마커 없음/불일치면 차단.
 - **우회 금지**: 게이트 우회, `--no-verify` 사용, 마커 파일 수동 조작은 "편법 금지" 규칙 위반.
-- **절차 파일**: `.claude/commands/review5.md`
+- **절차 파일**: `.claude/commands/review8.md`
 
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router)

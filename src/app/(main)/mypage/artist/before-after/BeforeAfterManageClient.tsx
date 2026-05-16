@@ -153,10 +153,9 @@ function BeforeAfterPreviewCard({
     setAfterPreview(null);
   }, [beforePreview, afterPreview]);
 
-  useEffect(() => () => {
-    revokePreview(beforePreview);
-    revokePreview(afterPreview);
-  }, [beforePreview, afterPreview]);
+  // 각 preview 의 lifecycle 을 독립 effect 로 관리해 dep 변경 시 직전 URL 즉시 revoke.
+  useEffect(() => () => revokePreview(beforePreview), [beforePreview]);
+  useEffect(() => () => revokePreview(afterPreview), [afterPreview]);
 
   const handleStartEdit = (): void => {
     setEditTitle(entry.title ?? "");
@@ -169,6 +168,8 @@ function BeforeAfterPreviewCard({
     setIsEditing(false);
   };
 
+  // 이전 blob URL 은 위 cleanup useEffect 가 dep 변경 시 자동 revoke 한다.
+  // setState 함수 형식 안에서 side effect 는 React 권고 위반이므로 여기서는 setter 만 호출.
   const handleFileSelect = useCallback(
     (type: "before" | "after") =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,17 +177,15 @@ function BeforeAfterPreviewCard({
         if (!file) return;
         const preview = URL.createObjectURL(file);
         if (type === "before") {
-          revokePreview(beforePreview);
           setBeforeFile(file);
           setBeforePreview(preview);
         } else {
-          revokePreview(afterPreview);
           setAfterFile(file);
           setAfterPreview(preview);
         }
         e.target.value = "";
       },
-    [beforePreview, afterPreview],
+    [],
   );
 
   const handleSave = async (): Promise<void> => {
@@ -337,11 +336,12 @@ function UploadForm({
   const [afterPreview, setAfterPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  useEffect(() => () => {
-    revokePreview(beforePreview);
-    revokePreview(afterPreview);
-  }, [beforePreview, afterPreview]);
+  // 각 preview 의 lifecycle 을 독립 effect 로 관리해 dep 변경 시 직전 URL 즉시 revoke.
+  useEffect(() => () => revokePreview(beforePreview), [beforePreview]);
+  useEffect(() => () => revokePreview(afterPreview), [afterPreview]);
 
+  // 이전 blob URL 은 위 cleanup useEffect 가 dep 변경 시 자동 revoke 한다.
+  // setState 함수 형식 안에서 side effect 는 React 권고 위반이므로 여기서는 setter 만 호출.
   const handleFileSelect = useCallback(
     (type: "before" | "after") =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -349,17 +349,15 @@ function UploadForm({
         if (!file) return;
         const preview = URL.createObjectURL(file);
         if (type === "before") {
-          revokePreview(beforePreview);
           setBeforeFile(file);
           setBeforePreview(preview);
         } else {
-          revokePreview(afterPreview);
           setAfterFile(file);
           setAfterPreview(preview);
         }
         e.target.value = "";
       },
-    [beforePreview, afterPreview],
+    [],
   );
 
   const handleSubmit = async (): Promise<void> => {
@@ -528,8 +526,8 @@ function BeforeAfterManageContent({
     try {
       const data = await fetchBeforeAfterPhotos(artistId);
       setEntries(data);
-    } catch {
-      console.error("Failed to load before/after entries"); // eslint-disable-line no-console
+    } catch (error: unknown) {
+      console.error("Failed to load before/after entries", error); // eslint-disable-line no-console
     } finally {
       setIsLoading(false);
     }
@@ -546,7 +544,8 @@ function BeforeAfterManageContent({
       const result = await deleteBeforeAfterPhoto(artistId, photoId);
       if (!result.success) throw new Error(result.error);
       setEntries((prev) => prev.filter((e) => e.id !== photoId));
-    } catch {
+    } catch (error: unknown) {
+      console.error("Failed to delete before/after entry", error); // eslint-disable-line no-console
       globalThis.alert(STRINGS.common.error);
     } finally {
       setDeleting(false);

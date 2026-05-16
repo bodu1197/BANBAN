@@ -95,6 +95,8 @@ export async function updateBeforeAfterPhoto(input: Readonly<{
   if (!auth.success) return auth;
 
   const updates: BeforeAfterUpdate = {};
+  // input.title 은 위 `!== undefined` narrowing 으로 string 확정. `|| null` 은
+  // 공백만 입력된 경우(`""`)를 null 로 저장하기 위한 의도.
   if (input.title !== undefined) updates.title = input.title.trim() || null;
   if (input.beforeImagePath) updates.before_image_path = input.beforeImagePath;
   if (input.afterImagePath) updates.after_image_path = input.afterImagePath;

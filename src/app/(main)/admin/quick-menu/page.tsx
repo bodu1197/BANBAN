@@ -104,12 +104,12 @@ function MenuItemCard({ item, onUpdate, onDelete, onMove, isFirst, isLast }: Rea
     <div className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${isActive ? "border-white/10 bg-white/5" : "border-amber-500/30 bg-amber-500/5"}`}>
       <div className="flex shrink-0 flex-col gap-1">
         <button type="button" disabled={isFirst} onClick={() => { void onMove(item.id, "up"); }} aria-label="위로 이동"
-          className="flex h-8 w-8 items-center justify-center rounded text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+          className="flex h-11 w-11 items-center justify-center rounded text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
           <ArrowUp className="h-4 w-4" />
         </button>
         <GripVertical className="mx-auto h-3.5 w-3.5 text-zinc-600" aria-hidden="true" />
         <button type="button" disabled={isLast} onClick={() => { void onMove(item.id, "down"); }} aria-label="아래로 이동"
-          className="flex h-8 w-8 items-center justify-center rounded text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+          className="flex h-11 w-11 items-center justify-center rounded text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
           <ArrowDown className="h-4 w-4" />
         </button>
       </div>
@@ -142,15 +142,15 @@ function MenuItemCard({ item, onUpdate, onDelete, onMove, isFirst, isLast }: Rea
         </button>
 
         <button type="button" onClick={handleSave} disabled={saving || !hasChanges}
-          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${getSaveButtonClass(saved, hasChanges)}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${getSaveButtonClass(saved, hasChanges)}`}
           aria-label="저장">
           <SaveIcon saved={saved} saving={saving} />
         </button>
 
         <button type="button" onClick={handleDelete} disabled={deleting}
-          className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-red-500/20 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-red-500/20 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="삭제">
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
     </div>
@@ -164,6 +164,12 @@ export default function AdminQuickMenuPage(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const movingRef = useRef(false);
+  // handleAdd 가 항상 latest items 의 max(order_index) + 1 을 읽어야 하지만 callback
+  // 자체는 props 로 내려 button 에 묶이므로 deps 폭발을 피해야 한다 → useRef + 동기 effect.
+  const itemsRef = useRef<MenuItem[]>([]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const fetchItems = useCallback(async () => {
     const res = await fetch(API_PATH, { cache: "no-store" });
@@ -233,9 +239,9 @@ export default function AdminQuickMenuPage(): React.ReactElement {
   const handleAdd = useCallback(async () => {
     setAdding(true);
     try {
-      const currentItems = items;
-      const nextOrder = currentItems.length > 0
-        ? Math.max(...currentItems.map((i) => i.order_index)) + 1
+      const current = itemsRef.current;
+      const nextOrder = current.length > 0
+        ? Math.max(...current.map((i) => i.order_index)) + 1
         : 1;
       const res = await fetch(API_PATH, {
         method: "POST", headers: JSON_HEADERS,
@@ -248,7 +254,7 @@ export default function AdminQuickMenuPage(): React.ReactElement {
     } finally {
       setAdding(false);
     }
-  }, [items]);
+  }, []);
 
   if (authLoading || loading) return <AdminLoadingSpinner />;
 
