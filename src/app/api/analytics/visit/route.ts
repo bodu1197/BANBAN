@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 interface VisitBody {
     path: string;
@@ -9,6 +10,7 @@ interface VisitBody {
 }
 
 const BOT_PATTERN = /bot|spider|crawl|slurp|fetch|monitor|preview|scan/i;
+const RATE_LIMIT_PER_MIN = 60; // 분당 60건 — 정상 사용자 SPA 라우트 변경 보호하면서 spam 차단
 
 function extractIp(request: Request): string {
     return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -38,6 +40,14 @@ async function insertVisit(request: Request, body: Readonly<VisitBody>): Promise
 
 export async function POST(request: Request): Promise<NextResponse> {
     try {
+        const ip = getClientIp(request);
+        const limit = rateLimit({
+            key: `analytics-visit:${ip}`,
+            limit: RATE_LIMIT_PER_MIN,
+            windowMs: 60_000,
+        });
+        if (!limit.success) return rateLimitResponse() as NextResponse;
+
         const body = await request.json() as VisitBody;
 
         if (!body.path || !body.visitor_id) {
