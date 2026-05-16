@@ -11,6 +11,7 @@ export async function generateProBeautySimMetadata(): Promise<Metadata> {
         title: SEO_TITLE,
         description: SEO_DESCRIPTION,
         keywords: ["반영구 상담 도구", "반영구 시뮬레이션", "황금비율", "반영구 원장 도구"],
+        robots: { index: false, follow: false },
         ...buildPageSeo({
             title: SEO_TITLE,
             description: SEO_DESCRIPTION,

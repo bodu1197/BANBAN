@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import { buildPageSeo } from "@/lib/seo";
 
-const TITLE = "반품 및 환불 정책";
-const DESCRIPTION =
+const SEO_TITLE = "반품 및 환불 정책";
+const SEO_DESCRIPTION =
   "반언니 반품 및 환불 정책 안내 — 신청 기간, 반품 불가 사유, 배송비 부담 기준, 환불 처리 절차, 1:1 주문 제작 작품의 특수 조건, 저작권 준수 사항을 정리한 공식 정책 문서로 고객의 안전한 거래를 보장합니다.";
 
 export async function generateRefundPolicyMetadata(): Promise<Metadata> {
   return {
-    title: TITLE,
-    description: DESCRIPTION,
+    title: SEO_TITLE,
+    description: SEO_DESCRIPTION,
     ...buildPageSeo({
-      title: TITLE,
-      description: DESCRIPTION,
+      title: SEO_TITLE,
+      description: SEO_DESCRIPTION,
       path: "/refund-policy",
       type: "article",
     }),

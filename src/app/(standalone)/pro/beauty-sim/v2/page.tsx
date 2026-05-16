@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     title: SEO_TITLE,
     description: SEO_DESCRIPTION,
     keywords: ["눈썹 블러", "반영구 V2", "반영구 템플릿", "원장 상담 도구"],
+    robots: { index: false, follow: false },
     ...buildPageSeo({
         title: SEO_TITLE,
         description: SEO_DESCRIPTION,

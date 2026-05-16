@@ -19,6 +19,8 @@ const STATIC_PAGES: StaticEntry[] = [
   { path: "/community",      priority: "0.6", changefreq: "daily"   },
   { path: "/benefits",       priority: "0.6", changefreq: "weekly"  },
   { path: "/reviews",        priority: "0.6", changefreq: "daily"   },
+  { path: "/beauty-sim",     priority: "0.6", changefreq: "monthly" },
+  { path: "/beauty-sim/my",  priority: "0.5", changefreq: "monthly" },
   { path: "/about",          priority: "0.4", changefreq: "monthly" },
   { path: "/partnership",    priority: "0.4", changefreq: "monthly" },
   { path: "/contact",        priority: "0.3", changefreq: "monthly" },
