@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { searchPortfolios, fetchCategoriesByType, fetchActiveRegions } from "@/lib/supabase/portfolio-search-queries";
 import { getActiveAdArtists } from "@/lib/supabase/ad-queries";
 import { PortfolioSearchClient } from "@/components/portfolio-search";
@@ -16,7 +16,11 @@ async function renderPortfolioMeta(config: PortfolioPageConfig): Promise<Metadat
   return {
     title: config.title,
     description: config.description,
-    alternates: getAlternates(`/${config.slug}`),
+    ...buildPageSeo({
+      title: config.title,
+      description: config.description,
+      path: `/${config.slug}`,
+    }),
   };
 }
 

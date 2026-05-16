@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
+
+const SEO_DESCRIPTION =
+  "반언니 서비스 이용약관 — 회원가입, 서비스 이용, 책임의 한계 등 주식회사 플랫폼몬스터가 운영하는 반언니 플랫폼 이용에 관한 규정.";
 
 export async function generateTermsMetadata(): Promise<Metadata> {
   return {
     title: STRINGS.pages.terms,
-    description: STRINGS.pages.terms,
-    alternates: getAlternates("/terms"),
+    description: SEO_DESCRIPTION,
+    ...buildPageSeo({
+      title: STRINGS.pages.terms,
+      description: SEO_DESCRIPTION,
+      path: "/terms",
+    }),
   };
 }
 

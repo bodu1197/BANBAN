@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
 import { Phone, Mail, Clock, ShieldAlert } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { ContactInfoCard } from "@/components/shared/ContactInfoCard";
+
+const SEO_DESCRIPTION =
+  "반언니 고객센터 — 전화·이메일 문의, 운영시간 안내. 부적절한 콘텐츠 신고와 환불·반품 관련 상담을 24시간 이내 검토하여 답변드립니다.";
 
 export async function generateContactMetadata(): Promise<Metadata> {
   return {
     title: STRINGS.pages.contact,
-    description: STRINGS.pages.contactDesc,
-    alternates: getAlternates("/contact"),
+    description: SEO_DESCRIPTION,
+    ...buildPageSeo({
+      title: STRINGS.pages.contact,
+      description: SEO_DESCRIPTION,
+      path: "/contact",
+    }),
   };
 }
 

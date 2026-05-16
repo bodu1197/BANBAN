@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
+
+const SEO_DESCRIPTION =
+  "반언니 개인정보처리방침 — 수집 항목, 이용 목적, 보유 기간, 제3자 제공, 이용자 권리 등 주식회사 플랫폼몬스터의 개인정보 보호 정책 안내.";
 
 export async function generatePrivacyMetadata(): Promise<Metadata> {
   return {
     title: STRINGS.pages.privacy,
-    description: STRINGS.pages.privacy,
-    alternates: getAlternates("/privacy"),
+    description: SEO_DESCRIPTION,
+    ...buildPageSeo({
+      title: STRINGS.pages.privacy,
+      description: SEO_DESCRIPTION,
+      path: "/privacy",
+    }),
   };
 }
 

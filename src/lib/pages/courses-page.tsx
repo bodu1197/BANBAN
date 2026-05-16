@@ -3,16 +3,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { GraduationCap, Layers, BookOpen, Zap } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { fetchCourseList, type CourseListItem } from "@/lib/supabase/course-queries";
 
 const t = STRINGS.courseDetail;
 
+const SEO_DESCRIPTION =
+  "베테랑 아티스트가 직접 가르치는 반영구 수강 정보 — 종합반, 단과반, 원데이 클래스까지 지역과 가격으로 비교하고 내 일정에 맞는 반영구 교육 과정을 찾아보세요.";
+
 export async function generateCoursesMetadata(): Promise<Metadata> {
     return {
         title: t.courseList,
-        description: t.courseListDesc,
-        alternates: getAlternates("/courses"),
+        description: SEO_DESCRIPTION,
+        keywords: ["반영구 수강", "반영구 교육", "반영구 학원", "반영구 원데이", "반영구 자격증"],
+        ...buildPageSeo({
+            title: t.courseList,
+            description: SEO_DESCRIPTION,
+            path: "/courses",
+        }),
     };
 }
 

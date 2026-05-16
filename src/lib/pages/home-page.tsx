@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
@@ -25,8 +25,8 @@ export async function generateHomeMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    openGraph: { title, description, type: "website" },
-    alternates: getAlternates("/"),
+    keywords: ["반영구", "반영구 화장", "반영구 잘하는 곳", "눈썹 문신", "입술 반영구", "아이라인", "반영구 가격비교", "반영구 아티스트"],
+    ...buildPageSeo({ title, description, path: "/" }),
   };
 }
 
@@ -257,8 +257,14 @@ export async function renderHomePage(): Promise<React.ReactElement> {
   const exhibitionBanner = homeBanners.find((b) => b.slot === "exhibition");
   const aiBanner = homeBanners.find((b) => b.slot === "ai-matching");
 
+  const organizationJsonLd = getOrganizationJsonLd();
+
   return (
     <main className="mx-auto w-full max-w-[767px] overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
+      />
       <div className="mx-auto w-full max-w-[767px]">
         <QuickMenu items={quickMenuItems} />
         {(exhibitionBanner ?? aiBanner) ? (

@@ -16,6 +16,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     const { data: portfolios } = await supabase
       .from("portfolios")
       .select("id, updated_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: true })
       .range(offset, offset + ITEMS_PER_PAGE - 1);
 

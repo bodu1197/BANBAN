@@ -7,23 +7,19 @@ import {
   fetchEncyclopediaCategories,
   type EncyclopediaListItem,
 } from "@/lib/encyclopedia/queries";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 
 const PER_PAGE = 60;
 
 export async function generateEncyclopediaListMetadata(): Promise<Metadata> {
   const title = "반영구 백과사전 — 스타일·관리·시술 가이드";
   const description =
-    "반영구 스타일, 부위별 가이드, 애프터케어, 관리법, 시술 안전 — 반영구 메이크업에 관한 모든 것을 정리한 한국어 백과사전.";
+    "반영구 스타일, 부위별 가이드, 애프터케어, 관리법, 시술 안전 — 반영구 메이크업에 관한 모든 것을 정리한 한국어 백과사전. 매일 새 글이 업데이트됩니다.";
   return {
     title,
     description,
-    alternates: getAlternates("/encyclopedia"),
-    openGraph: {
-      title,
-      description,
-      type: "website",
-    },
+    keywords: ["반영구 백과사전", "반영구 가이드", "반영구 관리법", "반영구 부작용", "반영구 애프터케어"],
+    ...buildPageSeo({ title, description, path: "/encyclopedia" }),
   };
 }
 

@@ -15,7 +15,7 @@ import { ArtistTopBar } from "@/components/artists/ArtistTopBar";
 import { ArtistHeader } from "@/components/artists/ArtistHeader";
 import { ArtistDetailTabs } from "@/components/artists/ArtistDetailTabs";
 import { FloatingCTA } from "@/components/artists/FloatingCTA";
-import { getAlternates, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl } from "@/lib/seo";
+import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getUser } from "@/lib/supabase/auth";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
 
@@ -36,18 +36,22 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
   }
 
   const description = artist.introduce;
+  const galleryImage = artist.artist_media?.length
+    ? getArtistMediaUrl([...artist.artist_media].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))[0].storage_path)
+    : null;
+  const avatarImage = getAvatarUrl(artist.profile_image_path ?? null);
+  const ogImage = galleryImage ?? avatarImage ?? null;
 
   return {
     title: artist.title,
     description,
-    openGraph: {
+    ...buildPageSeo({
       title: artist.title,
       description,
+      path: `/artists/${id}`,
+      image: ogImage,
       type: "profile",
-      locale: "ko_KR",
-      url: getCanonicalUrl(`/artists/${id}`),
-    },
-    alternates: getAlternates(`/artists/${id}`),
+    }),
   };
 }
 
@@ -115,13 +119,21 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
   const portfolioImages = extractPortfolioImages(portfolios);
   const heroImages = artistGalleryImages.length > 0 ? artistGalleryImages : portfolioImages;
 
+  const reviewCount = reviews.length;
+  const ratingAvg = reviewCount > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+    : undefined;
+
   const artistJsonLd = getArtistJsonLd({
     name: artist.title,
     description: artist.introduce,
     address: artist.address,
+    image: artistGalleryImages[0] ?? avatarUrl ?? undefined,
     url: getCanonicalUrl(`/artists/${id}`),
     latitude: artist.lat,
     longitude: artist.lon,
+    rating: ratingAvg,
+    reviewCount: reviewCount > 0 ? reviewCount : undefined,
   });
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
@@ -134,11 +146,11 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
     <main className="mx-auto w-full max-w-[767px] pb-20 md:pb-0">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(artistJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(artistJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
       />
 
       <ArtistTopBar

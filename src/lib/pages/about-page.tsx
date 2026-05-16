@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
+
+const SEO_DESCRIPTION =
+  "반언니 소개 — 전국 반영구 아티스트와 고객을 연결하는 가격비교·포트폴리오·후기 플랫폼. 인증된 아티스트만 만나볼 수 있는 신뢰의 반영구 마켓플레이스를 소개합니다.";
 
 export async function generateAboutMetadata(): Promise<Metadata> {
   return {
     title: STRINGS.pages.about,
-    description: STRINGS.pages.aboutDesc,
-    alternates: getAlternates("/about"),
+    description: SEO_DESCRIPTION,
+    ...buildPageSeo({
+      title: STRINGS.pages.about,
+      description: SEO_DESCRIPTION,
+      path: "/about",
+    }),
   };
 }
 

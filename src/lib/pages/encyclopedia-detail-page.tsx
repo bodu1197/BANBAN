@@ -9,9 +9,10 @@ import {
   type EncyclopediaArticle,
 } from "@/lib/encyclopedia/queries";
 import {
-  getAlternates,
+  buildPageSeo,
   getBreadcrumbJsonLd,
   getCanonicalUrl,
+  jsonLdSafe,
 } from "@/lib/seo";
 
 function stripSiteSuffix(value: string): string {
@@ -32,22 +33,13 @@ export async function generateEncyclopediaDetailMetadata(
     title: cleanTitle,
     description: article.meta_description,
     keywords: article.keywords,
-    alternates: getAlternates(`/encyclopedia/${slug}`),
-    openGraph: {
+    ...buildPageSeo({
       title: article.title,
       description: article.meta_description,
+      path: `/encyclopedia/${slug}`,
+      image: article.cover_image_url,
       type: "article",
-      images: article.cover_image_url
-        ? [{ url: article.cover_image_url, width: 1200, height: 630 }]
-        : [],
-      publishedTime: article.published_at,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: article.title,
-      description: article.meta_description,
-      images: article.cover_image_url ? [article.cover_image_url] : [],
-    },
+    }),
   };
 }
 
@@ -79,7 +71,7 @@ function ArticleStructuredData({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
     />
   );
 }
@@ -103,7 +95,7 @@ function FaqStructuredData({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }}
     />
   );
 }
@@ -318,7 +310,7 @@ function TagList({ tags }: Readonly<{ tags: string[] }>): React.ReactElement | n
 }
 
 function buildBreadcrumbJsonLd(article: EncyclopediaArticle): string {
-  return JSON.stringify(
+  return jsonLdSafe(
     getBreadcrumbJsonLd([
       { name: "홈", path: "" },
       { name: "반영구 백과사전", path: "/encyclopedia" },

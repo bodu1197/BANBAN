@@ -3,14 +3,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, MessageSquare } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { fetchAllReviews, getAvatarUrl, type ReviewWithArtist } from "@/lib/supabase/queries";
+
+const SEO_DESCRIPTION =
+  "반영구 후기 모음 — 실제 시술 받은 고객의 솔직한 별점과 리뷰. 아티스트별 만족도, 청결도, 친절도를 확인하고 신뢰할 수 있는 반영구 아티스트를 선택하세요.";
 
 export async function generateReviewsMetadata(): Promise<Metadata> {
     return {
         title: STRINGS.common.reviews,
-        description: `${STRINGS.common.reviews} - 반언니`,
-        alternates: getAlternates("/reviews"),
+        description: SEO_DESCRIPTION,
+        keywords: ["반영구 후기", "반영구 리뷰", "반영구 평점", "반영구 만족도"],
+        ...buildPageSeo({
+            title: STRINGS.common.reviews,
+            description: SEO_DESCRIPTION,
+            path: "/reviews",
+        }),
     };
 }
 

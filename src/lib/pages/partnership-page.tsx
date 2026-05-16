@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
 import { Handshake, Mail, Phone } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { ContactInfoCard } from "@/components/shared/ContactInfoCard";
+
+const SEO_DESCRIPTION =
+  "반언니 제휴 문의 — 반영구 샵, 뷰티 샵, 교육 기관 등 뷰티 업종 파트너십 환영. 전국 반영구 고객과 만나는 가장 효율적인 마케팅 채널, 반언니와 함께하세요.";
 
 export async function generatePartnershipMetadata(): Promise<Metadata> {
   return {
     title: STRINGS.pages.partnership,
-    description: STRINGS.pages.partnershipDesc,
-    alternates: getAlternates("/partnership"),
+    description: SEO_DESCRIPTION,
+    keywords: ["반언니 제휴", "반영구 마케팅", "뷰티 파트너십", "반영구 광고"],
+    ...buildPageSeo({
+      title: STRINGS.pages.partnership,
+      description: SEO_DESCRIPTION,
+      path: "/partnership",
+    }),
   };
 }
 

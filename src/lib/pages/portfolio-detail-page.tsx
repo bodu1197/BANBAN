@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { getAlternates, getBreadcrumbJsonLd } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd, getProductJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { isLegacyNumericId, findPortfolioByLegacyId } from "@/lib/supabase/legacy-redirect";
 import {
     fetchPortfolioById,
@@ -49,13 +49,19 @@ export async function generatePortfolioDetailMetadata(id: string): Promise<Metad
     const portfolio = await fetchPortfolioById(id);
     if (!portfolio) return { title: "Portfolio Not Found" };
 
+    const title = portfolio.title;
+    const description = portfolio.description?.slice(0, 160) || `${portfolio.artist.title} 반영구 작품 — 가격, 시술 정보, 후기를 확인하세요.`;
+    const firstImage = getStorageUrl(portfolio.portfolio_media?.[0]?.storage_path ?? null);
+
     return {
-        title: portfolio.title,
-        description: portfolio.description?.slice(0, 160) || `Portfolio by ${portfolio.artist.title}`,
-        openGraph: {
-            images: portfolio.portfolio_media?.[0]?.storage_path ? [portfolio.portfolio_media[0].storage_path] : [],
-        },
-        alternates: getAlternates(`/portfolios/${id}`),
+        title,
+        description,
+        ...buildPageSeo({
+            title,
+            description,
+            path: `/portfolios/${id}`,
+            image: firstImage,
+        }),
     };
 }
 
@@ -147,6 +153,19 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
         { name: portfolio.title, path: `/portfolios/${id}` },
     ]);
 
+    const productImages = (portfolio.portfolio_media ?? [])
+        .map((m) => getStorageUrl(m.storage_path))
+        .filter((u): u is string => Boolean(u));
+    const productJsonLd = getProductJsonLd({
+        name: portfolio.title,
+        description: portfolio.description?.slice(0, 500) ?? `${portfolio.artist.title} 반영구 작품`,
+        image: productImages,
+        url: getCanonicalUrl(`/portfolios/${id}`),
+        price: portfolio.price,
+        brandName: portfolio.artist.title,
+        category: "반영구 화장",
+    });
+
     const parsedDescription = parseDescriptionText(portfolio.description);
     const descriptionHtml = parsedDescription || STRINGS.portfolio.noDescription;
     const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as ArtistType;
@@ -158,7 +177,11 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
             ) : null}
             <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+                dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: jsonLdSafe(productJsonLd) }}
             />
             <PortfolioDetailClient
                 portfolio={portfolio}

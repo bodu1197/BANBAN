@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import { Gift } from "lucide-react";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { fetchPromoBanners } from "@/lib/supabase/banner-queries";
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 
 export const revalidate = 60;
 
+const SEO_TITLE = "혜택모음";
+const SEO_DESCRIPTION =
+  "반언니에서 제공하는 반영구 시술 할인, 신규 회원 혜택, 시즌 기획전, 한정 프로모션을 한곳에서 확인하세요. 매주 새로운 혜택이 업데이트됩니다.";
+
 export const metadata: Metadata = {
-  title: "혜택모음 - 반언니",
-  description: "반언니에서 제공하는 다양한 혜택을 한곳에서 확인하세요.",
-  alternates: getAlternates("/benefits"),
+  title: SEO_TITLE,
+  description: SEO_DESCRIPTION,
+  keywords: ["반언니 혜택", "반영구 할인", "반영구 프로모션", "반영구 쿠폰"],
+  ...buildPageSeo({
+    title: SEO_TITLE,
+    description: SEO_DESCRIPTION,
+    path: "/benefits",
+  }),
 };
 
 export default async function Page(): Promise<React.ReactElement> {
