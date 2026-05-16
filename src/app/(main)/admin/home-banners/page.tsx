@@ -54,7 +54,7 @@ function SaveButtonContent({ saved, saving }: Readonly<{ saved: boolean; saving:
     );
   }
   if (saving) {
-    return <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />;
+    return <div className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />;
   }
   return <>저장하기</>;
 }
@@ -168,7 +168,7 @@ function BannerCard({ banner, onSave }: Readonly<BannerCardProps>): React.ReactE
             />
             {uploading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+                <div className="h-8 w-8 motion-safe:animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
               </div>
             ) : null}
           </div>

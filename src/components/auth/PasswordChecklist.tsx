@@ -31,7 +31,7 @@ export function PasswordChecklist({
         <li
           key={rule.label}
           className={`flex items-center gap-1.5 text-xs ${
-            rule.met ? "text-blue-700" : "text-muted-foreground"
+            rule.met ? "text-blue-800" : "text-muted-foreground"
           }`}
           aria-label={`${rule.label} — ${rule.met ? "완료" : "미충족"}`}
         >
@@ -46,7 +46,7 @@ export function PasswordChecklist({
       {showMatch ? (
         <li
           className={`flex items-center gap-1.5 text-xs ${
-            password === confirmPassword ? "text-blue-700" : "text-destructive"
+            password === confirmPassword ? "text-blue-800" : "text-destructive"
           }`}
           aria-label={`비밀번호 일치 — ${password === confirmPassword ? "완료" : "불일치"}`}
         >
