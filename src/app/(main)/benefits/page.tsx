@@ -8,7 +8,7 @@ export const revalidate = 60;
 
 const SEO_TITLE = "혜택모음";
 const SEO_DESCRIPTION =
-  "반언니에서 제공하는 반영구 시술 할인, 신규 회원 혜택, 시즌 기획전, 한정 프로모션을 한곳에서 확인하세요. 매주 새로운 혜택이 업데이트됩니다.";
+  "반언니에서 제공하는 반영구 시술 할인, 신규 회원 가입 혜택, 시즌 기획전, 한정 프로모션과 쿠폰을 한곳에서 확인하세요. 매주 새로운 혜택이 업데이트되며 인기 아티스트의 특가 슬롯과 우수 회원 전용 혜택도 함께 안내합니다.";
 
 export const metadata: Metadata = {
   title: SEO_TITLE,

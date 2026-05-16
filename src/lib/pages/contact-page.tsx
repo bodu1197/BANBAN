@@ -5,7 +5,7 @@ import { buildPageSeo } from "@/lib/seo";
 import { ContactInfoCard } from "@/components/shared/ContactInfoCard";
 
 const SEO_DESCRIPTION =
-  "반언니 고객센터 — 전화·이메일 문의, 운영시간 안내. 부적절한 콘텐츠 신고와 환불·반품 관련 상담을 24시간 이내 검토하여 답변드립니다.";
+  "반언니 고객센터 — 전화·이메일 문의 안내와 평일 운영시간(10:00~17:00). 부적절한 콘텐츠 신고, 환불·반품 관련 상담, 시술·아티스트 문의, 제휴 문의 등 모든 요청을 24시간 이내 검토하여 빠르게 답변드립니다.";
 
 export async function generateContactMetadata(): Promise<Metadata> {
   return {

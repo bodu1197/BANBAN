@@ -3,7 +3,7 @@ import { STRINGS } from "@/lib/strings";
 import { buildPageSeo } from "@/lib/seo";
 
 const SEO_DESCRIPTION =
-  "반언니 개인정보처리방침 — 수집 항목, 이용 목적, 보유 기간, 제3자 제공, 이용자 권리 등 주식회사 플랫폼몬스터의 개인정보 보호 정책 안내.";
+  "반언니 개인정보처리방침 — 수집 항목, 이용 목적, 보유 기간, 제3자 제공 여부, 이용자 권리 행사 방법, 안전성 확보 조치 등 주식회사 플랫폼몬스터의 개인정보 보호 정책을 투명하고 자세하게 안내하는 공식 문서입니다.";
 
 export async function generatePrivacyMetadata(): Promise<Metadata> {
   return {

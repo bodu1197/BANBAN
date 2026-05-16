@@ -5,7 +5,7 @@ import { buildPageSeo } from "@/lib/seo";
 import { ContactInfoCard } from "@/components/shared/ContactInfoCard";
 
 const SEO_DESCRIPTION =
-  "반언니 제휴 문의 — 반영구 샵, 뷰티 샵, 교육 기관 등 뷰티 업종 파트너십 환영. 전국 반영구 고객과 만나는 가장 효율적인 마케팅 채널, 반언니와 함께하세요.";
+  "반언니 제휴 문의 — 반영구 샵, 뷰티 샵, 교육 기관, 화장품 브랜드 등 뷰티 업종 파트너십을 환영합니다. 전국 반영구 고객과 만나는 가장 효율적인 마케팅·광고 채널, 반언니와 함께 비즈니스를 성장시켜 보세요. 빠른 답변을 약속드립니다.";
 
 export async function generatePartnershipMetadata(): Promise<Metadata> {
   return {

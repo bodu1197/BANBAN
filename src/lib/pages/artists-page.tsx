@@ -7,7 +7,7 @@ import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import { ArtistSearchClient } from "@/components/artists/ArtistSearchClient";
 
 const SEO_DESCRIPTION =
-  "전국 반영구 아티스트를 한곳에서 만나보세요. 눈썹·입술·아이라인·헤어라인 전문가의 포트폴리오, 가격, 리뷰, 위치를 한 번에 비교하고 내게 딱 맞는 인증 아티스트를 찾을 수 있습니다.";
+  "전국 반영구 아티스트를 한곳에서 만나보세요. 눈썹·입술·아이라인·헤어라인 전문가의 포트폴리오, 가격, 리뷰, 위치를 한 번에 비교하고 내게 딱 맞는 인증 반영구 아티스트를 찾아보세요. 반언니가 검증한 전국 반영구 작가만 모았습니다.";
 
 export async function generateArtistsMetadata(): Promise<Metadata> {
   return {

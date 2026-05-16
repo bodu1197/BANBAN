@@ -9,7 +9,7 @@ import { fetchCourseList, type CourseListItem } from "@/lib/supabase/course-quer
 const t = STRINGS.courseDetail;
 
 const SEO_DESCRIPTION =
-  "베테랑 아티스트가 직접 가르치는 반영구 수강 정보 — 종합반, 단과반, 원데이 클래스까지 지역과 가격으로 비교하고 내 일정에 맞는 반영구 교육 과정을 찾아보세요.";
+  "베테랑 아티스트가 직접 가르치는 반영구 수강 정보 — 종합반, 단과반, 원데이 클래스부터 자격증 과정까지 지역과 가격으로 비교하고 내 일정에 맞는 반영구 교육 과정을 찾아보세요. 입문부터 창업까지 단계별로 정리되어 있습니다.";
 
 export async function generateCoursesMetadata(): Promise<Metadata> {
     return {

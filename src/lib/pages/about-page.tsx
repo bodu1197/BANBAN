@@ -3,7 +3,7 @@ import { STRINGS } from "@/lib/strings";
 import { buildPageSeo } from "@/lib/seo";
 
 const SEO_DESCRIPTION =
-  "반언니 소개 — 전국 반영구 아티스트와 고객을 연결하는 가격비교·포트폴리오·후기 플랫폼. 인증된 아티스트만 만나볼 수 있는 신뢰의 반영구 마켓플레이스를 소개합니다.";
+  "반언니 소개 — 전국 반영구 아티스트와 고객을 연결하는 가격비교·포트폴리오·후기·기획전 플랫폼. 인증된 아티스트만 만나볼 수 있는 신뢰의 반영구 마켓플레이스로, 안전하고 합리적인 시술 선택을 돕는 대한민국 1등 반영구 서비스입니다.";
 
 export async function generateAboutMetadata(): Promise<Metadata> {
   return {

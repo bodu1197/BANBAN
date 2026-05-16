@@ -7,7 +7,7 @@ import { buildPageSeo } from "@/lib/seo";
 import { fetchAllReviews, getAvatarUrl, type ReviewWithArtist } from "@/lib/supabase/queries";
 
 const SEO_DESCRIPTION =
-  "반영구 후기 모음 — 실제 시술 받은 고객의 솔직한 별점과 리뷰. 아티스트별 만족도, 청결도, 친절도를 확인하고 신뢰할 수 있는 반영구 아티스트를 선택하세요.";
+  "반영구 후기 모음 — 실제 시술 받은 고객의 솔직한 별점과 리뷰를 한곳에서 확인하세요. 아티스트별 만족도, 청결도, 친절도와 실제 비포/애프터 사진까지 함께 보고 신뢰할 수 있는 반영구 아티스트를 선택할 수 있습니다.";
 
 export async function generateReviewsMetadata(): Promise<Metadata> {
     return {

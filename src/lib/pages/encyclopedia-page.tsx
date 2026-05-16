@@ -14,7 +14,7 @@ const PER_PAGE = 60;
 export async function generateEncyclopediaListMetadata(): Promise<Metadata> {
   const title = "반영구 백과사전 — 스타일·관리·시술 가이드";
   const description =
-    "반영구 스타일, 부위별 가이드, 애프터케어, 관리법, 시술 안전 — 반영구 메이크업에 관한 모든 것을 정리한 한국어 백과사전. 매일 새 글이 업데이트됩니다.";
+    "반영구 스타일별 가이드, 부위별 시술 정보, 애프터케어 방법, 안전 수칙, 부작용 — 반영구 메이크업에 관한 모든 것을 정리한 한국어 전문 백과사전. 전문 에디터가 매일 새 글을 업데이트하며 365가지 토픽을 다룹니다.";
   return {
     title,
     description,

@@ -3,7 +3,7 @@ import { STRINGS } from "@/lib/strings";
 import { buildPageSeo } from "@/lib/seo";
 
 const SEO_DESCRIPTION =
-  "반언니 서비스 이용약관 — 회원가입, 서비스 이용, 책임의 한계 등 주식회사 플랫폼몬스터가 운영하는 반언니 플랫폼 이용에 관한 규정.";
+  "반언니 서비스 이용약관 — 회원가입 절차, 서비스 이용 범위, 회원의 의무와 책임의 한계, 결제·환불 정책, 분쟁 해결 절차 등 주식회사 플랫폼몬스터가 운영하는 반언니 플랫폼 이용에 관한 공식 규정을 자세히 안내합니다.";
 
 export async function generateTermsMetadata(): Promise<Metadata> {
   return {
