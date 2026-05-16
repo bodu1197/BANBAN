@@ -16,12 +16,10 @@ async function getContentEntries(): Promise<ContentEntry[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- some tables not in generated types yet
   const supabase = createAdminClient() as any;
 
-  const [artists, portfolios, blog, insights, exhibitions, courses, posts, encyclopedia] =
+  const [artists, portfolios, exhibitions, courses, posts, encyclopedia] =
     await Promise.all([
       supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "active"),
       supabase.from("portfolios").select("*", { count: "exact", head: true }),
-      supabase.from("blog_posts").select("*", { count: "exact", head: true }),
-      supabase.from("artist_insights").select("*", { count: "exact", head: true }),
       supabase.from("exhibitions").select("*", { count: "exact", head: true }),
       supabase.from("courses").select("*", { count: "exact", head: true }),
       supabase.from("posts").select("*", { count: "exact", head: true }),
@@ -31,8 +29,6 @@ async function getContentEntries(): Promise<ContentEntry[]> {
   return [
     { slug: "artists", count: artists.count ?? 0 },
     { slug: "portfolios", count: portfolios.count ?? 0 },
-    { slug: "blog", count: blog.count ?? 0 },
-    { slug: "artist-insight", count: insights.count ?? 0 },
     { slug: "exhibitions", count: exhibitions.count ?? 0 },
     { slug: "courses", count: courses.count ?? 0 },
     { slug: "community", count: posts.count ?? 0 },

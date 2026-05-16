@@ -26,36 +26,41 @@ export function PasswordChecklist({
   const showMatch = confirmPassword.length > 0;
 
   return (
-    <ul className="space-y-1 pt-1" role="status" aria-live="polite">
+    <ul
+      className="space-y-1 pt-1"
+      role="status"
+      aria-live="polite"
+      aria-label="비밀번호 요건 검증"
+    >
       {rules.map((rule) => (
         <li
           key={rule.label}
           className={`flex items-center gap-1.5 text-xs ${
-            rule.met ? "text-blue-800" : "text-muted-foreground"
+            rule.met ? "text-emerald-600" : "text-muted-foreground"
           }`}
-          aria-label={`${rule.label} — ${rule.met ? "완료" : "미충족"}`}
         >
           {rule.met ? (
             <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
           ) : (
             <Circle className="h-3 w-3 shrink-0" aria-hidden="true" />
           )}
-          {rule.label}
+          <span>{rule.label}</span>
+          <span className="sr-only">— {rule.met ? "완료" : "미충족"}</span>
         </li>
       ))}
       {showMatch ? (
         <li
           className={`flex items-center gap-1.5 text-xs ${
-            password === confirmPassword ? "text-blue-800" : "text-destructive"
+            password === confirmPassword ? "text-emerald-600" : "text-destructive"
           }`}
-          aria-label={`비밀번호 일치 — ${password === confirmPassword ? "완료" : "불일치"}`}
         >
           {password === confirmPassword ? (
             <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
           ) : (
             <XCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
           )}
-          비밀번호 일치
+          <span>비밀번호 일치</span>
+          <span className="sr-only">— {password === confirmPassword ? "완료" : "불일치"}</span>
         </li>
       ) : null}
     </ul>

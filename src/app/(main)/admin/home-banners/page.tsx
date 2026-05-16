@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AdminLoadingSpinner, AdminPageHeader } from "@/components/admin/admin-shared";
 import { getBannerStorageUrl } from "@/lib/supabase/storage-utils";
 import { sanitizeLinkUrl } from "@/lib/url-utils";
+import { Spinner } from "@/components/ui/spinner";
 
 interface HomeBanner {
   id: string;
@@ -54,7 +55,7 @@ function SaveButtonContent({ saved, saving }: Readonly<{ saved: boolean; saving:
     );
   }
   if (saving) {
-    return <div className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />;
+    return <Spinner size="sm" tone="onDark" label="저장 중" />;
   }
   return <>저장하기</>;
 }
@@ -168,7 +169,7 @@ function BannerCard({ banner, onSave }: Readonly<BannerCardProps>): React.ReactE
             />
             {uploading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                <div className="h-8 w-8 motion-safe:animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+                <Spinner size="lg" tone="adminAccent" label="업로드 중" />
               </div>
             ) : null}
           </div>

@@ -3,7 +3,7 @@ import { buildUrlEntry, wrapUrlset, xmlResponse } from "@/lib/sitemap-utils";
 const STATIC_PAGES = [
   "", "/artists", "/portfolios", "/about", "/terms",
   "/privacy", "/refund-policy", "/contact", "/partnership", "/women-beauty", "/mens-beauty",
-  "/exhibition", "/discount", "/community", "/courses", "/blog", "/artist-insight", "/encyclopedia",
+  "/exhibition", "/discount", "/community", "/courses", "/encyclopedia",
 ];
 
 export async function GET(): Promise<Response> {

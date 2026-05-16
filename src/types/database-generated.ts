@@ -338,66 +338,6 @@ export type Database = {
         }
         Relationships: []
       }
-      artist_insights: {
-        Row: {
-          artist_id: string
-          artist_name: string | null
-          avg_rating: number | null
-          content: string
-          cover_image_url: string | null
-          created_at: string | null
-          id: string
-          meta_description: string | null
-          portfolio_count: number | null
-          published: boolean | null
-          review_count: number | null
-          slug: string
-          specialties: string[] | null
-          summary: string | null
-          tags: string[] | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          artist_id: string
-          artist_name?: string | null
-          avg_rating?: number | null
-          content: string
-          cover_image_url?: string | null
-          created_at?: string | null
-          id?: string
-          meta_description?: string | null
-          portfolio_count?: number | null
-          published?: boolean | null
-          review_count?: number | null
-          slug: string
-          specialties?: string[] | null
-          summary?: string | null
-          tags?: string[] | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          artist_id?: string
-          artist_name?: string | null
-          avg_rating?: number | null
-          content?: string
-          cover_image_url?: string | null
-          created_at?: string | null
-          id?: string
-          meta_description?: string | null
-          portfolio_count?: number | null
-          published?: boolean | null
-          review_count?: number | null
-          slug?: string
-          specialties?: string[] | null
-          summary?: string | null
-          tags?: string[] | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       artist_media: {
         Row: {
           artist_id: string | null
@@ -730,65 +670,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      blog_posts: {
-        Row: {
-          artist_id: string | null
-          artist_name: string | null
-          category_name: string | null
-          content: string
-          created_at: string | null
-          id: string
-          image_url: string | null
-          meta_description: string | null
-          portfolio_id: string
-          published: boolean | null
-          slug: string
-          tags: string[] | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          artist_id?: string | null
-          artist_name?: string | null
-          category_name?: string | null
-          content: string
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          meta_description?: string | null
-          portfolio_id: string
-          published?: boolean | null
-          slug: string
-          tags?: string[] | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          artist_id?: string | null
-          artist_name?: string | null
-          category_name?: string | null
-          content?: string
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          meta_description?: string | null
-          portfolio_id?: string
-          published?: boolean | null
-          slug?: string
-          tags?: string[] | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "blog_posts_portfolio_id_fkey"
-            columns: ["portfolio_id"]
-            isOneToOne: true
-            referencedRelation: "portfolios"
             referencedColumns: ["id"]
           },
         ]
@@ -1700,92 +1581,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      location_seo_pages: {
-        Row: {
-          artist_count: number
-          content: string
-          cover_image_alt: string | null
-          cover_image_url: string | null
-          created_at: string
-          excerpt: string
-          faq: Json
-          id: string
-          inline_images: Json
-          keywords: string[]
-          meta_description: string
-          meta_title: string
-          portfolio_count: number
-          published: boolean
-          published_at: string
-          reading_time_minutes: number
-          region_id: string
-          region_name: string
-          slug: string
-          style: string
-          title: string
-          updated_at: string
-          view_count: number
-        }
-        Insert: {
-          artist_count?: number
-          content: string
-          cover_image_alt?: string | null
-          cover_image_url?: string | null
-          created_at?: string
-          excerpt: string
-          faq?: Json
-          id?: string
-          inline_images?: Json
-          keywords?: string[]
-          meta_description: string
-          meta_title: string
-          portfolio_count?: number
-          published?: boolean
-          published_at?: string
-          reading_time_minutes?: number
-          region_id: string
-          region_name: string
-          slug: string
-          style: string
-          title: string
-          updated_at?: string
-          view_count?: number
-        }
-        Update: {
-          artist_count?: number
-          content?: string
-          cover_image_alt?: string | null
-          cover_image_url?: string | null
-          created_at?: string
-          excerpt?: string
-          faq?: Json
-          id?: string
-          inline_images?: Json
-          keywords?: string[]
-          meta_description?: string
-          meta_title?: string
-          portfolio_count?: number
-          published?: boolean
-          published_at?: string
-          reading_time_minutes?: number
-          region_id?: string
-          region_name?: string
-          slug?: string
-          style?: string
-          title?: string
-          updated_at?: string
-          view_count?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "location_seo_pages_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
             referencedColumns: ["id"]
           },
         ]
@@ -2890,60 +2685,6 @@ export type Database = {
         }
         Relationships: []
       }
-      weekly_trends: {
-        Row: {
-          cover_image_url: string | null
-          created_at: string
-          id: string
-          intro: string
-          items: Json
-          meta_description: string
-          published: boolean
-          published_at: string
-          slug: string
-          title: string
-          total_likes: number
-          total_views: number
-          updated_at: string
-          view_count: number
-          week_start: string
-        }
-        Insert: {
-          cover_image_url?: string | null
-          created_at?: string
-          id?: string
-          intro: string
-          items?: Json
-          meta_description: string
-          published?: boolean
-          published_at?: string
-          slug: string
-          title: string
-          total_likes?: number
-          total_views?: number
-          updated_at?: string
-          view_count?: number
-          week_start: string
-        }
-        Update: {
-          cover_image_url?: string | null
-          created_at?: string
-          id?: string
-          intro?: string
-          items?: Json
-          meta_description?: string
-          published?: boolean
-          published_at?: string
-          slug?: string
-          title?: string
-          total_likes?: number
-          total_views?: number
-          updated_at?: string
-          view_count?: number
-          week_start?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -3063,13 +2804,6 @@ export type Database = {
           trigger_name: string
         }[]
       }
-      get_blog_category_counts: {
-        Args: { p_target_gender?: string; p_type_artist?: string }
-        Returns: {
-          category_name: string
-          count: number
-        }[]
-      }
       get_function_definition: { Args: { func_name: string }; Returns: string }
       get_general_members: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
@@ -3135,10 +2869,6 @@ export type Database = {
         Args: { artist_id_param: string }
         Returns: undefined
       }
-      increment_location_seo_view: {
-        Args: { p_slug: string }
-        Returns: undefined
-      }
       increment_portfolio_likes: {
         Args: { portfolio_id_param: string }
         Returns: undefined
@@ -3148,10 +2878,6 @@ export type Database = {
         Returns: undefined
       }
       increment_search_count: { Args: { media_id: string }; Returns: undefined }
-      increment_weekly_trend_view: {
-        Args: { p_slug: string }
-        Returns: undefined
-      }
       mark_dormant_artists: { Args: never; Returns: number }
       match_portfolios: {
         Args: {
@@ -3185,60 +2911,6 @@ export type Database = {
           region_name: string
           title: string
           type_artist: string
-        }[]
-      }
-      search_artist_insights: {
-        Args: {
-          p_limit?: number
-          p_offset?: number
-          p_region_id?: string
-          p_type_artist?: string
-        }
-        Returns: {
-          artist_id: string
-          artist_name: string
-          avg_rating: number
-          content: string
-          cover_image_url: string
-          created_at: string
-          id: string
-          meta_description: string
-          portfolio_count: number
-          published: boolean
-          review_count: number
-          slug: string
-          specialties: string[]
-          summary: string
-          tags: string[]
-          title: string
-          total_count: number
-        }[]
-      }
-      search_blog_posts: {
-        Args: {
-          p_category_name?: string
-          p_limit?: number
-          p_offset?: number
-          p_region_id?: string
-          p_search_word?: string
-          p_target_gender?: string
-          p_type_artist?: string
-        }
-        Returns: {
-          artist_id: string
-          artist_name: string
-          category_name: string
-          content: string
-          created_at: string
-          id: string
-          image_url: string
-          meta_description: string
-          portfolio_id: string
-          published: boolean
-          slug: string
-          tags: string[]
-          title: string
-          total_count: number
         }[]
       }
       search_portfolios_by_categories: {

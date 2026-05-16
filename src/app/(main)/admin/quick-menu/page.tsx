@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AdminLoadingSpinner, AdminPageHeader } from "@/components/admin/admin-shared";
 import { getBannerStorageUrl } from "@/lib/supabase/storage-utils";
 import { sanitizeLinkUrl } from "@/lib/url-utils";
+import { Spinner } from "@/components/ui/spinner";
 
 interface MenuItem {
   id: string;
@@ -39,7 +40,7 @@ function getSaveButtonClass(saved: boolean, hasChanges: boolean): string {
 
 function SaveIcon({ saved, saving }: Readonly<{ saved: boolean; saving: boolean }>): React.ReactElement {
   if (saved) return <Check className="h-3.5 w-3.5" />;
-  if (saving) return <div className="h-3.5 w-3.5 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />;
+  if (saving) return <Spinner size="xs" tone="onDark" label="저장 중" />;
   return <Save className="h-3.5 w-3.5" />;
 }
 
@@ -118,7 +119,7 @@ function MenuItemCard({ item, onUpdate, onDelete, onMove, isFirst, isLast }: Rea
         className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed"
         aria-label="아이콘 변경">
         {uploading ? (
-          <div className="h-5 w-5 motion-safe:animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
+          <Spinner size="md" tone="adminAccent" label="아이콘 업로드 중" />
         ) : (
           <Image src={getBannerStorageUrl(iconPath)} alt={label} width={40} height={40} sizes="40px" className="h-10 w-10 object-contain" unoptimized />
         )}

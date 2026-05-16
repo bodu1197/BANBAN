@@ -145,7 +145,7 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
     return (
       <div className="space-y-4 text-center">
         <div className="flex justify-center">
-          <Mail className="h-12 w-12 text-blue-800" aria-hidden="true" />
+          <Mail className="h-12 w-12 text-brand-primary" aria-hidden="true" />
         </div>
         <h3 className="text-lg font-semibold">{STRINGS.auth.signupEmailSent}</h3>
         <p className="text-sm text-muted-foreground">{STRINGS.auth.checkEmailToComplete}</p>

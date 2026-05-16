@@ -77,3 +77,26 @@ dist/
 # /review5, /review8 PASS 마커 (로컬 working-tree 상태 해시, 푸시 금지)
 .claude/.review5-hash
 .claude/.review8-hash
+
+# Claude scheduled task lock (로컬 전용)
+.claude/scheduled_tasks.lock
+.claude/hooks/test-gate.mjs
+
+# Sonar scan artifacts (로컬 전용)
+.sonar-scan/
+.sonar-jscpd/
+sonar-eslint.json
+
+# 임시 마이그레이션 스크립트 (1회성)
+scripts/migrate-*.mjs
+scripts/run-migration.mjs
+
+# 개발 산출물 (PNG 스크린샷, diff 파일, 사용자 폴더)
+apple-*.png
+banunni-*.png
+google-*.png
+swing2app.png
+*devbandiff.txt
+*tempdiff*.txt
+매/
+"매/"
