@@ -6,6 +6,7 @@ import "./globals.css";
 const Analytics = dynamic(() => import("@vercel/analytics/next").then(m => m.Analytics));
 const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracker").then(m => m.PageViewTracker));
 const Swing2AppBridge = dynamic(() => import("@/components/layout/Swing2AppBridge").then(m => m.Swing2AppBridge));
+const ServiceWorkerRegistration = dynamic(() => import("@/components/layout/ServiceWorkerRegistration").then(m => m.ServiceWorkerRegistration));
 
 const SITE_NAME = "반언니";
 const SITE_TITLE = "반언니 - 반영구 화장 가격비교 & 아티스트 추천 | 대한민국 1등 반영구 플랫폼";
@@ -110,6 +111,7 @@ export default function RootLayout({
         {children}
         <PageViewTracker />
         <Swing2AppBridge />
+        <ServiceWorkerRegistration />
         <Analytics />
       </body>
     </html>

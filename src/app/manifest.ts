@@ -10,12 +10,14 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#ffffff",
     theme_color: "#ffffff",
     lang: "ko-KR",
-    // ban_logo.png 는 251x68 가로 로고라 PWA 아이콘 부적합.
-    // 정사각형 favicon 자산을 사용 (정확한 크기 명시 — Chrome "Resource size is not correct" 경고 방지).
-    // 향후 192x192 / 512x512 정사각형 아이콘 추가 시 PWA install prompt 활성화됨.
+    // PWA install prompt 활성화를 위한 192/512 정사각형 아이콘 + Android adaptive 용 maskable 변형.
+    // ban_logo.png (251x68 가로 로고) 를 정사각형 흰 캔버스에 중앙 배치하여 생성됨.
     icons: [
-      { src: "/icon.png",       sizes: "32x32",   type: "image/png" },
-      { src: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { src: "/icon.png",                sizes: "32x32",   type: "image/png" },
+      { src: "/apple-icon.png",          sizes: "180x180", type: "image/png" },
+      { src: "/icon-192.png",            sizes: "192x192", type: "image/png" },
+      { src: "/icon-512.png",            sizes: "512x512", type: "image/png" },
+      { src: "/icon-maskable-512.png",   sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     categories: ["beauty", "lifestyle", "shopping"],
   };
