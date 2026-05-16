@@ -59,7 +59,7 @@ interface ArtistJsonLdInput {
   reviewCount?: number;
 }
 
-function buildGeoJsonLd(artist: ArtistJsonLdInput): Record<string, unknown> | undefined {
+function buildGeoJsonLd(artist: Readonly<ArtistJsonLdInput>): Record<string, unknown> | undefined {
   if (isDefined(artist.latitude) && isDefined(artist.longitude)) {
     return {
       "@type": "GeoCoordinates",
@@ -70,7 +70,7 @@ function buildGeoJsonLd(artist: ArtistJsonLdInput): Record<string, unknown> | un
   return undefined;
 }
 
-function buildAggregateRatingJsonLd(artist: ArtistJsonLdInput): Record<string, unknown> | undefined {
+function buildAggregateRatingJsonLd(artist: Readonly<ArtistJsonLdInput>): Record<string, unknown> | undefined {
   if (isDefined(artist.rating) && isDefined(artist.reviewCount) && artist.reviewCount > 0) {
     return {
       "@type": "AggregateRating",
