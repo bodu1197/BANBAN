@@ -322,20 +322,22 @@ function MemberTableRow({ member, onSaved, onDeleted }: Readonly<{
 // ─── MemberNameCell ─────────────────────────────────────
 
 function MemberNameCell({ member }: Readonly<{ member: Member }>): React.ReactElement {
-    // 반영구 아티스트: 활동명 (artists.title) 으로 표시 + 클릭 시 아티스트 페이지 이동
+    // 반영구 아티스트: 활동명(artists.title) 메인 + 닉네임 보조 — admin 식별성 유지
     if (member.artist_id && member.shop_name) {
         return (
-            <Link
-                href={`/artists/${member.artist_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${member.shop_name} 아티스트 페이지로 이동`}
-                title={member.shop_name}
-                className="flex items-center gap-1.5 rounded text-pink-300 transition-colors hover:text-pink-200 hover:underline focus-visible:text-pink-200 focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-                <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span className="truncate max-w-[180px] md:max-w-[240px]">{member.shop_name}</span>
-            </Link>
+            <div className="flex flex-col gap-0.5">
+                <Link
+                    href={`/artists/${member.artist_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={member.shop_name}
+                    className="flex items-center gap-1.5 rounded text-pink-300 transition-colors hover:text-pink-200 hover:underline focus-visible:text-pink-200 focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    <span className="truncate max-w-[180px] md:max-w-[240px]">{member.shop_name}</span>
+                </Link>
+                <span className="text-xs text-zinc-500">{member.nickname}</span>
+            </div>
         );
     }
     // 일반 회원 / 관리자: 닉네임
