@@ -101,7 +101,7 @@ function SearchHeader({ value, onChange, onSubmit, onBack, inputRef }: Readonly<
       <form
         role="search"
         onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
-        className="flex flex-1 items-center gap-[10px] rounded-[30px] border border-brand-primary bg-background px-4 h-[52px] transition-colors focus-within:ring-2 focus-within:ring-brand-primary/30"
+        className="flex flex-1 items-center gap-[10px] rounded-[30px] border border-brand-primary bg-background px-4 h-[52px] transition-colors focus-within:ring-2 focus-within:ring-brand-primary"
       >
         <Search className="h-5 w-5 shrink-0 text-brand-primary" aria-hidden="true" />
         <input

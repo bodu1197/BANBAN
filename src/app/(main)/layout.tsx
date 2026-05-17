@@ -20,7 +20,7 @@ export default function MainLayout({
         />
         <Header />
         <div className="flex-1 pb-16">
-          <div className="mx-auto w-full max-w-[1024px] bg-background md:rounded-t-[32px] overflow-hidden">
+          <div className="mx-auto w-full max-w-[1024px] bg-background lg:rounded-t-[32px] overflow-hidden">
             {children}
           </div>
         </div>
