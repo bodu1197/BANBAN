@@ -46,6 +46,7 @@ next-env.d.ts
 # Backup files
 banunni_backup.tar.gz
 *.sql
+!supabase/migrations/*.sql
 .playwright-mcp/
 
 # Temporary scripts (임시 스크립트 - 푸시 금지)

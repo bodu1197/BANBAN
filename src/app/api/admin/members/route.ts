@@ -239,7 +239,10 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ member: data });
 }
 
-/** DELETE /api/admin/members — 회원 소프트 삭제 (deleted_at 설정 + Auth 비활성화) */
+/** DELETE /api/admin/members — 회원 영구 삭제 (profiles row + auth.users + 의존 데이터 CASCADE)
+ *  주의: 되돌릴 수 없음. CASCADE 정책에 따라 artists/portfolios/conversations/messages/points 등 일괄 삭제.
+ *  자기 자신 삭제 방지.
+ */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const auth = await requireAdmin();
     if (!auth.ok) return auth.response;
@@ -248,16 +251,21 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const body = await request.json() as { id: string };
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-    // Soft delete: deleted_at 설정
-    const { error } = await supabase
+    // 자기 자신 삭제 방지 — admin 본인 계정이 사라지면 관리 권한 손실
+    if (body.id === auth.userId) {
+        return NextResponse.json({ error: "본인 계정은 삭제할 수 없습니다." }, { status: 400 });
+    }
+
+    // Hard delete: profiles row 삭제 → CASCADE 정책이 의존 데이터 일괄 정리
+    const { error: profileError } = await supabase
         .from("profiles")
-        .update({ deleted_at: new Date().toISOString() })
+        .delete()
         .eq("id", body.id);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
 
-    // Auth 사용자 비활성화 (ban)
-    await supabase.auth.admin.updateUserById(body.id, { ban_duration: "876600h" }).catch(() => {/* no-op */});
+    // auth.users 도 함께 삭제 (socialless 사용자는 auth row 없을 수 있음 — silent)
+    await supabase.auth.admin.deleteUser(body.id).catch(() => {/* auth row 부재 가능 */});
 
     return NextResponse.json({ success: true });
 }
