@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users } from "lucide-react";
+import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users, Store } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminSearchBar, AdminPagination, AdminSearchResetBadge, AdminLoadingSpinner, AdminErrorState, AdminPageHeader } from "@/components/admin/admin-shared";
 
@@ -22,6 +22,7 @@ interface Member {
     type_social: string;
     type_artist: string | null;
     artist_id: string | null;
+    shop_name: string | null;
     language: string;
     last_login_at: string | null;
     created_at: string;
@@ -301,9 +302,7 @@ function MemberTableRow({ member, onSaved, onDeleted }: Readonly<{
     return (
         <tr className="border-b border-white/5 text-sm transition-colors hover:bg-white/[0.02] focus-visible:bg-white/[0.02]">
             <td className="px-4 py-3 font-medium text-white">
-                {member.artist_id ? (
-                    <Link href={`/artists/${member.artist_id}`} target="_blank" className="hover:text-pink-400 focus-visible:text-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded transition-colors">{member.nickname}</Link>
-                ) : member.nickname}
+                <MemberNameCell member={member} />
             </td>
             <td className="px-4 py-3 text-zinc-400">@{member.username}</td>
             <td className="px-4 py-3 text-zinc-400">{member.email ?? "-"}</td>
@@ -317,6 +316,37 @@ function MemberTableRow({ member, onSaved, onDeleted }: Readonly<{
                 <button type="button" aria-label="회원 수정" className="rounded-lg bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/20" onClick={() => setEditing(true)}>수정</button>
             </td>
         </tr>
+    );
+}
+
+// ─── MemberNameCell ─────────────────────────────────────
+
+function MemberNameCell({ member }: Readonly<{ member: Member }>): React.ReactElement {
+    if (!member.artist_id) return <span>{member.nickname}</span>;
+    return (
+        <div className="flex flex-col gap-0.5">
+            <Link
+                href={`/artists/${member.artist_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded transition-colors hover:text-pink-400 focus-visible:text-pink-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                {member.nickname}
+            </Link>
+            {member.shop_name && (
+                <Link
+                    href={`/artists/${member.artist_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${member.shop_name} 샵으로 이동`}
+                    title={member.shop_name}
+                    className="flex items-center gap-1 text-xs text-pink-300 transition-colors hover:text-pink-200 hover:underline focus-visible:text-pink-200 focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    <Store className="h-3 w-3" aria-hidden="true" />
+                    <span className="truncate max-w-[180px] md:max-w-[240px]">{member.shop_name}</span>
+                </Link>
+            )}
+        </div>
     );
 }
 

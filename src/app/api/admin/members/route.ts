@@ -107,7 +107,7 @@ function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, li
         const filter = ARTIST_TYPE_FILTERS.semi_permanent;
         return supabase
             .from("profiles")
-            .select(`${PROFILE_COLUMNS}, artists!inner(id, type_artist)`, { count: "exact" })
+            .select(`${PROFILE_COLUMNS}, artists!inner(id, type_artist, title)`, { count: "exact" })
             .is("deleted_at", null)
             .eq("is_admin", false)
             .or(filter, { referencedTable: "artists" })
@@ -118,7 +118,7 @@ function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, li
     if (tab === "admin") {
         return supabase
             .from("profiles")
-            .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist)`, { count: "exact" })
+            .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist, title)`, { count: "exact" })
             .is("deleted_at", null)
             .eq("is_admin", true)
             .order(sort.column, { ascending: sort.ascending })
@@ -128,17 +128,23 @@ function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, li
     // "all" tab
     return supabase
         .from("profiles")
-        .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist)`, { count: "exact" })
+        .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist, title)`, { count: "exact" })
         .is("deleted_at", null)
         .order(sort.column, { ascending: sort.ascending })
         .range(offset, offset + limit - 1);
 }
 
-interface ArtistRow { id?: string; type_artist?: string }
+interface ArtistRow { id?: string; type_artist?: string; title?: string }
 
-function extractArtistInfo(artists: ArtistRow[] | null): { type_artist: string | null; artist_id: string | null } {
+interface ArtistInfo { type_artist: string | null; artist_id: string | null; shop_name: string | null }
+
+function extractArtistInfo(artists: ArtistRow[] | null): ArtistInfo {
     const first = (artists ?? [])[0];
-    return { type_artist: first?.type_artist ?? null, artist_id: first?.id ?? null };
+    return {
+        type_artist: first?.type_artist ?? null,
+        artist_id: first?.id ?? null,
+        shop_name: first?.title ?? null,
+    };
 }
 
 // ─── Route Handlers ──────────────────────────────────────
@@ -156,7 +162,12 @@ async function fetchGeneralMembers(
 
     const rows = (data ?? []) as (Record<string, unknown> & { total_count: number })[];
     const total = rows[0]?.total_count ?? 0;
-    const members = rows.map(({ total_count: _, ...profile }) => ({ ...profile, type_artist: null }));
+    const members = rows.map(({ total_count: _, ...profile }) => ({
+        ...profile,
+        type_artist: null,
+        artist_id: null,
+        shop_name: null,
+    }));
 
     return NextResponse.json({ members, total, page: Math.floor(offset / limit) + 1, limit });
 }
@@ -178,8 +189,8 @@ async function fetchStandardMembers(
 
     const members = (data ?? []).map((row) => {
         const { artists, ...profile } = row as Record<string, unknown> & { artists?: ArtistRow[] };
-        const { type_artist, artist_id } = extractArtistInfo(artists ?? null);
-        return { ...profile, type_artist, artist_id };
+        const { type_artist, artist_id, shop_name } = extractArtistInfo(artists ?? null);
+        return { ...profile, type_artist, artist_id, shop_name };
     });
 
     return NextResponse.json({ members, total: count ?? 0, page, limit, loginStats: stats });
