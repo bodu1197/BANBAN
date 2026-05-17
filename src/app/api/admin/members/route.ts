@@ -239,9 +239,11 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ member: data });
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /** DELETE /api/admin/members — 회원 영구 삭제 (profiles row + auth.users + 의존 데이터 CASCADE)
  *  주의: 되돌릴 수 없음. CASCADE 정책에 따라 artists/portfolios/conversations/messages/points 등 일괄 삭제.
- *  자기 자신 삭제 방지.
+ *  안전장치: UUID 형식 검증, 본인 삭제 방지, 다른 admin 삭제 방지 (권한 인플레이션 방어).
  */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const auth = await requireAdmin();
@@ -250,10 +252,27 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     const { supabase } = auth;
     const body = await request.json() as { id: string };
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+    if (!UUID_REGEX.test(body.id)) {
+        return NextResponse.json({ error: "유효한 UUID 형식이 아닙니다." }, { status: 400 });
+    }
 
     // 자기 자신 삭제 방지 — admin 본인 계정이 사라지면 관리 권한 손실
     if (body.id === auth.userId) {
         return NextResponse.json({ error: "본인 계정은 삭제할 수 없습니다." }, { status: 400 });
+    }
+
+    // 다른 admin 삭제 방지 — 권한 있는 계정을 다른 admin 이 임의 제거하는 사고/공격 차단.
+    // 정말로 필요하면 먼저 PATCH 로 is_admin=false 로 강등한 뒤 삭제하도록 절차 분리.
+    const { data: target } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", body.id)
+        .single();
+    if ((target as { is_admin: boolean } | null)?.is_admin) {
+        return NextResponse.json(
+            { error: "다른 관리자 계정은 삭제할 수 없습니다. 먼저 관리자 권한을 해제하세요." },
+            { status: 400 },
+        );
     }
 
     // Hard delete: profiles row 삭제 → CASCADE 정책이 의존 데이터 일괄 정리
