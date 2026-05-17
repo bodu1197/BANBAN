@@ -68,7 +68,7 @@ function RecentSearchList({ recentSearches, onRecentSelect, onClearRecent }: Rea
 }>): React.ReactElement {
   return (
     <div className="absolute left-0 top-full z-50 w-full border-b border-border bg-background shadow-lg">
-      <div className="mx-auto max-w-[767px] px-4 py-2">
+      <div className="mx-auto max-w-[1024px] px-4 py-2 md:px-6">
         <div className="mb-1 flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">최근 검색어</span>
           <button
@@ -105,7 +105,7 @@ function SuggestList({ items, query, activeIndex, onSelect }: Readonly<{
 }>): React.ReactElement {
   return (
     <div className="absolute left-0 top-full z-50 w-full border-b border-border bg-background shadow-lg">
-      <ul role="listbox" className="mx-auto max-w-[767px] px-4 py-2">
+      <ul role="listbox" className="mx-auto max-w-[1024px] px-4 py-2 md:px-6">
         {items.map((item, i) => (
           <li key={`${item.type}-${item.id}`} role="option" aria-selected={i === activeIndex}>
             <button
@@ -211,7 +211,7 @@ function SearchInputBar({ inputRef, query, onInput, onKeyDown, placeholder, drop
   onClose: () => void;
 }>): React.ReactElement {
   return (
-    <div className="mx-auto flex max-w-[767px] items-center gap-2 px-4 py-2">
+    <div className="mx-auto flex max-w-[1024px] items-center gap-2 px-4 py-2 md:px-6">
       <div className="flex flex-1 items-center gap-2 rounded-lg bg-muted px-3 py-2">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <SearchInput inputRef={inputRef} query={query} onInput={onInput} onKeyDown={onKeyDown} placeholder={placeholder} dropdownVisible={dropdownVisible} />

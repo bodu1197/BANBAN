@@ -25,7 +25,7 @@ export function Footer(): React.ReactElement {
 
   return (
     <footer className="border-t bg-muted/50">
-      <div className="mx-auto max-w-[767px] px-4 py-8">
+      <div className="mx-auto max-w-[1024px] px-4 py-8 md:px-6">
         <FooterNav f={f} />
         <details className="group mt-6 text-center text-xs text-muted-foreground/70">
           <summary className="inline-flex cursor-pointer list-none items-center gap-1 select-none text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">

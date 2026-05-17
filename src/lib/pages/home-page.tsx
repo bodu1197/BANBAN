@@ -260,12 +260,12 @@ export async function renderHomePage(): Promise<React.ReactElement> {
   const organizationJsonLd = getOrganizationJsonLd();
 
   return (
-    <main className="mx-auto w-full max-w-[767px] overflow-hidden">
+    <main className="mx-auto w-full max-w-[1024px] overflow-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
       />
-      <div className="mx-auto w-full max-w-[767px]">
+      <div className="mx-auto w-full max-w-[1024px]">
         <QuickMenu items={quickMenuItems} />
         {(exhibitionBanner ?? aiBanner) ? (
           <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">

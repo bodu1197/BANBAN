@@ -38,7 +38,7 @@ export function MainMenuBar({
 
   return (
     <nav
-      className="mx-auto max-w-[767px] border-t border-border/50"
+      className="mx-auto max-w-[1024px] border-t border-border/50"
       aria-label="Main menu"
     >
       <div className="flex items-center overflow-x-auto whitespace-nowrap px-2 scrollbar-hide md:justify-around md:overflow-visible">
