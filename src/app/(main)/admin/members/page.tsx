@@ -336,7 +336,7 @@ function MemberNameCell({ member }: Readonly<{ member: Member }>): React.ReactEl
                     <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     <span className="truncate max-w-[180px] md:max-w-[240px]">{member.shop_name}</span>
                 </Link>
-                <span className="text-xs text-zinc-500">{member.nickname}</span>
+                <span className="text-xs text-zinc-400">{member.nickname}</span>
             </div>
         );
     }
