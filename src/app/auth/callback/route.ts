@@ -15,7 +15,7 @@ function sanitizeNext(param: string | null): string {
   return next.startsWith("/") && !next.startsWith("//") ? next : "/";
 }
 
-interface ConflictProfile { id: string; type_social: string | null }
+type ConflictProfile = Readonly<{ id: string; type_social: string | null }>;
 
 /** 같은 이메일로 다른 id 의 active profile 이 있는지 확인 (중복 가입 차단) */
 async function findEmailConflict(

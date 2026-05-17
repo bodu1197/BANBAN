@@ -101,17 +101,19 @@ async function cleanOrphanProfile(
   }
 }
 
-type ProfileLookup = { id: string; type_social: string | null } | null;
+type ProfileLookup = Readonly<{ id: string; type_social: string | null }> | null;
 
 async function lookupByField(
   supabase: AdminClient,
   field: "username" | "nickname" | "email",
   value: string,
 ): Promise<ProfileLookup> {
+  // 이메일은 대소문자 무시 매칭 (defense in depth — parseRequestBody 가 이미 toLowerCase 하지만 호출경로가 늘 일관적이라 보장 못함)
+  const normalized = field === "email" ? value.toLowerCase() : value;
   const { data } = await supabase
     .from("profiles")
     .select("id, type_social")
-    .eq(field, value)
+    .eq(field, normalized)
     .is("deleted_at", null)
     .maybeSingle();
   return data as ProfileLookup;
@@ -267,6 +269,10 @@ async function processSignup(data: SignupData): Promise<NextResponse> {
     },
   });
 }
+
+// 회원가입 흐름은 auth.signUp + bcrypt + profile upsert 등 9개 작업 체인이라
+// 기본 10s 한도에서는 콜드스타트/슬로우 DB 시 타임아웃 위험. 30s 로 여유 확보.
+export const maxDuration = 30;
 
 /**
  * 회원가입 API
