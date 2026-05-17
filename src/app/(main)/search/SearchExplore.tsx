@@ -13,20 +13,12 @@ interface Props {
   popularArtists: ReadonlyArray<HomeArtist>;
 }
 
-const POPULAR_KEYWORDS: ReadonlyArray<string> = [
-  "눈썹",
-  "입술",
-  "아이라인",
-  "헤어라인",
-  "남자 눈썹",
-  "리터치",
-  "자연눈썹",
-  "수채화",
-];
+const POPULAR_KEYWORDS: ReadonlyArray<string> = STRINGS.globalSearch.popularKeywordsList;
 
 function PopularKeywordChips({ onSelect }: Readonly<{ onSelect: (q: string) => void }>): React.ReactElement {
+  // 부모 <section> 이 이미 aria-labelledby="popular-keywords-heading" 로 라벨링됨 — ul 에 중복 aria-label 금지
   return (
-    <ul className="flex flex-wrap gap-2" aria-label={STRINGS.globalSearch.popularKeywords}>
+    <ul className="flex flex-wrap gap-2">
       {POPULAR_KEYWORDS.map((kw) => (
         <li key={kw}>
           <button

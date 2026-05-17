@@ -33,7 +33,8 @@ export function HomeSearchTrigger(): React.ReactElement {
         className="flex w-full items-center gap-2 rounded-full border-2 border-brand-primary/40 bg-background px-4 h-12 text-left transition-colors hover:border-brand-primary focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <span className="truncate text-sm text-muted-foreground">{current}</span>
+        {/* 회전 placeholder 는 시각적 힌트 — 버튼의 aria-label 이 이미 의도를 전달하므로 스크린 리더에는 숨김 */}
+        <span aria-hidden="true" className="truncate text-sm text-muted-foreground">{current}</span>
       </button>
     </div>
   );
