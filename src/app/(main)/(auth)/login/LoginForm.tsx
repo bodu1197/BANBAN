@@ -3,9 +3,9 @@
 
 import { STRINGS } from "@/lib/strings";
 import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,20 @@ import { Separator } from "@/components/ui/separator";
 import { loginWithProvider } from "./actions";
 import { signInWithEmail } from "@/lib/supabase/auth-client";
 import type { OAuthProvider } from "@/lib/supabase/auth";
+import { getLabelFromSlug } from "@/lib/auth-labels";
+
+function describeAuthError(error: string | null, method: string | null): string | null {
+  if (!error) return null;
+  if (error === "email_already_registered") {
+    const label = getLabelFromSlug(method);
+    // 라벨이 모두 받침 없는 단어 (구글/카카오/애플/이메일) — 조사 "로" 사용
+    return `이미 ${label}로 가입된 이메일입니다. ${label} 로그인을 이용해 주세요.`;
+  }
+  if (error === "auth_callback_error") {
+    return "로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
+  }
+  return null;
+}
 
 interface OAuthProviderConfig {
   provider: OAuthProvider;
@@ -46,12 +60,25 @@ const OAUTH_PROVIDERS: OAuthProviderConfig[] = [
 /* eslint-disable max-lines-per-function */
 export function LoginForm(): React.ReactElement {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isEmailLogin, setIsEmailLogin] = useState(false);
   const [pendingProvider, setPendingProvider] = useState<OAuthProvider | null>(null);
+
+  // URL 쿼리스트링 에러를 메시지로 변환 — useMemo 로 파생 상태 표현 (setState in effect 회피)
+  const errorParam = searchParams.get("error");
+  const methodParam = searchParams.get("method");
+  const urlErrorMessage = useMemo(() => describeAuthError(errorParam, methodParam), [errorParam, methodParam]);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const error = localError ?? urlErrorMessage;
+  const setError = setLocalError;
+
+  // URL 에 error 가 있으면 정리 — 새로고침/공유 시 에러 재노출, 검색엔진 인덱싱 방지
+  useEffect(() => {
+    if (errorParam) router.replace("/login");
+  }, [errorParam, router]);
 
   const handleOAuthLogin = (provider: OAuthProvider): void => {
     if (isPending) return;
@@ -121,7 +148,7 @@ export function LoginForm(): React.ReactElement {
           </div>
 
           {error && (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive" role="alert" aria-live="polite">{error}</p>
           )}
 
           <Button type="submit" className="w-full" disabled={isPending}>
@@ -149,7 +176,7 @@ export function LoginForm(): React.ReactElement {
       ) : (
         <>
           {error && (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive" role="alert" aria-live="polite">{error}</p>
           )}
           {OAUTH_PROVIDERS.map(({ provider, className, svgPath, label }) => (
             <Button

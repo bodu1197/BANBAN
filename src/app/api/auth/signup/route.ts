@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import bcrypt from "bcryptjs";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
+import { getProviderLabel } from "@/lib/auth-labels";
 import type { Database } from "@/types/database";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -100,41 +101,48 @@ async function cleanOrphanProfile(
   }
 }
 
+type ProfileLookup = { id: string; type_social: string | null } | null;
+
+async function lookupByField(
+  supabase: AdminClient,
+  field: "username" | "nickname" | "email",
+  value: string,
+): Promise<ProfileLookup> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, type_social")
+    .eq(field, value)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return data as ProfileLookup;
+}
+
 async function checkDuplicates(
   supabase: AdminClient,
   data: SignupData
 ): Promise<string | null> {
   // 이전 실패한 가입의 orphan profile 정리
-  await cleanOrphanProfile(supabase, "username", data.username);
-  await cleanOrphanProfile(supabase, "nickname", data.nickname);
-  await cleanOrphanProfile(supabase, "email", data.email);
+  await Promise.all([
+    cleanOrphanProfile(supabase, "username", data.username),
+    cleanOrphanProfile(supabase, "nickname", data.nickname),
+    cleanOrphanProfile(supabase, "email", data.email),
+  ]);
 
-  const { data: byUsername } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("username", data.username)
-    .is("deleted_at", null)
-    .single();
+  // username/nickname/email 중복 검사를 병렬화 — 직렬일 때 3 RTT, 병렬은 1 RTT
+  const [byUsername, byNickname, byEmail] = await Promise.all([
+    lookupByField(supabase, "username", data.username),
+    lookupByField(supabase, "nickname", data.nickname),
+    lookupByField(supabase, "email", data.email),
+  ]);
 
   if (byUsername) return "이미 존재하는 아이디입니다";
-
-  const { data: byNickname } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("nickname", data.nickname)
-    .is("deleted_at", null)
-    .single();
-
   if (byNickname) return "이미 존재하는 닉네임입니다";
 
-  const { data: byEmail } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("email", data.email)
-    .is("deleted_at", null)
-    .single();
-
-  if (byEmail) return "해당 이메일로 가입된 계정이 이미 존재합니다";
+  if (byEmail) {
+    // 사용자에게 올바른 로그인 경로를 안내. OAuth 가입자가 이메일로 재가입을 시도해 계정이 분리되는 사고를 방지.
+    const label = getProviderLabel(byEmail.type_social);
+    return `이미 ${label}로 가입된 이메일입니다. 로그인 페이지에서 ${label} 로그인을 이용해 주세요.`;
+  }
 
   return null;
 }
