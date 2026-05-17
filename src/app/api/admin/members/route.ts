@@ -138,8 +138,10 @@ interface ArtistRow { id?: string; type_artist?: string; title?: string }
 
 interface ArtistInfo { type_artist: string | null; artist_id: string | null; shop_name: string | null }
 
-function extractArtistInfo(artists: ArtistRow[] | null): ArtistInfo {
-    const first = (artists ?? [])[0];
+/** PostgREST 가 profiles ↔ artists 관계를 1:1 로 인식하면 object, 1:N 이면 array 로 반환.
+ *  두 경우 모두 안전하게 첫 row 추출. */
+function extractArtistInfo(artists: ArtistRow | ArtistRow[] | null | undefined): ArtistInfo {
+    const first = Array.isArray(artists) ? artists[0] : artists;
     return {
         type_artist: first?.type_artist ?? null,
         artist_id: first?.id ?? null,
@@ -188,8 +190,8 @@ async function fetchStandardMembers(
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const members = (data ?? []).map((row) => {
-        const { artists, ...profile } = row as Record<string, unknown> & { artists?: ArtistRow[] };
-        const { type_artist, artist_id, shop_name } = extractArtistInfo(artists ?? null);
+        const { artists, ...profile } = row as Record<string, unknown> & { artists?: ArtistRow | ArtistRow[] | null };
+        const { type_artist, artist_id, shop_name } = extractArtistInfo(artists);
         return { ...profile, type_artist, artist_id, shop_name };
     });
 
