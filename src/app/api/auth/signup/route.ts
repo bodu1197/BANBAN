@@ -88,10 +88,12 @@ async function cleanOrphanProfile(
   field: string,
   value: string
 ): Promise<void> {
+  // 이메일은 대소문자 무시 매칭 — lookupByField 와 동일한 defense in depth
+  const normalized = field === "email" ? value.toLowerCase() : value;
   const { data: orphan } = await supabase
     .from("profiles")
     .select("id, password")
-    .eq(field, value)
+    .eq(field, normalized)
     .is("deleted_at", null)
     .single();
 
