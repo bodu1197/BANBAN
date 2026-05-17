@@ -12,13 +12,18 @@ export default function MainLayout({
 
   return (
     <QueryProvider>
-      <div lang="ko" className="flex min-h-screen flex-col">
+      {/* 바비톡 패턴 — outer 옅은 회색 바탕, 내부 1024px 흰색 컨테이너 (상단 32px 라운드) */}
+      <div lang="ko" className="flex min-h-screen flex-col bg-[#F7F7F9]">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdSafe(websiteJsonLd) }}
         />
         <Header />
-        <div className="flex-1 pb-16">{children}</div>
+        <div className="flex-1 pb-16">
+          <div className="mx-auto w-full max-w-[1024px] bg-background md:rounded-t-[32px] overflow-hidden">
+            {children}
+          </div>
+        </div>
         <Footer />
         <BottomNav />
         <IdleToaster />

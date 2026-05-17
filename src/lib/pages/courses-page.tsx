@@ -28,7 +28,7 @@ export async function renderCoursesPage(): Promise<React.ReactElement> {
     const courses = await fetchCourseList();
 
     return (
-        <div className="mx-auto w-full max-w-[767px]">
+        <div className="mx-auto w-full max-w-[1024px]">
             <CategoryIcons />
             <CourseListSection courses={courses} />
         </div>

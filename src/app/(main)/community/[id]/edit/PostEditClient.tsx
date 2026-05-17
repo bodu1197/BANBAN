@@ -149,7 +149,7 @@ export function PostEditClient({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[767px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <Link href={`/community/${postId}`} aria-label="뒤로 가기"
           className="rounded-lg p-1 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

@@ -171,7 +171,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
     const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as ArtistType;
 
     return (
-        <main className="mx-auto min-h-screen max-w-[767px] bg-background">
+        <main className="mx-auto min-h-screen max-w-[1024px] bg-background">
             {preloadUrl ? (
                 <link rel="preload" as="image" href={preloadUrl} fetchPriority="high" />
             ) : null}

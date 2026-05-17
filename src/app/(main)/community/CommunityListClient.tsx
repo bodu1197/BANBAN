@@ -121,7 +121,7 @@ export function CommunityListClient({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[767px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       <BoardTabs currentBoard={currentBoard} onNavigate={(board) => navigate(board, currentSort)} />
       <SortBar currentSort={currentSort} onNavigate={(sort) => navigate(currentBoard, sort)} userId={userId} />
       {posts.length === 0 ? (

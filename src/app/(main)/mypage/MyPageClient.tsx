@@ -343,7 +343,7 @@ export function MyPageClient(): React.ReactElement {
   const menu = isArtist ? artistMenuItems : userMenuItems;
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[767px] bg-muted/30">
+    <div className="mx-auto min-h-screen w-full max-w-[1024px] bg-muted/30">
       <MyPageHeader onLogout={handleLogout} />
       <section className="space-y-2.5 pb-20">
         <div className="bg-background p-4 pb-5">

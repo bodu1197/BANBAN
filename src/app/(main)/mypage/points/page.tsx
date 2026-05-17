@@ -478,7 +478,7 @@ export default function PointsManagementPage(): React.ReactElement {
     }
 
     return (
-        <div className="mx-auto w-full max-w-[767px] pb-20">
+        <div className="mx-auto w-full max-w-[1024px] pb-20">
             <PageHeader onBack={() => router.back()} />
             <div className="space-y-5 p-4">
                 <BalanceCard balance={balance} totalEarned={totalEarned} totalSpent={totalSpent} />

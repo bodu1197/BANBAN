@@ -241,7 +241,7 @@ export default function InquiriesPage(): React.ReactElement {
   };
 
   return (
-    <div className="mx-auto min-h-screen max-w-[767px] bg-background px-4 py-6">
+    <div className="mx-auto min-h-screen max-w-[1024px] bg-background px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold">건의사항</h1>
         <Button size="sm" onClick={() => setShowForm(!showForm)} aria-label="건의사항 작성">

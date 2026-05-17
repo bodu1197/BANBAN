@@ -94,7 +94,7 @@ export async function renderExhibitionDetailPage(id: string): Promise<React.Reac
 
   if (!exhibition) {
     return (
-      <main className="mx-auto flex w-full max-w-[767px] items-center justify-center px-4 py-20">
+      <main className="mx-auto flex w-full max-w-[1024px] items-center justify-center px-4 py-20">
         <p className="text-muted-foreground">{STRINGS.error.notFound}</p>
       </main>
     );
@@ -124,7 +124,7 @@ export async function renderExhibitionDetailPage(id: string): Promise<React.Reac
     : null;
 
   return (
-    <main className="mx-auto w-full max-w-[767px]">
+    <main className="mx-auto w-full max-w-[1024px]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}

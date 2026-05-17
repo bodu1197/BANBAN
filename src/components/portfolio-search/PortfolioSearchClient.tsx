@@ -41,7 +41,7 @@ function PortfolioSearchInner({
   const adPortfolioIds = useMemo(() => new Set(adPortfolioIdsProp ?? []), [adPortfolioIdsProp]);
 
   return (
-    <div className="mx-auto w-full max-w-[767px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       <PortfolioFilterControls
         categories={categories} regions={regions} d={d}
         filters={filters} setRegions={setRegions} setCategoryIds={setCategoryIds} setPriceMax={setPriceMax}

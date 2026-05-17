@@ -28,7 +28,7 @@ export async function renderDiscountPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[767px] pb-20">
+    <main className="mx-auto w-full max-w-[1024px] pb-20">
       <DiscountPageClient
         portfolios={portfolios}
         regions={regions}

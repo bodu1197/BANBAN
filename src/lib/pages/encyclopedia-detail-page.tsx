@@ -332,7 +332,7 @@ export async function renderEncyclopediaDetailPage(
   });
 
   return (
-    <article className="mx-auto w-full max-w-[767px]">
+    <article className="mx-auto w-full max-w-[1024px]">
       <ViewCounter slug={article.slug} />
       <ArticleStructuredData article={article} />
       <FaqStructuredData faq={article.faq} />

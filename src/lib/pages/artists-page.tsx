@@ -30,7 +30,7 @@ export async function renderArtistsPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[767px]">
+    <main className="mx-auto w-full max-w-[1024px]">
       <ArtistSearchClient
         initialArtists={result.artists}
         initialTotalCount={result.totalCount}

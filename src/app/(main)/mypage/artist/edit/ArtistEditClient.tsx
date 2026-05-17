@@ -292,7 +292,7 @@ export function ArtistEditClient({ artist,
   const formLabels = buildFormLabelsFromDict(t);
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[767px] bg-background">
+    <div className="mx-auto min-h-screen w-full max-w-[1024px] bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background px-4">
         <Link href={"/mypage"} className="flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Back">
           <ChevronLeft className="h-6 w-6" />
@@ -333,7 +333,7 @@ export function ArtistEditClient({ artist,
       </form>
 
       <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background p-4">
-        <div className="mx-auto max-w-[767px]">
+        <div className="mx-auto max-w-[1024px]">
           <Button type="submit" onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-brand-primary py-6 text-base font-semibold text-white hover:bg-brand-primary-hover focus-visible:bg-brand-primary-hover">
             {isSubmitting ? STRINGS.common.saving : STRINGS.common.save}
           </Button>

@@ -208,7 +208,7 @@ export function ProfileClient(): React.ReactElement {
   const username = user.user_metadata?.username || user.email?.split("@")[0] || user.id.slice(0, 8);
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[767px] bg-background">
+    <div className="mx-auto min-h-screen w-full max-w-[1024px] bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background px-4">
         <Link
@@ -371,7 +371,7 @@ export function ProfileClient(): React.ReactElement {
 
       {/* Footer Save Button */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background p-4">
-        <div className="mx-auto max-w-[767px]">
+        <div className="mx-auto max-w-[1024px]">
           <Button
             type="submit"
             onClick={handleSubmit}

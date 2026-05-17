@@ -246,7 +246,7 @@ export default function AdManagementPage(): React.ReactElement {
     );
 
     return (
-        <div className="mx-auto w-full max-w-[767px] pb-20">
+        <div className="mx-auto w-full max-w-[1024px] pb-20">
             <header className="sticky top-0 z-50 flex h-14 items-center border-b border-border bg-background px-4">
                 <button onClick={() => router.back()} aria-label="뒤로 가기" className="rounded-lg p-2 transition-colors hover:bg-muted focus-visible:bg-muted">
                     <ChevronLeft className="h-5 w-5" />

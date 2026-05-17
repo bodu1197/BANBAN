@@ -594,7 +594,7 @@ export function BeforeAfterManagePage(): React.ReactElement {
 
   if (!isArtist || !artist?.id) {
     return (
-      <div className="mx-auto min-h-screen w-full max-w-[767px] bg-background">
+      <div className="mx-auto min-h-screen w-full max-w-[1024px] bg-background">
         <div className="flex min-h-[300px] items-center justify-center">
           <p className="text-muted-foreground">
             아티스트 등록 후 이용 가능합니다.
@@ -605,7 +605,7 @@ export function BeforeAfterManagePage(): React.ReactElement {
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[767px] bg-background">
+    <div className="mx-auto min-h-screen w-full max-w-[1024px] bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background px-4">
         <Link
           href="/mypage"

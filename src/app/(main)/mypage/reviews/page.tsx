@@ -172,7 +172,7 @@ export default function MyReviewsPage(): React.ReactElement {
     if (authLoading || loading) return <LoadingSpinner />;
 
     return (
-        <div className="mx-auto w-full max-w-[767px] pb-20">
+        <div className="mx-auto w-full max-w-[1024px] pb-20">
             <ReviewsHeader total={total} onBack={() => router.back()} />
             <div className="space-y-3 p-4">
                 {reviews.length === 0 ? (

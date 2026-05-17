@@ -25,15 +25,16 @@ export function HomeSearchTrigger(): React.ReactElement {
   const current = idx >= 0 && idx < placeholders.length ? placeholders.at(idx) ?? "" : "";
 
   return (
-    <div className="w-full px-4 py-3 md:py-4">
+    <div className="flex w-full justify-center px-4 py-6 md:py-8">
+      {/* 바비톡 spec — max-w 680px, h 52px, border 1px brand-primary, rounded-[30px], gap 10px, px-16 py-8 */}
       <button
         type="button"
         onClick={() => router.push("/search")}
         aria-label={STRINGS.globalSearch.triggerLabel}
-        className="flex w-full items-center gap-2 rounded-full border-2 border-brand-primary/40 bg-background px-4 h-12 text-left transition-colors hover:border-brand-primary focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full max-w-[680px] items-center gap-[10px] rounded-[30px] border border-brand-primary bg-background px-4 h-[52px] text-left transition-colors hover:bg-brand-primary/5 focus-visible:bg-brand-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-        {/* 회전 placeholder 는 시각적 힌트 — 버튼의 aria-label 이 이미 의도를 전달하므로 스크린 리더에는 숨김 */}
+        <Search className="h-5 w-5 shrink-0 text-brand-primary" aria-hidden="true" />
+        {/* 회전 placeholder 는 시각적 힌트 — 버튼의 aria-label 이 이미 의도 전달, 스크린 리더에는 숨김 */}
         <span aria-hidden="true" className="truncate text-sm text-muted-foreground">{current}</span>
       </button>
     </div>

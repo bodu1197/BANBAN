@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /* eslint-disable max-lines-per-function */
 export default function ArtistDetailSkeleton(): React.ReactElement {
   return (
-    <main className="mx-auto w-full max-w-[767px] pb-20 md:pb-0">
+    <main className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">
       {/* Top Bar Skeleton */}
       <div className="sticky top-0 z-40 flex h-12 items-center justify-between border-b bg-background px-2">
         <Skeleton className="h-8 w-8 rounded-full" />

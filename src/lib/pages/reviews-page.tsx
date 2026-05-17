@@ -89,7 +89,7 @@ export async function renderReviewsPage(): Promise<React.ReactElement> {
     const { data: reviews, count } = await fetchAllReviews({ limit: 50 });
 
     return (
-        <div className="mx-auto w-full max-w-[767px]">
+        <div className="mx-auto w-full max-w-[1024px]">
             <header className="flex items-center gap-3 border-b border-border px-4 py-4">
                 <MessageSquare className="h-5 w-5 text-brand-primary" aria-hidden="true" />
                 <h1 className="text-lg font-bold">{STRINGS.common.reviews}</h1>

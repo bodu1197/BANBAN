@@ -251,7 +251,7 @@ function ArtistSearchInner({ initialArtists,
   }), [d]);
 
   return (
-    <div className="mx-auto w-full max-w-[767px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       {/* Region Selector */}
       <RegionSelector
         regions={regions}

@@ -26,7 +26,7 @@ export default async function Page(): Promise<React.ReactElement> {
   const hasBanners = banners.length > 0;
 
   return (
-    <main className="mx-auto w-full max-w-[767px] px-0 py-6">
+    <main className="mx-auto w-full max-w-[1024px] px-0 py-6">
       <header className="flex items-center gap-3 px-4 pb-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary/10">
           <Gift className="h-5 w-5 text-brand-primary" aria-hidden="true" />

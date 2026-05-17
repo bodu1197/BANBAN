@@ -47,7 +47,7 @@ async function renderPortfolioContent(config: PortfolioPageConfig): Promise<Reac
   });
 
   return (
-    <main className="mx-auto w-full max-w-[767px]">
+    <main className="mx-auto w-full max-w-[1024px]">
       <PortfolioSearchClient
         key={config.slug}
         initialData={initialResult.portfolios}

@@ -145,7 +145,7 @@ export async function renderEncyclopediaListPage(options: {
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-[767px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       <header className="border-b border-border px-4 py-5">
         <h1 className="text-lg font-bold md:text-xl">반영구 백과사전</h1>
         <p className="mt-1 text-sm text-muted-foreground">

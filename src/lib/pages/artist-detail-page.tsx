@@ -143,7 +143,7 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[767px] pb-20 md:pb-0">
+    <main className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(artistJsonLd) }}

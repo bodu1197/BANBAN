@@ -14,7 +14,7 @@ export async function renderLikesPage(): Promise<React.ReactElement> {
   const likedArtists = await fetchLikedArtists();
 
   return (
-    <main className="mx-auto flex flex-1 w-full max-w-[767px] flex-col px-4 py-6">
+    <main className="mx-auto flex flex-1 w-full max-w-[1024px] flex-col px-4 py-6">
       <h1 className="text-2xl font-bold">
         <Heart className="mr-2 inline-block h-6 w-6" />
         {STRINGS.mypage.likedPortfolios}

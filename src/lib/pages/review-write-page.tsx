@@ -10,7 +10,7 @@ export async function generateReviewWriteMetadata(): Promise<{ title: string; de
 
 export async function renderReviewWritePage(): Promise<React.ReactElement> {
   return (
-    <main className="mx-auto min-h-screen max-w-[767px] bg-background pt-16 pb-24">
+    <main className="mx-auto min-h-screen max-w-[1024px] bg-background pt-16 pb-24">
       <ReviewWriteClient />
     </main>
   );

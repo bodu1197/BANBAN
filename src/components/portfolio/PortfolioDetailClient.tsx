@@ -297,7 +297,7 @@ function PortfolioBottomBar({ kakaoUrl, contact, artistUserId: _artistUserId, ar
 
   return (
     <>
-      <div className="fixed bottom-0 left-1/2 w-full max-w-[767px] -translate-x-1/2 border-t bg-background p-2">
+      <div className="fixed bottom-0 left-1/2 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
         <div className="flex items-center gap-1.5">
           <BottomBarIcons kakaoUrl={kakaoUrl} contact={contact} onChat={handleChat} artistId={artistId} portfolioId={portfolioId} />
         </div>

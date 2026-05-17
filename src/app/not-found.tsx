@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function NotFound(): React.ReactElement {
   return (
-    <main className="mx-auto flex min-h-[60vh] w-full max-w-[767px] flex-col items-center justify-center px-6 py-20 text-center">
+    <main className="mx-auto flex min-h-[60vh] w-full max-w-[1024px] flex-col items-center justify-center px-6 py-20 text-center">
       <p className="text-sm font-medium text-brand-primary">404</p>
       <h1 className="mt-3 text-2xl font-bold text-foreground md:text-3xl">
         페이지를 찾을 수 없습니다

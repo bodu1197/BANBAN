@@ -487,7 +487,7 @@ export default function MessagesPage(): React.ReactElement {
     }
 
     return (
-        <div className="mx-auto flex h-[calc(100dvh-8rem)] w-full max-w-[767px] flex-col">
+        <div className="mx-auto flex h-[calc(100dvh-8rem)] w-full max-w-[1024px] flex-col">
             <MessagesPageHeader count={conversations.length} onBack={() => router.back()} />
             <div className="flex-1 overflow-hidden">
                 <MessagesPageContent

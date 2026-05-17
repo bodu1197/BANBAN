@@ -15,7 +15,7 @@ export function CourseDetailClient({ course }: Readonly<{
     course: CourseDetail;
 }>): React.ReactElement {
     return (
-        <div className="mx-auto w-full max-w-[767px] pb-24">
+        <div className="mx-auto w-full max-w-[1024px] pb-24">
             <BackButton />
             <ImageCarousel images={course.images} title={course.title} />
             <CourseHeader course={course} />
@@ -399,7 +399,7 @@ function CourseBottomBar({ kakaoUrl, contact }: Readonly<{
     if (!hasKakao && !hasContact) return <></>;
 
     return (
-        <div className="fixed bottom-0 left-1/2 w-full max-w-[767px] -translate-x-1/2 border-t bg-background p-2">
+        <div className="fixed bottom-0 left-1/2 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
             <div className="flex items-center gap-1.5">
                 {hasKakao ? (
                     <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className={CONTACT_BTN} aria-label="카카오톡">

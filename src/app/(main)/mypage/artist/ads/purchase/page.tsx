@@ -434,7 +434,7 @@ export default function AdPurchasePage(): React.ReactElement {
     }
 
     return (
-        <div className="mx-auto w-full max-w-[767px] pb-20">
+        <div className="mx-auto w-full max-w-[1024px] pb-20">
             <PageHeader onBack={() => router.back()} />
             {plans.length === 0 ? (
                 <p className="p-8 text-center text-sm text-muted-foreground">현재 이용 가능한 광고 상품이 없습니다.</p>
