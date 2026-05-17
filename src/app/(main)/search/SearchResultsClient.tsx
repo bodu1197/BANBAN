@@ -10,7 +10,9 @@ import { STRINGS } from "@/lib/strings";
 import { GridPortfolioCard } from "@/components/home/cards";
 import { AdBadge } from "@/components/home/cards/AdBadge";
 import type { HomePortfolio } from "@/lib/supabase/portfolio-common";
+import type { HomeArtist } from "@/lib/supabase/home-artist-queries";
 import { useSearchFetch } from "./useSearchFetch";
+import { SearchExplore } from "./SearchExplore";
 
 interface ArtistResult {
   id: string;
@@ -125,12 +127,13 @@ function EmptyState({ message }: Readonly<{ message: string }>): React.ReactElem
 
 // --- Main inner component ---
 
-function SearchResultsInner(): React.ReactElement {
+function SearchResultsInner({ popularArtists }: Readonly<{ popularArtists: ReadonlyArray<HomeArtist> }>): React.ReactElement {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const [tab, setTab] = useState<"portfolio" | "artist">("portfolio");
   const d = STRINGS.globalSearch;
 
+  // useSearchFetch 는 query 가 비어있으면 enabled:false 로 fetch 안 함 — hook 순서 보존을 위해 항상 호출
   const { portfolios, artists, adArtistIds, adPortfolioIds, isLoading } = useSearchFetch(query);
 
   const renderContent = useCallback((): React.ReactElement => {
@@ -140,6 +143,11 @@ function SearchResultsInner(): React.ReactElement {
     if (tab === "portfolio" && portfolios.length > 0) return <PortfolioResults portfolios={portfolios} adArtistIds={adArtistIds} adPortfolioIds={adPortfolioIds} />;
     return <EmptyState message={d.noSearchResults} />;
   }, [isLoading, portfolios, artists, adArtistIds, adPortfolioIds, query, tab, d.noSearchResults]);
+
+  // q 없으면 탐색 모드 — autoFocus 검색바 + 인기 검색어 + 인기 아티스트
+  if (!query.trim()) {
+    return <SearchExplore popularArtists={popularArtists} />;
+  }
 
   return (
     <div>
@@ -153,10 +161,10 @@ function SearchResultsInner(): React.ReactElement {
   );
 }
 
-export function SearchResultsClient(): React.ReactElement {
+export function SearchResultsClient({ popularArtists }: Readonly<{ popularArtists: ReadonlyArray<HomeArtist> }>): React.ReactElement {
   return (
     <Suspense fallback={<SearchSkeleton />}>
-      <SearchResultsInner />
+      <SearchResultsInner popularArtists={popularArtists} />
     </Suspense>
   );
 }

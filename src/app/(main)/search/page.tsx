@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
+import { fetchPopularArtists } from "@/lib/supabase/home-artist-queries";
 import { SearchResultsClient } from "@/app/(main)/search/SearchResultsClient";
+
+export const revalidate = 60; // 인기 아티스트는 1분 ISR
 
 export function generateMetadata(): Metadata {
   return {
@@ -12,10 +16,14 @@ export function generateMetadata(): Metadata {
   };
 }
 
-export default function SearchPage(): React.ReactElement {
+export default async function SearchPage(): Promise<React.ReactElement> {
+  // q 가 있어도 없어도 인기 아티스트는 진입 모드에서만 표시 — 서버에서 미리 가져와 props 전달
+  const popularArtists = await fetchPopularArtists({ limit: 10 });
   return (
-    <main className="mx-auto w-full max-w-[767px] px-4 py-6">
-      <SearchResultsClient />
+    <main className="mx-auto w-full max-w-[1024px] px-4 py-6 md:px-6">
+      <Suspense fallback={null}>
+        <SearchResultsClient popularArtists={popularArtists} />
+      </Suspense>
     </main>
   );
 }

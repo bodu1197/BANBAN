@@ -15,6 +15,7 @@ import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
 import { fetchPromoBanners, fetchHomeBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-queries";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
+import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 
 
 
@@ -266,6 +267,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
       />
       <div className="mx-auto w-full max-w-[1024px]">
+        <HomeSearchTrigger />
         <QuickMenu items={quickMenuItems} />
         {(exhibitionBanner ?? aiBanner) ? (
           <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">

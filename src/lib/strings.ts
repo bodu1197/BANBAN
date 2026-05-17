@@ -520,7 +520,20 @@ export const STRINGS ={
     "artistResults": "아티스트",
     "noSearchResults": "검색 결과가 없습니다",
     "searchAll": "전체 검색",
-    "adLabel": "광고"
+    "adLabel": "광고",
+    "exploreTitle": "무엇을 찾고 계신가요?",
+    "explorePlaceholder": "활동명, 시술, 지역으로 검색하세요",
+    "popularKeywords": "인기 검색어",
+    "popularArtists": "인기 아티스트",
+    "back": "뒤로",
+    "triggerLabel": "검색 페이지로 이동",
+    "triggerPlaceholders": [
+      "눈썹 잘하는 아티스트 찾아줘",
+      "입술 리터치 가격 비교",
+      "헤어라인 시술 후기",
+      "아이라인 자연스럽게 잘하는 곳",
+      "남자 눈썹 시술 추천"
+    ]
   },
   "community": {
     "title": "커뮤니티",
