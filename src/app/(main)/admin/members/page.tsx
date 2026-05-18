@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users, Store } from "lucide-react";
+import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users, Store, Pencil } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminSearchBar, AdminPagination, AdminSearchResetBadge, AdminLoadingSpinner, AdminErrorState, AdminPageHeader } from "@/components/admin/admin-shared";
 
@@ -322,20 +322,31 @@ function MemberTableRow({ member, onSaved, onDeleted }: Readonly<{
 // ─── MemberNameCell ─────────────────────────────────────
 
 function MemberNameCell({ member }: Readonly<{ member: Member }>): React.ReactElement {
-    // 반영구 아티스트: 활동명(artists.title) 메인 + 닉네임 보조 — admin 식별성 유지
+    // 반영구 아티스트: 활동명(artists.title) 메인 + 닉네임 보조 + 샵 수정 진입점
     if (member.artist_id && member.shop_name) {
         return (
             <div className="flex flex-col gap-0.5">
-                <Link
-                    href={`/artists/${member.artist_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={member.shop_name}
-                    className="flex items-center gap-1.5 rounded text-pink-300 transition-colors hover:text-pink-200 hover:underline focus-visible:text-pink-200 focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    <span className="truncate max-w-[180px] md:max-w-[240px]">{member.shop_name}</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link
+                        href={`/artists/${member.artist_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`${member.shop_name} 공개 페이지 열기`}
+                        className="flex items-center gap-1.5 rounded text-pink-300 transition-colors hover:text-pink-200 hover:underline focus-visible:text-pink-200 focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <Store className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="truncate max-w-[180px] md:max-w-[240px]">{member.shop_name}</span>
+                    </Link>
+                    {/* admin 전용 — 임의 아티스트 샵 정보 직접 수정. 터치 타겟 ≥44px 확보 위해 p-2 + h-9 w-9 */}
+                    <Link
+                        href={`/admin/artists/${member.artist_id}/edit`}
+                        title={`${member.shop_name} 샵 정보 수정 (관리자)`}
+                        aria-label={`${member.shop_name} 샵 정보 수정`}
+                        className="flex h-9 w-9 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:bg-white/10 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <Pencil className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                </div>
                 <span className="text-xs text-zinc-400">{member.nickname}</span>
             </div>
         );

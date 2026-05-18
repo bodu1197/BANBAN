@@ -58,31 +58,58 @@ interface ArtistEditClientProps {
   artist: ArtistData;
   categoryIds: string[];
   categories: ArtistFormCategory[];
+  // admin 모드 — 다른 사람의 아티스트 샵 수정. true 면 API 라우팅을 /api/admin/* 으로 전환.
+  isAdmin?: boolean;
 }
 
 // --- Helper functions ---
 
-async function uploadProfileImage(artistId: string, file: File): Promise<void> {
+function mediaEndpoint(isAdmin: boolean): string {
+  return isAdmin ? "/api/admin/artist-media" : "/api/artist-media";
+}
+
+async function patchArtistProfileImage(artistId: string, path: string, isAdmin: boolean): Promise<void> {
+  if (isAdmin) {
+    const res = await fetch(`/api/admin/artists/${artistId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile_image_path: path }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({})) as { error?: string };
+      throw new Error(err.error ?? "프로필 이미지 저장 실패");
+    }
+    return;
+  }
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+  const { error } = await (supabase.from("artists") as any).update({ profile_image_path: path }).eq("id", artistId);
+  if (error) throw error;
+}
+
+async function uploadProfileImage(artistId: string, file: File, isAdmin: boolean): Promise<void> {
   const form = new globalThis.FormData();
   form.append("file", file);
   const path = `artists/${artistId}/profile_${Date.now()}.webp`;
   const res = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
   const json = await res.json() as { success: boolean };
   if (!json.success) throw new Error("프로필 이미지 업로드 실패");
-  const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  await (supabase.from("artists") as any).update({ profile_image_path: path }).eq("id", artistId);
+  await patchArtistProfileImage(artistId, path, isAdmin);
 }
 
-async function deleteArtistMedia(artistId: string, mediaIds: string[]): Promise<void> {
-  await fetch("/api/artist-media", {
+async function deleteArtistMedia(artistId: string, mediaIds: string[], isAdmin: boolean): Promise<void> {
+  const res = await fetch(mediaEndpoint(isAdmin), {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ artistId, mediaIds }),
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error ?? "갤러리 삭제 실패");
+  }
 }
 
-async function uploadShopImages(artistId: string, newImages: File[], startIndex: number): Promise<void> {
+async function uploadShopImages(artistId: string, newImages: File[], startIndex: number, isAdmin: boolean): Promise<void> {
   for (let i = 0; i < newImages.length; i++) {
     const shopForm = new globalThis.FormData();
     // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
@@ -91,11 +118,15 @@ async function uploadShopImages(artistId: string, newImages: File[], startIndex:
     const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
     const shopJson = await shopRes.json() as { success: boolean };
     if (!shopJson.success) throw new Error("이미지 업로드 실패");
-    await fetch("/api/artist-media", {
+    const mediaRes = await fetch(mediaEndpoint(isAdmin), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ artistId, storagePath: path, type: "image", orderIndex: startIndex + i }),
     });
+    if (!mediaRes.ok) {
+      const err = await mediaRes.json().catch(() => ({})) as { error?: string };
+      throw new Error(err.error ?? "갤러리 추가 실패");
+    }
   }
 }
 
@@ -135,7 +166,7 @@ function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; 
   return data;
 }
 
-async function updateArtistCategories(artistId: string, categoryIds: string[]): Promise<void> {
+async function updateArtistCategoriesSelf(artistId: string, categoryIds: string[]): Promise<void> {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
   await (supabase.from("categorizables") as any).delete().eq("categorizable_type", "artist").eq("categorizable_id", artistId);
@@ -146,6 +177,35 @@ async function updateArtistCategories(artistId: string, categoryIds: string[]): 
   if (categorizables.length > 0) await (supabase.from("categorizables") as any).insert(categorizables);
 }
 
+/** admin 모드: artists update + categorizables 동기화를 한 admin route 호출로 묶음 (원자성 ↑) */
+async function saveArtistUpdatesAdmin(
+  artistId: string,
+  updateData: Record<string, unknown>,
+  shopCategoryIds: string[],
+): Promise<void> {
+  const res = await fetch(`/api/admin/artists/${artistId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...updateData, shop_category_ids: shopCategoryIds }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error ?? "admin update 실패");
+  }
+}
+
+async function saveArtistUpdatesSelf(
+  artistId: string,
+  updateData: Record<string, unknown>,
+  shopCategoryIds: string[],
+): Promise<void> {
+  const supabase = createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
+  const { error: artistError } = await (supabase.from("artists") as any).update(updateData).eq("id", artistId);
+  if (artistError) throw artistError;
+  await updateArtistCategoriesSelf(artistId, shopCategoryIds);
+}
+
 async function saveArtistEdits(
   artist: Readonly<{ id: string; address: string }>,
   formData: ArtistFormData,
@@ -153,28 +213,33 @@ async function saveArtistEdits(
   deletedMediaIds: string[],
   newShopImages: File[],
   existingShopCount: number,
+  isAdmin: boolean,
 ): Promise<void> {
-  const supabase = createClient();
   const artistId = artist.id;
 
   const coords = formData.address !== artist.address ? await geocodeAddress(formData.address) : null;
   const updateData = buildArtistUpdateData(formData, coords);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  const { error: artistError } = await (supabase.from("artists") as any).update(updateData).eq("id", artistId);
-  if (artistError) throw artistError;
+  if (isAdmin) {
+    await saveArtistUpdatesAdmin(artistId, updateData, formData.shop_category_ids);
+  } else {
+    await saveArtistUpdatesSelf(artistId, updateData, formData.shop_category_ids);
+  }
 
-  if (newProfileImage.length > 0) await uploadProfileImage(artistId, newProfileImage[0]);
-  if (deletedMediaIds.length > 0) await deleteArtistMedia(artistId, deletedMediaIds);
-  if (newShopImages.length > 0) await uploadShopImages(artistId, newShopImages, existingShopCount);
-  await updateArtistCategories(artistId, formData.shop_category_ids);
+  if (newProfileImage.length > 0) await uploadProfileImage(artistId, newProfileImage[0], isAdmin);
+  if (deletedMediaIds.length > 0) await deleteArtistMedia(artistId, deletedMediaIds, isAdmin);
+  if (newShopImages.length > 0) await uploadShopImages(artistId, newShopImages, existingShopCount, isAdmin);
 }
 
 export function ArtistEditClient({ artist,
   categoryIds,
   categories,
+  isAdmin = false,
 }: Readonly<ArtistEditClientProps>): React.ReactElement {
   const router = useRouter();
+  // admin 모드: 목록 페이지로 / 본인 모드: 마이페이지로
+  const backHref = isAdmin ? "/admin/members" : "/mypage";
+  const headerTitle = isAdmin ? "아티스트 샵 수정 (관리자)" : STRINGS.mypage.editArtistProfile;
   const { isOpen: isAddressOpen, open: openAddress, close: closeAddress } = useDaumPostcode();
 
   const [formData, setFormData] = useState<ArtistFormData>(() => {
@@ -277,9 +342,9 @@ export function ArtistEditClient({ artist,
 
     setIsSubmitting(true);
     try {
-      await saveArtistEdits(artist, formData, newProfileImage, deletedMediaIds, newShopImages, existingShopImages.length);
+      await saveArtistEdits(artist, formData, newProfileImage, deletedMediaIds, newShopImages, existingShopImages.length, isAdmin);
       globalThis.alert(STRINGS.mypage.saved);
-      router.push("/mypage");
+      router.push(backHref);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Update error:", error);
@@ -294,10 +359,10 @@ export function ArtistEditClient({ artist,
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1024px] bg-background">
       <header className="sticky top-0 z-50 flex h-14 items-center border-b bg-background px-4">
-        <Link href={"/mypage"} className="flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Back">
+        <Link href={backHref} className="flex items-center justify-center rounded-lg p-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Back">
           <ChevronLeft className="h-6 w-6" />
         </Link>
-        <h1 className="ml-2 text-lg font-semibold">{STRINGS.mypage.editArtistProfile}</h1>
+        <h1 className="ml-2 text-lg font-semibold">{headerTitle}</h1>
       </header>
 
       <form onSubmit={handleSubmit} className="pb-28">
