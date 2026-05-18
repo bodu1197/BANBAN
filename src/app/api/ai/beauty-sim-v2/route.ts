@@ -111,7 +111,6 @@ async function generateEdit(body: SimRequest, apiKey: string): Promise<string> {
     prompt: getPrompt(body.step, body.style),
     n: 1,
     size: "1024x1024",
-    response_format: "b64_json",
   });
 
   const b64 = result.data?.[0]?.b64_json;
