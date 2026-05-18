@@ -25,6 +25,21 @@ export async function insertEncyclopediaArticle(
   return { id: (data as { id: string }).id };
 }
 
+type MediaRow = { portfolio_id: string; storage_path: string };
+
+const CATEGORY_BRIDGE_MULTIPLIER = 8;
+const RANDOM_POOL_MULTIPLIER = 3;
+const MEDIA_FETCH_MULTIPLIER = 3;
+
+function shuffle<T>(arr: readonly T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 async function findCategoryPortfolioIds(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
   supabase: any,
@@ -44,10 +59,36 @@ async function findCategoryPortfolioIds(
     .select("categorizable_id")
     .eq("categorizable_type", "portfolio")
     .in("category_id", catIds)
-    .limit(limit * 8);
-  return Array.from(
+    .limit(limit * CATEGORY_BRIDGE_MULTIPLIER);
+
+  const rawIds = Array.from(
     new Set(((bridge ?? []) as { categorizable_id: string }[]).map((b) => b.categorizable_id)),
   );
+  if (rawIds.length === 0) return [];
+
+  const { data: active } = await supabase
+    .from("portfolios")
+    .select("id")
+    .in("id", rawIds)
+    .is("deleted_at", null);
+
+  return ((active ?? []) as { id: string }[]).map((p) => p.id);
+}
+
+async function pickRandomActivePortfolioIds(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
+  supabase: any,
+  count: number,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("portfolios")
+    .select("id")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(count * RANDOM_POOL_MULTIPLIER);
+
+  const ids = ((data ?? []) as { id: string }[]).map((p) => p.id);
+  return shuffle(ids).slice(0, count);
 }
 
 export async function pickRelatedPortfolioImages(
@@ -58,30 +99,32 @@ export async function pickRelatedPortfolioImages(
   const bucketUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/portfolios`;
   const cleaned = keyword.replace(/\s*(타투|반영구)\s*$/, "").trim();
 
-  const portfolioIds = await findCategoryPortfolioIds(supabase, cleaned, limit);
+  const effectiveKeyword = cleaned || keyword;
+  let portfolioIds = await findCategoryPortfolioIds(supabase, cleaned, limit);
+  if (portfolioIds.length === 0) {
+    portfolioIds = await pickRandomActivePortfolioIds(supabase, limit * MEDIA_FETCH_MULTIPLIER);
+  }
+  if (portfolioIds.length === 0) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- portfolio_media query
-  let mediaQuery: any = supabase
+  const { data: imgs } = await (supabase as any)
     .from("portfolio_media")
-    .select("portfolio_id, storage_path, order_index")
+    .select("portfolio_id, storage_path")
+    .in("portfolio_id", portfolioIds)
     .order("order_index", { ascending: true })
-    .limit(limit * 4);
+    .limit(limit * MEDIA_FETCH_MULTIPLIER);
 
-  if (portfolioIds.length > 0) {
-    mediaQuery = mediaQuery.in("portfolio_id", portfolioIds);
+  const byPortfolio = new Map<string, string>();
+  for (const row of (imgs ?? []) as MediaRow[]) {
+    if (!byPortfolio.has(row.portfolio_id)) {
+      byPortfolio.set(row.portfolio_id, row.storage_path);
+    }
   }
 
-  const { data: imgs } = await mediaQuery;
-  const seen = new Set<string>();
-  const out: { url: string; alt: string }[] = [];
-  for (const row of (imgs ?? []) as { portfolio_id: string; storage_path: string }[]) {
-    if (seen.has(row.portfolio_id)) continue;
-    seen.add(row.portfolio_id);
-    out.push({
-      url: `${bucketUrl}/${row.storage_path}`,
-      alt: `${keyword} 관련 작품 예시`,
-    });
-    if (out.length >= limit) break;
-  }
-  return out;
+  const ordinals = ["대표", "두 번째", "세 번째", "네 번째", "다섯 번째"];
+  return shuffle(Array.from(byPortfolio.entries()))
+    .slice(0, limit)
+    .map(([, path], i) => ({
+      url: `${bucketUrl}/${path}`,
+      alt: `${effectiveKeyword} ${ordinals[i] ?? `${i + 1}번째`} 작품 예시`,
+    }));
 }

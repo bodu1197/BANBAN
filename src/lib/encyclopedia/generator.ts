@@ -4,8 +4,10 @@ import type { EncyclopediaTopic } from "./topics";
 import { pickRelatedPortfolioImages } from "./queries";
 import { estimateReadingTime } from "@/lib/board/utils";
 
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-4o";
 const SITE_NAME = "반언니";
+const AI_TEMPERATURE = 0.85;
+const AI_MAX_TOKENS = 4096;
 
 export interface GeneratedArticle {
   title: string;
@@ -33,44 +35,94 @@ interface RawAiOutput {
   conclusion?: string;
 }
 
+const WRITING_ANGLES = [
+  "피부과학 논문·임상 데이터 기반 심층 분석",
+  "시술 전후 타임라인과 회복 과정 밀착 가이드",
+  "흔한 오해 vs 과학적 팩트 — 미신 타파 접근",
+  "해외(미국·일본·유럽) 기술 동향과 한국 시장 비교",
+  "비용 구조 분석 — 가격대별 차이와 합리적 선택 기준",
+  "시술 경력 10년 이상 전문가 관점의 테크닉 해설",
+  "피부 타입·연령·생활 습관별 맞춤 추천 가이드",
+  "시술 실패 사례 분석과 예방·대처법",
+] as const;
+
+function pickAngle(): string {
+  return WRITING_ANGLES[Math.floor(Math.random() * WRITING_ANGLES.length)];
+}
+
+const SYSTEM_PROMPT = [
+  "당신은 대한피부과학회·대한미용학회 자문급 전문성을 가진 반영구 메이크업 에디터입니다.",
+  "피부과학(dermatology), 색소학(pigmentology), 미용의학(aesthetic medicine) 분야의 학술 논문과 임상 데이터를 근거로 글을 작성합니다.",
+  "",
+  "## 절대 준수 원칙",
+  "1. **근거 기반 서술**: 모든 핵심 주장에 구체적 수치·연구 결과·의학적 메커니즘을 포함합니다.",
+  '   - 좋은 예: "표피(epidermis) 0.1mm 깊이에 색소를 주입하며, Journal of Cosmetic Dermatology(2023) 연구에 따르면 12개월 후 색소 잔존율은 평균 40~60%입니다."',
+  '   - 나쁜 예: "자연스러운 결과를 얻을 수 있습니다." (추상적, 근거 없음)',
+  "2. **고유성**: 동일 사이트의 다른 글과 문장 구조·도입부·결론이 겹치면 안 됩니다. 매번 새로운 앵글과 서사 구조를 사용합니다.",
+  "3. **E-E-A-T 준수**: Google의 Experience, Expertise, Authoritativeness, Trustworthiness 기준을 충족합니다.",
+  "4. **신뢰성 고지**: 모든 글 말미에 '본 콘텐츠는 의료 조언이 아니며, 개인차가 크므로 반드시 전문의 상담을 권장합니다'를 명확히 표기합니다.",
+  "5. **한국어 전용**: 대한민국 독자(2026년) 기준. 한국 의료법·공정거래법 맥락을 반영합니다.",
+  "6. **반드시 valid JSON만 출력**: 다른 텍스트 절대 금지.",
+].join("\n");
+
 function buildPrompt(topic: EncyclopediaTopic): string {
+  const angle = pickAngle();
+  const seed = Math.floor(Math.random() * 10000);
   return [
-    `당신은 한국 반영구 메이크업 분야의 전문 에디터이자 SEO 카피라이터입니다.`,
-    `웹사이트 "${SITE_NAME}"의 뷰티 백과사전 코너에 게시할 1,500~2,000자 분량의 한국어 깊이 있는 정보성 글을 작성하세요.`,
+    `# 작성 임무`,
+    `"${SITE_NAME}" 뷰티 백과사전에 게시할 **3,000~4,000자** 분량의 한국어 전문 정보 글을 작성하세요.`,
     ``,
-    `# 주제`,
+    `## 주제 정보`,
     `- 카테고리: ${topic.category}`,
-    `- 제목 키워드: ${topic.keyword}`,
+    `- 핵심 키워드: ${topic.keyword}`,
+    `- 주제명: ${topic.title}`,
+    `- **이번 글의 접근 앵글**: ${angle}`,
+    `- 다양성 시드: ${seed} (이 숫자를 참고해 도입부 서사·비유·사례를 매번 다르게 구성)`,
     ``,
-    `# 작성 규칙`,
-    `1. 전문성: 의학적/문화적/역사적 사실은 정확하게. 추측은 "~라고 알려져 있습니다" 등으로 표시.`,
-    `2. SEO: 제목·도입·소제목에 핵심 키워드 자연스럽게 배치(과도한 반복 금지).`,
-    `3. 가독성: 짧은 문단(2~4문장), 명확한 소제목, 불릿 활용 가능.`,
-    `4. 신뢰성: 위험·부작용·법적 사항이 있다면 반드시 안내. 의료조언이 아님을 부드럽게 명시.`,
-    `5. 한국 독자(2026년) 기준. 한국 법·문화 맥락을 반영.`,
-    `6. 광고성 문구·과장·추천샵 언급 금지.`,
+    `## 콘텐츠 품질 기준 (Google Helpful Content 가이드라인 준수)`,
     ``,
-    `# 출력 형식 (반드시 valid JSON, 다른 텍스트 절대 출력 금지)`,
+    `### 필수 포함 요소`,
+    `1. **구체적 수치 3개 이상**: 유지 기간(개월), 시술 시간(분), 통증 수준(VAS 점수), 색소 잔존율(%), 시술 가격대(만원), 회복 기간(일) 등`,
+    `2. **의학적 메커니즘 설명**: 피부 구조(표피·진피), 색소 침착 원리, 대사·면역 반응 등 "왜 그런지"를 과학적으로 설명`,
+    `3. **비교 분석**: 유사 시술·기법 간 객관적 비교표 또는 장단점 대조 (표 형태는 마크다운 테이블 사용 가능)`,
+    `4. **실질적 조언**: "시술 전 48시간 카페인 섭취를 줄이면 출혈 감소에 도움" 같은 구체적·행동 가능한 팁`,
+    `5. **주의사항·부작용**: 켈로이드 체질, 임산부, 자가면역질환, 혈액 희석제 복용자 등 주의 대상 명시`,
+    `6. **법적 고지**: 의료 행위와의 경계, 자격 기준(보건복지부 고시), 시술 동의서 필요성 언급`,
+    ``,
+    `### 글쓰기 규칙`,
+    `- **독창적 도입**: "최근 ~가 주목받고 있습니다" 같은 진부한 시작 금지. 통계·사례·질문·역사적 사실로 시작`,
+    `- **다양한 문체**: 설명 → 분석 → 비교 → 조언 순서로 리듬을 변화. 불릿·번호 목록·마크다운 테이블 혼합 사용`,
+    `- **키워드 배치**: 핵심 키워드를 문맥에 맞게 자연스럽게 배치. 억지스러운 반복은 SEO 패널티 유발`,
+    `- **짧은 문단**: 2~4문장. 모바일 가독성 우선`,
+    `- **내부 연결 힌트**: 관련 주제(예: "애프터케어 가이드", "리터치 시기") 언급 시 자연스럽게 키워드 노출`,
+    `- **광고성 문구·과장·특정 샵 추천 절대 금지**`,
+    `- **의료 조언이 아님을 마무리에 부드럽게 명시**`,
+    ``,
+    `## 출력 형식 (valid JSON만, 다른 텍스트 절대 금지)`,
     `{`,
-    `  "title": "60자 이내의 매력적 제목",`,
-    `  "meta_title": "55자 이내 SEO 제목 (사이트명 포함 금지)",`,
-    `  "meta_description": "150자 이내 메타 설명, 핵심 키워드 포함",`,
-    `  "excerpt": "120자 이내의 발췌문",`,
-    `  "introduction": "도입부 2~3문단",`,
+    `  "title": "60자 이내, 검색 의도를 정확히 반영한 제목 (질문형·숫자형·비교형 중 택1)",`,
+    `  "meta_title": "55자 이내 SEO 제목 (사이트명 포함 금지, 핵심 키워드 선두 배치)",`,
+    `  "meta_description": "110~140자 메타 설명. 핵심 키워드 포함 + 클릭 유도 (모바일 잘림 방지)",`,
+    `  "excerpt": "80~120자 발췌문. 글의 핵심 가치를 한 문장으로",`,
+    `  "introduction": "도입부 2~3문단. 독자의 검색 의도에 직접 답하며 시작. 구체적 통계나 사례로 신뢰 확보",`,
     `  "sections": [`,
-    `    { "heading": "소제목1", "body": "본문 단락(여러 문단 가능, \\n\\n으로 구분)" },`,
-    `    { "heading": "소제목2", "body": "..." },`,
-    `    { "heading": "소제목3", "body": "..." },`,
-    `    { "heading": "소제목4", "body": "..." }`,
+    `    { "heading": "소제목 (H2, 키워드 포함)", "body": "본문 (여러 문단, \\n\\n 구분. 마크다운 테이블·불릿 사용 가능)" },`,
+    `    { "heading": "...", "body": "..." },`,
+    `    { "heading": "...", "body": "..." },`,
+    `    { "heading": "...", "body": "..." },`,
+    `    { "heading": "...", "body": "..." },`,
+    `    { "heading": "...", "body": "..." }`,
     `  ],`,
-    `  "conclusion": "마무리 1~2문단",`,
+    `  "conclusion": "마무리 2~3문단. 핵심 요약 + 다음 단계 제안 + 의료조언 아님 고지",`,
     `  "faq": [`,
-    `    { "question": "자주 묻는 질문 1", "answer": "답변" },`,
-    `    { "question": "자주 묻는 질문 2", "answer": "답변" },`,
-    `    { "question": "자주 묻는 질문 3", "answer": "답변" }`,
+    `    { "question": "검색량 있는 구체적 질문 (Google People Also Ask 스타일)", "answer": "2~4문장, 수치 포함 답변" },`,
+    `    { "question": "...", "answer": "..." },`,
+    `    { "question": "...", "answer": "..." },`,
+    `    { "question": "...", "answer": "..." },`,
+    `    { "question": "...", "answer": "..." }`,
     `  ],`,
-    `  "keywords": ["핵심 검색 키워드 5~8개"],`,
-    `  "tags": ["해시태그 스타일 5~8개"]`,
+    `  "keywords": ["핵심 검색 키워드 8~12개 — 롱테일 키워드 포함"],`,
+    `  "tags": ["해시태그 5~8개 — 카테고리+시술명+관련어"]`,
     `}`,
   ].join("\n");
 }
@@ -127,13 +179,10 @@ async function callOpenAi(topic: EncyclopediaTopic): Promise<RawAiOutput> {
   const completion = await client.chat.completions.create({
     model: MODEL,
     response_format: { type: "json_object" },
-    temperature: 0.7,
+    temperature: AI_TEMPERATURE,
+    max_tokens: AI_MAX_TOKENS,
     messages: [
-      {
-        role: "system",
-        content:
-          "You are a Korean semi-permanent makeup industry expert writer. Always respond with valid JSON only.",
-      },
+      { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildPrompt(topic) },
     ],
   });
