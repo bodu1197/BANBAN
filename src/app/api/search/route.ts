@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createStaticClient } from "@/lib/supabase/server";
 import { mapPortfolioRow, type PortfolioRowWithType } from "@/lib/supabase/portfolio-common";
 import type { HomePortfolio } from "@/lib/supabase/portfolio-common";
+import { getAvatarUrl } from "@/lib/supabase/storage-utils";
 
 interface ArtistResult {
   id: string;
@@ -90,7 +91,9 @@ async function searchArtistsByKeyword(
   }) => ({
     id: a.id,
     name: a.title,
-    profileImage: a.profile_image_path,
+    // Storage 내부 경로(profile_image_path)를 avatars 버킷 public URL 로 변환.
+    // 다른 곳(home-artist-queries, portfolio-common)은 이미 getAvatarUrl 거치는데 여기만 누락이었음.
+    profileImage: getAvatarUrl(a.profile_image_path),
     region: a.region?.name ?? null,
     portfolioCount: a.portfolios?.length ?? 0,
     isAd: false,

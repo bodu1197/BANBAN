@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { earnPointsWithLimit } from "@/lib/supabase/point-queries";
+import { getAvatarUrl } from "@/lib/supabase/storage-utils";
 
 interface ConversationRow {
     id: string;
@@ -63,7 +64,9 @@ export async function GET(): Promise<NextResponse> {
             id: c.id,
             otherId,
             otherName: artist?.title ?? profile?.nickname ?? "사용자",
-            otherAvatar: artist?.profile_image_path ?? profile?.avatar_url ?? null,
+            // artist.profile_image_path 는 Storage 내부 경로 → avatars 버킷 public URL 로 변환.
+            // profile.avatar_url 은 이미 full URL (소셜 가입 OAuth) — getAvatarUrl 이 http(s) prefix 감지하면 그대로 통과.
+            otherAvatar: getAvatarUrl(artist?.profile_image_path ?? null) ?? profile?.avatar_url ?? null,
             lastMessage: c.last_message,
             lastMessageAt: c.last_message_at,
             createdAt: c.created_at,
