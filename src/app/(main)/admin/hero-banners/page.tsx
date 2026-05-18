@@ -234,9 +234,9 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
 
     return (
         <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-5">
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs text-amber-100">
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-2 text-xs text-amber-200">
                 <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
-                <span>권장 사이즈: <strong>가로 960px × 세로 320px (3:1 비율)</strong> · 이 규격을 지켜야 모바일/PC 모두에서 잘림 없이 표시됩니다.</span>
+                <span>권장 사이즈: <strong className="text-amber-100">가로 960px × 세로 320px (3:1 비율)</strong> · 이 규격을 지켜야 모바일/PC 모두에서 잘림 없이 표시됩니다.</span>
             </div>
             <BannerImageUpload currentPath={form.image_path} onUpload={(p) => set("image_path", p)} />
             <div className="grid gap-4 md:grid-cols-2">
