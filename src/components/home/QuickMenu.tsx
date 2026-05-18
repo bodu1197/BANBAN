@@ -41,7 +41,7 @@ interface QuickMenuProps {
 export function QuickMenu({ items }: Readonly<QuickMenuProps>): React.ReactElement {
   return (
     <nav
-      className="grid grid-cols-4 gap-x-2 gap-y-4 px-4 py-6 md:grid-cols-5"
+      className="grid grid-cols-4 gap-x-2 gap-y-4 px-4 py-6 md:grid-cols-5 lg:grid-cols-6"
       aria-label="퀵 메뉴"
     >
       {items.map((item) => (
