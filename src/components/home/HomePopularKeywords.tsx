@@ -1,14 +1,33 @@
-// @client-reason: router.push 로 검색 결과 페이지 이동 — useRouter 가 클라이언트 hook
+// @client-reason: 마운트 시 랜덤 셔플(7개 표시) + router.push 클라이언트 hook
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
 
-/** 홈 검색바 아래 인기 검색어 칩 — 클릭 시 /search?q=키워드 로 이동 */
+const DISPLAY_COUNT = 7;
+
+function shuffleAndPick(list: ReadonlyArray<string>, count: number): ReadonlyArray<string> {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    // eslint-disable-next-line security/detect-object-injection -- numeric indices in local array
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
+}
+
+/** 홈 검색바 아래 인기 검색어 칩 — 8개 중 7개 랜덤, 클릭 시 /search?q=키워드 로 이동 */
 export function HomePopularKeywords(): React.ReactElement {
   const router = useRouter();
   const keywords = STRINGS.globalSearch.popularKeywordsList;
+
+  // SSR/Hydration mismatch 회피: 첫 렌더는 앞 7개 (결정적), 마운트 후 셔플
+  const [displayed, setDisplayed] = useState<ReadonlyArray<string>>(() => keywords.slice(0, DISPLAY_COUNT));
+  useEffect(() => {
+    setDisplayed(shuffleAndPick(keywords, DISPLAY_COUNT));
+  }, [keywords]);
 
   const onSelect = (q: string): void => {
     router.push(`/search?q=${encodeURIComponent(q)}`);
@@ -16,9 +35,9 @@ export function HomePopularKeywords(): React.ReactElement {
 
   return (
     <section aria-label={STRINGS.globalSearch.popularKeywords} className="flex w-full justify-center px-4 pb-4">
-      <ul className="flex w-full max-w-[680px] gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide scroll-smooth">
-        {keywords.map((kw) => (
-          <li key={kw} className="shrink-0">
+      <ul className="flex w-full max-w-[680px] flex-wrap justify-center gap-1.5">
+        {displayed.map((kw) => (
+          <li key={kw}>
             <button
               type="button"
               onClick={() => onSelect(kw)}
