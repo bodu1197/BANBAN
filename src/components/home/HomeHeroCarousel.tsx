@@ -36,19 +36,20 @@ const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [
   },
 ];
 
-function SlideContent({ banner, eager }: Readonly<{ banner: HeroBannerData; eager: boolean }>): React.ReactElement {
+function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.ReactElement {
   const altText = banner.title ?? "히어로 배너";
   return (
     <div className="relative h-full w-full">
       {/* next/image 우회 — 임시 외부 도메인(바비톡) 호환성. 추후 Supabase Storage 이전 후 next/image 로 교체.
-          eager — active 슬라이드만 즉시 로드 (LCP 보호), 비활성 슬라이드는 lazy (네트워크 절약).
+          loading="eager" — 모든 슬라이드 즉시 로드. lazy 로 하면 transform translateX 로 viewport 밖에 있는 슬라이드의
+          이미지가 native lazy 에 의해 로드 안 됨 → 캐러셀 전환 시 빈 이미지. 5~10장 배너 동시 로드는 허용 범위.
           referrerpolicy — 외부 도메인 IP leak 방지. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={banner.imageUrl}
         alt={altText}
         className="h-full w-full object-cover"
-        loading={eager ? "eager" : "lazy"}
+        loading="eager"
         decoding="async"
         referrerPolicy="no-referrer"
       />
@@ -93,7 +94,7 @@ function Indicators({ count, currentIdx, onSelect }: Readonly<{
 }
 
 function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: boolean }>): React.ReactElement {
-  // 비활성 슬라이드: Tab 진입 차단 + 스크린리더 숨김 + image lazy 로드 (LCP·네트워크 절약)
+  // 비활성 슬라이드: Tab 진입 차단 + 스크린리더 숨김. 이미지는 모두 eager (transform translateX 환경에서 lazy 가 안 동작)
   return (
     <div className="w-full shrink-0" aria-hidden={!active}>
       {banner.linkUrl ? (
@@ -103,10 +104,10 @@ function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: bo
           tabIndex={active ? 0 : -1}
           className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
         >
-          <SlideContent banner={banner} eager={active} />
+          <SlideContent banner={banner} />
         </Link>
       ) : (
-        <SlideContent banner={banner} eager={active} />
+        <SlideContent banner={banner} />
       )}
     </div>
   );
