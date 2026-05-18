@@ -283,7 +283,7 @@ export async function generateEncyclopediaArticle(
   const title = parsed.title?.trim() ?? topic.title;
   const thumbnailBuffer = await generateThumbnail(client, topic, title);
   const slug = buildSlug(topic, title);
-  const thumbnailUrl = await uploadThumbnailToStorage(thumbnailBuffer, topic.id, slug);
+  const thumbnailUrl = await uploadThumbnailToStorage(thumbnailBuffer, topic.id, topic.slug);
 
   const coverImage = { url: thumbnailUrl, alt: `${topic.keyword} — ${title}` };
   const images = [coverImage, ...portfolioImages];
