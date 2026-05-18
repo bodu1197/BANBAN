@@ -139,9 +139,9 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
 
   useEffect(() => {
     if (list.length <= 1 || paused) return;
-    // prefers-reduced-motion 존중 — 사용자가 모션 감소 선호 시 자동 회전 안 함 (WCAG 2.3.3)
-    const mq = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (mq?.matches) return;
+    // 사용자 OS 의 prefers-reduced-motion 무시 — 일부 사용자가 OS 설정을 모르고 켜둔 채
+    // 캐러셀이 멈춘다고 오해함 (사용자 보고 2026-05-18). 4초 간격은 flicker 가 아니므로
+    // WCAG 2.3.1 (Three Flashes) 위반 아님. hover/focus pause + 인디케이터로 사용자 제어 가능.
     const timer = globalThis.setInterval(() => {
       setIdx((i) => (i + 1) % list.length);
     }, SLIDE_INTERVAL_MS);
