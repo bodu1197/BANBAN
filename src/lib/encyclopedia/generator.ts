@@ -144,7 +144,7 @@ async function callOpenAi(topic: EncyclopediaTopic): Promise<RawAiOutput> {
   try {
     return JSON.parse(raw) as RawAiOutput;
   } catch (e) {
-    throw new Error(`OpenAI returned invalid JSON: ${(e as Error).message}`);
+    throw new Error(`OpenAI returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 

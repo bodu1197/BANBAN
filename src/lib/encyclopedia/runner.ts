@@ -60,7 +60,7 @@ export async function runEncyclopediaGeneration(
     return {
       ok: true,
       done: true,
-      message: "All 365 topics already published",
+      message: `All ${ENCYCLOPEDIA_TOPICS.length} topics already published`,
     };
   }
 
@@ -78,6 +78,6 @@ export async function runEncyclopediaGeneration(
       remaining: ENCYCLOPEDIA_TOPICS.length - publishedSize - (overrideId !== null ? 0 : 1),
     };
   } catch (e) {
-    return { ok: false, topic_id: topic.id, error: (e as Error).message };
+    return { ok: false, topic_id: topic.id, error: e instanceof Error ? e.message : String(e) };
   }
 }

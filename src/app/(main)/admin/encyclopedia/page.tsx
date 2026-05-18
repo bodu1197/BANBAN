@@ -1,18 +1,16 @@
 // @client-reason: Interactive dashboard with manual trigger, polling, and alert state
 "use client";
 
-const POLLING_INTERVAL_MS = 60_000;
-const UPCOMING_TOPICS_LIMIT = 10;
-const RECENT_ARTICLES_LIMIT = 20;
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
-const TONE_CLASS: Record<string, string> = {
+const POLLING_INTERVAL_MS = 60_000;
+
+const TONE_CLASS: Record<"ok" | "warn" | "danger", string> = {
   warn: "border-amber-500/40",
   danger: "border-red-500/40",
   ok: "border-white/10",
 };
-
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import {
   BookOpen,
   CheckCircle2,
@@ -250,6 +248,7 @@ function ManualTrigger({
         <button
           type="button"
           disabled={running}
+          aria-busy={running}
           onClick={() => onRun(null)}
           className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 focus-visible:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:opacity-50"
         >
@@ -287,7 +286,7 @@ function RecentArticleRow({
         target="_blank"
         rel="noreferrer"
         aria-label="새 창에서 열기"
-        className="rounded p-1 text-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded p-2 text-zinc-500 hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ExternalLink className="h-3.5 w-3.5" />
       </Link>
