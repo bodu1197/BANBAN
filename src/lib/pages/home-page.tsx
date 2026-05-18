@@ -16,6 +16,9 @@ import { fetchPromoBanners, fetchHomeBanners, fetchQuickMenuItems } from "@/lib/
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
+import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
+import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
+import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
 
 
 
@@ -252,7 +255,7 @@ function HomeBottomSkeleton(): React.ReactElement {
 }
 
 export async function renderHomePage(): Promise<React.ReactElement> {
-  const topData = await fetchTopHomeData();
+  const [topData, heroBanners] = await Promise.all([fetchTopHomeData(), fetchHeroBanners()]);
   const { promoBanners, homeBanners, quickMenuItems } = topData;
 
   const exhibitionBanner = homeBanners.find((b) => b.slot === "exhibition");
@@ -267,8 +270,13 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
       />
       <div className="mx-auto w-full max-w-[1024px]">
+        {/* 바비톡 패턴 순서: 검색바 → 인기검색어 → 히어로 캐러셀 → 퀵메뉴 → ... */}
         <HomeSearchTrigger />
-        <QuickMenu items={quickMenuItems} />
+        <HomePopularKeywords />
+        <HomeHeroCarousel banners={heroBanners} />
+        <div className="pt-4">
+          <QuickMenu items={quickMenuItems} />
+        </div>
         {(exhibitionBanner ?? aiBanner) ? (
           <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">
             {exhibitionBanner ? (
