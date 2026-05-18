@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { STRINGS } from "@/lib/strings";
-import { buildPageSeo } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd } from "@/lib/seo";
 import { fetchArtistsWithDetails } from "@/lib/supabase/artist-queries";
 import { fetchActiveRegions } from "@/lib/supabase/portfolio-search-queries";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import { ArtistSearchClient } from "@/components/artists/ArtistSearchClient";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 const SEO_DESCRIPTION =
   "전국 반영구 아티스트를 한곳에서 만나보세요. 눈썹·입술·아이라인·헤어라인 전문가의 포트폴리오, 가격, 리뷰, 위치를 한 번에 비교하고 내게 딱 맞는 인증 아티스트를 찾아보세요. 반언니가 직접 검증한 전국의 작가만 모았습니다.";
@@ -29,8 +30,14 @@ export async function renderArtistsPage(): Promise<React.ReactElement> {
     fetchLikedArtistIds(),
   ]);
 
+  const breadcrumbJsonLd = getBreadcrumbJsonLd([
+    { name: "홈", path: "/" },
+    { name: STRINGS.pages.artistsList, path: "/artists" },
+  ]);
+
   return (
     <main className="mx-auto w-full max-w-[1024px]">
+      <JsonLdScript jsonLd={breadcrumbJsonLd} />
       <ArtistSearchClient
         initialArtists={result.artists}
         initialTotalCount={result.totalCount}

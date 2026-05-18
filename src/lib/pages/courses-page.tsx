@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { GraduationCap, Layers, BookOpen, Zap } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
-import { buildPageSeo } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd } from "@/lib/seo";
 import { fetchCourseList, type CourseListItem } from "@/lib/supabase/course-queries";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 const t = STRINGS.courseDetail;
 
@@ -26,9 +27,14 @@ export async function generateCoursesMetadata(): Promise<Metadata> {
 
 export async function renderCoursesPage(): Promise<React.ReactElement> {
     const courses = await fetchCourseList();
+    const breadcrumbJsonLd = getBreadcrumbJsonLd([
+        { name: "홈", path: "/" },
+        { name: t.courseList, path: "/courses" },
+    ]);
 
     return (
         <div className="mx-auto w-full max-w-[1024px]">
+            <JsonLdScript jsonLd={breadcrumbJsonLd} />
             <CategoryIcons />
             <CourseListSection courses={courses} />
         </div>

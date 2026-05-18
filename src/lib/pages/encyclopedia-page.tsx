@@ -7,7 +7,8 @@ import {
   fetchEncyclopediaCategories,
   type EncyclopediaListItem,
 } from "@/lib/encyclopedia/queries";
-import { buildPageSeo } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd } from "@/lib/seo";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 const PER_PAGE = 60;
 
@@ -144,8 +145,14 @@ export async function renderEncyclopediaListPage(options: {
     fetchEncyclopediaCategories(),
   ]);
 
+  const breadcrumbJsonLd = getBreadcrumbJsonLd([
+    { name: "홈", path: "/" },
+    { name: "반영구 백과사전", path: "/encyclopedia" },
+  ]);
+
   return (
     <div className="mx-auto w-full max-w-[1024px]">
+      <JsonLdScript jsonLd={breadcrumbJsonLd} />
       <header className="border-b border-border px-4 py-5">
         <h1 className="text-lg font-bold md:text-xl">반영구 백과사전</h1>
         <p className="mt-1 text-sm text-muted-foreground">

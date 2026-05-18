@@ -3,8 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star, MessageSquare } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
-import { buildPageSeo } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd } from "@/lib/seo";
 import { fetchAllReviews, getAvatarUrl, type ReviewWithArtist } from "@/lib/supabase/queries";
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 const SEO_DESCRIPTION =
   "반영구 후기 모음 — 실제 시술 받은 고객의 솔직한 별점과 리뷰를 한곳에서 확인하세요. 아티스트별 만족도, 청결도, 친절도와 실제 비포/애프터 사진까지 함께 보고 신뢰할 수 있는 반영구 아티스트를 선택할 수 있습니다.";
@@ -87,9 +88,14 @@ function ReviewCard({ review }: Readonly<{ review: ReviewWithArtist }>): React.R
 
 export async function renderReviewsPage(): Promise<React.ReactElement> {
     const { data: reviews, count } = await fetchAllReviews({ limit: 50 });
+    const breadcrumbJsonLd = getBreadcrumbJsonLd([
+        { name: "홈", path: "/" },
+        { name: STRINGS.common.reviews, path: "/reviews" },
+    ]);
 
     return (
         <div className="mx-auto w-full max-w-[1024px]">
+            <JsonLdScript jsonLd={breadcrumbJsonLd} />
             <header className="flex items-center gap-3 border-b border-border px-4 py-4">
                 <MessageSquare className="h-5 w-5 text-brand-primary" aria-hidden="true" />
                 <h1 className="text-lg font-bold">{STRINGS.common.reviews}</h1>
