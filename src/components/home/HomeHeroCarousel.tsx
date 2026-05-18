@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HeroBannerData } from "@/lib/supabase/hero-banner-queries";
 
 interface Props {
@@ -62,6 +63,22 @@ function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.R
         </div>
       ) : null}
     </div>
+  );
+}
+
+function NavArrow({ direction, onClick }: Readonly<{ direction: "prev" | "next"; onClick: () => void }>): React.ReactElement {
+  const isPrev = direction === "prev";
+  const Icon = isPrev ? ChevronLeft : ChevronRight;
+  // mouse hover 시 페이드 인 (group-hover) — 모바일 터치는 인디케이터로 충분
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={isPrev ? "이전 배너" : "다음 배너"}
+      className={`pointer-events-none absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-md transition-opacity duration-200 hover:bg-black/80 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:flex md:group-hover:pointer-events-auto md:group-hover:opacity-100 ${isPrev ? "left-3" : "right-3"}`}
+    >
+      <Icon className="h-5 w-5" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -140,11 +157,15 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
 
   if (list.length === 0) return null;
 
+  const goPrev = (): void => setIdx((i) => (i - 1 + list.length) % list.length);
+  const goNext = (): void => setIdx((i) => (i + 1) % list.length);
+
   return (
     <section aria-label="히어로 배너" className="px-4">
-      {/* aspect-[3/1] 모든 viewport 통일 — 모바일/PC 모두 960x320 권장 비율로 잘림 없음 */}
+      {/* aspect-[3/1] 모든 viewport 통일 — 모바일/PC 모두 960x320 권장 비율로 잘림 없음
+          group — 마우스 hover 시 좌우 화살표 페이드 인 트리거 */}
       <div
-        className="relative w-full overflow-hidden rounded-2xl bg-muted aspect-[3/1]"
+        className="group relative w-full overflow-hidden rounded-2xl bg-muted aspect-[3/1]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
@@ -155,7 +176,13 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
             <Slide key={banner.id} banner={banner} active={i === idx} />
           ))}
         </div>
-        {list.length > 1 ? <Indicators count={list.length} currentIdx={idx} onSelect={setIdx} /> : null}
+        {list.length > 1 ? (
+          <>
+            <NavArrow direction="prev" onClick={goPrev} />
+            <NavArrow direction="next" onClick={goNext} />
+            <Indicators count={list.length} currentIdx={idx} onSelect={setIdx} />
+          </>
+        ) : null}
       </div>
     </section>
   );
