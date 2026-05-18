@@ -61,6 +61,12 @@ const nextConfig: NextConfig = {
         hostname: 'flagcdn.com',
         pathname: '/**',
       },
+      // 제작 기간 임시 — 바비톡 fallback 이미지. 사용자 DB 에 배너 업로드 후 제거 예정.
+      {
+        protocol: 'https',
+        hostname: 'images.babitalk.com',
+        pathname: '/**',
+      },
     ],
     // Custom sizes tuned for homepage card widths at 2x DPR:
     // 160 (80px grid), 200 (100px event), 320 (130px sale), 480 (240px popular)

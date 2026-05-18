@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HeroBannerData } from "@/lib/supabase/hero-banner-queries";
 
@@ -37,22 +38,22 @@ const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [
   },
 ];
 
-function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.ReactElement {
+function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; priority: boolean }>): React.ReactElement {
   const altText = banner.title ?? "히어로 배너";
   return (
     <div className="relative h-full w-full">
-      {/* next/image 우회 — 임시 외부 도메인(바비톡) 호환성. 추후 Supabase Storage 이전 후 next/image 로 교체.
-          loading="eager" — 모든 슬라이드 즉시 로드. lazy 로 하면 transform translateX 로 viewport 밖에 있는 슬라이드의
-          이미지가 native lazy 에 의해 로드 안 됨 → 캐러셀 전환 시 빈 이미지. 5~10장 배너 동시 로드는 허용 범위.
-          referrerpolicy — 외부 도메인 IP leak 방지. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/* next/image — Vercel Image Optimizer 가 AVIF/WebP 변환 + 글로벌 CDN 캐시 (인도네시아 등 해외 latency 개선)
+          priority — 첫 슬라이드만 true (LCP 보호). 나머지는 false 지만 fill + sizes 로 viewport 안 들어오면 즉시 로드.
+          referrerPolicy — 외부 fallback 도메인(바비톡) IP leak 방지. */}
+      <Image
         src={banner.imageUrl}
         alt={altText}
-        className="h-full w-full object-cover"
-        loading="eager"
-        decoding="async"
+        fill
+        className="object-cover"
+        sizes="(min-width: 1024px) 1024px, 100vw"
+        priority={priority}
         referrerPolicy="no-referrer"
+        unoptimized={banner.imageUrl.includes("images.babitalk.com")}
       />
       {/* title/subtitle 있을 때만 텍스트 표시. 어두운 gradient 장막 제거 — 이미지 본연 유지.
           텍스트 가독성은 drop-shadow + 굵은 폰트로 확보 (밝은 이미지에서도 잘 보임) */}
@@ -110,8 +111,8 @@ function Indicators({ count, currentIdx, onSelect }: Readonly<{
   );
 }
 
-function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: boolean }>): React.ReactElement {
-  // 비활성 슬라이드: Tab 진입 차단 + 스크린리더 숨김. 이미지는 모두 eager (transform translateX 환경에서 lazy 가 안 동작)
+function Slide({ banner, active, isFirst }: Readonly<{ banner: HeroBannerData; active: boolean; isFirst: boolean }>): React.ReactElement {
+  // 비활성 슬라이드: Tab 진입 차단 + 스크린리더 숨김. priority 는 첫 슬라이드만 (LCP 우선).
   return (
     <div className="w-full shrink-0" aria-hidden={!active}>
       {banner.linkUrl ? (
@@ -121,10 +122,10 @@ function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: bo
           tabIndex={active ? 0 : -1}
           className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
         >
-          <SlideContent banner={banner} />
+          <SlideContent banner={banner} priority={isFirst} />
         </Link>
       ) : (
-        <SlideContent banner={banner} />
+        <SlideContent banner={banner} priority={isFirst} />
       )}
     </div>
   );
@@ -173,7 +174,7 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
       >
         <div ref={trackRef} className="flex h-full w-full transition-transform duration-500 ease-out">
           {list.map((banner, i) => (
-            <Slide key={banner.id} banner={banner} active={i === idx} />
+            <Slide key={banner.id} banner={banner} active={i === idx} isFirst={i === 0} />
           ))}
         </div>
         {list.length > 1 ? (
