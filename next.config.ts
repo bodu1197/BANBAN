@@ -61,11 +61,12 @@ const nextConfig: NextConfig = {
         hostname: 'flagcdn.com',
         pathname: '/**',
       },
-      // 제작 기간 임시 — 바비톡 fallback 이미지. 사용자 DB 에 배너 업로드 후 제거 예정.
+      // 제작 기간 임시 — 바비톡 fallback 이미지. pathname /2024_event/** 로 한정 (SSRF 방어).
+      // TODO(follow-up): 사용자 DB 에 배너 업로드 완료 후 이 entry 와 HomeHeroCarousel.tsx 의 FALLBACK_BANNERS 제거.
       {
         protocol: 'https',
         hostname: 'images.babitalk.com',
-        pathname: '/**',
+        pathname: '/2024_event/**',
       },
     ],
     // Custom sizes tuned for homepage card widths at 2x DPR:
