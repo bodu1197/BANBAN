@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, BookOpen, Flag, Grid3X3 } from "lucide-react";
+import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, Flag, Grid3X3 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -32,8 +32,6 @@ const NAV_ITEMS: NavItem[] = [
     { href: "/admin/inquiries", icon: <MessageSquare className="h-5 w-5" />, label: "건의사항" },
     { href: "/admin/contact-clicks", icon: <PhoneCall className="h-5 w-5" />, label: "연락 클릭 현황" },
     // { href: "/admin/chats", icon: <MessagesSquare className="h-5 w-5" />, label: "채팅 모니터링" },
-    { href: "/admin/encyclopedia", icon: <BookOpen className="h-5 w-5" />, label: "백과사전 크론" },
-    // 백과사전 글 CRUD 는 공개 게시판(/encyclopedia)에서 admin 만 보이는 액션으로 통합 (2026-05-18 사용자 요청).
 ];
 
 const SIDEBAR_COUNTS_API = "/api/admin/sidebar-counts";

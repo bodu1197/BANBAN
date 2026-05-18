@@ -1,11 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [
-    {
-      "path": "/api/cron/encyclopedia-generate",
-      "schedule": "0 0 * * *"
-    }
-  ],
+  "crons": [],
   "routes": [
     {
       "src": "/(.*)",

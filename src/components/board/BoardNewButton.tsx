@@ -1,11 +1,11 @@
-// @client-reason: ISR 캐시 안전을 위해 mount 후 클라이언트 측에서 admin 여부 확인 → 렌더 결정.
+// @client-reason: ISR 캐시 안전 — mount 후 클라이언트에서 admin 여부 판단
 "use client";
 
 import Link from "next/link";
 import { PenSquare } from "lucide-react";
 import { useIsCurrentUserAdmin } from "@/hooks/useIsCurrentUserAdmin";
 
-export function AdminNewArticleLink(): React.ReactElement | null {
+export function BoardNewButton(): React.ReactElement | null {
   const isAdmin = useIsCurrentUserAdmin();
   if (!isAdmin) return null;
 

@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
 import {
-  renderEncyclopediaListPage,
-  generateEncyclopediaListMetadata,
-} from "@/lib/pages/encyclopedia-page";
+  renderBoardListPage,
+  generateBoardListMetadata,
+} from "@/lib/pages/board-list-page";
 
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
-  return generateEncyclopediaListMetadata();
+  return generateBoardListMetadata();
 }
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string }>;
-}): Promise<React.ReactElement> {
-  const { category } = await searchParams;
-  return renderEncyclopediaListPage({ category: category ?? null });
+export default async function Page(): Promise<React.ReactElement> {
+  return renderBoardListPage();
 }
