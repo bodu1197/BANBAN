@@ -1,9 +1,15 @@
 // admin 백과사전 글 목록 — AdminLayout 이 is_admin 검증.
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Pencil, ExternalLink } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "백과사전 글 관리 (관리자)",
+  robots: { index: false, follow: false },
+};
 
 interface ArticleRow {
   id: string;

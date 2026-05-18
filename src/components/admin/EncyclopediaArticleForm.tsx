@@ -102,8 +102,8 @@ function MetaSection({ form, onChange }: Readonly<{ form: FormState; onChange: <
         <input className={inputClass} disabled value="저장 시 본문 길이로 자동 계산" />
       </div>
       <div className="md:col-span-2">
-        <label className={labelClass}>요약 (excerpt) — SEO 미리보기</label>
-        <textarea className={`${inputClass} min-h-[60px]`} value={form.excerpt} onChange={(e) => onChange("excerpt", e.target.value)} rows={2} />
+        <label className={labelClass} htmlFor="article-excerpt">요약 (excerpt) — SEO 미리보기</label>
+        <textarea id="article-excerpt" className={`${inputClass} min-h-[60px]`} value={form.excerpt} onChange={(e) => onChange("excerpt", e.target.value)} rows={2} aria-label="요약 (excerpt) 입력" />
       </div>
       <div>
         <label className={labelClass}>meta title (선택)</label>
@@ -248,8 +248,14 @@ export function EncyclopediaArticleForm({ initial, mode }: Readonly<Props>): Rea
               <Trash2 className="h-3.5 w-3.5" /> 삭제
             </button>
           ) : null}
-          <label className="flex items-center gap-1.5 text-xs text-zinc-300">
-            <input type="checkbox" checked={form.published} onChange={(e) => update("published", e.target.checked)} />
+          <label htmlFor="article-published" className="flex items-center gap-1.5 text-xs text-zinc-300">
+            <input
+              id="article-published"
+              type="checkbox"
+              checked={form.published}
+              onChange={(e) => update("published", e.target.checked)}
+              className="h-4 w-4 rounded border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
+            />
             게시
           </label>
           <button type="submit" disabled={submitting} className="flex items-center gap-1.5 rounded-lg bg-pink-500 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 disabled:opacity-50">
@@ -289,7 +295,7 @@ export function EncyclopediaArticleForm({ initial, mode }: Readonly<Props>): Rea
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <label className={labelClass}>본문 (Markdown)</label>
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/20 focus-within:bg-white/20">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/20 focus-within:bg-white/20 focus-within:ring-2 focus-within:ring-pink-500">
             {uploadingInline ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
             {uploadingInline ? "업로드 중..." : "본문 이미지 삽입"}
             <input type="file" accept="image/*" className="hidden" onChange={(e) => void handleInlineUpload(e)} disabled={uploadingInline} />
