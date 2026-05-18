@@ -178,14 +178,13 @@ export function GuidedIntroduce({ value, onChange }: Readonly<GuidedIntroducePro
   const charCount = combined.length;
 
   const handleAnswerChange = useCallback((questionId: string, text: string) => {
-    setAnswers((prev) => {
-      const next = { ...prev, [questionId]: text };
-      delete next._freeform;
-      const result = buildIntroduce(next);
-      onChange(result);
-      return next;
-    });
-  }, [onChange]);
+    // React strict mode 안전성 — state updater 안에서 부모 setState 를 부르는 anti-pattern 회피.
+    // 새 answers 를 동기 계산 후 setAnswers + onChange 순차 호출 → 두 state 가 항상 sync.
+    const next: Answers = { ...answers, [questionId]: text };
+    delete next._freeform;
+    setAnswers(next);
+    onChange(buildIntroduce(next));
+  }, [answers, onChange]);
 
   const handleFreeformChange = useCallback((text: string) => {
     setAnswers({ _freeform: text });

@@ -154,8 +154,9 @@ function validateEditForm(
   if (!hasRequiredFields(formData, existingShopCount + newShopCount > 0, existingProfileCount + newProfileCount > 0)) {
     return STRINGS.artistRegister.required;
   }
-  if (formData.introduce.trim().length < INTRODUCE_MIN_LENGTH) {
-    return `소개글을 ${INTRODUCE_MIN_LENGTH}자 이상 작성해주세요.`;
+  const introduceLen = formData.introduce.trim().length;
+  if (introduceLen < INTRODUCE_MIN_LENGTH) {
+    return `소개글을 ${INTRODUCE_MIN_LENGTH}자 이상 작성해주세요. (현재 ${introduceLen}자)`;
   }
   return null;
 }
