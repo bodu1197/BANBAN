@@ -37,6 +37,7 @@ const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [
 ];
 
 function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.ReactElement {
+  const altText = banner.title ?? "히어로 배너";
   return (
     <div className="relative h-full w-full">
       {/* next/image 우회 — 임시 외부 도메인(바비톡) 호환성. 추후 Supabase Storage 이전 후 next/image 로 교체.
@@ -44,16 +45,19 @@ function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.R
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={banner.imageUrl}
-        alt={banner.title}
+        alt={altText}
         className="h-full w-full object-cover"
         loading="eager"
         decoding="async"
         referrerPolicy="no-referrer"
       />
-      <div className="absolute inset-0 flex flex-col justify-end gap-1 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-white">
-        <h3 className="text-lg font-bold leading-tight drop-shadow-sm">{banner.title}</h3>
-        {banner.subtitle ? <p className="text-sm opacity-90 drop-shadow-sm">{banner.subtitle}</p> : null}
-      </div>
+      {/* title/subtitle 모두 없으면 오버레이 생략 — 이미지만 사용 가능 */}
+      {banner.title || banner.subtitle ? (
+        <div className="absolute inset-0 flex flex-col justify-end gap-1 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-white">
+          {banner.title ? <h3 className="text-lg font-bold leading-tight drop-shadow-sm">{banner.title}</h3> : null}
+          {banner.subtitle ? <p className="text-sm opacity-90 drop-shadow-sm">{banner.subtitle}</p> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -112,14 +116,14 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
     <section aria-label="히어로 배너" className="px-4">
       {/* onFocusCapture/onBlurCapture — children 사이 focus 이동 시에도 pause 유지 (bubble 한계 회피) */}
       <div
-        className="relative w-full overflow-hidden rounded-2xl bg-muted aspect-[16/7] md:aspect-[2/1]"
+        className="relative w-full overflow-hidden rounded-2xl bg-muted aspect-[16/7] md:aspect-[3/1]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={() => setPaused(false)}
       >
         {current.linkUrl ? (
-          <Link href={current.linkUrl} aria-label={current.title} className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
+          <Link href={current.linkUrl} aria-label={current.title ?? "히어로 배너로 이동"} className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
             <SlideContent banner={current} />
           </Link>
         ) : (

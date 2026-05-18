@@ -6,8 +6,8 @@ import { requireAdmin } from "@/lib/supabase/admin-guard";
 
 interface BannerBody {
     id?: string;
-    title?: string;
-    subtitle?: string;
+    title?: string | null;
+    subtitle?: string | null;
     image_path?: string;
     link_url?: string | null;
     order_index?: number;
@@ -23,11 +23,11 @@ const UPDATABLE_KEYS = ["title", "subtitle", "image_path", "link_url", "order_in
 // ─── Helpers ─────────────────────────────────────────────
 
 function buildInsertRow(body: BannerBody): {
-    title: string; subtitle: string | null; image_path: string; link_url: string | null;
+    title: string | null; subtitle: string | null; image_path: string; link_url: string | null;
     order_index: number; is_active: boolean; start_at: string | null; end_at: string | null;
 } {
     return {
-        title: body.title as string,
+        title: body.title ?? null,
         subtitle: body.subtitle ?? null,
         image_path: body.image_path as string,
         link_url: body.link_url ?? null,
@@ -73,8 +73,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!auth.ok) return auth.response;
 
     const body = await request.json() as BannerBody;
-    if (!body.title || !body.image_path) {
-        return NextResponse.json({ error: "title and image_path are required" }, { status: 400 });
+    // title 은 선택 (DB NOT NULL 제거됨), image_path 만 필수
+    if (!body.image_path) {
+        return NextResponse.json({ error: "image_path is required" }, { status: 400 });
     }
 
     const { data, error } = await auth.supabase

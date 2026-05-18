@@ -5,7 +5,7 @@ import { getStorageUrl } from "./storage-utils";
 
 export interface HeroBannerData {
   id: string;
-  title: string;
+  title: string | null;
   subtitle: string | null;
   imageUrl: string;
   linkUrl: string | null;
@@ -13,7 +13,7 @@ export interface HeroBannerData {
 
 interface BannerRow {
   id: string;
-  title: string;
+  title: string | null;
   subtitle: string | null;
   image_path: string;
   link_url: string | null;

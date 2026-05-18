@@ -25,7 +25,7 @@ import { getStorageUrl } from "@/lib/supabase/storage-utils";
 
 interface BannerItem {
     id: string;
-    title: string;
+    title: string | null;
     subtitle: string | null;
     image_path: string;
     link_url: string | null;
@@ -34,6 +34,25 @@ interface BannerItem {
     start_at: string | null;
     end_at: string | null;
     created_at: string;
+}
+
+// DB 의 timestamptz → input[type=datetime-local] 형식. 사용자의 로컬 타임존 기준 YYYY-MM-DDTHH:MM 으로 변환.
+// 예) DB "2026-05-18T01:00:00Z" + KST → 입력창 "2026-05-18T10:00"
+function toDateTimeLocal(iso: string | null): string {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n: number): string => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// input[type=datetime-local] (브라우저가 로컬 타임존으로 해석) → ISO UTC 문자열.
+// 예) 입력창 "2026-05-18T10:00" + KST → "2026-05-18T01:00:00.000Z"
+function toIsoOrNull(local: string): string | null {
+    if (!local) return null;
+    const d = new Date(local);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
 }
 
 interface BannerFormData {
@@ -58,11 +77,26 @@ async function apiFetch(method: string, body?: unknown): Promise<void> {
 }
 
 function bannerToForm(b: BannerItem): BannerFormData {
-    return { title: b.title, subtitle: b.subtitle ?? "", image_path: b.image_path, link_url: b.link_url ?? "", is_active: b.is_active, start_at: b.start_at ?? "", end_at: b.end_at ?? "" };
+    return {
+        title: b.title ?? "",
+        subtitle: b.subtitle ?? "",
+        image_path: b.image_path,
+        link_url: b.link_url ?? "",
+        is_active: b.is_active,
+        start_at: toDateTimeLocal(b.start_at),
+        end_at: toDateTimeLocal(b.end_at),
+    };
 }
 
 function formToPayload(data: BannerFormData): Record<string, unknown> {
-    return { ...data, link_url: data.link_url || null, start_at: data.start_at || null, end_at: data.end_at || null };
+    return {
+        ...data,
+        title: data.title || null,
+        subtitle: data.subtitle || null,
+        link_url: data.link_url || null,
+        start_at: toIsoOrNull(data.start_at),
+        end_at: toIsoOrNull(data.end_at),
+    };
 }
 
 // ─── Image Upload ────────────────────────────────────────
@@ -197,8 +231,8 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
         <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-5">
             <BannerImageUpload currentPath={form.image_path} onUpload={(p) => set("image_path", p)} />
             <div className="grid gap-4 md:grid-cols-2">
-                <FormInput label="제목 (선전 문구)" value={form.title} onChange={(v) => set("title", v)} placeholder="예: 특별 기획전 모아보기" />
-                <FormInput label="부제목 (설명)" value={form.subtitle} onChange={(v) => set("subtitle", v)} placeholder="예: 할인 이벤트부터 인기 아티스트 콜라보까지" />
+                <FormInput label="제목 (선택)" value={form.title} onChange={(v) => set("title", v)} placeholder="예: 특별 기획전 (입력 안 해도 됨)" />
+                <FormInput label="부제목 (선택)" value={form.subtitle} onChange={(v) => set("subtitle", v)} placeholder="예: 할인 이벤트 (입력 안 해도 됨)" />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
                 <FormInput label="링크 URL" value={form.link_url} onChange={(v) => set("link_url", v)} placeholder="/exhibition 또는 https://..." icon={<LinkIcon className="mr-1 inline h-3 w-3" />} />
@@ -213,7 +247,7 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
                 <DateInput label="시작일 (선택)" value={form.start_at} onChange={(v) => set("start_at", v)} />
                 <DateInput label="종료일 (선택)" value={form.end_at} onChange={(v) => set("end_at", v)} />
             </div>
-            <BannerFormActions onCancel={onCancel} onSave={() => onSave(form)} disabled={saving || !form.title || !form.image_path} />
+            <BannerFormActions onCancel={onCancel} onSave={() => onSave(form)} disabled={saving || !form.image_path} />
         </div>
     );
 }
@@ -223,7 +257,7 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
 function BannerInfo({ banner }: Readonly<{ banner: BannerItem }>): React.ReactElement {
     return (
         <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-bold text-white">{banner.title}</h3>
+            <h3 className="truncate text-sm font-bold text-white">{banner.title ?? <span className="text-zinc-400">(제목 없음)</span>}</h3>
             {banner.subtitle ? <p className="mt-0.5 truncate text-xs text-zinc-400">{banner.subtitle}</p> : null}
             <div className="mt-1 flex flex-wrap items-center gap-2">
                 {banner.link_url ? <span className="truncate rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-zinc-300">{banner.link_url}</span> : null}
@@ -276,9 +310,9 @@ function BannerRow({ banner, onEdit, onDelete, onToggle, onMove, isFirst, isLast
     return (
         <div className={`flex items-center gap-4 rounded-xl border p-4 transition-colors ${banner.is_active ? "border-white/10 bg-white/[0.03]" : "border-white/5 bg-white/[0.01] opacity-60"}`}>
             <OrderButtons onMove={onMove} isFirst={isFirst} isLast={isLast} />
-            <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg border border-white/10 md:h-20 md:w-36">
+            <div className="relative aspect-[3/1] w-36 shrink-0 overflow-hidden rounded-lg border border-white/10 md:w-48">
                 {imageUrl
-                    ? <Image src={imageUrl} alt={banner.title} fill sizes="144px" className="object-cover" />
+                    ? <Image src={imageUrl} alt={banner.title ?? "히어로 배너"} fill sizes="192px" className="object-cover" />
                     : <div className="flex h-full items-center justify-center bg-white/5 text-xs text-zinc-500">No Image</div>}
             </div>
             <BannerInfo banner={banner} />

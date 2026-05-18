@@ -547,7 +547,7 @@ export type Database = {
           order_index: number | null
           start_at: string | null
           subtitle: string | null
-          title: string
+          title: string | null
         }
         Insert: {
           created_at?: string | null
@@ -559,7 +559,7 @@ export type Database = {
           order_index?: number | null
           start_at?: string | null
           subtitle?: string | null
-          title: string
+          title?: string | null
         }
         Update: {
           created_at?: string | null
@@ -571,7 +571,7 @@ export type Database = {
           order_index?: number | null
           start_at?: string | null
           subtitle?: string | null
-          title?: string
+          title?: string | null
         }
         Relationships: []
       }
