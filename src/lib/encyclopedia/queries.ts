@@ -71,20 +71,55 @@ function shuffle<T>(arr: readonly T[]): T[] {
   return copy;
 }
 
+const FEMALE_ROOT = "여성 뷰티";
+const MALE_ROOT = "남성 뷰티";
+
+async function getGenderCategoryIds(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
+  supabase: any,
+  gender: "여성" | "남성",
+): Promise<Set<string>> {
+  const rootName = gender === "남성" ? MALE_ROOT : FEMALE_ROOT;
+  const { data: roots } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("name", rootName)
+    .is("parent_id", null)
+    .limit(1);
+  if (!roots?.length) return new Set();
+  const rootId = (roots as { id: string }[])[0].id;
+
+  const { data: children } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("parent_id", rootId);
+  const childIds = ((children ?? []) as { id: string }[]).map((c) => c.id);
+
+  const { data: grandchildren } = childIds.length > 0
+    ? await supabase.from("categories").select("id").in("parent_id", childIds)
+    : { data: [] };
+  const grandchildIds = ((grandchildren ?? []) as { id: string }[]).map((c) => c.id);
+
+  return new Set([rootId, ...childIds, ...grandchildIds]);
+}
+
 async function findCategoryPortfolioIds(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
   supabase: any,
   cleaned: string,
   limit: number,
+  gender: "여성" | "남성",
 ): Promise<string[]> {
-  const { data: catRows } = await supabase
-    .from("categories")
-    .select("id")
-    .ilike("name", `%${cleaned}%`)
-    .limit(5);
+  const [catResult, genderIds] = await Promise.all([
+    supabase.from("categories").select("id").ilike("name", `%${cleaned}%`).limit(10),
+    getGenderCategoryIds(supabase, gender),
+  ]);
+  const catRows = catResult.data as { id: string }[] | null;
   if (!catRows || catRows.length === 0) return [];
 
-  const catIds = (catRows as { id: string }[]).map((c) => c.id);
+  const catIds = catRows.map((c) => c.id).filter((id) => genderIds.has(id));
+  if (catIds.length === 0) return [];
+
   const { data: bridge } = await supabase
     .from("categorizables")
     .select("categorizable_id")
@@ -125,13 +160,14 @@ async function pickRandomActivePortfolioIds(
 export async function pickRelatedPortfolioImages(
   keyword: string,
   limit: number = 4,
+  gender: "여성" | "남성" = "여성",
 ): Promise<{ url: string; alt: string }[]> {
   const supabase = createAdminClient();
   const bucketUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/portfolios`;
   const cleaned = keyword.replace(/\s*(타투|반영구)\s*$/, "").trim();
 
   const effectiveKeyword = cleaned || keyword;
-  let portfolioIds = await findCategoryPortfolioIds(supabase, cleaned, limit);
+  let portfolioIds = await findCategoryPortfolioIds(supabase, cleaned, limit, gender);
   if (portfolioIds.length === 0) {
     portfolioIds = await pickRandomActivePortfolioIds(supabase, limit * MEDIA_FETCH_MULTIPLIER);
   }

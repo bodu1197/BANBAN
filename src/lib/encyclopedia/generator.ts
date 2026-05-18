@@ -289,9 +289,10 @@ export async function generateEncyclopediaArticle(
   if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
   const client = new OpenAI({ apiKey });
 
+  const gender = /남자|남성/.test(topic.keyword) ? "남성" as const : "여성" as const;
   const [parsed, portfolioImages] = await Promise.all([
     callOpenAiText(client, topic),
-    pickRelatedPortfolioImages(topic.keyword, 3),
+    pickRelatedPortfolioImages(topic.keyword, 3, gender),
   ]);
 
   const title = parsed.title?.trim() ?? topic.title;
