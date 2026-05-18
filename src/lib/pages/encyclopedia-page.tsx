@@ -9,6 +9,7 @@ import {
 } from "@/lib/encyclopedia/queries";
 import { buildPageSeo, getBreadcrumbJsonLd } from "@/lib/seo";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { AdminNewArticleLink } from "@/components/encyclopedia/AdminNewArticleLink";
 
 const PER_PAGE = 60;
 
@@ -140,6 +141,8 @@ function ArticleList({
 export async function renderEncyclopediaListPage(options: {
   category?: string | null;
 }): Promise<React.ReactElement> {
+  // ISR (revalidate=300) 캐시 안전: admin 여부는 server-side 에서 결정하지 않고
+  // AdminNewArticleLink 가 mount 후 클라이언트에서 결정 (null 또는 link 렌더).
   const [{ items, count }, categories] = await Promise.all([
     fetchEncyclopediaList({ limit: PER_PAGE, offset: 0, category: options.category }),
     fetchEncyclopediaCategories(),
@@ -153,12 +156,15 @@ export async function renderEncyclopediaListPage(options: {
   return (
     <div className="mx-auto w-full max-w-[1024px]">
       <JsonLdScript jsonLd={breadcrumbJsonLd} />
-      <header className="border-b border-border px-4 py-5">
-        <h1 className="text-lg font-bold md:text-xl">반영구 백과사전</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          전문 에디터가 정리한 반영구 지식 {count.toLocaleString()}편 — 매일 새로운 글이
-          업데이트됩니다.
-        </p>
+      <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-5">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-bold md:text-xl">반영구 백과사전</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            전문 에디터가 정리한 반영구 지식 {count.toLocaleString()}편 — 매일 새로운 글이
+            업데이트됩니다.
+          </p>
+        </div>
+        <AdminNewArticleLink />
       </header>
       <CategoryNav categories={categories} current={options.category} />
       <section className="flex flex-col gap-3 px-4 py-4">

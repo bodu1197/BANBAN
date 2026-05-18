@@ -4,6 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Eye } from "lucide-react";
 import ViewCounter from "@/components/encyclopedia/ViewCounter";
+import { AdminArticleActions } from "@/components/encyclopedia/AdminArticleActions";
 import {
   fetchEncyclopediaArticleBySlug,
   type EncyclopediaArticle,
@@ -322,6 +323,8 @@ function buildBreadcrumbJsonLd(article: EncyclopediaArticle): string {
 export async function renderEncyclopediaDetailPage(
   slug: string,
 ): Promise<React.ReactElement> {
+  // ISR (revalidate=300) 캐시 안전: admin 여부 server-side 결정 X.
+  // AdminArticleActions 가 mount 후 클라이언트에서 결정.
   const article = await fetchEncyclopediaArticleBySlug(slug);
   if (!article) notFound();
 
@@ -344,6 +347,9 @@ export async function renderEncyclopediaDetailPage(
       <CoverImage article={article} />
       <div className="px-4 py-5">
         <ArticleMeta article={article} date={date} />
+        <div className="mb-4 flex justify-end">
+          <AdminArticleActions articleId={article.id} slug={article.slug} title={article.title} />
+        </div>
         <h1 className="mb-4 text-xl font-bold leading-tight md:text-2xl">{article.title}</h1>
         {article.excerpt ? (
           <p className="mb-5 rounded-lg border-l-4 border-brand-primary bg-muted/40 p-3 text-sm leading-relaxed text-muted-foreground">

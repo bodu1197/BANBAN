@@ -216,7 +216,10 @@ export function EncyclopediaArticleForm({ initial, mode }: Readonly<Props>): Rea
         const err = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(err.error ?? "저장 실패");
       }
-      router.push("/admin/encyclopedia/articles");
+      // 저장 후 공개 상세 페이지로 — 응답 slug 우선, fallback 은 입력 폼의 slug.
+      const body = await res.json().catch(() => ({})) as { article?: { slug?: string } };
+      const targetSlug = body.article?.slug ?? payload.slug;
+      router.push(`/encyclopedia/${encodeURIComponent(targetSlug)}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "저장 실패");
@@ -230,7 +233,7 @@ export function EncyclopediaArticleForm({ initial, mode }: Readonly<Props>): Rea
     if (!globalThis.confirm(`"${form.title}" 글을 삭제합니다. 되돌릴 수 없습니다.`)) return;
     const res = await fetch(`/api/admin/encyclopedia/articles/${initial.id}`, { method: "DELETE" });
     if (res.ok) {
-      router.push("/admin/encyclopedia/articles");
+      router.push("/encyclopedia");
       router.refresh();
     } else {
       const err = await res.json().catch(() => ({})) as { error?: string };
