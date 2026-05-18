@@ -51,11 +51,12 @@ function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.R
         decoding="async"
         referrerPolicy="no-referrer"
       />
-      {/* title/subtitle 모두 없으면 오버레이 생략 — 이미지만 사용 가능 */}
+      {/* title/subtitle 있을 때만 텍스트 표시. 어두운 gradient 장막 제거 — 이미지 본연 유지.
+          텍스트 가독성은 drop-shadow + 굵은 폰트로 확보 (밝은 이미지에서도 잘 보임) */}
       {banner.title || banner.subtitle ? (
-        <div className="absolute inset-0 flex flex-col justify-end gap-1 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-5 text-white">
-          {banner.title ? <h3 className="text-lg font-bold leading-tight drop-shadow-sm">{banner.title}</h3> : null}
-          {banner.subtitle ? <p className="text-sm opacity-90 drop-shadow-sm">{banner.subtitle}</p> : null}
+        <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end gap-1 p-5 text-white">
+          {banner.title ? <h3 className="text-lg font-bold leading-tight [text-shadow:0_2px_8px_rgba(0,0,0,0.7)]">{banner.title}</h3> : null}
+          {banner.subtitle ? <p className="text-sm [text-shadow:0_2px_6px_rgba(0,0,0,0.7)]">{banner.subtitle}</p> : null}
         </div>
       ) : null}
     </div>

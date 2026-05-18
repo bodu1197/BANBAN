@@ -16,9 +16,9 @@ export function HomePopularKeywords(): React.ReactElement {
 
   return (
     <section aria-label={STRINGS.globalSearch.popularKeywords} className="flex w-full justify-center px-4 pb-4">
-      <ul className="flex w-full max-w-[680px] flex-wrap gap-2">
+      <ul className="flex w-full max-w-[680px] gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide scroll-smooth">
         {keywords.map((kw) => (
-          <li key={kw}>
+          <li key={kw} className="shrink-0">
             <button
               type="button"
               onClick={() => onSelect(kw)}
