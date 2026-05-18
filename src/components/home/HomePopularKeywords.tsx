@@ -36,8 +36,8 @@ export function HomePopularKeywords(): React.ReactElement {
   return (
     <section aria-label={STRINGS.globalSearch.popularKeywords} className="flex w-full justify-center px-4 pb-4">
       {/* 모바일: 가로 스크롤 1줄 / 데스크탑(md+): flex-wrap 중앙 정렬 */}
-      {/* 모바일: 가로 스크롤 1줄 (keyboard focus 시 즉시 scroll-into-view 위해 scroll-auto) / 데스크탑(md+): flex-wrap 중앙 */}
-      <ul className="flex w-full max-w-[680px] gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-hide scroll-auto md:flex-wrap md:justify-center md:overflow-visible md:whitespace-normal">
+      {/* 모바일: 가로 스크롤 1줄 / 데스크탑(md+): flex-wrap 중앙 */}
+      <ul className="flex w-full max-w-[680px] gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-hide md:flex-wrap md:justify-center md:overflow-visible md:whitespace-normal">
         {displayed.map((kw) => (
           <li key={kw} className="shrink-0">
             <button
