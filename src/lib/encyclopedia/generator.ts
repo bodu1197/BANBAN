@@ -1,10 +1,11 @@
 import "server-only";
 import OpenAI from "openai";
 import type { EncyclopediaTopic } from "./topics";
-import { pickRelatedPortfolioImages } from "./queries";
+import { pickRelatedPortfolioImages, uploadThumbnailToStorage } from "./queries";
 import { estimateReadingTime } from "@/lib/board/utils";
 
 const MODEL = "gpt-4o";
+const IMAGE_MODEL = "gpt-image-2";
 const SITE_NAME = "반언니";
 const AI_TEMPERATURE = 0.85;
 const AI_MAX_TOKENS = 4096;
@@ -171,11 +172,52 @@ export function buildSlug(topic: EncyclopediaTopic, title: string): string {
   return `${base}-${topic.id}`;
 }
 
-async function callOpenAi(topic: EncyclopediaTopic): Promise<RawAiOutput> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+const CATEGORY_IMAGE_HINTS: Record<string, string> = {
+  눈썹: "eyebrow area showing natural, well-shaped semi-permanent eyebrow tattoo with hair-stroke detail",
+  아이라인: "eye area with subtle semi-permanent eyeliner enhancing the lash line",
+  입술: "lips with semi-permanent lip blush in natural MLBB (my lips but better) tone",
+  헤어라인: "hairline area showing natural-looking scalp micropigmentation or hairline tattoo",
+  속눈썹: "eye area with enhanced lash line and semi-permanent lash definition",
+  관리: "clean beauty treatment room setting with professional tools and skincare products",
+  안전: "sterile professional beauty treatment environment with safety equipment and gloves",
+  트렌드: "modern Korean beauty salon interior with minimalist aesthetic",
+  기타: "professional beauty treatment close-up with soft lighting",
+};
 
-  const client = new OpenAI({ apiKey });
+function buildImagePrompt(topic: EncyclopediaTopic, title: string): string {
+  const hint = CATEGORY_IMAGE_HINTS[topic.category] ?? CATEGORY_IMAGE_HINTS["기타"];
+  return [
+    `Professional Korean beauty editorial photograph for a semi-permanent makeup encyclopedia.`,
+    `Topic: "${title}".`,
+    `Subject: ${hint}.`,
+    `Style: High-end K-beauty magazine photo. Soft diffused studio lighting, shallow depth of field, clean composition.`,
+    `Korean model with dewy, luminous skin. Minimal retouching aesthetic.`,
+    `No text, no logos, no watermarks. Square 1:1 ratio. Warm neutral color palette with soft pink and beige tones.`,
+  ].join(" ");
+}
+
+async function generateThumbnail(
+  client: OpenAI,
+  topic: EncyclopediaTopic,
+  title: string,
+): Promise<Buffer> {
+  const prompt = buildImagePrompt(topic, title);
+  const result = await client.images.generate({
+    model: IMAGE_MODEL,
+    prompt,
+    n: 1,
+    size: "1024x1024",
+    quality: "medium",
+  });
+  const b64 = result.data?.[0]?.b64_json;
+  if (!b64) throw new Error("Image generation returned empty");
+  return Buffer.from(b64, "base64");
+}
+
+async function callOpenAiText(
+  client: OpenAI,
+  topic: EncyclopediaTopic,
+): Promise<RawAiOutput> {
   const completion = await client.chat.completions.create({
     model: MODEL,
     response_format: { type: "json_object" },
@@ -187,11 +229,11 @@ async function callOpenAi(topic: EncyclopediaTopic): Promise<RawAiOutput> {
     ],
   });
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("OpenAI returned empty response");
+  const text = completion.choices[0]?.message?.content;
+  if (!text) throw new Error("OpenAI returned empty response");
 
   try {
-    return JSON.parse(raw) as RawAiOutput;
+    return JSON.parse(text) as RawAiOutput;
   } catch (e) {
     throw new Error(`OpenAI returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -229,8 +271,22 @@ function normalizeAiOutput(
 export async function generateEncyclopediaArticle(
   topic: EncyclopediaTopic,
 ): Promise<GeneratedArticle> {
-  const parsed = await callOpenAi(topic);
-  const images = await pickRelatedPortfolioImages(topic.keyword, 4);
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error("OPENAI_API_KEY not configured");
+  const client = new OpenAI({ apiKey });
+
+  const [parsed, portfolioImages] = await Promise.all([
+    callOpenAiText(client, topic),
+    pickRelatedPortfolioImages(topic.keyword, 3),
+  ]);
+
+  const title = parsed.title?.trim() ?? topic.title;
+  const thumbnailBuffer = await generateThumbnail(client, topic, title);
+  const slug = buildSlug(topic, title);
+  const thumbnailUrl = await uploadThumbnailToStorage(thumbnailBuffer, topic.id, slug);
+
+  const coverImage = { url: thumbnailUrl, alt: `${topic.keyword} — ${title}` };
+  const images = [coverImage, ...portfolioImages];
   const content = buildContentMarkdown(parsed, images);
   return normalizeAiOutput(parsed, topic, content, images);
 }

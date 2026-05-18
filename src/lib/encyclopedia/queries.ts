@@ -1,4 +1,5 @@
 import "server-only";
+import sharp from "sharp";
 import { createAdminClient } from "@/lib/supabase/server";
 
 export async function fetchPublishedTopicIds(): Promise<Set<number>> {
@@ -23,6 +24,36 @@ export async function insertEncyclopediaArticle(
 
   if (error) return { error: error.message };
   return { id: (data as { id: string }).id };
+}
+
+const ENCYCLOPEDIA_BUCKET = "encyclopedia";
+const THUMBNAIL_WIDTH = 1200;
+const THUMBNAIL_HEIGHT = 630;
+const THUMBNAIL_QUALITY = 85;
+
+export async function uploadThumbnailToStorage(
+  imageBuffer: Buffer,
+  topicId: number,
+  slug: string,
+): Promise<string> {
+  const supabase = createAdminClient();
+  const fileName = `thumbnails/${slug}-${topicId}.webp`;
+
+  const webpBuffer = await sharp(imageBuffer)
+    .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
+    .webp({ quality: THUMBNAIL_QUALITY })
+    .toBuffer();
+
+  const { error } = await supabase.storage
+    .from(ENCYCLOPEDIA_BUCKET)
+    .upload(fileName, webpBuffer, {
+      contentType: "image/webp",
+      upsert: true,
+    });
+  if (error) throw new Error(`Storage upload failed: ${error.message}`);
+
+  const baseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  return `${baseUrl}/storage/v1/object/public/${ENCYCLOPEDIA_BUCKET}/${fileName}`;
 }
 
 type MediaRow = { portfolio_id: string; storage_path: string };
