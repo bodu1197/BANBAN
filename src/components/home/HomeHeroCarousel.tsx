@@ -36,18 +36,19 @@ const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [
   },
 ];
 
-function SlideContent({ banner }: Readonly<{ banner: HeroBannerData }>): React.ReactElement {
+function SlideContent({ banner, eager }: Readonly<{ banner: HeroBannerData; eager: boolean }>): React.ReactElement {
   const altText = banner.title ?? "히어로 배너";
   return (
     <div className="relative h-full w-full">
       {/* next/image 우회 — 임시 외부 도메인(바비톡) 호환성. 추후 Supabase Storage 이전 후 next/image 로 교체.
-          loading="eager" — above-the-fold 히어로라 LCP 보호. referrerpolicy — 외부 도메인 IP leak 방지. */}
+          eager — active 슬라이드만 즉시 로드 (LCP 보호), 비활성 슬라이드는 lazy (네트워크 절약).
+          referrerpolicy — 외부 도메인 IP leak 방지. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={banner.imageUrl}
         alt={altText}
         className="h-full w-full object-cover"
-        loading="eager"
+        loading={eager ? "eager" : "lazy"}
         decoding="async"
         referrerPolicy="no-referrer"
       />
@@ -92,7 +93,7 @@ function Indicators({ count, currentIdx, onSelect }: Readonly<{
 }
 
 function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: boolean }>): React.ReactElement {
-  // 비활성 슬라이드: Tab 으로 진입 차단 + 스크린리더에서 숨김 — viewport 밖이라 사용자 인지 불가
+  // 비활성 슬라이드: Tab 진입 차단 + 스크린리더 숨김 + image lazy 로드 (LCP·네트워크 절약)
   return (
     <div className="w-full shrink-0" aria-hidden={!active}>
       {banner.linkUrl ? (
@@ -102,10 +103,10 @@ function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: bo
           tabIndex={active ? 0 : -1}
           className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
         >
-          <SlideContent banner={banner} />
+          <SlideContent banner={banner} eager={active} />
         </Link>
       ) : (
-        <SlideContent banner={banner} />
+        <SlideContent banner={banner} eager={active} />
       )}
     </div>
   );
