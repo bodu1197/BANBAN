@@ -8,7 +8,6 @@ export const maxDuration = 180;
 
 const TARGET_SIZE = 1024;
 const MAX_BASE64_LENGTH = 5_000_000;
-const ALLOWED_URL_HOST = "oaidalleapiprodscus.blob.core.windows.net";
 
 type SimStep = "remove" | "simulate";
 const VALID_STEPS = new Set<SimStep>(["remove", "simulate"]);
@@ -98,17 +97,6 @@ function validateRequest(body: SimRequest): string | null {
 
 // ─── Core Generation ────────────────────────────────────────────────────────
 
-async function fetchImageSafe(url: string): Promise<string> {
-  const parsed = new URL(url);
-  if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(ALLOWED_URL_HOST)) {
-    throw new Error("Invalid image URL origin");
-  }
-  const resp = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-  const buf = await resp.arrayBuffer();
-  if (buf.byteLength > MAX_BASE64_LENGTH) throw new Error("Response too large");
-  return Buffer.from(buf).toString("base64");
-}
-
 async function generateEdit(body: SimRequest, apiKey: string): Promise<string> {
   const [imageBuffer, maskBuffer] = await Promise.all([
     prepareImage(body.image),
@@ -117,18 +105,18 @@ async function generateEdit(body: SimRequest, apiKey: string): Promise<string> {
 
   const client = new OpenAI({ apiKey });
   const result = await client.images.edit({
-    model: "dall-e-2",
+    model: "gpt-image-2",
     image: new File([new Uint8Array(imageBuffer)], "image.png", { type: "image/png" }),
     mask: new File([new Uint8Array(maskBuffer)], "mask.png", { type: "image/png" }),
     prompt: getPrompt(body.step, body.style),
     n: 1,
     size: "1024x1024",
+    response_format: "b64_json",
   });
 
-  const imageUrl = result.data?.[0]?.url;
-  if (!imageUrl) throw new Error("No image generated");
-
-  return fetchImageSafe(imageUrl);
+  const b64 = result.data?.[0]?.b64_json;
+  if (!b64) throw new Error("No image generated");
+  return b64;
 }
 
 // ─── Handler ────────────────────────────────────────────────────────────────
