@@ -111,15 +111,30 @@ function Indicators({ count, currentIdx, onSelect }: Readonly<{
   );
 }
 
+/** link_url 정규화 — 공백 trim, 슬래시/스킴 없는 입력은 "/" prefix 부여, 빈 문자열은 null */
+function normalizeLinkUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/") || /^https?:\/\//i.test(trimmed) || trimmed.startsWith("#")) return trimmed;
+  // admin placeholder 안내(/exhibition 또는 https://...)를 안 지킨 경우 자동 보정
+  return `/${trimmed}`;
+}
+
 function Slide({ banner, active, isFirst }: Readonly<{ banner: HeroBannerData; active: boolean; isFirst: boolean }>): React.ReactElement {
   // 비활성 슬라이드: Tab 진입 차단 + 스크린리더 숨김. priority 는 첫 슬라이드만 (LCP 우선).
+  const href = normalizeLinkUrl(banner.linkUrl);
+  const isExternal = href !== null && /^https?:\/\//i.test(href);
   return (
     <div className="w-full shrink-0" aria-hidden={!active}>
-      {banner.linkUrl ? (
+      {href ? (
         <Link
-          href={banner.linkUrl}
-          aria-label={banner.title ?? "히어로 배너로 이동"}
+          href={href}
+          aria-label={`${banner.title ?? "히어로 배너로 이동"}${isExternal ? " (새 탭에서 열림)" : ""}`}
           tabIndex={active ? 0 : -1}
+          // 외부 URL 은 새 탭 + 보안 rel — 같은 탭 강제 이동 방지 (사용자 보고 2026-05-18).
+          // aria-label 에 "(새 탭에서 열림)" 명시 — 스크린리더 사용자가 컨텍스트 변경 예측 가능.
+          {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
         >
           <SlideContent banner={banner} priority={isFirst} />

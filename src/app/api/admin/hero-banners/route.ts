@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+
+const HERO_BANNERS_CACHE_TAG = "hero-banners";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -86,6 +89,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    // unstable_cache 즉시 무효화 — admin 등록 후 home 에 fallback 대신 신규 배너가 바로 표시되도록.
+    revalidateTag(HERO_BANNERS_CACHE_TAG, { expire: 0 });
     return NextResponse.json({ banner: data });
 }
 
@@ -112,6 +117,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    revalidateTag(HERO_BANNERS_CACHE_TAG, { expire: 0 });
     return NextResponse.json({ banner: data });
 }
 
@@ -131,5 +137,6 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    revalidateTag(HERO_BANNERS_CACHE_TAG, { expire: 0 });
     return NextResponse.json({ success: true });
 }
