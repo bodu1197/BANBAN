@@ -86,6 +86,10 @@ export async function PATCH(
   }
 
   if (body.shop_category_ids !== undefined) {
+    // FK 가 잘못된 ID 를 막아주지만 일찍 400 으로 반환 — 디버깅 + 부분 실행 방지
+    if (!body.shop_category_ids.every((cid) => UUID_REGEX.test(cid))) {
+      return NextResponse.json({ error: "유효하지 않은 category UUID 형식이 있습니다." }, { status: 400 });
+    }
     const result = await syncCategorizables(auth.supabase, id, body.shop_category_ids);
     if (result.error) return NextResponse.json({ error: result.error }, { status: 500 });
   }

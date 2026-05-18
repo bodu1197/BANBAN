@@ -92,6 +92,10 @@ async function uploadProfileImage(artistId: string, file: File, isAdmin: boolean
   form.append("file", file);
   const path = `artists/${artistId}/profile_${Date.now()}.webp`;
   const res = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error ?? "프로필 이미지 업로드 실패");
+  }
   const json = await res.json() as { success: boolean };
   if (!json.success) throw new Error("프로필 이미지 업로드 실패");
   await patchArtistProfileImage(artistId, path, isAdmin);
@@ -116,6 +120,10 @@ async function uploadShopImages(artistId: string, newImages: File[], startIndex:
     shopForm.append("file", newImages[i]);
     const path = `artists/${artistId}/shop_${startIndex + i}_${Date.now()}.webp`;
     const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
+    if (!shopRes.ok) {
+      const err = await shopRes.json().catch(() => ({})) as { error?: string };
+      throw new Error(err.error ?? "이미지 업로드 실패");
+    }
     const shopJson = await shopRes.json() as { success: boolean };
     if (!shopJson.success) throw new Error("이미지 업로드 실패");
     const mediaRes = await fetch(mediaEndpoint(isAdmin), {
