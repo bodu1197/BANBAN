@@ -16,6 +16,7 @@ import {
     Link as LinkIcon,
     ArrowUp,
     ArrowDown,
+    Ruler,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminLoadingSpinner, AdminPageHeader } from "@/components/admin/admin-shared";
@@ -36,23 +37,27 @@ interface BannerItem {
     created_at: string;
 }
 
-// DB 의 timestamptz → input[type=datetime-local] 형식. 사용자의 로컬 타임존 기준 YYYY-MM-DDTHH:MM 으로 변환.
-// 예) DB "2026-05-18T01:00:00Z" + KST → 입력창 "2026-05-18T10:00"
-function toDateTimeLocal(iso: string | null): string {
+// DB 의 timestamptz → input[type=date] 형식 (YYYY-MM-DD, 시간 부분 무시).
+function toDateInput(iso: string | null): string {
     if (!iso) return "";
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
     const pad = (n: number): string => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-// input[type=datetime-local] (브라우저가 로컬 타임존으로 해석) → ISO UTC 문자열.
-// 예) 입력창 "2026-05-18T10:00" + KST → "2026-05-18T01:00:00.000Z"
-function toIsoOrNull(local: string): string | null {
-    if (!local) return null;
-    const d = new Date(local);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toISOString();
+// 시작일 — 그 날 자정 (00:00:00) 부터 노출
+function startDateToIso(date: string): string | null {
+    if (!date) return null;
+    const d = new Date(`${date}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+// 종료일 — 그 날 마지막 (23:59:59) 까지 노출
+function endDateToIso(date: string): string | null {
+    if (!date) return null;
+    const d = new Date(`${date}T23:59:59`);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 interface BannerFormData {
@@ -83,8 +88,8 @@ function bannerToForm(b: BannerItem): BannerFormData {
         image_path: b.image_path,
         link_url: b.link_url ?? "",
         is_active: b.is_active,
-        start_at: toDateTimeLocal(b.start_at),
-        end_at: toDateTimeLocal(b.end_at),
+        start_at: toDateInput(b.start_at),
+        end_at: toDateInput(b.end_at),
     };
 }
 
@@ -94,8 +99,8 @@ function formToPayload(data: BannerFormData): Record<string, unknown> {
         title: data.title || null,
         subtitle: data.subtitle || null,
         link_url: data.link_url || null,
-        start_at: toIsoOrNull(data.start_at),
-        end_at: toIsoOrNull(data.end_at),
+        start_at: startDateToIso(data.start_at),
+        end_at: endDateToIso(data.end_at),
     };
 }
 
@@ -193,10 +198,10 @@ function DateInput({ label, value, onChange }: Readonly<{
         <div className="space-y-1">
             <label className="text-xs font-medium text-zinc-400">{label}</label>
             <input
-                type="datetime-local"
+                type="date"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none [color-scheme:dark]"
             />
         </div>
     );
@@ -229,6 +234,10 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
 
     return (
         <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                <Ruler className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>권장 사이즈: <strong>가로 960px × 세로 320px (3:1 비율)</strong> · 이 규격을 지켜야 모바일/PC 모두에서 잘림 없이 표시됩니다.</span>
+            </div>
             <BannerImageUpload currentPath={form.image_path} onUpload={(p) => set("image_path", p)} />
             <div className="grid gap-4 md:grid-cols-2">
                 <FormInput label="제목 (선택)" value={form.title} onChange={(v) => set("title", v)} placeholder="예: 특별 기획전 (입력 안 해도 됨)" />
@@ -244,8 +253,8 @@ function BannerForm({ initial, onSave, onCancel, saving }: Readonly<{
                 </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-                <DateInput label="시작일 (선택)" value={form.start_at} onChange={(v) => set("start_at", v)} />
-                <DateInput label="종료일 (선택)" value={form.end_at} onChange={(v) => set("end_at", v)} />
+                <DateInput label="시작일 (선택, 자정부터 노출)" value={form.start_at} onChange={(v) => set("start_at", v)} />
+                <DateInput label="종료일 (선택, 그날 23:59 까지 노출)" value={form.end_at} onChange={(v) => set("end_at", v)} />
             </div>
             <BannerFormActions onCancel={onCancel} onSave={() => onSave(form)} disabled={saving || !form.image_path} />
         </div>

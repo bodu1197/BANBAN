@@ -1,7 +1,7 @@
-// @client-reason: setInterval 자동 회전 + 인디케이터 클릭으로 슬라이드 이동 — 클라이언트 상태 필요
+// @client-reason: setInterval 자동 회전 + 슬라이드 transform 애니메이션 + 인디케이터 — 클라이언트 상태 필요
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { HeroBannerData } from "@/lib/supabase/hero-banner-queries";
 
@@ -91,10 +91,31 @@ function Indicators({ count, currentIdx, onSelect }: Readonly<{
   );
 }
 
+function Slide({ banner, active }: Readonly<{ banner: HeroBannerData; active: boolean }>): React.ReactElement {
+  // 비활성 슬라이드: Tab 으로 진입 차단 + 스크린리더에서 숨김 — viewport 밖이라 사용자 인지 불가
+  return (
+    <div className="w-full shrink-0" aria-hidden={!active}>
+      {banner.linkUrl ? (
+        <Link
+          href={banner.linkUrl}
+          aria-label={banner.title ?? "히어로 배너로 이동"}
+          tabIndex={active ? 0 : -1}
+          className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+        >
+          <SlideContent banner={banner} />
+        </Link>
+      ) : (
+        <SlideContent banner={banner} />
+      )}
+    </div>
+  );
+}
+
 export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactElement | null {
   const list = banners.length > 0 ? banners : FALLBACK_BANNERS;
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (list.length <= 1 || paused) return;
@@ -107,29 +128,31 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
     return () => globalThis.clearInterval(timer);
   }, [list.length, paused]);
 
-  if (list.length === 0) return null;
+  // 좌측 슬라이드 애니메이션 — transform translateX(-idx*100%)
+  // ref 로 직접 style 조작 — 인라인 style JSX 회피 (CSS Design Enforcer 정책)
+  useEffect(() => {
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(-${idx * 100}%)`;
+    }
+  }, [idx]);
 
-  // 인덱스 검증 — Tailwind/runtime 안전 (object injection 회피)
-  const current = idx >= 0 && idx < list.length ? list.at(idx) : null;
-  if (!current) return null;
+  if (list.length === 0) return null;
 
   return (
     <section aria-label="히어로 배너" className="px-4">
-      {/* onFocusCapture/onBlurCapture — children 사이 focus 이동 시에도 pause 유지 (bubble 한계 회피) */}
+      {/* aspect-[3/1] 모든 viewport 통일 — 모바일/PC 모두 960x320 권장 비율로 잘림 없음 */}
       <div
-        className="relative w-full overflow-hidden rounded-2xl bg-muted aspect-[16/7] md:aspect-[3/1]"
+        className="relative w-full overflow-hidden rounded-2xl bg-muted aspect-[3/1]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={() => setPaused(false)}
       >
-        {current.linkUrl ? (
-          <Link href={current.linkUrl} aria-label={current.title ?? "히어로 배너로 이동"} className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary">
-            <SlideContent banner={current} />
-          </Link>
-        ) : (
-          <SlideContent banner={current} />
-        )}
+        <div ref={trackRef} className="flex h-full w-full transition-transform duration-500 ease-out">
+          {list.map((banner, i) => (
+            <Slide key={banner.id} banner={banner} active={i === idx} />
+          ))}
+        </div>
         {list.length > 1 ? <Indicators count={list.length} currentIdx={idx} onSelect={setIdx} /> : null}
       </div>
     </section>
