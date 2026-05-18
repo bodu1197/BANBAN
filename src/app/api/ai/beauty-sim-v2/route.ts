@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import sharp from "sharp";
 import { createClient } from "@/lib/supabase/server";
-import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 180;
 
@@ -120,17 +120,20 @@ async function generateEdit(body: SimRequest, apiKey: string): Promise<string> {
 
 // ─── Handler ────────────────────────────────────────────────────────────────
 
-async function checkAuth(request: NextRequest): Promise<NextResponse | null> {
+async function checkAuth(): Promise<NextResponse | null> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const key = `beauty-sim-v2:${user?.id ?? getClientIp(request)}`;
+  if (!user) {
+    return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+  }
+  const key = `beauty-sim-v2:${user.id}`;
   const { success } = rateLimit({ key, limit: 30, windowMs: 60_000 });
   if (!success) return rateLimitResponse();
   return null;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const blocked = await checkAuth(request);
+  const blocked = await checkAuth();
   if (blocked) return blocked;
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
