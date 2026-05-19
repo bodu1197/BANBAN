@@ -613,11 +613,15 @@ function ResultsView(props: Readonly<{
       <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 shadow-sm">
         <button type="button" onClick={() => props.onZoom(props.originalBase64, "원본")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xl" aria-label="원본 이미지 확대">
           <p className="mb-1 text-center text-xs font-medium text-gray-500">원본</p>
-          <img src={`data:image/png;base64,${props.originalBase64}`} alt="원본" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
+          <div className="aspect-[3/4] overflow-hidden rounded-xl">
+            <img src={`data:image/png;base64,${props.originalBase64}`} alt="원본" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+          </div>
         </button>
         <button type="button" onClick={() => props.onZoom(props.cleanedBase64, "보정 결과")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xl" aria-label="보정 결과 확대">
           <p className="mb-1 text-center text-xs font-medium text-gray-500">{props.area === "eyebrow" ? "피부 보정" : "입술 분석"}</p>
-          <img src={`data:image/png;base64,${props.cleanedBase64}`} alt="보정 결과" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
+          <div className="aspect-[3/4] overflow-hidden rounded-xl">
+            <img src={`data:image/png;base64,${props.cleanedBase64}`} alt="보정 결과" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+          </div>
         </button>
       </div>
 
