@@ -37,11 +37,14 @@ export interface RecommendedArtist {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const EYEBROW_STYLES = [
+  { id: "hairstroke", name: "헤어스트록" },
+  { id: "combo", name: "콤보" },
+  { id: "embo", name: "엠보" },
+  { id: "powder", name: "파우더" },
   { id: "natural-arch", name: "내추럴 아치" },
   { id: "straight", name: "일자 눈썹" },
   { id: "soft-arch", name: "소프트 아치" },
   { id: "feathered", name: "페더링" },
-  { id: "bold-arch", name: "볼드 아치" },
 ] as const;
 
 const LIP_STYLES = [
@@ -55,7 +58,7 @@ const LIP_STYLES = [
 const PHASE_ESTIMATES: Partial<Record<Phase, string>> = {
   analyzing: "보통 1~3초",
   removing: "보통 5~15초",
-  simulating: "보통 15~30초",
+  simulating: "보통 20~45초",
 };
 
 const AD_CARDS = [
@@ -106,6 +109,27 @@ function useElapsedTimer(running: boolean): number {
   return running ? elapsed : 0;
 }
 
+// ─── Image Helpers ─────────────────────────────────────────────────────────
+
+// Top-center crop to match API's sharp({ position: "north" })
+function cropToSquare(base64: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = Math.min(img.width, img.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(base64); return; }
+      ctx.drawImage(img, (img.width - size) / 2, 0, size, size, 0, 0, size, size);
+      resolve(canvas.toDataURL("image/png").split(",")[1] ?? base64);
+    };
+    img.onerror = () => resolve(base64);
+    img.src = `data:image/png;base64,${base64}`;
+  });
+}
+
 // ─── API Helper ─────────────────────────────────────────────────────────────
 
 async function callSimApi(
@@ -133,10 +157,11 @@ async function runSimulationPipeline(
   area: SimArea,
   onProgress: (phase: Phase, text: string) => void,
   onStyleComplete?: (completed: number, total: number) => void,
-): Promise<{ cleanedBase64: string; results: SimResult[] }> {
+): Promise<{ croppedOriginal: string; cleanedBase64: string; results: SimResult[] }> {
   onProgress("analyzing", "얼굴을 분석하고 있습니다");
 
-  const img = await loadImage(`data:image/png;base64,${base64}`);
+  const cropped = await cropToSquare(base64);
+  const img = await loadImage(`data:image/png;base64,${cropped}`);
   await initFaceAnalysis();
   const faceResult = analyzeFace(img);
   if (!faceResult) throw new Error("얼굴을 감지하지 못했습니다. 정면 사진으로 다시 시도해주세요.");
@@ -148,7 +173,7 @@ async function runSimulationPipeline(
     "removing",
     area === "eyebrow" ? "눈썹을 제거하고 있습니다" : "입술을 분석하고 있습니다",
   );
-  const cleaned = await callSimApi(base64, mask, "remove");
+  const cleaned = await callSimApi(cropped, mask, "remove");
 
   onProgress("simulating", "스타일을 생성하고 있습니다");
   const styles = area === "eyebrow" ? EYEBROW_STYLES : LIP_STYLES;
@@ -170,7 +195,7 @@ async function runSimulationPipeline(
   }
   if (results.length === 0) throw new Error("시뮬레이션 생성에 실패했습니다.");
 
-  return { cleanedBase64: cleaned, results };
+  return { croppedOriginal: cropped, cleanedBase64: cleaned, results };
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -673,7 +698,7 @@ export function AiBeautyClient(props: Readonly<{
   const [errorMsg, setErrorMsg] = useState("");
   const [progressText, setProgressText] = useState("");
   const [completedStyles, setCompletedStyles] = useState(0);
-  const [totalStyles, setTotalStyles] = useState(5);
+  const [totalStyles, setTotalStyles] = useState(8);
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
@@ -697,6 +722,7 @@ export function AiBeautyClient(props: Readonly<{
         (p, text) => { setPhase(p); setProgressText(text); },
         (completed) => { setCompletedStyles(completed); },
       );
+      setOriginalBase64(output.croppedOriginal);
       setCleanedBase64(output.cleanedBase64);
       setResults(output.results);
       setSelectedIdx(0);

@@ -54,17 +54,25 @@ async function convertMask(base64: string): Promise<Buffer> {
 const REMOVE_PROMPT =
   "Smooth natural skin with no eyebrows at all. Natural forehead skin tone and texture continuing seamlessly where eyebrows were. No hair, no shadow, no stubble, no residual marks. Photorealistic skin matching surrounding color and lighting exactly.";
 
+const BROW_POSITION = "Positioned naturally along the brow bone ridge, with clear space between the eyebrow and the upper eyelid. Never touching or overlapping the eye area.";
+
 const ALL_STYLE_PROMPTS: Record<string, string> = {
+  "hairstroke":
+    `Microblading hair-stroke eyebrows with realistic individual fine hair lines following natural growth direction. Crisp defined strokes, darker at tail and softer at inner brow. ${BROW_POSITION} Semi-permanent Korean beauty. Photorealistic on real skin.`,
+  "combo":
+    `Combo eyebrows: fine hair strokes at the inner brow transitioning to soft powder shading at the tail. Natural gradient effect combining microblading and shading techniques. ${BROW_POSITION} Semi-permanent makeup. Photorealistic on real skin.`,
+  "embo":
+    `Machine-embossed eyebrows with uniform soft shading throughout, slightly textured surface. Even density from head to tail with natural edges. ${BROW_POSITION} Semi-permanent tattoo. Photorealistic on real skin.`,
+  "powder":
+    `Powder ombre eyebrows, soft gradient shading from very light inner brow to rich defined tail. Misty airbrush-like finish with no visible strokes. ${BROW_POSITION} Semi-permanent Korean beauty. Photorealistic on real skin.`,
   "natural-arch":
-    "Beautiful natural arch eyebrows, soft powder brow finish, gentle curve with gradient shading from light inner brow to defined tail. Semi-permanent Korean beauty style. Photorealistic on real skin.",
+    `Beautiful natural arch eyebrows, soft powder brow finish, gentle curve with gradient shading from light inner brow to defined tail. ${BROW_POSITION} Semi-permanent Korean beauty style. Photorealistic on real skin.`,
   "straight":
-    "Straight Korean-style flat eyebrows, even thickness throughout, natural powder finish with soft edges. Semi-permanent makeup. Photorealistic on real skin.",
+    `Straight Korean-style flat eyebrows, even thickness throughout, natural powder finish with soft edges. ${BROW_POSITION} Semi-permanent makeup. Photorealistic on real skin.`,
   "soft-arch":
-    "Softly arched eyebrows, gentle subtle curve, ombre powder brow effect fading from center outward. Semi-permanent Korean beauty. Photorealistic on real skin.",
+    `Softly arched eyebrows, gentle subtle curve, ombre powder brow effect fading from center outward. ${BROW_POSITION} Semi-permanent Korean beauty. Photorealistic on real skin.`,
   "feathered":
-    "Feathered natural eyebrows with realistic individual hair strokes, microblading pattern. Wispy natural brow hairs. Semi-permanent makeup. Photorealistic on real skin.",
-  "bold-arch":
-    "Bold defined arched eyebrows, strong shape with crisp edges, microblading hair-stroke pattern. Semi-permanent makeup. Photorealistic on real skin.",
+    `Feathered natural eyebrows with realistic individual hair strokes, microblading pattern. Wispy natural brow hairs. ${BROW_POSITION} Semi-permanent makeup. Photorealistic on real skin.`,
   "natural-pink":
     "Natural pink gradient lips, semi-permanent lip blush, soft ombre effect from vivid center to soft edges. Healthy natural pink tint. Photorealistic.",
   "coral":
@@ -77,7 +85,7 @@ const ALL_STYLE_PROMPTS: Record<string, string> = {
     "Brick red lip color, semi-permanent lip tattoo, matte finish warm red-brown tone. Photorealistic.",
 };
 
-const DEFAULT_STYLE = "natural-arch";
+const DEFAULT_STYLE = "hairstroke";
 
 function getPrompt(step: SimStep, style?: string): string {
   if (step === "remove") return REMOVE_PROMPT;
