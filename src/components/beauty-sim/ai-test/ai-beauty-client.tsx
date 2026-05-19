@@ -3,13 +3,16 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Download, X, ExternalLink, Camera, ImageIcon, BrainCircuit } from "lucide-react";
+import { Download, X, ExternalLink, Camera, ImageIcon, Brain } from "lucide-react";
 import {
   initFaceAnalysis,
   analyzeFace,
   generateMask,
   loadImage,
 } from "@/lib/face-analysis";
+import { applyEyebrowSimulation } from "@/lib/eyebrow-renderer";
+import type { LandmarkData } from "@/lib/eyebrow-renderer";
+import { getTemplateById } from "@/lib/eyebrow-templates";
 import { optimizeImage } from "@/lib/utils/image-optimizer";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -37,14 +40,14 @@ export interface RecommendedArtist {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const EYEBROW_STYLES = [
-  { id: "hairstroke", name: "헤어스트록" },
-  { id: "combo", name: "콤보" },
-  { id: "embo", name: "엠보" },
-  { id: "powder", name: "파우더" },
-  { id: "natural-arch", name: "내추럴 아치" },
-  { id: "straight", name: "일자 눈썹" },
-  { id: "soft-arch", name: "소프트 아치" },
-  { id: "feathered", name: "페더링" },
+  { id: "hs-1", name: "헤어스트록", templateId: "hs-1" },
+  { id: "cb-1", name: "콤보", templateId: "cb-1" },
+  { id: "em-1", name: "엠보", templateId: "em-1" },
+  { id: "sh-2", name: "쉐도우", templateId: "sh-2" },
+  { id: "hs-5", name: "내추럴", templateId: "hs-5" },
+  { id: "hs-8", name: "일자", templateId: "hs-8" },
+  { id: "hs-10", name: "소프트 아치", templateId: "hs-10" },
+  { id: "cb-3", name: "페더링", templateId: "cb-3" },
 ] as const;
 
 const LIP_STYLES = [
@@ -143,6 +146,63 @@ async function callSimApi(
 
 // ─── Pipeline ───────────────────────────────────────────────────────────────
 
+async function renderTemplateOverlay(
+  cleanedImg: HTMLImageElement,
+  landmarks: LandmarkData,
+  templateId: string,
+): Promise<string> {
+  const template = getTemplateById(templateId);
+  if (!template) throw new Error(`Template not found: ${templateId}`);
+  const dataUrl = await applyEyebrowSimulation(cleanedImg, landmarks, template);
+  return dataUrl.split(",")[1] ?? "";
+}
+
+function collectFulfilled(settled: PromiseSettledResult<SimResult>[]): SimResult[] {
+  const results: SimResult[] = [];
+  for (const r of settled) {
+    if (r.status === "fulfilled") results.push(r.value);
+  }
+  if (results.length === 0) throw new Error("시뮬레이션 생성에 실패했습니다.");
+  return results;
+}
+
+async function generateBrowStyles(
+  cleaned: string,
+  landmarks: LandmarkData,
+  onStyleComplete?: (completed: number, total: number) => void,
+): Promise<SimResult[]> {
+  const cleanedImg = await loadImage(`data:image/png;base64,${cleaned}`);
+  let completedCount = 0;
+  onStyleComplete?.(0, EYEBROW_STYLES.length);
+  const settled = await Promise.allSettled(
+    EYEBROW_STYLES.map(async (s): Promise<SimResult> => {
+      const image = await renderTemplateOverlay(cleanedImg, landmarks, s.templateId);
+      completedCount += 1;
+      onStyleComplete?.(completedCount, EYEBROW_STYLES.length);
+      return { id: s.id, name: s.name, image };
+    }),
+  );
+  return collectFulfilled(settled);
+}
+
+async function generateLipStyles(
+  cleaned: string,
+  mask: string,
+  onStyleComplete?: (completed: number, total: number) => void,
+): Promise<SimResult[]> {
+  let completedCount = 0;
+  onStyleComplete?.(0, LIP_STYLES.length);
+  const settled = await Promise.allSettled(
+    LIP_STYLES.map(async (s): Promise<SimResult> => {
+      const image = await callSimApi(cleaned, mask, "simulate", s.id);
+      completedCount += 1;
+      onStyleComplete?.(completedCount, LIP_STYLES.length);
+      return { id: s.id, name: s.name, image };
+    }),
+  );
+  return collectFulfilled(settled);
+}
+
 async function runSimulationPipeline(
   base64: string,
   area: SimArea,
@@ -160,31 +220,13 @@ async function runSimulationPipeline(
   const maskArea = area === "lip" ? "lip" as const : "eyebrow" as const;
   const mask = generateMask(faceResult.landmarks, maskArea, img.width, img.height);
 
-  onProgress(
-    "removing",
-    area === "eyebrow" ? "피부 톤을 보정하고 있습니다" : "입술 컬러를 분석하고 있습니다",
-  );
+  onProgress("removing", area === "eyebrow" ? "피부 톤을 보정하고 있습니다" : "입술 컬러를 분석하고 있습니다");
   const cleaned = await callSimApi(cropped, mask, "remove");
 
   onProgress("simulating", "맞춤 스타일을 시뮬레이션하고 있습니다");
-  const styles = area === "eyebrow" ? EYEBROW_STYLES : LIP_STYLES;
-  onStyleComplete?.(0, styles.length);
-
-  let completedCount = 0;
-  const settled = await Promise.allSettled(
-    styles.map(async (s): Promise<SimResult> => {
-      const image = await callSimApi(cleaned, mask, "simulate", s.id);
-      completedCount += 1;
-      onStyleComplete?.(completedCount, styles.length);
-      return { id: s.id, name: s.name, image };
-    }),
-  );
-
-  const results: SimResult[] = [];
-  for (const r of settled) {
-    if (r.status === "fulfilled") results.push(r.value);
-  }
-  if (results.length === 0) throw new Error("시뮬레이션 생성에 실패했습니다.");
+  const results = area === "eyebrow"
+    ? await generateBrowStyles(cleaned, faceResult.landmarks, onStyleComplete)
+    : await generateLipStyles(cleaned, mask, onStyleComplete);
 
   return { croppedOriginal: cropped, cleanedBase64: cleaned, results };
 }
@@ -557,11 +599,10 @@ function ProcessingView(props: Readonly<{
   return (
     <div className="flex flex-col items-center gap-6 rounded-3xl bg-white p-6 shadow-lg md:p-8" aria-busy="true">
       <div className="text-center">
-        <h2 className="flex items-center justify-center gap-2 text-lg font-bold text-gray-900 md:text-xl">
-          <span className="relative flex h-8 w-8 items-center justify-center" aria-hidden="true">
-            <span className="absolute inset-0 rounded-full bg-violet-200 opacity-40 motion-safe:animate-ping" />
-            <BrainCircuit className="relative h-6 w-6 text-violet-500 motion-safe:animate-pulse" />
-          </span>
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 shadow-lg shadow-violet-200/50 motion-safe:animate-breathe" aria-hidden="true">
+          <Brain className="h-9 w-9 text-violet-600" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 md:text-xl">
           AI 분석 중
         </h2>
         <p className="mt-1 text-sm text-gray-500">내 얼굴에 어울리는 스타일을 찾고 있어요</p>
