@@ -328,13 +328,13 @@ function HeroUploadSection(props: Readonly<{
       <button
         type="button"
         onClick={props.onCamera}
-        className="absolute left-[4%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        className="absolute z-10 left-[4%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         aria-label="지금 촬영하기"
       />
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        className="absolute left-[51.5%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        className="absolute z-10 left-[51.5%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         aria-label="사진 불러오기"
       />
 
