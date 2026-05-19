@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { ArrowLeft, Brain, Camera, ImagePlus } from "lucide-react";
+import { ArrowLeft, Brain, Camera, ImagePlus, Sparkles } from "lucide-react";
 import type { LandmarkData } from "@/lib/eyebrow-renderer";
 import { useAuth } from "@/hooks";
 import { FittingRoom } from "./fitting-room";
@@ -139,12 +139,23 @@ function UploadHeader({ onBack }: Readonly<{ onBack: () => void }>): React.React
     );
 }
 
-function AnalyzingStep(): React.ReactElement {
+type AnalysisPhase = "face" | "skin";
+
+function AnalyzingStep({ phase }: Readonly<{ phase: AnalysisPhase }>): React.ReactElement {
+    const isFace = phase === "face";
     return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-            <Brain className="h-12 w-12 animate-pulse text-pink-500" aria-hidden="true" />
-            <p className="text-lg font-medium text-white">얼굴을 분석하는 중...</p>
-            <p className="text-sm text-white/60">얼굴형, 눈썹, 눈매를 읽고 있습니다</p>
+            {isFace ? (
+                <Brain className="h-12 w-12 animate-pulse text-pink-500" aria-hidden="true" />
+            ) : (
+                <Sparkles className="h-12 w-12 animate-pulse text-purple-400" aria-hidden="true" />
+            )}
+            <p className="text-lg font-medium text-white">
+                {isFace ? "얼굴을 분석하는 중..." : "피부를 보정하는 중..."}
+            </p>
+            <p className="text-sm text-white/60">
+                {isFace ? "얼굴형, 눈썹, 눈매를 읽고 있습니다" : "더 자연스러운 결과를 위해 준비 중입니다"}
+            </p>
         </div>
     );
 }
@@ -161,7 +172,7 @@ export function MyFittingClient(): React.ReactElement {
     const [image, setImage] = useState<HTMLImageElement | null>(null);
     const [landmarks, setLandmarks] = useState<LandmarkData | null>(null);
     const [cleanedImage, setCleanedImage] = useState<HTMLImageElement | null>(null);
-    const [skinCleaning, setSkinCleaning] = useState<"idle" | "processing" | "done">("idle");
+    const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>("face");
     const [error, setError] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -169,9 +180,9 @@ export function MyFittingClient(): React.ReactElement {
 
     const processFile = useCallback(async (file: File) => {
         setStep("analyzing");
+        setAnalysisPhase("face");
         setError(null);
         setCleanedImage(null);
-        setSkinCleaning("idle");
 
         try {
             const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -193,15 +204,14 @@ export function MyFittingClient(): React.ReactElement {
             setImageDataUrl(result.dataUrl);
             setImage(result.img);
             setLandmarks(result.landmarks);
-            setStep("fitting");
 
             if (user) {
-                setSkinCleaning("processing");
-                void removeEyebrowsViaGpt(result.img, result.landmarks).then((cleaned) => {
-                    if (cleaned) setCleanedImage(cleaned);
-                    setSkinCleaning(cleaned ? "done" : "idle");
-                });
+                setAnalysisPhase("skin");
+                const cleaned = await removeEyebrowsViaGpt(result.img, result.landmarks);
+                if (cleaned) setCleanedImage(cleaned);
             }
+
+            setStep("fitting");
         } catch {
             setError("이미지 처리 중 오류가 발생했습니다.");
             setStep("upload");
@@ -220,7 +230,7 @@ export function MyFittingClient(): React.ReactElement {
         setImage(null);
         setLandmarks(null);
         setCleanedImage(null);
-        setSkinCleaning("idle");
+        setAnalysisPhase("face");
         setError(null);
     }, []);
 
@@ -231,7 +241,7 @@ export function MyFittingClient(): React.ReactElement {
     if (step === "analyzing") {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-                <AnalyzingStep />
+                <AnalyzingStep phase={analysisPhase} />
             </div>
         );
     }
@@ -245,7 +255,6 @@ export function MyFittingClient(): React.ReactElement {
                 vibeName="내 얼굴"
                 onBack={handleReset}
                 cleanedImage={cleanedImage}
-                skinCleaning={skinCleaning}
             />
         );
     }
