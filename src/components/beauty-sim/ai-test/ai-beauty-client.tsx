@@ -440,75 +440,6 @@ function ImageZoomModal(props: Readonly<{
   );
 }
 
-function BeforeAfterSlider(props: Readonly<{
-  beforeSrc: string;
-  afterSrc: string;
-  beforeLabel: string;
-  afterLabel: string;
-}>): React.ReactElement {
-  const [position, setPosition] = useState(50);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-
-  const updatePosition = useCallback((clientX: number) => {
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const pct = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-    setPosition(pct);
-  }, []);
-
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    dragging.current = true;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    updatePosition(e.clientX);
-  }, [updatePosition]);
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (dragging.current) updatePosition(e.clientX);
-  }, [updatePosition]);
-
-  const onPointerUp = useCallback(() => { dragging.current = false; }, []);
-
-  const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const step = e.shiftKey ? 10 : 5;
-    if (e.key === "ArrowLeft") setPosition((p) => Math.max(0, p - step));
-    else if (e.key === "ArrowRight") setPosition((p) => Math.min(100, p + step));
-    else if (e.key === "Home") setPosition(0);
-    else if (e.key === "End") setPosition(100);
-    else return;
-    e.preventDefault();
-  }, []);
-
-  const clipRight = `inset(0 ${100 - position}% 0 0)`;
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative aspect-square w-full cursor-col-resize overflow-hidden rounded-2xl shadow-lg select-none"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onKeyDown={onKeyDown}
-      tabIndex={0}
-      role="slider"
-      aria-label="비포/애프터 비교 슬라이더"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(position)}
-    >
-      <img src={`data:image/png;base64,${props.afterSrc}`} alt={props.afterLabel} className="absolute inset-0 h-full w-full object-cover" />
-      <img src={`data:image/png;base64,${props.beforeSrc}`} alt={props.beforeLabel} className="absolute inset-0 h-full w-full object-cover" style={{ clipPath: clipRight }} />
-      <div className="absolute inset-y-0 w-0.5 bg-white shadow-lg" style={{ left: `${position}%` }}>
-        <div className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-lg">
-          <span className="text-xs font-bold text-gray-800" aria-hidden="true">↔</span>
-        </div>
-      </div>
-      <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white">{props.beforeLabel}</span>
-      <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white">{props.afterLabel}</span>
-    </div>
-  );
-}
-
 function WaitTimeAds(): React.ReactElement {
   const [adIdx, setAdIdx] = useState(0);
 
@@ -638,6 +569,61 @@ function ProcessingView(props: Readonly<{
   );
 }
 
+function ResultImageCard(props: Readonly<{
+  selected: SimResult;
+  originalBase64: string;
+  onZoom: (src: string, alt: string) => void;
+}>): React.ReactElement {
+  const [showBefore, setShowBefore] = useState(false);
+  const displaySrc = showBefore ? props.originalBase64 : props.selected.image;
+  const displayLabel = showBefore ? "원본" : props.selected.name;
+
+  return (
+    <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-bold text-gray-900">{props.selected.name}</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => downloadBase64Image(props.selected.image, `beauty-sim-${props.selected.id}.png`)}
+            className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 focus-visible:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            aria-label="결과 이미지 저장"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <button type="button" onClick={() => props.onZoom(displaySrc, displayLabel)} className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-2xl" aria-label={`${displayLabel} 확대`}>
+        <div className="aspect-square w-full overflow-hidden rounded-2xl">
+          <img src={`data:image/png;base64,${displaySrc}`} alt={displayLabel} className="h-full w-full object-cover" />
+        </div>
+      </button>
+      <div className="mt-3 flex justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowBefore(false)}
+          aria-pressed={!showBefore}
+          className={`rounded-full px-4 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+            !showBefore ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200 focus-visible:bg-gray-200"
+          }`}
+        >
+          After
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowBefore(true)}
+          aria-pressed={showBefore}
+          className={`rounded-full px-4 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+            showBefore ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200 focus-visible:bg-gray-200"
+          }`}
+        >
+          Before
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ResultsView(props: Readonly<{
   originalBase64: string;
   results: SimResult[];
@@ -673,37 +659,11 @@ function ResultsView(props: Readonly<{
       </div>
 
       {selected && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-bold text-gray-900">{selected.name}</p>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-600">시뮬레이션</span>
-              <button
-                type="button"
-                onClick={() => downloadBase64Image(selected.image, `beauty-sim-${selected.id}.png`)}
-                className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 focus-visible:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                aria-label="결과 이미지 저장"
-              >
-                <Download className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <button type="button" onClick={() => props.onZoom(selected.image, selected.name)} className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-2xl" aria-label={`${selected.name} 결과 확대`}>
-            <img src={`data:image/png;base64,${selected.image}`} alt={`${selected.name} 결과`} className="w-full rounded-2xl transition-transform hover:scale-[1.01]" />
-          </button>
-        </div>
-      )}
-
-      {selected && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-center text-xs font-semibold text-blue-600">Before / After 비교</p>
-          <BeforeAfterSlider
-            beforeSrc={props.originalBase64}
-            afterSrc={selected.image}
-            beforeLabel="Before"
-            afterLabel="After"
-          />
-        </div>
+        <ResultImageCard
+          selected={selected}
+          originalBase64={props.originalBase64}
+          onZoom={props.onZoom}
+        />
       )}
 
       <div className="flex justify-center gap-3">
