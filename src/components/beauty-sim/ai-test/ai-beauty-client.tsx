@@ -158,7 +158,7 @@ async function runSimulationPipeline(
   onProgress: (phase: Phase, text: string) => void,
   onStyleComplete?: (completed: number, total: number) => void,
 ): Promise<{ croppedOriginal: string; cleanedBase64: string; results: SimResult[] }> {
-  onProgress("analyzing", "얼굴을 분석하고 있습니다");
+  onProgress("analyzing", "얼굴 윤곽을 정밀 스캔하고 있습니다");
 
   const cropped = await cropToSquare(base64);
   const img = await loadImage(`data:image/png;base64,${cropped}`);
@@ -171,11 +171,11 @@ async function runSimulationPipeline(
 
   onProgress(
     "removing",
-    area === "eyebrow" ? "눈썹을 제거하고 있습니다" : "입술을 분석하고 있습니다",
+    area === "eyebrow" ? "피부 톤을 보정하고 있습니다" : "입술 컬러를 분석하고 있습니다",
   );
   const cleaned = await callSimApi(cropped, mask, "remove");
 
-  onProgress("simulating", "스타일을 생성하고 있습니다");
+  onProgress("simulating", "맞춤 스타일을 시뮬레이션하고 있습니다");
   const styles = area === "eyebrow" ? EYEBROW_STYLES : LIP_STYLES;
   onStyleComplete?.(0, styles.length);
 
@@ -506,7 +506,7 @@ function ProcessingView(props: Readonly<{
       <div className="flex items-center gap-2 text-sm">
         <StepDot active={props.phase === "analyzing"} done={props.phase !== "analyzing"} label="분석" />
         <div className="mb-4 h-px w-8 bg-white/20" />
-        <StepDot active={props.phase === "removing"} done={props.phase === "simulating"} label="제거" />
+        <StepDot active={props.phase === "removing"} done={props.phase === "simulating"} label="보정" />
         <div className="mb-4 h-px w-8 bg-white/20" />
         <StepDot active={props.phase === "simulating"} done={false} label="시뮬레이션" />
       </div>
@@ -568,9 +568,9 @@ function ResultsView(props: Readonly<{
           <p className="mb-1 text-center text-xs font-medium text-gray-400">원본</p>
           <img src={`data:image/png;base64,${props.originalBase64}`} alt="원본" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
         </button>
-        <button type="button" onClick={() => props.onZoom(props.cleanedBase64, "제거 결과")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 rounded-xl" aria-label="제거 결과 확대">
-          <p className="mb-1 text-center text-xs font-medium text-gray-400">{props.area === "eyebrow" ? "눈썹 제거" : "입술 분석"}</p>
-          <img src={`data:image/png;base64,${props.cleanedBase64}`} alt="제거 결과" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
+        <button type="button" onClick={() => props.onZoom(props.cleanedBase64, "보정 결과")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 rounded-xl" aria-label="보정 결과 확대">
+          <p className="mb-1 text-center text-xs font-medium text-gray-400">{props.area === "eyebrow" ? "피부 보정" : "입술 분석"}</p>
+          <img src={`data:image/png;base64,${props.cleanedBase64}`} alt="보정 결과" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
         </button>
       </div>
 
@@ -602,7 +602,7 @@ function ResultsView(props: Readonly<{
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-medium text-white">{selected.name}</p>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300">AI 생성</span>
+                <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300">시뮬레이션</span>
                 <button
                   type="button"
                   onClick={() => downloadBase64Image(selected.image, `beauty-sim-${selected.id}.png`)}
@@ -674,7 +674,7 @@ function ResultsView(props: Readonly<{
 function LoginPrompt(props: Readonly<{ onClose: () => void }>): React.ReactElement {
   return (
     <div className="mb-6 flex flex-col items-center gap-3 rounded-2xl border border-purple-500/30 bg-purple-500/10 p-6 text-center" role="alert">
-      <p className="text-sm text-white">로그인 후 AI 시뮬레이션을 이용할 수 있습니다</p>
+      <p className="text-sm text-white">로그인 후 시뮬레이션을 이용할 수 있습니다</p>
       <div className="flex gap-3">
         <Link href="/login" className="rounded-xl bg-purple-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-purple-400 focus-visible:bg-purple-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300">로그인</Link>
         <button type="button" onClick={props.onClose} className="rounded-xl bg-white/10 px-6 py-2.5 text-sm font-medium text-white hover:bg-white/20 focus-visible:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300">닫기</button>
@@ -780,8 +780,8 @@ export function AiBeautyClient(props: Readonly<{
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <header className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-white md:text-3xl">AI 뷰티 시뮬레이션</h1>
-        <p className="mt-2 text-sm text-gray-300">GPT AI가 눈썹/입술을 자연스럽게 제거하고 새로운 스타일을 시뮬레이션합니다</p>
+        <h1 className="text-2xl font-bold text-white md:text-3xl">뷰티 시뮬레이션</h1>
+        <p className="mt-2 text-sm text-gray-300">내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요</p>
       </header>
 
       {showLoginPrompt && <LoginPrompt onClose={() => setShowLoginPrompt(false)} />}

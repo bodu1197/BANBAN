@@ -6,8 +6,8 @@ import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-    title: "AI 뷰티 시뮬레이션 (테스트)",
-    description: "GPT AI로 눈썹/입술을 자연스럽게 제거하고 새로운 스타일을 시뮬레이션합니다.",
+    title: "뷰티 시뮬레이션 (테스트)",
+    description: "내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요.",
     robots: { index: false, follow: false },
 };
 
