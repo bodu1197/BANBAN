@@ -114,7 +114,7 @@ function cropToSquare(base64: string): Promise<string> {
       canvas.height = size;
       const ctx = canvas.getContext("2d");
       if (!ctx) { resolve(base64); return; }
-      ctx.drawImage(img, (img.width - size) / 2, 0, size, size, 0, 0, size, size);
+      ctx.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, size, size);
       resolve(canvas.toDataURL("image/png").split(",")[1] ?? base64);
     };
     img.onerror = () => resolve(base64);
@@ -203,21 +203,22 @@ async function runSimulationPipeline(
   const faceResult = analyzeFace(img);
   if (!faceResult) throw new Error("얼굴을 감지하지 못했습니다. 정면 사진으로 다시 시도해주세요.");
 
-  const maskArea = area === "lip" ? "lip" as const : "eyebrow" as const;
-  const mask = generateMask(faceResult.landmarks, maskArea, img.width, img.height);
+  if (area === "eyebrow") {
+    const wideMask = generateMask(faceResult.landmarks, "eyebrow", img.width, img.height);
+    onProgress("removing", "피부 톤을 보정하고 있습니다");
+    const cleaned = await callSimApi(cropped, wideMask, "remove");
 
-  onProgress("removing", area === "eyebrow" ? "피부 톤을 보정하고 있습니다" : "입술 컬러를 분석하고 있습니다");
-  const cleaned = await callSimApi(cropped, mask, "remove");
+    onProgress("simulating", "맞춤 스타일을 시뮬레이션하고 있습니다");
+    const tightMask = generateTightBrowMask(faceResult.landmarks, img.width, img.height);
+    const results = await generateBrowStyles(cleaned, tightMask, onStyleComplete);
+    return { croppedOriginal: cropped, cleanedBase64: cleaned, results };
+  }
 
-  onProgress("simulating", "맞춤 스타일을 시뮬레이션하고 있습니다");
-  const browMask = area === "eyebrow"
-    ? generateTightBrowMask(faceResult.landmarks, img.width, img.height)
-    : "";
-  const results = area === "eyebrow"
-    ? await generateBrowStyles(cleaned, browMask, onStyleComplete)
-    : await generateLipStyles(cleaned, mask, onStyleComplete);
-
-  return { croppedOriginal: cropped, cleanedBase64: cleaned, results };
+  // 입술: remove 불필요 — 원본에 바로 스타일 적용
+  const lipMask = generateMask(faceResult.landmarks, "lip", img.width, img.height);
+  onProgress("simulating", "맞춤 입술 스타일을 시뮬레이션하고 있습니다");
+  const results = await generateLipStyles(cropped, lipMask, onStyleComplete);
+  return { croppedOriginal: cropped, cleanedBase64: cropped, results };
 }
 
 // ─── Utility ───────────────────────────────────────────────────────────────
