@@ -599,10 +599,10 @@ function ProcessingView(props: Readonly<{
   return (
     <div className="flex flex-col items-center gap-6 rounded-3xl bg-white p-6 shadow-lg md:p-8" aria-busy="true">
       <div className="text-center">
-        <div className="animate-breathe mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 shadow-lg shadow-violet-200/50" aria-hidden="true">
-          <Brain className="h-9 w-9 text-violet-600" />
-        </div>
-        <h2 className="text-lg font-bold text-gray-900 md:text-xl">
+        <h2 className="flex items-center justify-center gap-3 text-lg font-bold text-gray-900 md:text-xl">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 shadow-md shadow-violet-200/50 animate-breathe" aria-hidden="true">
+            <Brain className="h-6 w-6 text-violet-600" />
+          </span>
           AI 분석 중
         </h2>
         <p className="mt-1 text-sm text-gray-500">내 얼굴에 어울리는 스타일을 찾고 있어요</p>
