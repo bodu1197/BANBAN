@@ -6,9 +6,8 @@ import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-    title: "뷰티 시뮬레이션 (테스트)",
-    description: "내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요.",
-    robots: { index: false, follow: false },
+    title: "뷰티 시뮬레이션 | 반언니",
+    description: "내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요. 사진 한 장으로 다양한 시술 결과를 확인할 수 있습니다.",
 };
 
 export default async function Page(): Promise<React.ReactElement> {

@@ -19,7 +19,7 @@ const STATIC_PAGES: StaticEntry[] = [
   // /community 는 현재 redirect("/") 상태 — sitemap 제외 (페이지 본문 활성화 시 복귀).
   { path: "/benefits",       priority: "0.6", changefreq: "weekly"  },
   { path: "/reviews",        priority: "0.6", changefreq: "daily"   },
-  { path: "/beauty-sim/my",  priority: "0.6", changefreq: "monthly" },
+  { path: "/beauty-sim/ai-test", priority: "0.7", changefreq: "monthly" },
   { path: "/about",          priority: "0.4", changefreq: "monthly" },
   { path: "/partnership",    priority: "0.4", changefreq: "monthly" },
   { path: "/contact",        priority: "0.3", changefreq: "monthly" },
