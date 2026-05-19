@@ -4,7 +4,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import NextImage from "next/image";
-import { Camera, ImageIcon, Download, X, ExternalLink } from "lucide-react";
+import { Download, X, ExternalLink } from "lucide-react";
 import {
   initFaceAnalysis,
   analyzeFace,
@@ -240,6 +240,10 @@ function CameraCapture(props: Readonly<{
     let cancelled = false;
     (async () => {
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          props.onError("이 브라우저에서는 카메라를 사용할 수 없습니다. 사진 불러오기를 이용해주세요.");
+          return;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user" },
         });
@@ -249,8 +253,16 @@ function CameraCapture(props: Readonly<{
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-      } catch {
-        if (!cancelled) props.onError("카메라 접근이 거부되었습니다. 설정에서 카메라 권한을 허용해주세요.");
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const name = err instanceof DOMException ? err.name : "";
+        if (name === "NotAllowedError") {
+          props.onError("카메라 권한이 거부되었습니다. 브라우저 주소창 왼쪽 자물쇠 아이콘 → 카메라 허용 후 새로고침해주세요.");
+        } else if (name === "NotFoundError") {
+          props.onError("카메라를 찾을 수 없습니다. 사진 불러오기를 이용해주세요.");
+        } else {
+          props.onError("카메라를 시작할 수 없습니다. 사진 불러오기를 이용해주세요.");
+        }
       }
     })();
     return () => {
@@ -299,41 +311,32 @@ function HeroUploadSection(props: Readonly<{
 
   return (
     <div
-      className="flex flex-col"
+      className="relative"
       onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) props.onFile(f); }}
       onDragOver={(e) => e.preventDefault()}
     >
       <NextImage
         src="/images/beauty-sim/hero-banner.png"
         alt="AI 눈썹·입술 시뮬레이션 — 내 얼굴에 어울리는 반영구 스타일을 미리 체험하세요"
-        width={780}
-        height={1200}
+        width={863}
+        height={1822}
         className="w-full"
         sizes="(max-width: 640px) 100vw, 512px"
         priority
       />
 
-      <div className="mt-4 grid grid-cols-2 gap-3 px-4">
-        <button
-          type="button"
-          onClick={props.onCamera}
-          className="flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 px-4 py-5 text-white shadow-lg shadow-blue-200 transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
-          aria-label="셀카 촬영하기"
-        >
-          <Camera className="h-7 w-7" />
-          <span className="text-sm font-bold">지금 촬영하기</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-5 text-gray-700 shadow-sm transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
-          aria-label="갤러리에서 사진 선택"
-        >
-          <ImageIcon className="h-7 w-7 text-blue-500" />
-          <span className="text-sm font-bold">사진 불러오기</span>
-          <span className="text-[11px] text-gray-500">갤러리에서 선택</span>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={props.onCamera}
+        className="absolute left-[4%] top-[35.5%] h-[12%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        aria-label="지금 촬영하기"
+      />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        className="absolute left-[51.5%] top-[35.5%] h-[12%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        aria-label="사진 불러오기"
+      />
 
       <input ref={fileRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) props.onFile(f); }} className="hidden" aria-label="사진 파일 선택" />
     </div>
