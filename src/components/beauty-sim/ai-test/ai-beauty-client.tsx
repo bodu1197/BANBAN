@@ -639,9 +639,7 @@ function ProcessingView(props: Readonly<{
 }
 
 function ResultsView(props: Readonly<{
-  area: SimArea;
   originalBase64: string;
-  cleanedBase64: string;
   results: SimResult[];
   selectedIdx: number;
   onSelect: (idx: number) => void;
@@ -652,21 +650,6 @@ function ResultsView(props: Readonly<{
   const selected = props.results[props.selectedIdx];
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 shadow-sm">
-        <button type="button" onClick={() => props.onZoom(props.originalBase64, "원본")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xl" aria-label="원본 이미지 확대">
-          <p className="mb-1 text-center text-xs font-medium text-gray-500">원본</p>
-          <div className="aspect-[3/4] overflow-hidden rounded-xl">
-            <img src={`data:image/png;base64,${props.originalBase64}`} alt="원본" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
-          </div>
-        </button>
-        <button type="button" onClick={() => props.onZoom(props.cleanedBase64, "보정 결과")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xl" aria-label="보정 결과 확대">
-          <p className="mb-1 text-center text-xs font-medium text-gray-500">{props.area === "eyebrow" ? "피부 보정" : "입술 분석"}</p>
-          <div className="aspect-[3/4] overflow-hidden rounded-xl">
-            <img src={`data:image/png;base64,${props.cleanedBase64}`} alt="보정 결과" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
-          </div>
-        </button>
-      </div>
-
       <div className="rounded-2xl bg-white p-4 shadow-sm" role="radiogroup" aria-label="스타일 선택">
         <p className="mb-3 text-sm font-bold text-gray-900">스타일 선택</p>
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -785,7 +768,6 @@ export function AiBeautyClient(props: Readonly<{
   const [phase, setPhase] = useState<Phase>("upload");
   const area: SimArea = "eyebrow";
   const [originalBase64, setOriginalBase64] = useState("");
-  const [cleanedBase64, setCleanedBase64] = useState("");
   const [results, setResults] = useState<SimResult[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
@@ -816,7 +798,6 @@ export function AiBeautyClient(props: Readonly<{
         (completed) => { setCompletedStyles(completed); },
       );
       setOriginalBase64(output.croppedOriginal);
-      setCleanedBase64(output.cleanedBase64);
       setResults(output.results);
       setSelectedIdx(0);
       setPhase("done");
@@ -859,7 +840,6 @@ export function AiBeautyClient(props: Readonly<{
   const reset = useCallback(() => {
     setPhase("upload");
     setOriginalBase64("");
-    setCleanedBase64("");
     setResults([]);
     setSelectedIdx(0);
     setErrorMsg("");
@@ -899,7 +879,7 @@ export function AiBeautyClient(props: Readonly<{
 
       {phase === "done" && (
         <ResultsView
-          area={area} originalBase64={originalBase64} cleanedBase64={cleanedBase64}
+          originalBase64={originalBase64}
           results={results} selectedIdx={selectedIdx} onSelect={setSelectedIdx} onReset={reset}
           onZoom={handleZoom} artists={props.artists}
         />
