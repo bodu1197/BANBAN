@@ -54,7 +54,18 @@ async function convertMask(base64: string): Promise<Buffer> {
 const REMOVE_PROMPT =
   "Remove only the eyebrow hair within the masked area. Replace with smooth natural forehead skin matching surrounding skin tone and texture exactly. IMPORTANT: Preserve all head hair, hairline, eyelashes, and every other facial feature completely unchanged. Only the eyebrow region should be affected. Photorealistic result.";
 
-const BROW_POSITION = "Positioned naturally along the brow bone ridge, with clear space between the eyebrow and the upper eyelid. Never touching or overlapping the eye area.";
+const ANATOMY_RULES = [
+  "CRITICAL ANATOMY RULES — violating any of these produces a deformed face:",
+  "1. NEVER move the eyebrow vertically. The eyebrow must sit exactly on the original brow bone ridge position. Do NOT raise or lower it.",
+  "2. NEVER change forehead height, eye-to-eyebrow distance, or any facial proportions. The forehead, eyes, nose, mouth, and chin must remain in their original pixel positions.",
+  "3. Only modify the eyebrow SHAPE, THICKNESS, COLOR, and TEXTURE within the existing brow bone area.",
+  "4. Maintain 5-8mm clear gap between the lower edge of the eyebrow and the upper eyelid crease (proportional to face).",
+  "5. The eyebrow length should span from the inner corner of the eye to slightly past the outer corner — no wider, no shorter.",
+  "6. Do NOT warp, stretch, compress, or distort any part of the face. Every non-eyebrow pixel must remain unchanged.",
+  "7. The result must look like a real semi-permanent makeup procedure, not a face morph.",
+].join(" ");
+
+const BROW_POSITION = ANATOMY_RULES;
 
 const ALL_STYLE_PROMPTS: Record<string, string> = {
   "hairstroke":
