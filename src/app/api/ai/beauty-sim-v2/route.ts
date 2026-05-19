@@ -52,7 +52,7 @@ async function convertMask(base64: string): Promise<Buffer> {
 // ─── Prompts ────────────────────────────────────────────────────────────────
 
 const REMOVE_PROMPT =
-  "Smooth natural skin with no eyebrows at all. Natural forehead skin tone and texture continuing seamlessly where eyebrows were. No hair, no shadow, no stubble, no residual marks. Photorealistic skin matching surrounding color and lighting exactly.";
+  "Remove only the eyebrow hair within the masked area. Replace with smooth natural forehead skin matching surrounding skin tone and texture exactly. IMPORTANT: Preserve all head hair, hairline, eyelashes, and every other facial feature completely unchanged. Only the eyebrow region should be affected. Photorealistic result.";
 
 const BROW_POSITION = "Positioned naturally along the brow bone ridge, with clear space between the eyebrow and the upper eyelid. Never touching or overlapping the eye area.";
 
