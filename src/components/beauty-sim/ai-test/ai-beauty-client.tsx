@@ -4,7 +4,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import NextImage from "next/image";
-import { Camera, ImageIcon, Download, X, ExternalLink, Sun, Focus, SmilePlus } from "lucide-react";
+import { Camera, ImageIcon, Download, X, ExternalLink } from "lucide-react";
 import {
   initFaceAnalysis,
   analyzeFace,
@@ -84,13 +84,6 @@ const PHASE_LABELS: Partial<Record<Phase, string>> = {
   simulating: "스타일 생성 중",
 };
 
-const SAMPLE_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/beauty-sim/samples/${i + 1}.png`);
-
-const GUIDE_TIPS = [
-  { icon: Focus, label: "정면을 바라보세요" },
-  { icon: Sun, label: "밝은 곳에서 촬영" },
-  { icon: SmilePlus, label: "자연스러운 표정" },
-] as const;
 
 // ─── Hooks ──────────────────────────────────────────────────────────────────
 
@@ -303,39 +296,24 @@ function HeroUploadSection(props: Readonly<{
   onCamera: () => void;
 }>): React.ReactElement {
   const fileRef = useRef<HTMLInputElement>(null);
-  const heroIdx = 0;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-100 via-blue-50 to-white p-6 pb-0 md:p-8 md:pb-0"
-        onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) props.onFile(f); }}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        <div className="flex items-end gap-4">
-          <div className="flex-1 pb-6 md:pb-8">
-            <p className="text-sm font-semibold text-blue-600 md:text-base">AI 눈썹 · 입술</p>
-            <h1 className="mt-1 text-[26px] font-extrabold leading-tight text-gray-900 md:text-3xl">
-              시뮬레이션
-            </h1>
-            <p className="mt-2 text-[13px] leading-relaxed text-gray-500 md:text-sm">
-              내 얼굴에 어울리는 반영구 스타일을<br />미리 체험하세요
-            </p>
-          </div>
-          <div className="relative h-48 w-36 shrink-0 md:h-56 md:w-44">
-            <NextImage
-              src={SAMPLE_IMAGES[heroIdx]}
-              alt="시뮬레이션 예시"
-              fill
-              className="rounded-t-2xl object-cover object-top"
-              sizes="180px"
-              priority
-            />
-          </div>
-        </div>
-      </div>
+    <div
+      className="flex flex-col"
+      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) props.onFile(f); }}
+      onDragOver={(e) => e.preventDefault()}
+    >
+      <NextImage
+        src="/images/beauty-sim/hero-banner.png"
+        alt="AI 눈썹·입술 시뮬레이션 — 내 얼굴에 어울리는 반영구 스타일을 미리 체험하세요"
+        width={780}
+        height={1200}
+        className="w-full"
+        sizes="(max-width: 640px) 100vw, 512px"
+        priority
+      />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 px-4">
         <button
           type="button"
           onClick={props.onCamera}
@@ -358,38 +336,6 @@ function HeroUploadSection(props: Readonly<{
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) props.onFile(f); }} className="hidden" aria-label="사진 파일 선택" />
-
-      <section className="rounded-2xl bg-white p-4 shadow-sm" aria-label="촬영 가이드">
-        <p className="mb-3 text-center text-xs font-semibold text-gray-900">촬영 가이드</p>
-        <div className="grid grid-cols-3 gap-3">
-          {GUIDE_TIPS.map((tip) => (
-            <div key={tip.label} className="flex flex-col items-center gap-1.5 rounded-xl bg-blue-50 p-3">
-              <tip.icon className="h-5 w-5 text-blue-500" aria-hidden="true" />
-              <span className="text-center text-[11px] font-medium leading-tight text-gray-600">{tip.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section aria-label="샘플 사진">
-        <p className="mb-2 text-center text-xs text-gray-500">이런 사진이 좋은 결과를 만듭니다</p>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {SAMPLE_IMAGES.map((src, i) => (
-            <div key={src} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl md:h-20 md:w-20">
-              <NextImage
-                src={src}
-                alt={`샘플 ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="80px"
-                loading="lazy"
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <p className="mt-1 text-center text-[10px] text-gray-400">* 이 시뮬레이션은 참고용이며 실제 시술 결과와 다를 수 있습니다</p>
     </div>
   );
 }
@@ -759,7 +705,7 @@ export function AiBeautyClient(props: Readonly<{
 }>): React.ReactElement {
   const { user, isLoading: authLoading } = useAuth();
   const [phase, setPhase] = useState<Phase>("upload");
-  const [area] = useState<SimArea>("eyebrow");
+  const area: SimArea = "eyebrow";
   const [originalBase64, setOriginalBase64] = useState("");
   const [cleanedBase64, setCleanedBase64] = useState("");
   const [results, setResults] = useState<SimResult[]>([]);
