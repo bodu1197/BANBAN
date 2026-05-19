@@ -124,6 +124,12 @@
   .animate-breathe {
     animation: breathe 2.5s ease-in-out infinite;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-breathe {
+      animation: none;
+    }
+  }
 }
 
 @keyframes breathe {

@@ -599,7 +599,7 @@ function ProcessingView(props: Readonly<{
   return (
     <div className="flex flex-col items-center gap-6 rounded-3xl bg-white p-6 shadow-lg md:p-8" aria-busy="true">
       <div className="text-center">
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 shadow-lg shadow-violet-200/50 motion-safe:animate-breathe" aria-hidden="true">
+        <div className="animate-breathe mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-indigo-100 shadow-lg shadow-violet-200/50" aria-hidden="true">
           <Brain className="h-9 w-9 text-violet-600" />
         </div>
         <h2 className="text-lg font-bold text-gray-900 md:text-xl">
