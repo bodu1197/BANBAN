@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef } from "react";
 import { ArrowLeft, Brain, Camera, ImagePlus } from "lucide-react";
 import type { LandmarkData } from "@/lib/eyebrow-renderer";
+import { useAuth } from "@/hooks";
 import { FittingRoom } from "./fitting-room";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -69,6 +70,56 @@ function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
     });
 }
 
+async function removeEyebrowsViaGpt(
+    img: HTMLImageElement,
+    lm: LandmarkData,
+): Promise<HTMLImageElement | null> {
+    try {
+        const { generateMask } = await import("@/lib/face-analysis");
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+
+        const mask = generateMask(lm, "eyebrow", w, h);
+        if (!mask) return null;
+
+        const srcCanvas = document.createElement("canvas");
+        srcCanvas.width = w;
+        srcCanvas.height = h;
+        const srcCtx = srcCanvas.getContext("2d");
+        if (!srcCtx) return null;
+        srcCtx.drawImage(img, 0, 0, w, h);
+        const imageB64 = srcCanvas.toDataURL("image/png").split(",")[1] ?? "";
+
+        const res = await fetch("/api/ai/beauty-sim-v2", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: imageB64, mask, step: "remove" }),
+        });
+        if (!res.ok) return null;
+
+        const json = await res.json() as { image?: string };
+        if (!json.image) return null;
+
+        // API returns 1024×1024 (top-center square crop of original via sharp)
+        // Composite back into original dimensions
+        const gptImg = await loadImageFromDataUrl(`data:image/png;base64,${json.image}`);
+        const cropSize = Math.min(w, h);
+        const cropX = Math.floor((w - cropSize) / 2);
+
+        const out = document.createElement("canvas");
+        out.width = w;
+        out.height = h;
+        const outCtx = out.getContext("2d");
+        if (!outCtx) return null;
+        outCtx.drawImage(img, 0, 0, w, h);
+        outCtx.drawImage(gptImg, cropX, 0, cropSize, cropSize);
+
+        return loadImageFromDataUrl(out.toDataURL("image/png"));
+    } catch {
+        return null;
+    }
+}
+
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function UploadHeader({ onBack }: Readonly<{ onBack: () => void }>): React.ReactElement {
@@ -104,10 +155,12 @@ const UPLOAD_BTN = "flex w-full items-center gap-4 rounded-2xl border border-whi
 
 // eslint-disable-next-line max-lines-per-function -- Upload + camera + analysis + fitting room orchestrator
 export function MyFittingClient(): React.ReactElement {
+    const { user } = useAuth();
     const [step, setStep] = useState<MyStep>("upload");
     const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
     const [image, setImage] = useState<HTMLImageElement | null>(null);
     const [landmarks, setLandmarks] = useState<LandmarkData | null>(null);
+    const [cleanedImage, setCleanedImage] = useState<HTMLImageElement | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +169,7 @@ export function MyFittingClient(): React.ReactElement {
     const processFile = useCallback(async (file: File) => {
         setStep("analyzing");
         setError(null);
+        setCleanedImage(null);
 
         try {
             const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -138,11 +192,17 @@ export function MyFittingClient(): React.ReactElement {
             setImage(result.img);
             setLandmarks(result.landmarks);
             setStep("fitting");
+
+            if (user) {
+                void removeEyebrowsViaGpt(result.img, result.landmarks).then((cleaned) => {
+                    if (cleaned) setCleanedImage(cleaned);
+                });
+            }
         } catch {
             setError("이미지 처리 중 오류가 발생했습니다.");
             setStep("upload");
         }
-    }, []);
+    }, [user]);
 
     const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -155,6 +215,7 @@ export function MyFittingClient(): React.ReactElement {
         setImageDataUrl(null);
         setImage(null);
         setLandmarks(null);
+        setCleanedImage(null);
         setError(null);
     }, []);
 
@@ -178,6 +239,7 @@ export function MyFittingClient(): React.ReactElement {
                 landmarks={landmarks}
                 vibeName="내 얼굴"
                 onBack={handleReset}
+                cleanedImage={cleanedImage}
             />
         );
     }

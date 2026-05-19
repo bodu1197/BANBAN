@@ -18,12 +18,13 @@ import { useCanvasRendering, useShakeAnimation, useBrowDrag, useJoystickHandlers
 import { ZoomSlider } from "@/components/beauty-sim/shared/zoom-slider";
 
 // eslint-disable-next-line max-lines-per-function -- Fitting room orchestrator with state management
-export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack }: Readonly<{
+export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack, cleanedImage }: Readonly<{
     imageDataUrl: string;
     image: HTMLImageElement;
     landmarks: LandmarkData;
     vibeName: string;
     onBack: () => void;
+    cleanedImage?: HTMLImageElement | null;
 }>): React.ReactElement {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -80,8 +81,10 @@ export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack }
     // Shake animation
     const startShake = useShakeAnimation(initialOffsetY, setLeftAdj, setRightAdj);
 
+    const baseImage = cleanedImage ?? image;
+
     useCanvasRendering({
-        canvasRef, image, landmarks, selectedTemplate, browColor,
+        canvasRef, image: baseImage, landmarks, selectedTemplate, browColor,
         leftAdj, rightAdj, browExcluded, lipEnabled, lipExcluded, lipParams, startShake,
     });
 
