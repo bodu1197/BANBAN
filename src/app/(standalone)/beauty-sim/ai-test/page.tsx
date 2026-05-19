@@ -2,12 +2,21 @@ import type { Metadata } from "next";
 import { AiBeautyClient } from "@/components/beauty-sim/ai-test/ai-beauty-client";
 import type { RecommendedArtist } from "@/components/beauty-sim/ai-test/ai-beauty-client";
 import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
+import { buildPageSeo } from "@/lib/seo";
 
 export const revalidate = 300;
 
+const TITLE = "뷰티 시뮬레이션 | 반언니";
+const DESCRIPTION = "내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요. 사진 한 장으로 다양한 시술 결과를 확인할 수 있습니다.";
+
 export const metadata: Metadata = {
-    title: "뷰티 시뮬레이션 | 반언니",
-    description: "내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요. 사진 한 장으로 다양한 시술 결과를 확인할 수 있습니다.",
+    title: TITLE,
+    description: DESCRIPTION,
+    ...buildPageSeo({
+        title: TITLE,
+        description: DESCRIPTION,
+        path: "/beauty-sim/ai-test",
+    }),
 };
 
 export default async function Page(): Promise<React.ReactElement> {
@@ -26,7 +35,7 @@ export default async function Page(): Promise<React.ReactElement> {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        <main className="min-h-screen bg-gradient-to-b from-[#f3eeff] via-white to-[#f3eeff]/60">
             <AiBeautyClient artists={artists} />
         </main>
     );
