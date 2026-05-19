@@ -226,7 +226,7 @@ export async function renderBoardDetailPage(
             src={article.cover_image_url}
             alt={article.cover_image_alt ?? article.title}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 767px) 100vw, 767px"
             priority
             unoptimized
