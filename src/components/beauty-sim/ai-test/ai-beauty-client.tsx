@@ -225,7 +225,7 @@ function CameraCapture(props: Readonly<{
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1024 }, height: { ideal: 1024 } },
+          video: { facingMode: "user" },
         });
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = stream;
@@ -736,15 +736,20 @@ export function AiBeautyClient(props: Readonly<{
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) return;
     if (!requireAuth()) return;
-    const optimized = await optimizeImage(file, { maxWidth: 2048, quality: 0.9 });
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== "string") return;
-      const base64 = result.split(",")[1] ?? "";
-      startProcessing(base64, area);
-    };
-    reader.readAsDataURL(optimized);
+    try {
+      const optimized = await optimizeImage(file, { maxWidth: 2048, quality: 0.9 });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== "string") return;
+        const base64 = result.split(",")[1] ?? "";
+        startProcessing(base64, area);
+      };
+      reader.readAsDataURL(optimized);
+    } catch {
+      setErrorMsg("이미지를 처리할 수 없습니다. 다른 사진을 선택해주세요.");
+      setPhase("error");
+    }
   }, [startProcessing, area, requireAuth]);
 
   const handleCapture = useCallback((base64: string) => {

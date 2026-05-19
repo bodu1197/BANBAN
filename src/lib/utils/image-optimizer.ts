@@ -55,17 +55,24 @@ export async function optimizeImage(
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Convert to WebP
       canvas.toBlob(
         (blob) => {
           if (blob) {
             resolve(blob);
           } else {
-            reject(new Error("Failed to convert image to WebP"));
+            // WebP not supported (older mobile browsers) → fallback to JPEG
+            canvas.toBlob(
+              (jpegBlob) => {
+                if (jpegBlob) resolve(jpegBlob);
+                else reject(new Error("Failed to convert image"));
+              },
+              "image/jpeg",
+              quality,
+            );
           }
         },
         "image/webp",
-        quality
+        quality,
       );
     };
 
