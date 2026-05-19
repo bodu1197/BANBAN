@@ -313,7 +313,8 @@ function HeroUploadSection(props: Readonly<{
       onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) props.onFile(f); }}
       onDragOver={(e) => e.preventDefault()}
     >
-      <picture>
+      <div className="relative">
+        <picture>
         <source
           srcSet="/images/beauty-sim/hero-banner-512w.avif 512w, /images/beauty-sim/hero-banner.avif 1029w"
           sizes="(max-width: 640px) 100vw, 512px"
@@ -336,6 +337,14 @@ function HeroUploadSection(props: Readonly<{
           draggable={false}
         />
       </picture>
+        <Link
+          href="/"
+          className="absolute left-[1.5%] top-[2.5%] z-10 flex h-[7%] w-[8%] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+          aria-label="홈으로 돌아가기"
+        >
+          <span className="sr-only">홈으로 돌아가기</span>
+        </Link>
+      </div>
 
       <div className="flex gap-3 px-4 py-4">
         <button
