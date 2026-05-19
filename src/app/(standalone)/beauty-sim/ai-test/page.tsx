@@ -35,7 +35,7 @@ export default async function Page(): Promise<React.ReactElement> {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-[#f3eeff] via-white to-[#f3eeff]/60">
+        <main className="min-h-screen bg-gradient-to-b from-[#eef4ff] via-white to-[#eef4ff]/60">
             <AiBeautyClient artists={artists} />
         </main>
     );

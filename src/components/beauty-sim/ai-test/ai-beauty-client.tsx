@@ -223,14 +223,14 @@ function CircularProgress(props: Readonly<{ percent: number }>): React.ReactElem
   return (
     <div className="relative flex h-36 w-36 items-center justify-center md:h-44 md:w-44">
       <svg className="absolute inset-0 -rotate-90" viewBox="0 0 140 140" aria-hidden="true">
-        <circle cx="70" cy="70" r={radius} fill="none" stroke="#ede9fe" strokeWidth="8" />
+        <circle cx="70" cy="70" r={radius} fill="none" stroke="#dbeafe" strokeWidth="8" />
         <circle
-          cx="70" cy="70" r={radius} fill="none" stroke="#8b5cf6" strokeWidth="8"
+          cx="70" cy="70" r={radius} fill="none" stroke="#3b82f6" strokeWidth="8"
           strokeDasharray={circumference} strokeDashoffset={offset}
           strokeLinecap="round" className="motion-safe:transition-all motion-safe:duration-700"
         />
       </svg>
-      <span className="text-2xl font-bold text-purple-600 md:text-3xl">{props.percent}%</span>
+      <span className="text-2xl font-bold text-blue-600 md:text-3xl">{props.percent}%</span>
     </div>
   );
 }
@@ -285,12 +285,12 @@ function CameraCapture(props: Readonly<{
       <div className="flex gap-3">
         <button
           type="button" onClick={handleCapture}
-          className="rounded-xl bg-purple-500 px-8 py-3 text-sm font-medium text-white hover:bg-purple-400 focus-visible:bg-purple-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+          className="rounded-xl bg-blue-500 px-8 py-3 text-sm font-medium text-white hover:bg-blue-400 focus-visible:bg-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           aria-label="사진 촬영"
         >촬영</button>
         <button
           type="button" onClick={props.onCancel}
-          className="rounded-xl bg-white/10 px-6 py-3 text-sm font-medium text-white hover:bg-white/20 focus-visible:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+          className="rounded-xl bg-white/10 px-6 py-3 text-sm font-medium text-white hover:bg-white/20 focus-visible:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
           aria-label="촬영 취소"
         >취소</button>
       </div>
@@ -299,29 +299,27 @@ function CameraCapture(props: Readonly<{
 }
 
 function HeroUploadSection(props: Readonly<{
-  area: SimArea;
-  onAreaChange: (a: SimArea) => void;
   onFile: (f: File) => void;
   onCamera: () => void;
 }>): React.ReactElement {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [heroIdx] = useState(() => Math.floor(Math.random() * SAMPLE_IMAGES.length));
+  const heroIdx = 0;
 
   return (
     <div className="flex flex-col gap-5">
       <div
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-100 via-purple-50 to-white p-6 pb-0 md:p-8 md:pb-0"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-100 via-blue-50 to-white p-6 pb-0 md:p-8 md:pb-0"
         onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) props.onFile(f); }}
         onDragOver={(e) => e.preventDefault()}
       >
         <div className="flex items-end gap-4">
           <div className="flex-1 pb-6 md:pb-8">
-            <p className="text-sm font-semibold text-purple-600 md:text-base">AI 눈썹 · 입술</p>
+            <p className="text-sm font-semibold text-blue-600 md:text-base">AI 눈썹 · 입술</p>
             <h1 className="mt-1 text-[26px] font-extrabold leading-tight text-gray-900 md:text-3xl">
               시뮬레이션
             </h1>
             <p className="mt-2 text-[13px] leading-relaxed text-gray-500 md:text-sm">
-              내 얼굴에 어울리는 반영구 스타일을<br />미리 확인하세요
+              내 얼굴에 어울리는 반영구 스타일을<br />미리 체험하세요
             </p>
           </div>
           <div className="relative h-48 w-36 shrink-0 md:h-56 md:w-44">
@@ -337,27 +335,11 @@ function HeroUploadSection(props: Readonly<{
         </div>
       </div>
 
-      <div className="flex justify-center gap-2" role="radiogroup" aria-label="시뮬레이션 영역 선택">
-        {(["eyebrow", "lip"] as const).map((a) => (
-          <button
-            key={a} type="button"
-            role="radio"
-            aria-checked={props.area === a}
-            onClick={() => props.onAreaChange(a)}
-            className={`rounded-full px-6 py-2.5 text-sm font-semibold transition-colors ${
-              props.area === a
-                ? "bg-purple-600 text-white shadow-md shadow-purple-200"
-                : "bg-white text-gray-500 shadow-sm hover:bg-gray-50 focus-visible:bg-gray-50"
-            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2`}
-          >{a === "eyebrow" ? "눈썹" : "입술"}</button>
-        ))}
-      </div>
-
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={props.onCamera}
-          className="flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 px-4 py-5 text-white shadow-lg shadow-purple-200 transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+          className="flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 px-4 py-5 text-white shadow-lg shadow-blue-200 transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           aria-label="셀카 촬영하기"
         >
           <Camera className="h-7 w-7" />
@@ -366,10 +348,10 @@ function HeroUploadSection(props: Readonly<{
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-5 text-gray-700 shadow-sm transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+          className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-5 text-gray-700 shadow-sm transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           aria-label="갤러리에서 사진 선택"
         >
-          <ImageIcon className="h-7 w-7 text-purple-500" />
+          <ImageIcon className="h-7 w-7 text-blue-500" />
           <span className="text-sm font-bold">사진 불러오기</span>
           <span className="text-[11px] text-gray-500">갤러리에서 선택</span>
         </button>
@@ -381,8 +363,8 @@ function HeroUploadSection(props: Readonly<{
         <p className="mb-3 text-center text-xs font-semibold text-gray-900">촬영 가이드</p>
         <div className="grid grid-cols-3 gap-3">
           {GUIDE_TIPS.map((tip) => (
-            <div key={tip.label} className="flex flex-col items-center gap-1.5 rounded-xl bg-purple-50 p-3">
-              <tip.icon className="h-5 w-5 text-purple-500" aria-hidden="true" />
+            <div key={tip.label} className="flex flex-col items-center gap-1.5 rounded-xl bg-blue-50 p-3">
+              <tip.icon className="h-5 w-5 text-blue-500" aria-hidden="true" />
               <span className="text-center text-[11px] font-medium leading-tight text-gray-600">{tip.label}</span>
             </div>
           ))}
@@ -406,6 +388,8 @@ function HeroUploadSection(props: Readonly<{
           ))}
         </div>
       </section>
+
+      <p className="mt-1 text-center text-[10px] text-gray-400">* 이 시뮬레이션은 참고용이며 실제 시술 결과와 다를 수 있습니다</p>
     </div>
   );
 }
@@ -432,7 +416,7 @@ function ImageZoomModal(props: Readonly<{
       <button
         type="button"
         onClick={props.onClose}
-        className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus-visible:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+        className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 focus-visible:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
         aria-label="닫기"
       >
         <X className="h-5 w-5" />
@@ -536,11 +520,11 @@ function WaitTimeAds(): React.ReactElement {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${ad.title} - ${ad.subtitle} (새 탭에서 열림)`}
-        className="block rounded-2xl border border-purple-100 bg-gradient-to-r from-purple-50 to-blue-50 p-4 transition-all hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+        className="block rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-blue-50 p-4 transition-all hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-base font-bold text-purple-600">{ad.title}</p>
+            <p className="text-base font-bold text-blue-600">{ad.title}</p>
             <p className="text-sm font-medium text-gray-800">{ad.subtitle}</p>
             <p className="mt-1 text-xs text-gray-500">{ad.description}</p>
           </div>
@@ -548,7 +532,7 @@ function WaitTimeAds(): React.ReactElement {
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {ad.tags.map((tag) => (
-            <span key={tag} className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700">
+            <span key={tag} className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
               {tag}
             </span>
           ))}
@@ -561,11 +545,11 @@ function WaitTimeAds(): React.ReactElement {
             type="button"
             onClick={() => setAdIdx(i)}
             aria-label={`${card.title} 광고 보기`}
-            className="flex h-8 w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+            className="flex h-8 w-8 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <span
               className={`block h-1.5 w-1.5 rounded-full transition-colors ${
-                i === adIdx ? "bg-purple-500" : "bg-gray-300"
+                i === adIdx ? "bg-blue-500" : "bg-gray-300"
               }`}
               aria-hidden="true"
             />
@@ -597,7 +581,7 @@ function ProcessingView(props: Readonly<{
 
       <div className="flex flex-col items-center gap-1 text-center" role="status" aria-live="polite">
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-purple-200 border-t-purple-500" aria-hidden="true" />
+          <div className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-blue-200 border-t-blue-500" aria-hidden="true" />
           <span className="text-sm font-medium text-gray-700">{phaseLabel}</span>
         </div>
         <p className="text-xs text-gray-500">{props.progressText}</p>
@@ -615,7 +599,7 @@ function ProcessingView(props: Readonly<{
               <div
                 key={`sp-${String(i)}`}
                 className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${
-                  i < props.completedStyles ? "bg-purple-500" : "bg-gray-200"
+                  i < props.completedStyles ? "bg-blue-500" : "bg-gray-200"
                 }`}
               />
             ))}
@@ -623,8 +607,8 @@ function ProcessingView(props: Readonly<{
         </div>
       )}
 
-      <div className="w-full rounded-xl bg-purple-50 p-3 text-center">
-        <p className="text-xs text-purple-600">
+      <div className="w-full rounded-xl bg-blue-50 p-3 text-center">
+        <p className="text-xs text-blue-600">
           {props.phase === "simulating" ? "스타일별 시뮬레이션 중 — 보통 20~45초" : "이 과정은 보통 5~15초 소요됩니다"}
         </p>
       </div>
@@ -649,11 +633,11 @@ function ResultsView(props: Readonly<{
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-3 rounded-2xl bg-white p-4 shadow-sm">
-        <button type="button" onClick={() => props.onZoom(props.originalBase64, "원본")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded-xl" aria-label="원본 이미지 확대">
+        <button type="button" onClick={() => props.onZoom(props.originalBase64, "원본")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xl" aria-label="원본 이미지 확대">
           <p className="mb-1 text-center text-xs font-medium text-gray-500">원본</p>
           <img src={`data:image/png;base64,${props.originalBase64}`} alt="원본" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
         </button>
-        <button type="button" onClick={() => props.onZoom(props.cleanedBase64, "보정 결과")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded-xl" aria-label="보정 결과 확대">
+        <button type="button" onClick={() => props.onZoom(props.cleanedBase64, "보정 결과")} className="group text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-xl" aria-label="보정 결과 확대">
           <p className="mb-1 text-center text-xs font-medium text-gray-500">{props.area === "eyebrow" ? "피부 보정" : "입술 분석"}</p>
           <img src={`data:image/png;base64,${props.cleanedBase64}`} alt="보정 결과" className="w-full rounded-xl transition-transform group-hover:scale-[1.02]" />
         </button>
@@ -669,7 +653,7 @@ function ResultsView(props: Readonly<{
               onClick={() => props.onSelect(i)}
               className={`shrink-0 overflow-hidden rounded-xl transition-all ${
                 props.selectedIdx === i
-                  ? "ring-2 ring-purple-500 ring-offset-2"
+                  ? "ring-2 ring-blue-500 ring-offset-2"
                   : "opacity-70 hover:opacity-100 focus-visible:opacity-100"
               } focus-visible:outline-none`}
               aria-label={`${r.name} 스타일`}
@@ -686,18 +670,18 @@ function ResultsView(props: Readonly<{
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm font-bold text-gray-900">{selected.name}</p>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-600">시뮬레이션</span>
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-600">시뮬레이션</span>
               <button
                 type="button"
                 onClick={() => downloadBase64Image(selected.image, `beauty-sim-${selected.id}.png`)}
-                className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 focus-visible:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+                className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 focus-visible:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="결과 이미지 저장"
               >
                 <Download className="h-4 w-4" />
               </button>
             </div>
           </div>
-          <button type="button" onClick={() => props.onZoom(selected.image, selected.name)} className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 rounded-2xl" aria-label={`${selected.name} 결과 확대`}>
+          <button type="button" onClick={() => props.onZoom(selected.image, selected.name)} className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-2xl" aria-label={`${selected.name} 결과 확대`}>
             <img src={`data:image/png;base64,${selected.image}`} alt={`${selected.name} 결과`} className="w-full rounded-2xl transition-transform hover:scale-[1.01]" />
           </button>
         </div>
@@ -705,7 +689,7 @@ function ResultsView(props: Readonly<{
 
       {selected && (
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-center text-xs font-semibold text-purple-600">Before / After 비교</p>
+          <p className="mb-3 text-center text-xs font-semibold text-blue-600">Before / After 비교</p>
           <BeforeAfterSlider
             beforeSrc={props.originalBase64}
             afterSrc={selected.image}
@@ -716,12 +700,12 @@ function ResultsView(props: Readonly<{
       )}
 
       <div className="flex justify-center gap-3">
-        <button type="button" onClick={props.onReset} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400">다시 하기</button>
+        <button type="button" onClick={props.onReset} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">다시 하기</button>
         {selected && (
           <button
             type="button"
             onClick={() => downloadBase64Image(selected.image, `beauty-sim-${selected.id}.png`)}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-3 text-sm font-medium text-white shadow-md shadow-purple-200 hover:from-purple-400 hover:to-purple-500 focus-visible:from-purple-400 focus-visible:to-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 text-sm font-medium text-white shadow-md shadow-blue-200 hover:from-blue-400 hover:to-blue-500 focus-visible:from-blue-400 focus-visible:to-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <Download className="h-4 w-4" />
             결과 저장
@@ -737,16 +721,16 @@ function ResultsView(props: Readonly<{
               <Link
                 key={a.id}
                 href={`/artists/${a.id}`}
-                className="group w-36 shrink-0 rounded-xl border border-gray-100 bg-gray-50 p-3 transition-colors hover:bg-purple-50 focus-visible:bg-purple-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+                className="group w-36 shrink-0 rounded-xl border border-gray-100 bg-gray-50 p-3 transition-colors hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 {a.profileImage ? (
                   <img src={a.profileImage} alt={a.title} className="mb-2 aspect-square w-full rounded-lg object-cover" />
                 ) : (
                   <div className="mb-2 flex aspect-square w-full items-center justify-center rounded-lg bg-gray-200 text-2xl text-gray-500" aria-hidden="true">👤</div>
                 )}
-                <p className="truncate text-sm font-medium text-gray-900 group-hover:text-purple-600">{a.title}</p>
+                <p className="truncate text-sm font-medium text-gray-900 group-hover:text-blue-600">{a.title}</p>
                 {a.introduce && <p className="truncate text-xs text-gray-500">{a.introduce}</p>}
-                {a.regionName && <p className="mt-1 text-[10px] text-purple-500">{a.regionName}</p>}
+                {a.regionName && <p className="mt-1 text-[10px] text-blue-500">{a.regionName}</p>}
               </Link>
             ))}
           </div>
@@ -758,11 +742,11 @@ function ResultsView(props: Readonly<{
 
 function LoginPrompt(props: Readonly<{ onClose: () => void }>): React.ReactElement {
   return (
-    <div className="mb-5 flex flex-col items-center gap-3 rounded-2xl border border-purple-200 bg-purple-50 p-5 text-center" role="alert">
+    <div className="mb-5 flex flex-col items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-center" role="alert">
       <p className="text-sm font-medium text-gray-700">로그인 후 시뮬레이션을 이용할 수 있습니다</p>
       <div className="flex gap-3">
-        <Link href="/login" className="rounded-xl bg-purple-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-purple-500 focus-visible:bg-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400">로그인</Link>
-        <button type="button" onClick={props.onClose} className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400">닫기</button>
+        <Link href="/login" className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-500 focus-visible:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">로그인</Link>
+        <button type="button" onClick={props.onClose} className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">닫기</button>
       </div>
     </div>
   );
@@ -775,7 +759,7 @@ export function AiBeautyClient(props: Readonly<{
 }>): React.ReactElement {
   const { user, isLoading: authLoading } = useAuth();
   const [phase, setPhase] = useState<Phase>("upload");
-  const [area, setArea] = useState<SimArea>("eyebrow");
+  const [area] = useState<SimArea>("eyebrow");
   const [originalBase64, setOriginalBase64] = useState("");
   const [cleanedBase64, setCleanedBase64] = useState("");
   const [results, setResults] = useState<SimResult[]>([]);
@@ -872,7 +856,7 @@ export function AiBeautyClient(props: Readonly<{
       {showLoginPrompt && <LoginPrompt onClose={() => setShowLoginPrompt(false)} />}
 
       {phase === "upload" && (
-        <HeroUploadSection area={area} onAreaChange={setArea} onFile={handleFile} onCamera={handleCameraOpen} />
+        <HeroUploadSection onFile={handleFile} onCamera={handleCameraOpen} />
       )}
 
       {phase === "camera" && (
@@ -900,7 +884,7 @@ export function AiBeautyClient(props: Readonly<{
       {phase === "error" && (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-red-200 bg-red-50 p-8 text-center" role="alert">
           <p className="text-sm font-medium text-red-600">{errorMsg}</p>
-          <button type="button" onClick={reset} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400">다시 시도</button>
+          <button type="button" onClick={reset} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">다시 시도</button>
         </div>
       )}
 
