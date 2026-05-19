@@ -13,20 +13,11 @@ const R_BROW_LOWER = [46, 53, 52, 65, 55];
 const LIP_OUTER_UPPER = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291];
 const LIP_OUTER_LOWER = [291, 375, 321, 405, 314, 17, 84, 181, 91, 146, 61];
 
-// Eye landmarks (for ideal brow zone calculation)
-const R_EYE_INNER = 133;
-const R_EYE_OUTER = 33;
-const R_EYE_TOP = 159;
-const L_EYE_INNER = 362;
-const L_EYE_OUTER = 263;
-const L_EYE_TOP = 386;
-
 // Eyeliner landmarks
 const R_EYE_UPPER = [33, 246, 161, 160, 159, 158, 157, 173, 133];
 const L_EYE_UPPER = [362, 398, 384, 385, 386, 387, 388, 466, 263];
 
 // Face shape measurement landmarks
-const FOREHEAD_TOP = 10;
 const CHIN_BOTTOM = 152;
 const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
@@ -60,7 +51,13 @@ export interface StyleRecommendation {
 
 interface Point { x: number; y: number }
 
-import type { LandmarkData } from "./eyebrow-renderer";
+import {
+    computePlacement,
+    R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP,
+    L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP,
+    FOREHEAD_TOP,
+    type LandmarkData, type BrowPlacement,
+} from "./eyebrow-renderer";
 
 // ─── MediaPipe singleton ────────────────────────────────────────────────────
 
@@ -283,6 +280,26 @@ function recommendEyeliner(m: FaceMetrics, shapeKo: string): StyleRecommendation
 
 // ─── Mask Generation ────────────────────────────────────────────────────────
 
+function blurAndEncode(canvas: HTMLCanvasElement): string {
+    const { width, height } = canvas;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    const blurAmount = Math.max(3, width * 0.01);
+    const tmp = document.createElement("canvas");
+    tmp.width = width;
+    tmp.height = height;
+    const tmpCtx = tmp.getContext("2d");
+    if (tmpCtx) {
+        tmpCtx.filter = `blur(${String(blurAmount)}px)`;
+        tmpCtx.drawImage(canvas, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(tmp, 0, 0);
+    }
+
+    return canvas.toDataURL("image/png").split(",").at(1) ?? "";
+}
+
 export function generateMask(
     landmarks: LandmarkData,
     area: BeautyArea,
@@ -326,21 +343,7 @@ export function generateMask(
         drawThickLine(ctx, toCanvasArr(L_EYE_UPPER), 6);
     }
 
-    // Blur mask edges for natural blending
-    const blurAmount = Math.max(3, width * 0.01);
-    const tmpCanvas = document.createElement("canvas");
-    tmpCanvas.width = width;
-    tmpCanvas.height = height;
-    const tmpCtx = tmpCanvas.getContext("2d");
-    if (tmpCtx) {
-        tmpCtx.filter = `blur(${String(blurAmount)}px)`;
-        tmpCtx.drawImage(canvas, 0, 0);
-        // Threshold back to solid mask with soft edges
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(tmpCanvas, 0, 0);
-    }
-
-    return canvas.toDataURL("image/png").split(",").at(1) ?? "";
+    return blurAndEncode(canvas);
 }
 
 /** Draw ideal eyebrow zone based on eye position, not current brow state */
@@ -415,6 +418,60 @@ function drawThickLine(ctx: CanvasRenderingContext2D, pts: Point[], thickness: n
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
+}
+
+// ─── Tight Brow Mask (for GPT simulate step) ──────────────────────────────
+
+// 1.3× thickness for GPT edit margin; 0.6/0.1 radius caps prevent over-rounding
+function drawTightBrowBand(ctx: CanvasRenderingContext2D, p: BrowPlacement): void {
+    const bandH = p.thickness * 1.3;
+    const halfW = p.length / 2;
+    const halfH = bandH / 2;
+    const radius = Math.min(halfH * 0.6, halfW * 0.1);
+
+    ctx.save();
+    ctx.translate(p.centerX, p.centerY);
+    ctx.rotate(p.angle);
+
+    ctx.beginPath();
+    ctx.moveTo(-halfW + radius, -halfH);
+    ctx.lineTo(halfW - radius, -halfH);
+    ctx.quadraticCurveTo(halfW, -halfH, halfW, -halfH + radius);
+    ctx.lineTo(halfW, halfH - radius);
+    ctx.quadraticCurveTo(halfW, halfH, halfW - radius, halfH);
+    ctx.lineTo(-halfW + radius, halfH);
+    ctx.quadraticCurveTo(-halfW, halfH, -halfW, halfH - radius);
+    ctx.lineTo(-halfW, -halfH + radius);
+    ctx.quadraticCurveTo(-halfW, -halfH, -halfW + radius, -halfH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+export function generateTightBrowMask(
+    landmarks: LandmarkData,
+    width: number,
+    height: number,
+): string {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, width, height);
+
+    const lm = landmarks.points;
+    const rightBrow = computePlacement(lm, width, height, R_EYE_INNER, R_EYE_OUTER, R_EYE_TOP, true);
+    const leftBrow = computePlacement(lm, width, height, L_EYE_INNER, L_EYE_OUTER, L_EYE_TOP, false);
+
+    ctx.fillStyle = "#ffffff";
+    drawTightBrowBand(ctx, rightBrow);
+    drawTightBrowBand(ctx, leftBrow);
+
+    return blurAndEncode(canvas);
 }
 
 /** Load image from URL (supports cross-origin for Supabase Storage) */

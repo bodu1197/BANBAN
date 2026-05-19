@@ -53,7 +53,7 @@ export const DEFAULT_ADJUSTMENT: Readonly<AdjustmentParams> = {
     offsetY: 0,
 };
 
-interface BrowPlacement {
+export interface BrowPlacement {
     centerX: number;
     centerY: number;
     length: number;
