@@ -726,7 +726,7 @@ export function AiBeautyClient(props: Readonly<{
 }>): React.ReactElement {
   const { user, isLoading: authLoading } = useAuth();
   const [phase, setPhase] = useState<Phase>("upload");
-  const area: SimArea = "eyebrow";
+  const [area, setArea] = useState<SimArea>("eyebrow");
   const [originalBase64, setOriginalBase64] = useState("");
   const [results, setResults] = useState<SimResult[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -820,7 +820,29 @@ export function AiBeautyClient(props: Readonly<{
       {showLoginPrompt && <LoginPrompt onClose={() => setShowLoginPrompt(false)} />}
 
       {phase === "upload" && (
-        <HeroUploadSection onFile={handleFile} onCamera={handleCameraOpen} />
+        <>
+          <HeroUploadSection onFile={handleFile} onCamera={handleCameraOpen} />
+          <div className="mx-auto mt-4 flex w-fit gap-1 rounded-full bg-gray-100 p-1" role="radiogroup" aria-label="시술 영역 선택">
+            <button
+              type="button" role="radio" aria-checked={area === "eyebrow"} aria-label="눈썹"
+              onClick={() => setArea("eyebrow")}
+              className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                area === "eyebrow" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              눈썹
+            </button>
+            <button
+              type="button" role="radio" aria-checked={area === "lip"} aria-label="입술"
+              onClick={() => setArea("lip")}
+              className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                area === "lip" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              입술
+            </button>
+          </div>
+        </>
       )}
 
       {phase === "camera" && (
