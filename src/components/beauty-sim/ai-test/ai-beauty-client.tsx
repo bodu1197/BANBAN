@@ -3,8 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import NextImage from "next/image";
-import { Download, X, ExternalLink } from "lucide-react";
+import { Download, X, ExternalLink, Camera, ImageIcon } from "lucide-react";
 import {
   initFaceAnalysis,
   analyzeFace,
@@ -311,32 +310,53 @@ function HeroUploadSection(props: Readonly<{
 
   return (
     <div
-      className="relative"
       onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) props.onFile(f); }}
       onDragOver={(e) => e.preventDefault()}
     >
-      <NextImage
-        src="/images/beauty-sim/hero-banner.png"
-        alt="AI 눈썹·입술 시뮬레이션 — 내 얼굴에 어울리는 반영구 스타일을 미리 체험하세요"
-        width={1032}
-        height={1524}
-        className="w-full"
-        sizes="(max-width: 640px) 100vw, 512px"
-        priority
-      />
+      <picture>
+        <source
+          srcSet="/images/beauty-sim/hero-banner-512w.avif 512w, /images/beauty-sim/hero-banner.avif 1029w"
+          sizes="(max-width: 640px) 100vw, 512px"
+          type="image/avif"
+        />
+        <source
+          srcSet="/images/beauty-sim/hero-banner-512w.webp 512w, /images/beauty-sim/hero-banner.webp 1029w"
+          sizes="(max-width: 640px) 100vw, 512px"
+          type="image/webp"
+        />
+        <img
+          src="/images/beauty-sim/hero-banner.png"
+          srcSet="/images/beauty-sim/hero-banner-512w.png 512w, /images/beauty-sim/hero-banner.png 1029w"
+          sizes="(max-width: 640px) 100vw, 512px"
+          alt="AI 눈썹·입술 시뮬레이션 — 내 얼굴에 어울리는 반영구 스타일을 미리 체험하세요"
+          width={1029}
+          height={1134}
+          fetchPriority="high"
+          className="w-full select-none"
+          draggable={false}
+        />
+      </picture>
 
-      <button
-        type="button"
-        onClick={props.onCamera}
-        className="absolute z-10 left-[4%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
-        aria-label="지금 촬영하기"
-      />
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        className="absolute z-10 left-[51.5%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
-        aria-label="사진 불러오기"
-      />
+      <div className="flex gap-3 px-4 py-4">
+        <button
+          type="button"
+          onClick={props.onCamera}
+          className="flex flex-1 flex-col items-center gap-2 rounded-2xl bg-gradient-to-br from-[#a78bfa] to-[#6999f6] px-4 py-5 text-white shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        >
+          <Camera className="h-8 w-8" aria-hidden="true" />
+          <span className="text-base font-bold">지금 촬영하기</span>
+          <span className="text-xs opacity-80">카메라로 바로 촬영</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="flex flex-1 flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-white/90 px-4 py-5 text-blue-900 shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        >
+          <ImageIcon className="h-8 w-8 text-blue-400" aria-hidden="true" />
+          <span className="text-base font-bold">사진 불러오기</span>
+          <span className="text-xs text-blue-600/70">앨범에서 선택</span>
+        </button>
+      </div>
 
       <input ref={fileRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) props.onFile(f); }} className="hidden" aria-label="사진 파일 선택" />
     </div>

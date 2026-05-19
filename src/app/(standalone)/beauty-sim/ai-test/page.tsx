@@ -35,8 +35,18 @@ export default async function Page(): Promise<React.ReactElement> {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-b from-[#eef4ff] via-white to-[#eef4ff]/60">
-            <AiBeautyClient artists={artists} />
-        </main>
+        <>
+            <link
+                rel="preload"
+                as="image"
+                href="/images/beauty-sim/hero-banner.avif"
+                type="image/avif"
+                imageSrcSet="/images/beauty-sim/hero-banner-512w.avif 512w, /images/beauty-sim/hero-banner.avif 1029w"
+                imageSizes="(max-width: 640px) 100vw, 512px"
+            />
+            <main className="min-h-screen bg-gradient-to-b from-[#eef4ff] via-white to-[#eef4ff]/60">
+                <AiBeautyClient artists={artists} />
+            </main>
+        </>
     );
 }
