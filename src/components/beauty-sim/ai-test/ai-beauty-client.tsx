@@ -3,7 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Download, X, ExternalLink, Camera, ImageIcon } from "lucide-react";
+import { Download, X, ExternalLink, Camera, ImageIcon, BrainCircuit } from "lucide-react";
 import {
   initFaceAnalysis,
   analyzeFace,
@@ -63,9 +63,6 @@ const AD_CARDS = [
     subtitle: "수수료 0원 재능마켓",
     description: "플랫폼은 다리여야 합니다. 통행료를 걷는 관문이 아니라",
     tags: ["IT", "디자인", "마케팅", "뷰티"],
-    bg: "bg-gradient-to-r from-sky-100 to-blue-100 border-sky-200",
-    titleColor: "text-sky-700",
-    tagBg: "bg-sky-200 text-sky-800",
   },
   {
     id: "soriplay",
@@ -74,9 +71,6 @@ const AD_CARDS = [
     subtitle: "무료 음악 플레이어",
     description: "1억+ 곡, 광고 없이 무료 스트리밍",
     tags: ["음악", "무료", "스트리밍", "플레이리스트"],
-    bg: "bg-gradient-to-r from-emerald-50 to-teal-100 border-emerald-200",
-    titleColor: "text-emerald-700",
-    tagBg: "bg-emerald-200 text-emerald-800",
   },
 ] as const;
 
@@ -504,19 +498,25 @@ function WaitTimeAds(): React.ReactElement {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`${ad.title} - ${ad.subtitle} (새 탭에서 열림)`}
-        className={`block rounded-2xl border p-4 transition-all hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${ad.bg}`}
+        className={`block rounded-2xl border-2 p-4 shadow-md transition-all hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+          ad.id === "dolpagu"
+            ? "border-blue-300 bg-gradient-to-r from-blue-200 to-sky-200"
+            : "border-green-300 bg-gradient-to-r from-green-200 to-emerald-200"
+        }`}
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className={`text-base font-bold ${ad.titleColor}`}>{ad.title}</p>
-            <p className="text-sm font-medium text-gray-800">{ad.subtitle}</p>
-            <p className="mt-1 text-xs text-gray-600">{ad.description}</p>
+            <p className={`text-base font-bold ${ad.id === "dolpagu" ? "text-blue-800" : "text-green-800"}`}>{ad.title}</p>
+            <p className="text-sm font-medium text-gray-900">{ad.subtitle}</p>
+            <p className="mt-1 text-xs text-gray-700">{ad.description}</p>
           </div>
-          <ExternalLink className="h-4 w-4 shrink-0 text-gray-500" aria-hidden="true" />
+          <ExternalLink className="h-4 w-4 shrink-0 text-gray-600" aria-hidden="true" />
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {ad.tags.map((tag) => (
-            <span key={tag} className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ad.tagBg}`}>
+            <span key={tag} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              ad.id === "dolpagu" ? "bg-blue-400 text-white" : "bg-green-400 text-white"
+            }`}>
               {tag}
             </span>
           ))}
@@ -557,17 +557,13 @@ function ProcessingView(props: Readonly<{
   return (
     <div className="flex flex-col items-center gap-6 rounded-3xl bg-white p-6 shadow-lg md:p-8" aria-busy="true">
       <div className="text-center">
-        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100 motion-safe:animate-pulse">
-          <svg viewBox="0 0 64 64" className="h-10 w-10 motion-safe:animate-bounce" aria-hidden="true" style={{ animationDuration: "2s" }}>
-            <path d="M32 6C18.2 6 7 17.2 7 31c0 8.5 4.2 16 10.7 20.5.4.3.8.1.8-.3v-3.5c0-.5-.2-1-.6-1.3C12.4 42.7 9 37.2 9 31 9 18.3 19.3 8 32 8s23 10.3 23 23c0 6.2-3.4 11.7-8.9 15.4-.4.3-.6.8-.6 1.3v3.5c0 .4.4.6.8.3C52.8 47 57 39.5 57 31 57 17.2 45.8 6 32 6z" fill="url(#brainGrad)" />
-            <circle cx="24" cy="28" r="3" fill="#6366f1" className="motion-safe:animate-ping" style={{ animationDuration: "3s" }} />
-            <circle cx="40" cy="28" r="3" fill="#3b82f6" className="motion-safe:animate-ping" style={{ animationDuration: "2.5s" }} />
-            <circle cx="32" cy="36" r="2.5" fill="#8b5cf6" className="motion-safe:animate-ping" style={{ animationDuration: "2s" }} />
-            <path d="M24 28l8 8 8-8M28 24l4-4 4 4" stroke="#818cf8" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            <defs><linearGradient id="brainGrad" x1="0" y1="0" x2="64" y2="64"><stop offset="0%" stopColor="#93c5fd" /><stop offset="100%" stopColor="#c4b5fd" /></linearGradient></defs>
-          </svg>
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-100 to-blue-100 animate-pulse">
+          <BrainCircuit className="h-9 w-9 animate-bounce text-violet-500" aria-hidden="true" />
         </div>
-        <h2 className="text-lg font-bold text-gray-900 md:text-xl">AI 분석 중</h2>
+        <h2 className="flex items-center justify-center gap-2 text-lg font-bold text-gray-900 md:text-xl">
+          <BrainCircuit className="h-5 w-5 animate-spin text-blue-500" aria-hidden="true" />
+          AI 분석 중
+        </h2>
         <p className="mt-1 text-sm text-gray-500">내 얼굴에 어울리는 스타일을 찾고 있어요</p>
       </div>
 
