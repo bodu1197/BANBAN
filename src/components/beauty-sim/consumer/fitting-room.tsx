@@ -17,14 +17,33 @@ import { BrowContent, LipContent, BottomActions } from "./fitting-room-panels";
 import { useCanvasRendering, useShakeAnimation, useBrowDrag, useJoystickHandlers } from "./fitting-room-hooks";
 import { ZoomSlider } from "@/components/beauty-sim/shared/zoom-slider";
 
+type SkinCleaningStatus = "idle" | "processing" | "done";
+
+function SkinCleaningBanner({ status }: Readonly<{ status: SkinCleaningStatus }>): React.ReactElement {
+    const isProcessing = status === "processing";
+    return (
+        <div className={`mx-auto flex w-full max-w-lg shrink-0 items-center justify-center gap-2 px-4 py-1.5 text-xs transition-opacity duration-500 ${isProcessing ? "opacity-100" : "opacity-80"}`}>
+            {isProcessing ? (
+                <>
+                    <span className="inline-block h-3 w-3 motion-safe:animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
+                    <span className="text-pink-300">피부 보정 중...</span>
+                </>
+            ) : (
+                <span className="text-emerald-400">피부 보정 완료</span>
+            )}
+        </div>
+    );
+}
+
 // eslint-disable-next-line max-lines-per-function -- Fitting room orchestrator with state management
-export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack, cleanedImage }: Readonly<{
+export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack, cleanedImage, skinCleaning = "idle" }: Readonly<{
     imageDataUrl: string;
     image: HTMLImageElement;
     landmarks: LandmarkData;
     vibeName: string;
     onBack: () => void;
     cleanedImage?: HTMLImageElement | null;
+    skinCleaning?: SkinCleaningStatus;
 }>): React.ReactElement {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -149,6 +168,10 @@ export function FittingRoom({ imageDataUrl, image, landmarks, vibeName, onBack, 
                 onBack={onBack}
                 onReset={handleReset}
             />
+
+            {skinCleaning !== "idle" && (
+                <SkinCleaningBanner status={skinCleaning} />
+            )}
 
             <PhotoArea
                 canvasRef={canvasRef}

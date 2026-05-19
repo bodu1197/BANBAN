@@ -161,6 +161,7 @@ export function MyFittingClient(): React.ReactElement {
     const [image, setImage] = useState<HTMLImageElement | null>(null);
     const [landmarks, setLandmarks] = useState<LandmarkData | null>(null);
     const [cleanedImage, setCleanedImage] = useState<HTMLImageElement | null>(null);
+    const [skinCleaning, setSkinCleaning] = useState<"idle" | "processing" | "done">("idle");
     const [error, setError] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +171,7 @@ export function MyFittingClient(): React.ReactElement {
         setStep("analyzing");
         setError(null);
         setCleanedImage(null);
+        setSkinCleaning("idle");
 
         try {
             const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -194,8 +196,10 @@ export function MyFittingClient(): React.ReactElement {
             setStep("fitting");
 
             if (user) {
+                setSkinCleaning("processing");
                 void removeEyebrowsViaGpt(result.img, result.landmarks).then((cleaned) => {
                     if (cleaned) setCleanedImage(cleaned);
+                    setSkinCleaning(cleaned ? "done" : "idle");
                 });
             }
         } catch {
@@ -216,6 +220,7 @@ export function MyFittingClient(): React.ReactElement {
         setImage(null);
         setLandmarks(null);
         setCleanedImage(null);
+        setSkinCleaning("idle");
         setError(null);
     }, []);
 
@@ -240,6 +245,7 @@ export function MyFittingClient(): React.ReactElement {
                 vibeName="내 얼굴"
                 onBack={handleReset}
                 cleanedImage={cleanedImage}
+                skinCleaning={skinCleaning}
             />
         );
     }
