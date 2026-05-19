@@ -318,8 +318,8 @@ function HeroUploadSection(props: Readonly<{
       <NextImage
         src="/images/beauty-sim/hero-banner.png"
         alt="AI 눈썹·입술 시뮬레이션 — 내 얼굴에 어울리는 반영구 스타일을 미리 체험하세요"
-        width={863}
-        height={1822}
+        width={1032}
+        height={1524}
         className="w-full"
         sizes="(max-width: 640px) 100vw, 512px"
         priority
@@ -328,13 +328,13 @@ function HeroUploadSection(props: Readonly<{
       <button
         type="button"
         onClick={props.onCamera}
-        className="absolute left-[4%] top-[35.5%] h-[12%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        className="absolute left-[4%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         aria-label="지금 촬영하기"
       />
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        className="absolute left-[51.5%] top-[35.5%] h-[12%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+        className="absolute left-[51.5%] top-[34%] h-[11.5%] w-[44.5%] cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         aria-label="사진 불러오기"
       />
 
