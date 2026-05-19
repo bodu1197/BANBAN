@@ -221,7 +221,7 @@ export async function renderBoardDetailPage(
       </div>
 
       {article.cover_image_url ? (
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[40/21] w-full overflow-hidden bg-muted">
           <Image
             src={article.cover_image_url}
             alt={article.cover_image_alt ?? article.title}
