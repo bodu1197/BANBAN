@@ -13,7 +13,7 @@ import {
 } from "@/lib/supabase/queries";
 import { ArtistTopBar } from "@/components/artists/ArtistTopBar";
 import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
-import { ArtistDetailTabs } from "@/components/artists/ArtistDetailTabs";
+import { ShopBlogClient } from "@/components/artists/ShopBlogClient";
 import { FloatingCTA } from "@/components/artists/FloatingCTA";
 import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getUser } from "@/lib/supabase/auth";
@@ -175,37 +175,37 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
         shareLabel={STRINGS.common.share}
       />
 
-      <ShopHeroBanner
-        shop={artist}
-        heroImages={heroImages}
-        reviewCount={reviewCount}
-        avgRating={ratingAvg ?? 0}
-        isLiked={likedIds.includes(id)}
-      />
-
-      <ArtistDetailTabs
+      <ShopBlogClient
+        hero={
+          <ShopHeroBanner
+            shop={artist}
+            heroImages={heroImages}
+            reviewCount={reviewCount}
+            avgRating={ratingAvg ?? 0}
+            isLiked={likedIds.includes(id)}
+          />
+        }
         portfolios={portfolios}
-        portfolioLabel={STRINGS.artist.portfolio}
-        reviewsLabel={STRINGS.artist.reviews}
-        totalCountLabel={STRINGS.artist.totalCount.replace("{count}", String(portfolioImages.length))}
-        noPortfolioMessage={STRINGS.artist.noPortfolio}
-        noReviewsMessage={STRINGS.artist.noReviews}
         reviews={reviews}
-        tabsAriaLabel={STRINGS.pages.artistsList}
-        gridViewLabel={STRINGS.common.gridView}
-        listViewLabel={STRINGS.common.listView}
-        artistId={id}
-        writeReviewLabel={STRINGS.review.writeReview}
-        isLoggedIn={!!user}
         beforeAfterPhotos={beforeAfterPhotos}
-        beforeAfterLabel={STRINGS.artist.beforeAfter}
-        noBeforeAfterMessage={STRINGS.artist.noBeforeAfter}
-        beforeLabel={STRINGS.artist.beforeLabel}
-        afterLabel={STRINGS.artist.afterLabel}
-        beforeAfterCountLabel={STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length))}
         portfolioCount={portfolios.length}
         beforeAfterCount={beforeAfterPhotos.length}
         reviewCount={reviewCount}
+        totalCountLabel={STRINGS.artist.totalCount.replace("{count}", String(portfolioImages.length))}
+        noPortfolioMessage={STRINGS.artist.noPortfolio}
+        noReviewsMessage={STRINGS.artist.noReviews}
+        noBeforeAfterMessage={STRINGS.artist.noBeforeAfter}
+        beforeAfterCountLabel={STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length))}
+        gridViewLabel={STRINGS.common.gridView}
+        listViewLabel={STRINGS.common.listView}
+        beforeLabel={STRINGS.artist.beforeLabel}
+        afterLabel={STRINGS.artist.afterLabel}
+        portfolioLabel={STRINGS.artist.portfolio}
+        beforeAfterLabel={STRINGS.artist.beforeAfter}
+        reviewsLabel={STRINGS.artist.reviews}
+        writeReviewLabel={STRINGS.review.writeReview}
+        artistId={id}
+        isLoggedIn={!!user}
       />
 
       <FloatingCTA
