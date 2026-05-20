@@ -154,7 +154,6 @@ export function PortfolioDetailClient({
   return (
     <div className="flex flex-col pb-24">
       <PortfolioHeader
-        title={portfolio.title}
         isLiked={isLiked}
         onLikeToggle={handleLikeToggle}
         onReport={handleReport}

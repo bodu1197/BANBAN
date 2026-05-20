@@ -3,13 +3,20 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PORTFOLIO_SECTION_IDS } from "./portfolio-section-ids";
 
+export interface PortfolioHeroArtist {
+  id: string;
+  name: string;
+  avatar: string | null;
+  address: string;
+}
+
 interface PortfolioHeroBannerProps {
-  artistName: string;
-  artistId: string;
+  artist: PortfolioHeroArtist;
   title: string;
   avgRating: number;
   reviewCount: number;
@@ -32,8 +39,7 @@ function prefersReducedMotion(): boolean {
 }
 
 export function PortfolioHeroBanner({
-  artistName,
-  artistId,
+  artist,
   title,
   avgRating,
   reviewCount,
@@ -59,8 +65,7 @@ export function PortfolioHeroBanner({
   return (
     <section aria-label="시술 정보" className="bg-background">
       <HeroHeader
-        artistName={artistName}
-        artistId={artistId}
+        artist={artist}
         title={title}
         avgRating={avgRating}
         reviewCount={reviewCount}
@@ -76,10 +81,9 @@ export function PortfolioHeroBanner({
 }
 
 function HeroHeader({
-  artistName, artistId, title, avgRating, reviewCount, onReviewsClick,
+  artist, title, avgRating, reviewCount, onReviewsClick,
 }: Readonly<{
-  artistName: string;
-  artistId: string;
+  artist: PortfolioHeroArtist;
   title: string;
   avgRating: number;
   reviewCount: number;
@@ -88,13 +92,8 @@ function HeroHeader({
   const hasRating = avgRating > 0 && reviewCount > 0;
   return (
     <div className="px-4 pt-4 pb-3">
-      <Link
-        href={`/artists/${artistId}`}
-        className="text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:rounded focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
-        {artistName}
-      </Link>
-      <h1 className="mt-1 text-xl font-bold leading-tight md:text-2xl">{title}</h1>
+      <ArtistProfileCard artist={artist} />
+      <h1 className="mt-3 text-xl font-bold leading-tight md:text-2xl">{title}</h1>
       {hasRating ? (
         <button
           type="button"
@@ -110,6 +109,40 @@ function HeroHeader({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function ArtistProfileCard({
+  artist,
+}: Readonly<{ artist: PortfolioHeroArtist }>): React.ReactElement {
+  return (
+    <Link
+      href={`/artists/${artist.id}`}
+      className="flex items-center gap-3 rounded-lg transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      aria-label={`${artist.name} 작가 페이지로 이동`}
+    >
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border bg-muted">
+        {artist.avatar ? (
+          <Image
+            src={artist.avatar}
+            alt=""
+            fill
+            sizes="44px"
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground" aria-hidden>
+            {artist.name.charAt(0)}
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold leading-tight">{artist.name}</p>
+        {artist.address ? (
+          <p className="truncate text-xs text-muted-foreground">{artist.address}</p>
+        ) : null}
+      </div>
+    </Link>
   );
 }
 

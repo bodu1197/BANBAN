@@ -29,7 +29,6 @@ const DEFAULT_LABELS: PortfolioHeaderLabels = {
 };
 
 interface PortfolioHeaderProps {
-  title: string;
   isLiked: boolean;
   onLikeToggle: () => void;
   onReport?: () => void;
@@ -38,7 +37,6 @@ interface PortfolioHeaderProps {
 
 // eslint-disable-next-line max-lines-per-function
 export function PortfolioHeader({
-  title,
   isLiked,
   onLikeToggle,
   onReport,
@@ -74,9 +72,7 @@ export function PortfolioHeader({
         <ArrowLeft className="h-5 w-5" />
       </Button>
 
-      <p className="flex-1 truncate px-2 text-center font-semibold" aria-hidden>
-        {title}
-      </p>
+      <div className="flex-1" />
 
       <div className="flex">
         <Button

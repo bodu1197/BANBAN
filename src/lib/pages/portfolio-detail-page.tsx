@@ -20,7 +20,7 @@ import { PortfolioDetailClient } from "@/components/portfolio/PortfolioDetailCli
 import { PortfolioHeroBanner } from "@/components/portfolio/PortfolioHeroBanner";
 import { PortfolioSecondarySection } from "@/components/portfolio/PortfolioSecondarySection";
 import { PORTFOLIO_SECTION_IDS } from "@/components/portfolio/portfolio-section-ids";
-import { getStorageUrl } from "@/lib/supabase/storage-utils";
+import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
 import type { ArtistType } from "@/types/database";
@@ -160,10 +160,15 @@ function buildHeroBanner(
     portfolio: NonNullable<Awaited<ReturnType<typeof fetchPortfolioById>>>,
     reviewStats: ArtistReviewStats,
 ): React.ReactElement {
+    const artist = {
+        id: portfolio.artist_id,
+        name: portfolio.artist.title,
+        avatar: getAvatarUrl(portfolio.artist.profile_image_path),
+        address: portfolio.artist.region?.name ?? portfolio.artist.address ?? "",
+    };
     return (
         <PortfolioHeroBanner
-            artistName={portfolio.artist.title}
-            artistId={portfolio.artist_id}
+            artist={artist}
             title={portfolio.title}
             avgRating={reviewStats.avgRating}
             reviewCount={reviewStats.reviewCount}
