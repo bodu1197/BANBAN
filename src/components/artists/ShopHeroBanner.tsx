@@ -58,7 +58,7 @@ function HeroCarousel({
 }: Readonly<{ images: string[]; shopName: string }>): React.ReactElement {
   const firstImage = images[0];
   return (
-    <div className="relative aspect-[4/5] w-full bg-muted md:aspect-[16/10]">
+    <div className="relative aspect-[3/1] w-full bg-muted">
       {firstImage ? (
         <Image
           src={firstImage}
