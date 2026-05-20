@@ -98,7 +98,7 @@ function HeroHeader({
         <button
           type="button"
           onClick={onReviewsClick}
-          className="mt-2 inline-flex items-center gap-1 text-sm transition-colors hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="mt-2 inline-flex items-center gap-1 text-sm transition-colors hover:underline focus-visible:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           aria-label={`평점 ${avgRating.toFixed(1)}, 후기 ${reviewCount.toLocaleString()}개 보기`}
         >
           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
