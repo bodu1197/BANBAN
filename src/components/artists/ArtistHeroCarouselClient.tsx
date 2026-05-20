@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+const SLIDE_INTERVAL_MS = 4000;
+
 /* eslint-disable max-lines-per-function */
 interface ArtistHeroCarouselClientProps {
   images: string[];
@@ -21,11 +23,12 @@ export function ArtistHeroCarouselClient({
 }: Readonly<ArtistHeroCarouselClientProps>): React.ReactElement {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
+  const pausedRef = useRef(false);
 
   const scrollToIndex = useCallback((index: number) => {
     const container = scrollRef.current;
     if (!container) return;
-    // Use scrollIntoView on the slide instead of reading offsetWidth — avoids forced reflow
     const slide = container.querySelector<HTMLElement>(`[data-index="${index}"]`);
     const prefersReduced = typeof globalThis.matchMedia === "function"
       && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -46,6 +49,21 @@ export function ArtistHeroCarouselClient({
     scrollToIndex(newIndex);
   }, [currentIndex, images.length, scrollToIndex]);
 
+  // Stable interval — reads currentIndexRef so no dependency on goToNext/currentIndex
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const prefersReduced = typeof globalThis.matchMedia === "function"
+      && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    const timer = globalThis.setInterval(() => {
+      if (pausedRef.current) return;
+      const next = currentIndexRef.current === images.length - 1 ? 0 : currentIndexRef.current + 1;
+      scrollToIndex(next);
+    }, SLIDE_INTERVAL_MS);
+    return () => globalThis.clearInterval(timer);
+  }, [images.length, scrollToIndex]);
+
   const observerCallback = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       for (const entry of entries) {
@@ -53,6 +71,7 @@ export function ArtistHeroCarouselClient({
           const index = Number((entry.target as HTMLElement).dataset.index);
           if (!Number.isNaN(index)) {
             setCurrentIndex(index);
+            currentIndexRef.current = index;
           }
         }
       }
@@ -77,16 +96,23 @@ export function ArtistHeroCarouselClient({
     return () => observer.disconnect();
   }, [observerCallback, images.length]);
 
+  const handlePause = useCallback(() => { pausedRef.current = true; }, []);
+  const handleResume = useCallback(() => { pausedRef.current = false; }, []);
+
   if (images.length <= 1) {
     return <></>;
   }
 
   return (
     <div className="absolute inset-0">
-      {/* Scrollable carousel overlay */}
       <div
         ref={scrollRef}
         className="flex h-full snap-x snap-mandatory overflow-x-auto scrollbar-hide"
+        aria-live="polite"
+        onMouseEnter={handlePause}
+        onMouseLeave={handleResume}
+        onTouchStart={handlePause}
+        onTouchEnd={handleResume}
       >
         {images.map((src, i) => (
           <div
@@ -94,7 +120,6 @@ export function ArtistHeroCarouselClient({
             data-index={i}
             className="h-full w-full flex-none snap-center"
           >
-            {/* First image is already rendered server-side, show transparent placeholder */}
             {i === 0 ? (
               <div className="h-full w-full" />
             ) : (
@@ -113,7 +138,6 @@ export function ArtistHeroCarouselClient({
         ))}
       </div>
 
-      {/* Navigation Arrows — mobile에서는 hero가 짧아 swipe로 충분, 데스크탑에서만 노출 */}
       <button
         type="button"
         onClick={goToPrevious}
@@ -131,8 +155,10 @@ export function ArtistHeroCarouselClient({
         <ChevronRight className="h-5 w-5" />
       </button>
 
-      {/* Slide Counter */}
-      <div className="absolute right-3 bottom-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white">
+      <div
+        className="absolute right-3 bottom-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white"
+        aria-label={`이미지 ${(currentIndex + 1).toString()} / ${images.length.toString()}`}
+      >
         {currentIndex + 1} / {images.length}
       </div>
     </div>

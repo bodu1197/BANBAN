@@ -19,6 +19,11 @@ import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, js
 import { getUser } from "@/lib/supabase/auth";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
 
+const DEFAULT_SHOP_BANNERS = [
+  "/images/defaults/shop-banner-1.jpg",
+  "/images/defaults/shop-banner-2.jpg",
+];
+
 export async function generateArtistDetailMetadata(id: string): Promise<Metadata> {
   // Legacy numeric ID → 301 redirect to UUID URL
   if (isLegacyNumericId(id)) {
@@ -138,10 +143,9 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
 
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
 
-  // Use artist gallery images if available, otherwise fall back to portfolio images
   const artistGalleryImages = extractArtistGalleryImages(artist.artist_media);
   const portfolioImages = extractPortfolioImages(portfolios);
-  const heroImages = artistGalleryImages.length > 0 ? artistGalleryImages : portfolioImages;
+  const heroImages = artistGalleryImages.length > 0 ? artistGalleryImages : DEFAULT_SHOP_BANNERS;
 
   const reviewCount = reviews.length;
   const ratingAvg = reviewCount > 0
