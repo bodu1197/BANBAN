@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UNAVAILABLE_PLACEHOLDER } from "@/lib/ui-placeholders";
 import { PORTFOLIO_SECTION_IDS } from "./portfolio-section-ids";
 
 export interface PortfolioHeroArtist {
@@ -32,8 +33,6 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
-
-const UNAVAILABLE_PLACEHOLDER = "--";
 
 function prefersReducedMotion(): boolean {
   return typeof globalThis.matchMedia === "function"

@@ -87,7 +87,7 @@ function extractArtistGalleryImages(
   return images;
 }
 
-interface ArtistJsonLdInput {
+interface BuildArtistJsonLdInput {
   id: string;
   artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>;
   artistGalleryImages: string[];
@@ -96,7 +96,7 @@ interface ArtistJsonLdInput {
   ratingAvg: number | undefined;
 }
 
-function buildArtistJsonLdProps(input: ArtistJsonLdInput): Parameters<typeof getArtistJsonLd>[0] {
+function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeof getArtistJsonLd>[0] {
   const { id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg } = input;
   return {
     name: artist.title,

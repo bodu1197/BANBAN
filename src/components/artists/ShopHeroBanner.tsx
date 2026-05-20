@@ -6,6 +6,7 @@ import { CollapsibleIntro } from "./CollapsibleIntro";
 import { ArtistLikeButton } from "./ArtistLikeButton";
 import { STRINGS } from "@/lib/strings";
 import { sanitizeHtmlServerSide } from "@/lib/text-utils";
+import { UNAVAILABLE_PLACEHOLDER, UNAVAILABLE_RATING_LABEL } from "@/lib/ui-placeholders";
 
 interface ShopHeroBannerProps {
   shop: ArtistWithDetails;
@@ -14,8 +15,6 @@ interface ShopHeroBannerProps {
   avgRating: number;
   isLiked?: boolean;
 }
-
-const UNAVAILABLE_PLACEHOLDER = "--";
 
 export function ShopHeroBanner({
   shop,
@@ -108,7 +107,12 @@ function ShopInfo({
           </p>
           <div className="mt-2 inline-flex items-center gap-1 text-sm">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
-            <span className="font-semibold" aria-label={`평점 ${ratingText}`}>{ratingText}</span>
+            <span
+              className="font-semibold"
+              aria-label={hasRating ? `평점 ${ratingText}` : UNAVAILABLE_RATING_LABEL}
+            >
+              {ratingText}
+            </span>
             <span className="text-muted-foreground">({reviewCount.toLocaleString()})</span>
           </div>
         </div>
