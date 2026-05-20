@@ -19,17 +19,54 @@ interface ImageUploadProps {
   defaultImages?: Array<{ url: string; id?: string }>;
   onChange: (files: Array<File | { url: string; id?: string }>) => void;
   className?: string;
+  validateFile?: (file: File) => Promise<string | null>;
 }
 
+function loadImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new globalThis.Image();
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("이미지를 읽을 수 없습니다."));
+    };
+    img.src = url;
+  });
+}
+
+export function createBannerValidator(errorTemplate: string): (file: File) => Promise<string | null> {
+  const TARGET_RATIO = 3;
+  const TOLERANCE = 0.3;
+  return async (file: File): Promise<string | null> => {
+    try {
+      const { width, height } = await loadImageDimensions(file);
+      const ratio = width / height;
+      if (Math.abs(ratio - TARGET_RATIO) > TOLERANCE) {
+        return errorTemplate
+          .replace("{width}", width.toString())
+          .replace("{height}", height.toString());
+      }
+      return null;
+    } catch {
+      return "이미지를 읽을 수 없습니다.";
+    }
+  };
+}
+
+/* eslint-disable max-lines-per-function */
 export function ImageUpload({
   maxLength = 5,
   label,
   defaultImages = [],
   onChange,
   className,
+  validateFile,
 }: Readonly<ImageUploadProps>): React.ReactElement {
   const id = useId();
-  // Initialize files from defaultImages using lazy initializer
   const [files, setFiles] = useState<ImageFile[]>(() => {
     if (defaultImages.length > 0) {
       return defaultImages.map((img, index) => ({
@@ -54,10 +91,18 @@ export function ImageUpload({
         return;
       }
 
-      const filesToAdd = Array.from(selectedFiles).slice(0, remainingSlots);
+      const candidates = Array.from(selectedFiles).slice(0, remainingSlots);
       const newFiles: ImageFile[] = [];
 
-      for (const file of filesToAdd) {
+      for (const file of candidates) {
+        if (validateFile) {
+          const error = await validateFile(file);
+          if (error) {
+            globalThis.alert(error);
+            continue;
+          }
+        }
+
         const preview = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = (event) => {
@@ -73,6 +118,11 @@ export function ImageUpload({
         });
       }
 
+      if (newFiles.length === 0) {
+        e.target.value = "";
+        return;
+      }
+
       const updatedFiles = [...files, ...newFiles];
       setFiles(updatedFiles);
       onChange(
@@ -81,7 +131,7 @@ export function ImageUpload({
 
       e.target.value = "";
     },
-    [files, maxLength, onChange]
+    [files, maxLength, onChange, validateFile]
   );
 
   const removeFile = useCallback(
@@ -98,7 +148,6 @@ export function ImageUpload({
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex flex-wrap gap-3">
-        {/* Add button */}
         {files.length < maxLength && (
           <label
             htmlFor={id}
@@ -119,7 +168,6 @@ export function ImageUpload({
           </label>
         )}
 
-        {/* Image previews */}
         {files.map((file, index) => (
           <div key={file.id ?? index} className="relative">
             <div className="relative h-20 w-20 overflow-hidden rounded-lg border">

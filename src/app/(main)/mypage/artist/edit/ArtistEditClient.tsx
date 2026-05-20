@@ -3,7 +3,7 @@
 import { STRINGS } from "@/lib/strings";
 /* eslint-disable max-lines-per-function */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -11,7 +11,7 @@ import { useDaumPostcode } from "@/hooks/useDaumPostcode";
 import { createClient } from "@/lib/supabase/client";
 import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { Button } from "@/components/ui/button";
-import { ImageUpload } from "@/components/ui/image-upload";
+import { ImageUpload, createBannerValidator } from "@/components/ui/image-upload";
 import type { ArtistType } from "@/types/database";
 import { addressToRegionKey } from "@/lib/regions";
 import { geocodeAddress } from "@/types/artist-form";
@@ -301,6 +301,7 @@ export function ArtistEditClient({ artist,
   }, [artist.address, artist.region_id]);
 
   const t = STRINGS.artistRegister;
+  const bannerValidator = useMemo(() => createBannerValidator(t.shopBannerSizeError), [t.shopBannerSizeError]);
   const { handleInputChange, handleCheckboxChange } = useArtistFormHandlers(setFormData);
   const { shopCategories } = useArtistCategories(categories);
 
@@ -387,7 +388,10 @@ export function ArtistEditClient({ artist,
               <label className="text-sm font-medium">{t.shopImages} <span className="text-red-500">*</span></label>
               <span className="text-xs text-muted-foreground">{existingShopImages.length + newShopImages.length} / 5</span>
             </div>
-            <ImageUpload maxLength={5} label={t.shopImagesHint} onChange={handleShopImagesChange} defaultImages={existingShopImages} />
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+              ⚠ 권장 사이즈: 1020 × 340px (가로:세로 3:1 비율)
+            </p>
+            <ImageUpload maxLength={5} label={t.shopImagesHint} onChange={handleShopImagesChange} defaultImages={existingShopImages} validateFile={bannerValidator} />
           </div>
 
           <div className="space-y-2">
