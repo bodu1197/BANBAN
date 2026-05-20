@@ -3,7 +3,7 @@
 import { STRINGS } from "@/lib/strings";
 /* eslint-disable max-lines-per-function, complexity */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { FullPageSpinner } from "@/components/ui/full-page-spinner";
-import { ImageUpload, createBannerValidator } from "@/components/ui/image-upload";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { INITIAL_FORM_DATA, geocodeAddress } from "@/types/artist-form";
 import { addressToRegionKey } from "@/lib/regions";
 import { normalizeFancyText } from "@/lib/normalize-text";
@@ -46,7 +46,6 @@ export function ArtistRegisterClient({ categories,
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const t = STRINGS.artistRegister;
-  const bannerValidator = useMemo(() => createBannerValidator(t.shopBannerSizeError), [t.shopBannerSizeError]);
   const { handleInputChange, handleCheckboxChange } = useArtistFormHandlers(setFormData);
   const { shopCategories } = useArtistCategories(categories);
 
@@ -220,7 +219,7 @@ export function ArtistRegisterClient({ categories,
             <p className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
               ⚠ 권장 사이즈: 1020 × 340px (가로:세로 3:1 비율)
             </p>
-            <ImageUpload maxLength={5} label={t.shopImagesHint} onChange={(files) => setShopImages(files.filter((f): f is File => f instanceof File))} validateFile={bannerValidator} />
+            <ImageUpload maxLength={5} label={t.shopImagesHint} onChange={(files) => setShopImages(files.filter((f): f is File => f instanceof File))} cropAspect={3} />
           </div>
 
           <div className="space-y-2">

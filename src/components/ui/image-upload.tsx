@@ -5,6 +5,7 @@ import { useId, useState, useCallback } from "react";
 import Image from "next/image";
 import { Camera, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BannerCropModal } from "./banner-crop-modal";
 
 interface ImageFile {
   file: File | null;
@@ -20,22 +21,7 @@ interface ImageUploadProps {
   onChange: (files: Array<File | { url: string; id?: string }>) => void;
   className?: string;
   validateFile?: (file: File) => Promise<string | null>;
-}
-
-function loadImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new globalThis.Image();
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("이미지를 읽을 수 없습니다."));
-    };
-    img.src = url;
-  });
+  cropAspect?: number;
 }
 
 export function createBannerValidator(errorTemplate: string): (file: File) => Promise<string | null> {
@@ -57,6 +43,30 @@ export function createBannerValidator(errorTemplate: string): (file: File) => Pr
   };
 }
 
+function loadImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new globalThis.Image();
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("이미지를 읽을 수 없습니다."));
+    };
+    img.src = url;
+  });
+}
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as string);
+    reader.readAsDataURL(file);
+  });
+}
+
 /* eslint-disable max-lines-per-function */
 export function ImageUpload({
   maxLength = 5,
@@ -65,6 +75,7 @@ export function ImageUpload({
   onChange,
   className,
   validateFile,
+  cropAspect,
 }: Readonly<ImageUploadProps>): React.ReactElement {
   const id = useId();
   const [files, setFiles] = useState<ImageFile[]>(() => {
@@ -79,6 +90,43 @@ export function ImageUpload({
     return [];
   });
 
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropQueue, setCropQueue] = useState<string[]>([]);
+
+  const addCroppedFile = useCallback(
+    (croppedFile: File) => {
+      const preview = URL.createObjectURL(croppedFile);
+      const updated = [...files, { file: croppedFile, preview, isExisting: false }];
+      setFiles(updated);
+      onChange(updated.map((f) => f.file ?? { url: f.preview, id: f.id }));
+    },
+    [files, onChange],
+  );
+
+  const handleCropComplete = useCallback(
+    (croppedFile: File) => {
+      addCroppedFile(croppedFile);
+      if (cropQueue.length > 0) {
+        const [next, ...rest] = cropQueue;
+        setCropSrc(next);
+        setCropQueue(rest);
+      } else {
+        setCropSrc(null);
+      }
+    },
+    [addCroppedFile, cropQueue],
+  );
+
+  const handleCropCancel = useCallback(() => {
+    if (cropQueue.length > 0) {
+      const [next, ...rest] = cropQueue;
+      setCropSrc(next);
+      setCropQueue(rest);
+    } else {
+      setCropSrc(null);
+    }
+  }, [cropQueue]);
+
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFiles = e.target.files;
@@ -92,8 +140,20 @@ export function ImageUpload({
       }
 
       const candidates = Array.from(selectedFiles).slice(0, remainingSlots);
-      const newFiles: ImageFile[] = [];
 
+      if (cropAspect) {
+        const dataUrls: string[] = [];
+        for (const file of candidates) {
+          dataUrls.push(await readAsDataUrl(file));
+        }
+        const [first, ...rest] = dataUrls;
+        setCropSrc(first);
+        setCropQueue(rest);
+        e.target.value = "";
+        return;
+      }
+
+      const newFiles: ImageFile[] = [];
       for (const file of candidates) {
         if (validateFile) {
           const error = await validateFile(file);
@@ -102,20 +162,8 @@ export function ImageUpload({
             continue;
           }
         }
-
-        const preview = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            resolve(event.target?.result as string);
-          };
-          reader.readAsDataURL(file);
-        });
-
-        newFiles.push({
-          file,
-          preview,
-          isExisting: false,
-        });
+        const preview = await readAsDataUrl(file);
+        newFiles.push({ file, preview, isExisting: false });
       }
 
       if (newFiles.length === 0) {
@@ -125,24 +173,19 @@ export function ImageUpload({
 
       const updatedFiles = [...files, ...newFiles];
       setFiles(updatedFiles);
-      onChange(
-        updatedFiles.map((f) => f.file ?? { url: f.preview, id: f.id })
-      );
-
+      onChange(updatedFiles.map((f) => f.file ?? { url: f.preview, id: f.id }));
       e.target.value = "";
     },
-    [files, maxLength, onChange, validateFile]
+    [files, maxLength, onChange, validateFile, cropAspect],
   );
 
   const removeFile = useCallback(
     (index: number) => {
       const newFiles = files.filter((_, i) => i !== index);
       setFiles(newFiles);
-      onChange(
-        newFiles.map((f) => f.file ?? { url: f.preview, id: f.id })
-      );
+      onChange(newFiles.map((f) => f.file ?? { url: f.preview, id: f.id }));
     },
-    [files, onChange]
+    [files, onChange],
   );
 
   return (
@@ -193,6 +236,14 @@ export function ImageUpload({
       {label && (
         <p className="text-xs text-muted-foreground">{label}</p>
       )}
+
+      {cropSrc ? (
+        <BannerCropModal
+          imageSrc={cropSrc}
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      ) : null}
     </div>
   );
 }
