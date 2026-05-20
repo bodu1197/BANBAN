@@ -33,6 +33,8 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+const UNAVAILABLE_PLACEHOLDER = "--";
+
 function prefersReducedMotion(): boolean {
   return typeof globalThis.matchMedia === "function"
     && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -89,25 +91,24 @@ function HeroHeader({
   reviewCount: number;
   onReviewsClick: () => void;
 }>): React.ReactElement {
-  const hasRating = avgRating > 0 && reviewCount > 0;
+  const hasRating = reviewCount > 0 && avgRating > 0;
+  const ratingText = hasRating ? avgRating.toFixed(1) : UNAVAILABLE_PLACEHOLDER;
   return (
     <div className="px-4 pt-4 pb-3">
       <ArtistProfileCard artist={artist} />
       <h1 className="mt-3 text-xl font-bold leading-tight md:text-2xl">{title}</h1>
-      {hasRating ? (
-        <button
-          type="button"
-          onClick={onReviewsClick}
-          className="mt-2 inline-flex items-center gap-1 text-sm transition-colors hover:underline focus-visible:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          aria-label={`평점 ${avgRating.toFixed(1)}, 후기 ${reviewCount.toLocaleString()}개 보기`}
-        >
-          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
-          <span className="font-semibold">{avgRating.toFixed(1)}</span>
-          <span className="text-muted-foreground underline-offset-2">
-            {reviewCount.toLocaleString()}개의 후기
-          </span>
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={onReviewsClick}
+        className="mt-2 inline-flex items-center gap-1 text-sm transition-colors hover:underline focus-visible:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        aria-label={`평점 ${ratingText}, 후기 ${reviewCount.toLocaleString()}개 보기`}
+      >
+        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
+        <span className="font-semibold">{ratingText}</span>
+        <span className="text-muted-foreground underline-offset-2">
+          {reviewCount.toLocaleString()}개의 후기
+        </span>
+      </button>
     </div>
   );
 }
@@ -157,14 +158,16 @@ function PriceBlock({
   const showOriginalPrice = Boolean(priceOrigin && priceOrigin > 0 && priceOrigin !== price);
   return (
     <div className="border-t px-4 py-4">
-      {showOriginalPrice ? (
-        <div className="flex items-baseline gap-2">
-          <span className="w-12 text-xs text-muted-foreground">정가</span>
+      <div className="flex items-baseline gap-2">
+        <span className="w-12 text-xs text-muted-foreground">정가</span>
+        {showOriginalPrice ? (
           <span className="text-sm text-muted-foreground line-through">
             {priceOrigin?.toLocaleString()}원
           </span>
-        </div>
-      ) : null}
+        ) : (
+          <span aria-label="정가 정보 없음" className="text-sm text-muted-foreground">{UNAVAILABLE_PLACEHOLDER}</span>
+        )}
+      </div>
       <div className="mt-1 flex items-baseline gap-2">
         <span className="w-12 text-xs text-muted-foreground">할인가</span>
         {hasDiscount ? (
