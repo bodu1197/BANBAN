@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { Database } from '@/types/database'
+import { fetchWithRetry } from './fetch-with-retry'
 
 export async function createClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies()
@@ -10,6 +11,7 @@ export async function createClient(): Promise<SupabaseClient<Database>> {
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
     {
+      global: { fetch: fetchWithRetry },
       cookies: {
         getAll() {
           return cookieStore.getAll()
@@ -35,6 +37,7 @@ export function createStaticClient(): SupabaseClient<Database> {
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
     {
+      global: { fetch: fetchWithRetry },
       cookies: {
         getAll() { return [] },
         setAll() { },
@@ -56,6 +59,7 @@ export function createAdminClient(): SupabaseClient<Database> {
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
     serviceRoleKey,
     {
+      global: { fetch: fetchWithRetry },
       auth: {
         autoRefreshToken: false,
         persistSession: false,
