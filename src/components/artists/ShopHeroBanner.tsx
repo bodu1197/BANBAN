@@ -65,7 +65,7 @@ function HeroCarousel({
           alt={`${shopName} 대표 이미지`}
           fill
           className="object-cover"
-          sizes="(max-width: 767px) 100vw, 1024px"
+          sizes="(min-width: 1024px) 1024px, 100vw"
           priority
           fetchPriority="high"
         />

@@ -104,7 +104,7 @@ export function ArtistHeroCarouselClient({
                   alt={`${artistName} ${(i + 1).toString()}`}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 767px) 100vw, 1024px"
+                  sizes="(min-width: 1024px) 1024px, 100vw"
                   loading="lazy"
                 />
               </div>
@@ -113,11 +113,11 @@ export function ArtistHeroCarouselClient({
         ))}
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows — mobile에서는 hero가 짧아 swipe로 충분, 데스크탑에서만 노출 */}
       <button
         type="button"
         onClick={goToPrevious}
-        className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="absolute top-1/2 left-2 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white transition-colors hover:bg-black/70 focus-visible:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:block"
         aria-label={previousImageLabel}
       >
         <ChevronLeft className="h-5 w-5" />
@@ -125,7 +125,7 @@ export function ArtistHeroCarouselClient({
       <button
         type="button"
         onClick={goToNext}
-        className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        className="absolute top-1/2 right-2 hidden -translate-y-1/2 rounded-full bg-black/50 p-2.5 text-white transition-colors hover:bg-black/70 focus-visible:bg-black/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:block"
         aria-label={nextImageLabel}
       >
         <ChevronRight className="h-5 w-5" />
