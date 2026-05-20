@@ -1,7 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
+import localFont from "next/font/local";
 import { SITE_URL } from "@/lib/seo";
 import "./globals.css";
+
+const pretendard = localFont({
+  src: "./fonts/PretendardVariable.woff2",
+  display: "swap",
+  weight: "100 900",
+  variable: "--font-pretendard",
+  fallback: ["system-ui", "-apple-system", "Apple SD Gothic Neo", "Malgun Gothic", "sans-serif"],
+  preload: true,
+  adjustFontFallback: "Arial",
+});
 
 const Analytics = dynamic(() => import("@vercel/analytics/next").then(m => m.Analytics));
 const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracker").then(m => m.PageViewTracker));
@@ -106,7 +117,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className="font-sans"
+        className={`${pretendard.variable} font-sans`}
       >
         {children}
         <PageViewTracker />
