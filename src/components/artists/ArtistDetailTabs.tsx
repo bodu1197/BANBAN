@@ -48,6 +48,9 @@ interface ArtistDetailTabsProps {
   beforeLabel?: string;
   afterLabel?: string;
   beforeAfterCountLabel?: string;
+  portfolioCount?: number;
+  beforeAfterCount?: number;
+  reviewCount?: number;
 }
 
 export function ArtistDetailTabs({
@@ -70,20 +73,37 @@ export function ArtistDetailTabs({
   beforeLabel = "시술 전",
   afterLabel = "시술 후",
   beforeAfterCountLabel = "총 0개",
+  portfolioCount,
+  beforeAfterCount,
+  reviewCount,
 }: Readonly<ArtistDetailTabsProps>): React.ReactElement {
   const [activeTab, setActiveTab] = useState<"portfolio" | "beforeAfter" | "reviews">("portfolio");
 
   const tabButtonClass = (isActive: boolean): string =>
-    `relative px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+    `relative px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring ${
       isActive
-        ? "text-brand-primary"
+        ? "font-semibold text-foreground"
         : "text-muted-foreground hover:text-foreground focus-visible:text-foreground"
     }`;
 
+  const portfolioTabLabel = portfolioCount !== undefined
+    ? `${portfolioLabel} (${portfolioCount.toLocaleString()})`
+    : portfolioLabel;
+  const beforeAfterTabLabel = beforeAfterCount !== undefined
+    ? `${beforeAfterLabel} (${beforeAfterCount.toLocaleString()})`
+    : beforeAfterLabel;
+  const reviewsTabLabel = reviewCount !== undefined
+    ? `${reviewsLabel} (${reviewCount.toLocaleString()})`
+    : reviewsLabel;
+
   return (
-    <section className="px-4 py-4">
-      {/* Tab Navigation - Underline Style */}
-      <div className="mb-4 flex border-b" role="tablist" aria-label={tabsAriaLabel}>
+    <section>
+      {/* Tab Navigation - Sticky Underline Style */}
+      <div
+        className="sticky top-12 z-40 flex items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+        role="tablist"
+        aria-label={tabsAriaLabel}
+      >
         <button
           type="button"
           onClick={() => setActiveTab("portfolio")}
@@ -94,9 +114,9 @@ export function ArtistDetailTabs({
           role="tab"
           tabIndex={activeTab === "portfolio" ? 0 : -1}
         >
-          {portfolioLabel}
+          {portfolioTabLabel}
           {activeTab === "portfolio" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
+            <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground" />
           )}
         </button>
         <button
@@ -109,9 +129,9 @@ export function ArtistDetailTabs({
           role="tab"
           tabIndex={activeTab === "beforeAfter" ? 0 : -1}
         >
-          {beforeAfterLabel}
+          {beforeAfterTabLabel}
           {activeTab === "beforeAfter" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
+            <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground" />
           )}
         </button>
         <button
@@ -124,26 +144,26 @@ export function ArtistDetailTabs({
           role="tab"
           tabIndex={activeTab === "reviews" ? 0 : -1}
         >
-          {reviewsLabel}
+          {reviewsTabLabel}
           {activeTab === "reviews" && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary" />
+            <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground" />
           )}
         </button>
         {isLoggedIn && (
           <Link
             href={`/reviews/write?id=${artistId}`}
-            className="relative px-4 py-2 text-sm font-medium text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="ml-auto px-3 py-3 text-sm font-medium text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:bg-muted focus-visible:text-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {writeReviewLabel}
           </Link>
         )}
       </div>
 
-      {/* Tab Content */}
       <div
         role="tabpanel"
         id={`tabpanel-${activeTab}`}
         aria-labelledby={`tab-${activeTab}`}
+        className="px-4 py-4"
       >
         {activeTab === "portfolio" && (
           <PortfolioTabContent

@@ -12,7 +12,7 @@ import {
   getArtistMediaUrl,
 } from "@/lib/supabase/queries";
 import { ArtistTopBar } from "@/components/artists/ArtistTopBar";
-import { ArtistHeader } from "@/components/artists/ArtistHeader";
+import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
 import { ArtistDetailTabs } from "@/components/artists/ArtistDetailTabs";
 import { FloatingCTA } from "@/components/artists/FloatingCTA";
 import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
@@ -87,6 +87,30 @@ function extractArtistGalleryImages(
   return images;
 }
 
+interface ArtistJsonLdInput {
+  id: string;
+  artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>;
+  artistGalleryImages: string[];
+  avatarUrl: string | null;
+  reviewCount: number;
+  ratingAvg: number | undefined;
+}
+
+function buildArtistJsonLdProps(input: ArtistJsonLdInput): Parameters<typeof getArtistJsonLd>[0] {
+  const { id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg } = input;
+  return {
+    name: artist.title,
+    description: artist.introduce,
+    address: artist.address,
+    image: artistGalleryImages[0] ?? avatarUrl ?? undefined,
+    url: getCanonicalUrl(`/artists/${id}`),
+    latitude: artist.lat,
+    longitude: artist.lon,
+    rating: ratingAvg,
+    reviewCount: reviewCount > 0 ? reviewCount : undefined,
+  };
+}
+
 // eslint-disable-next-line max-lines-per-function
 export async function renderArtistDetailPage(id: string): Promise<React.ReactElement> {
   // Legacy numeric ID → 301 redirect to UUID URL
@@ -124,17 +148,9 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
     : undefined;
 
-  const artistJsonLd = getArtistJsonLd({
-    name: artist.title,
-    description: artist.introduce,
-    address: artist.address,
-    image: artistGalleryImages[0] ?? avatarUrl ?? undefined,
-    url: getCanonicalUrl(`/artists/${id}`),
-    latitude: artist.lat,
-    longitude: artist.lon,
-    rating: ratingAvg,
-    reviewCount: reviewCount > 0 ? reviewCount : undefined,
-  });
+  const artistJsonLd = getArtistJsonLd(buildArtistJsonLdProps({
+    id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg,
+  }));
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
     { name: "홈", path: "" },
@@ -154,15 +170,16 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
       />
 
       <ArtistTopBar
+        shopName={artist.title}
         backLabel={STRINGS.common.back}
         shareLabel={STRINGS.common.share}
       />
 
-      <ArtistHeader
-        artist={artist}
-        portfolioImages={heroImages}
-        avatarUrl={avatarUrl}
-        reviewCount={reviews.length}
+      <ShopHeroBanner
+        shop={artist}
+        heroImages={heroImages}
+        reviewCount={reviewCount}
+        avgRating={ratingAvg ?? 0}
         isLiked={likedIds.includes(id)}
       />
 
@@ -186,6 +203,9 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
         beforeLabel={STRINGS.artist.beforeLabel}
         afterLabel={STRINGS.artist.afterLabel}
         beforeAfterCountLabel={STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length))}
+        portfolioCount={portfolios.length}
+        beforeAfterCount={beforeAfterPhotos.length}
+        reviewCount={reviewCount}
       />
 
       <FloatingCTA

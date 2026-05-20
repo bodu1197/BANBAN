@@ -27,7 +27,13 @@ export function ArtistHeroCarouselClient({
     if (!container) return;
     // Use scrollIntoView on the slide instead of reading offsetWidth — avoids forced reflow
     const slide = container.querySelector<HTMLElement>(`[data-index="${index}"]`);
-    slide?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+    const prefersReduced = typeof globalThis.matchMedia === "function"
+      && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    slide?.scrollIntoView({
+      behavior: prefersReduced ? "auto" : "smooth",
+      block: "nearest",
+      inline: "start",
+    });
   }, []);
 
   const goToPrevious = useCallback(() => {
@@ -98,7 +104,7 @@ export function ArtistHeroCarouselClient({
                   alt={`${artistName} ${(i + 1).toString()}`}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 767px) 100vw, 767px"
+                  sizes="(max-width: 767px) 100vw, 1024px"
                   loading="lazy"
                 />
               </div>
