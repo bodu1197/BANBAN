@@ -50,7 +50,7 @@ function WriteReviewLink({ artistId, label }: Readonly<{ artistId: string; label
   return (
     <div className="mb-3 flex justify-end">
       <Link
-        href={`/reviews/write?id=${artistId}`}
+        href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
         className="text-sm font-medium text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:rounded focus-visible:text-brand-primary-hover focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {label}
@@ -69,8 +69,8 @@ function renderTabPanel(
         portfolios={props.portfolios}
         totalCountLabel={props.totalCountLabel}
         emptyMessage={props.noPortfolioMessage}
-        gridViewLabel={props.gridViewLabel}
-        listViewLabel={props.listViewLabel}
+        gridViewLabel={props.gridViewLabel ?? "Grid view"}
+        listViewLabel={props.listViewLabel ?? "List view"}
       />
     );
   }

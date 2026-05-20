@@ -57,10 +57,10 @@ export function ShopBlogClient({
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
   const [activeTab, setActiveTab] = useState<ShopTabId>("portfolio");
 
-  const tabs = [
-    { id: "portfolio" as const, label: portfolioLabel, count: portfolioCount },
-    { id: "beforeAfter" as const, label: beforeAfterLabel, count: beforeAfterCount },
-    { id: "reviews" as const, label: reviewsLabel, count: reviewCount },
+  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count: number }> = [
+    { id: "portfolio", label: portfolioLabel, count: portfolioCount },
+    { id: "beforeAfter", label: beforeAfterLabel, count: beforeAfterCount },
+    { id: "reviews", label: reviewsLabel, count: reviewCount },
   ];
 
   return (
