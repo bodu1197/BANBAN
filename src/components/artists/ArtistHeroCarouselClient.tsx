@@ -29,13 +29,11 @@ export function ArtistHeroCarouselClient({
   const scrollToIndex = useCallback((index: number) => {
     const container = scrollRef.current;
     if (!container) return;
-    const slide = container.querySelector<HTMLElement>(`[data-index="${index}"]`);
     const prefersReduced = typeof globalThis.matchMedia === "function"
       && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    slide?.scrollIntoView({
+    container.scrollTo({
+      left: container.offsetWidth * index,
       behavior: prefersReduced ? "auto" : "smooth",
-      block: "nearest",
-      inline: "start",
     });
   }, []);
 
