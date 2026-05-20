@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UNAVAILABLE_PLACEHOLDER } from "@/lib/ui-placeholders";
+import { UNAVAILABLE_PLACEHOLDER, UNAVAILABLE_RATING_LABEL } from "@/lib/ui-placeholders";
 import { PORTFOLIO_SECTION_IDS } from "./portfolio-section-ids";
 
 export interface PortfolioHeroArtist {
@@ -100,7 +100,9 @@ function HeroHeader({
         type="button"
         onClick={onReviewsClick}
         className="mt-2 inline-flex items-center gap-1 text-sm transition-colors hover:underline focus-visible:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        aria-label={`평점 ${ratingText}, 후기 ${reviewCount.toLocaleString()}개 보기`}
+        aria-label={hasRating
+          ? `평점 ${ratingText}, 후기 ${reviewCount.toLocaleString()}개 보기`
+          : `${UNAVAILABLE_RATING_LABEL}, 후기 ${reviewCount.toLocaleString()}개 보기`}
       >
         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
         <span className="font-semibold">{ratingText}</span>
