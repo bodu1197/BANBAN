@@ -129,7 +129,6 @@ export const STRINGS ={
     "beforeAfterCount": "총 {count}개"
   },
   "portfolio": {
-    "discountEvent": "할인이벤트",
     "writeReview": "리뷰 작성하기",
     "edit": "수정",
     "delete": "삭제",

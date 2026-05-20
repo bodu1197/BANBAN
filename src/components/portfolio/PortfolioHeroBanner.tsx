@@ -135,7 +135,7 @@ function PriceBlock({
       <div className="mt-1 flex items-baseline gap-2">
         <span className="w-12 text-xs text-muted-foreground">할인가</span>
         {hasDiscount ? (
-          <span className="text-base font-bold text-brand-primary">{discountRate}%</span>
+          <span className="text-base font-bold text-brand-primary">{discountRate ?? 0}%</span>
         ) : null}
         <span className="text-2xl font-bold">{(price ?? 0).toLocaleString()}</span>
         <span className="text-sm text-muted-foreground">원</span>
