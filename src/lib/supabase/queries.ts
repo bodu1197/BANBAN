@@ -19,7 +19,7 @@ export { getStorageUrl, getAvatarUrl } from "./storage-utils";
 export { getArtistMediaUrl } from "./storage-utils";
 
 // Re-export portfolio detail queries for backward compatibility
-export type { PortfolioDetails, PortfolioRecommendation } from "./portfolio-detail-queries";
+export type { PortfolioDetails, PortfolioRecommendation, ArtistReviewStats } from "./portfolio-detail-queries";
 export {
   fetchPortfolioById,
   fetchPortfoliosByArtist,
@@ -28,6 +28,7 @@ export {
   fetchRandomPortfolios,
   fetchSameCategoryPortfolios,
   fetchAllCategories,
+  fetchArtistReviewStats,
 } from "./portfolio-detail-queries";
 
 type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;

@@ -11,11 +11,15 @@ import {
     fetchHigherPricePortfolios,
     fetchRandomPortfolios,
     fetchSameCategoryPortfolios,
+    fetchArtistReviewStats,
+    type ArtistReviewStats,
 } from "@/lib/supabase/queries";
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
 import { PortfolioDetailClient } from "@/components/portfolio/PortfolioDetailClient";
+import { PortfolioHeroBanner } from "@/components/portfolio/PortfolioHeroBanner";
 import { PortfolioSecondarySection } from "@/components/portfolio/PortfolioSecondarySection";
+import { PORTFOLIO_SECTION_IDS } from "@/components/portfolio/portfolio-section-ids";
 import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
@@ -128,12 +132,83 @@ function RecommendationsSkeleton(): React.ReactElement {
     );
 }
 
+function buildJsonLd(
+    id: string,
+    portfolio: NonNullable<Awaited<ReturnType<typeof fetchPortfolioById>>>,
+): { breadcrumb: ReturnType<typeof getBreadcrumbJsonLd>; product: ReturnType<typeof getProductJsonLd> } {
+    const breadcrumb = getBreadcrumbJsonLd([
+        { name: "홈", path: "" },
+        { name: "포트폴리오", path: "/portfolios" },
+        { name: portfolio.title, path: `/portfolios/${id}` },
+    ]);
+    const productImages = (portfolio.portfolio_media ?? [])
+        .map((m) => getStorageUrl(m.storage_path))
+        .filter((u): u is string => Boolean(u));
+    const product = getProductJsonLd({
+        name: portfolio.title,
+        description: portfolio.description?.slice(0, 500) ?? `${portfolio.artist.title} 반영구 작품`,
+        image: productImages,
+        url: getCanonicalUrl(`/portfolios/${id}`),
+        price: portfolio.price,
+        brandName: portfolio.artist.title,
+        category: "반영구 화장",
+    });
+    return { breadcrumb, product };
+}
+
+function buildHeroBanner(
+    portfolio: NonNullable<Awaited<ReturnType<typeof fetchPortfolioById>>>,
+    reviewStats: ArtistReviewStats,
+): React.ReactElement {
+    return (
+        <PortfolioHeroBanner
+            artistName={portfolio.artist.title}
+            artistId={portfolio.artist_id}
+            title={portfolio.title}
+            avgRating={reviewStats.avgRating}
+            reviewCount={reviewStats.reviewCount}
+            price={portfolio.price}
+            priceOrigin={portfolio.price_origin}
+            discountRate={portfolio.discount_rate}
+        />
+    );
+}
+
+interface PageJsonLdProps {
+    preloadUrl: string | null;
+    breadcrumbJsonLd: ReturnType<typeof getBreadcrumbJsonLd>;
+    productJsonLd: ReturnType<typeof getProductJsonLd>;
+}
+
+function PageJsonLd({ preloadUrl, breadcrumbJsonLd, productJsonLd }: Readonly<PageJsonLdProps>): React.ReactElement {
+    return (
+        <>
+            {preloadUrl ? (
+                <link rel="preload" as="image" href={preloadUrl} fetchPriority="high" />
+            ) : null}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
+            />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: jsonLdSafe(productJsonLd) }}
+            />
+        </>
+    );
+}
+
 export async function renderPortfolioDetailPage(id: string): Promise<React.ReactElement> {
     await handleLegacyRedirect(id);
 
-    const [portfolio, isLiked] = await Promise.all([
-        fetchPortfolioById(id),
+    const portfolioPromise = fetchPortfolioById(id);
+    const reviewStatsPromise: Promise<ArtistReviewStats> = portfolioPromise.then((p) =>
+        p ? fetchArtistReviewStats(p.artist_id) : { avgRating: 0, reviewCount: 0 },
+    );
+    const [portfolio, isLiked, reviewStats] = await Promise.all([
+        portfolioPromise,
         isPortfolioLiked(id),
+        reviewStatsPromise,
     ]);
 
     if (!portfolio) notFound();
@@ -147,57 +222,32 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
         ? `/_next/image?url=${encodeURIComponent(firstImageUrl)}&w=828&q=65`
         : null;
 
-    const breadcrumbJsonLd = getBreadcrumbJsonLd([
-        { name: "홈", path: "" },
-        { name: "포트폴리오", path: "/portfolios" },
-        { name: portfolio.title, path: `/portfolios/${id}` },
-    ]);
-
-    const productImages = (portfolio.portfolio_media ?? [])
-        .map((m) => getStorageUrl(m.storage_path))
-        .filter((u): u is string => Boolean(u));
-    const productJsonLd = getProductJsonLd({
-        name: portfolio.title,
-        description: portfolio.description?.slice(0, 500) ?? `${portfolio.artist.title} 반영구 작품`,
-        image: productImages,
-        url: getCanonicalUrl(`/portfolios/${id}`),
-        price: portfolio.price,
-        brandName: portfolio.artist.title,
-        category: "반영구 화장",
-    });
-
+    const { breadcrumb: breadcrumbJsonLd, product: productJsonLd } = buildJsonLd(id, portfolio);
     const parsedDescription = parseDescriptionText(portfolio.description);
     const descriptionHtml = parsedDescription || STRINGS.portfolio.noDescription;
     const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as ArtistType;
 
     return (
         <main className="mx-auto min-h-screen max-w-[1024px] bg-background">
-            {preloadUrl ? (
-                <link rel="preload" as="image" href={preloadUrl} fetchPriority="high" />
-            ) : null}
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
-            />
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: jsonLdSafe(productJsonLd) }}
-            />
+            <PageJsonLd preloadUrl={preloadUrl} breadcrumbJsonLd={breadcrumbJsonLd} productJsonLd={productJsonLd} />
             <PortfolioDetailClient
                 portfolio={portfolio}
                 firstImageUrl={firstImageUrl}
                 heroMedia={heroMedia}
                 descriptionHtml={descriptionHtml}
+                heroBanner={buildHeroBanner(portfolio, reviewStats)}
             />
-            <Suspense fallback={<RecommendationsSkeleton />}>
-                <StreamedSecondaryData
-                    id={id}
-                    artistId={portfolio.artist_id}
-                    artistType={artistType}
-                    price={portfolio.price ?? 0}
-                    artist={portfolio.artist}
-                />
-            </Suspense>
+            <section id={PORTFOLIO_SECTION_IDS.artist} aria-label="작가 정보 및 추천">
+                <Suspense fallback={<RecommendationsSkeleton />}>
+                    <StreamedSecondaryData
+                        id={id}
+                        artistId={portfolio.artist_id}
+                        artistType={artistType}
+                        price={portfolio.price ?? 0}
+                        artist={portfolio.artist}
+                    />
+                </Suspense>
+            </section>
         </main>
     );
 }

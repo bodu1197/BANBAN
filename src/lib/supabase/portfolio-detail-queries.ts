@@ -42,6 +42,26 @@ export interface PortfolioRecommendation extends Portfolio {
   };
 }
 
+export interface ArtistReviewStats {
+  avgRating: number;
+  reviewCount: number;
+}
+
+/** 작가 단위 평점·후기 수 — 시술 상세 hero banner에서 사용 */
+export const fetchArtistReviewStats = cache(async function fetchArtistReviewStats(
+  artistId: string,
+): Promise<ArtistReviewStats> {
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
+  const { data } = await (supabase as any).rpc("get_artist_review_stats", { artist_ids: [artistId] });
+  const row = ((data ?? []) as Array<{ artist_id: string; review_count: number; avg_rating: number }>)
+    .find((r) => r.artist_id === artistId);
+  return {
+    avgRating: row ? Number(row.avg_rating) : 0,
+    reviewCount: row ? Number(row.review_count) : 0,
+  };
+});
+
 type ArtistType = 'SEMI_PERMANENT';
 
 // Common select clause for portfolio recommendations

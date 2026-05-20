@@ -74,9 +74,9 @@ export function PortfolioHeader({
         <ArrowLeft className="h-5 w-5" />
       </Button>
 
-      <h1 className="flex-1 truncate px-2 text-center font-semibold">
+      <p className="flex-1 truncate px-2 text-center font-semibold" aria-hidden>
         {title}
-      </h1>
+      </p>
 
       <div className="flex">
         <Button

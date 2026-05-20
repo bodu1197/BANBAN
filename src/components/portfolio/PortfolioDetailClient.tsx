@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { PortfolioMediaViewer } from "./PortfolioMediaViewer";
 import { PortfolioHeader } from "./PortfolioHeader";
 import { PortfolioInfoSection } from "./PortfolioInfoSection";
+import { PORTFOLIO_SECTION_IDS } from "./portfolio-section-ids";
 import { extractYouTubeId } from "@/components/portfolio-form/media-upload";
 import type { PortfolioDetails } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ interface PortfolioDetailClientProps {
   portfolio: PortfolioDetails;
   firstImageUrl?: string | null;
   heroMedia?: React.ReactNode;
+  heroBanner?: React.ReactNode;
   descriptionHtml: string;
 }
 
@@ -109,6 +111,7 @@ export function PortfolioDetailClient({
   portfolio,
   firstImageUrl,
   heroMedia,
+  heroBanner,
   descriptionHtml,
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
   const [isLiked, setIsLiked] = useState(Boolean(portfolio.is_liked));
@@ -158,7 +161,13 @@ export function PortfolioDetailClient({
         labels={headerLabels}
       />
 
-      <section className="relative bg-black">
+      {heroBanner}
+
+      <section
+        id={PORTFOLIO_SECTION_IDS.description}
+        aria-label="시술 사진 및 설명"
+        className="relative bg-black"
+      >
         {heroMedia}
         <PortfolioMediaViewer
           media={mediaItems}
@@ -168,27 +177,23 @@ export function PortfolioDetailClient({
       </section>
 
       <PortfolioInfoSection
-        title={portfolio.title}
         address={address}
-        price={portfolio.price}
-        priceOrigin={portfolio.price_origin}
-        discountRate={portfolio.discount_rate}
         descriptionHtml={descriptionHtml}
-        currencyUnit={STRINGS.common.currencyUnit}
-        discountEventLabel={STRINGS.portfolio.discountEvent}
       />
 
       <YouTubeEmbed url={portfolio.youtube_url} />
 
-      <PortfolioActionButtons
-        isLiked={isLiked}
-        likesCount={likesCount}
-        onLikeToggle={handleLikeToggle}
-        reviewHref={`/reviews/write?id=${artist.id}`}
-        editHref={canEdit ? `/mypage/artist/portfolios/edit/${portfolio.id}` : null}
-        likesLabel={STRINGS.artist.likes}
-        reviewLabel={STRINGS.portfolio.writeReview}
-      />
+      <section id={PORTFOLIO_SECTION_IDS.reviews} aria-label="후기 및 좋아요">
+        <PortfolioActionButtons
+          isLiked={isLiked}
+          likesCount={likesCount}
+          onLikeToggle={handleLikeToggle}
+          reviewHref={`/reviews/write?id=${artist.id}`}
+          editHref={canEdit ? `/mypage/artist/portfolios/edit/${portfolio.id}` : null}
+          likesLabel={STRINGS.artist.likes}
+          reviewLabel={STRINGS.portfolio.writeReview}
+        />
+      </section>
 
       <PortfolioBottomBar
         kakaoUrl={artist.kakao_url}
