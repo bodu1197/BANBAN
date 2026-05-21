@@ -31,18 +31,19 @@ function ArticleCard({ item }: Readonly<{ item: BoardListItem }>): React.ReactEl
       href={`/encyclopedia/${item.slug}`}
       className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
     >
-      <div className="relative aspect-[40/21] w-full overflow-hidden rounded-xl bg-muted">
+      <div className="w-full overflow-hidden rounded-xl bg-muted">
         {item.cover_image_url ? (
           <Image
             src={item.cover_image_url}
             alt={item.title}
-            fill
-            className="object-contain transition-transform duration-300 group-hover:scale-105"
+            width={1200}
+            height={630}
+            className="h-auto w-full transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
             unoptimized
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+          <div className="flex aspect-[40/21] w-full items-center justify-center text-sm text-muted-foreground">
             {item.category}
           </div>
         )}

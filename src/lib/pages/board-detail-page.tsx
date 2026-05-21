@@ -221,12 +221,13 @@ export async function renderBoardDetailPage(
       </div>
 
       {article.cover_image_url ? (
-        <div className="relative aspect-[40/21] w-full overflow-hidden bg-muted">
+        <div className="relative w-full overflow-hidden bg-muted">
           <Image
             src={article.cover_image_url}
             alt={article.cover_image_alt ?? article.title}
-            fill
-            className="object-contain"
+            width={1200}
+            height={630}
+            className="h-auto w-full"
             sizes="(max-width: 767px) 100vw, 767px"
             priority
             unoptimized
