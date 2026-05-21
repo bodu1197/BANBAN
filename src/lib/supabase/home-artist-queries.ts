@@ -169,10 +169,13 @@ export async function fetchPopularArtists(options?: {
   )();
 }
 
-// === Section: Recently Active Artists (24h login) ===
+// === Section: New Artists (registered within 7 days) ===
 
-async function fetchActiveArtistsInternal(limit: number): Promise<HomeArtist[]> {
+const NEW_ARTIST_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function fetchNewArtistsInternal(limit: number): Promise<HomeArtist[]> {
   const supabase = createStaticClient();
+  const oneWeekAgo = new Date(Date.now() - NEW_ARTIST_WINDOW_MS).toISOString();
 
   const { data, error } = await supabase
     .from("artists")
@@ -181,10 +184,12 @@ async function fetchActiveArtistsInternal(limit: number): Promise<HomeArtist[]> 
     .eq("is_hide", false)
     .eq("status", "active")
     .eq("type_artist", "SEMI_PERMANENT")
-    .limit(limit * 5);
+    .gte("created_at", oneWeekAgo)
+    .order("created_at", { ascending: false })
+    .limit(limit * 3);
 
   if (error) {
-    throw new Error(`Failed to fetch active artists: ${error.message}`);
+    throw new Error(`Failed to fetch new artists: ${error.message}`);
   }
 
   const artists = ((data ?? []) as ArtistRow[]).map((a) => ({
@@ -205,10 +210,10 @@ async function fetchActiveArtistsInternal(limit: number): Promise<HomeArtist[]> 
   return secureShuffle(artists).slice(0, limit);
 }
 
-export async function fetchActiveArtists(limit = 10): Promise<HomeArtist[]> {
+export async function fetchNewArtists(limit = 5): Promise<HomeArtist[]> {
   return unstable_cache(
-    () => fetchActiveArtistsInternal(limit),
-    ["home-active-artists"],
+    () => fetchNewArtistsInternal(limit),
+    ["home-new-artists"],
     { revalidate: 60, tags: ["home", "artists"] },
   )();
 }

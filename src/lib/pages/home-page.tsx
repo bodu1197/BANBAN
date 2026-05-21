@@ -13,7 +13,7 @@ import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
 import { fetchPromoBanners, fetchHomeBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-queries";
-import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
+import { fetchNewArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
@@ -166,7 +166,7 @@ async function fetchBottomHomeData() {
     safe(() => fetchTimeSalePortfolios(10), []),
     safe(() => fetchEyebrowPortfolios(10), []),
     safe(() => fetchLipPortfolios(10), []),
-    safe(() => fetchActiveArtists(10), []),
+    safe(() => fetchNewArtists(5), []),
     safe(() => fetchMensEyebrowPortfolios(10), []),
   ]);
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AiBeautyClient } from "@/components/beauty-sim/ai-test/ai-beauty-client";
 import type { RecommendedArtist } from "@/components/beauty-sim/ai-test/ai-beauty-client";
-import { fetchActiveArtists } from "@/lib/supabase/home-artist-queries";
+import { fetchNewArtists } from "@/lib/supabase/home-artist-queries";
 import { buildPageSeo } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default async function Page(): Promise<React.ReactElement> {
     let artists: RecommendedArtist[] = [];
     try {
-        const data = await fetchActiveArtists(6);
+        const data = await fetchNewArtists(6);
         artists = data.map((a) => ({
             id: a.id,
             title: a.title,

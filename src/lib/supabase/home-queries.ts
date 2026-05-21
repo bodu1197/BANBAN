@@ -15,7 +15,7 @@ export type {
 } from "./home-artist-queries";
 
 // Artist queries
-export { fetchPopularArtists, fetchReviewedArtists, fetchActiveArtists } from "./home-artist-queries";
+export { fetchPopularArtists, fetchReviewedArtists, fetchNewArtists } from "./home-artist-queries";
 
 // Portfolio queries
 export {
