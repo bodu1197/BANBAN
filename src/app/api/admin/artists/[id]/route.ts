@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 
+import type { BusinessHoursMap } from "@/types/artist-form";
+
 interface ArtistPatchBody {
   type_artist?: string;
   title?: string;
@@ -18,6 +20,7 @@ interface ArtistPatchBody {
   profile_image_path?: string | null;
   lat?: number | null;
   lon?: number | null;
+  business_hours?: BusinessHoursMap;
   // 카테고리 동기화 — undefined 면 손대지 않음, 빈 배열이면 모두 제거
   shop_category_ids?: string[];
 }
@@ -27,6 +30,7 @@ const ALLOWED_ARTIST_FIELDS: ReadonlyArray<keyof ArtistPatchBody> = [
   "type_artist", "title", "contact", "instagram_url", "kakao_url",
   "zipcode", "address", "address_detail", "region_id",
   "introduce", "description", "profile_image_path", "lat", "lon",
+  "business_hours",
 ];
 
 function buildArtistUpdates(body: ArtistPatchBody): Record<string, unknown> {

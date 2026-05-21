@@ -31,6 +31,21 @@ import {
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
 import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
 
+function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, t: { required: string }): string | null {
+  if (!formData.title.trim() || !formData.contact.trim() || !formData.address.trim() ||
+      !formData.region_id || !formData.introduce.trim() || !hasProfile) {
+    return t.required;
+  }
+  const introduceLen = formData.introduce.trim().length;
+  if (introduceLen < INTRODUCE_MIN_LENGTH) {
+    return `소개글을 ${String(INTRODUCE_MIN_LENGTH)}자 이상 작성해 주세요. (현재 ${String(introduceLen)}자)`;
+  }
+  if (!Object.values(formData.business_hours).some(Boolean)) {
+    return "영업시간을 최소 1일 이상 설정해 주세요.";
+  }
+  return null;
+}
+
 interface ArtistRegisterClientProps {
   categories: ArtistFormCategory[];
 }
@@ -85,14 +100,9 @@ export function ArtistRegisterClient({ categories,
     e.preventDefault();
     if (!user) { router.push("/login"); return; }
 
-    // Validation
-    if (!formData.title.trim() || !formData.contact.trim() || !formData.address.trim() ||
-        !formData.region_id || !formData.introduce.trim() || profileImage.length === 0) {
-      globalThis.alert(t.required);
-      return;
-    }
-    if (formData.introduce.trim().length < INTRODUCE_MIN_LENGTH) {
-      globalThis.alert(`소개글을 ${String(INTRODUCE_MIN_LENGTH)}자 이상 작성해 주세요. (현재 ${String(formData.introduce.trim().length)}자)`);
+    const validationError = validateRegisterForm(formData, profileImage.length > 0, t);
+    if (validationError) {
+      globalThis.alert(validationError);
       return;
     }
 

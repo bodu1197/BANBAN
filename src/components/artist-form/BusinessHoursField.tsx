@@ -88,7 +88,7 @@ export function BusinessHoursField({ value, onChange }: Readonly<BusinessHoursFi
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">영업시간</label>
+      <label className="text-sm font-medium">영업시간 <span className="text-red-500">*</span></label>
       <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
         {DAYS.map(({ key, label }) => (
           <DayRow

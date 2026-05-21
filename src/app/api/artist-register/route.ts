@@ -22,7 +22,7 @@ interface RegisterBody {
   description: string | null;
   lat: number | null;
   lon: number | null;
-  business_hours: BusinessHoursMap | null;
+  business_hours: BusinessHoursMap;
 }
 
 const MAX_TITLE_LENGTH = 200;
@@ -81,15 +81,22 @@ function validateCoordinates(body: RegisterBody): string | null {
   return null;
 }
 
+function validateSingleDay(key: string, val: unknown): string | null {
+  if (val !== null && !isDayHours(val)) return `${key}: must be {open: "HH:MM", close: "HH:MM"} or null`;
+  return null;
+}
+
 function validateBusinessHours(bh: unknown): string | null {
-  if (bh === null || bh === undefined) return null;
+  if (bh === null || bh === undefined) return "business_hours is required";
   if (typeof bh !== "object" || Array.isArray(bh)) return "business_hours must be an object";
   const VALID_DAYS = new Set<string>(DAY_KEYS);
-  for (const key of Object.keys(bh as Record<string, unknown>)) {
+  const entries = Object.entries(bh as Record<string, unknown>);
+  for (const [key, val] of entries) {
     if (!VALID_DAYS.has(key)) return `invalid day key: ${key}`;
-    const val = (bh as Record<string, unknown>)[key];
-    if (val !== null && !isDayHours(val)) return `${key}: must be {open: "HH:MM", close: "HH:MM"} or null`;
+    const dayErr = validateSingleDay(key, val);
+    if (dayErr) return dayErr;
   }
+  if (!entries.some(([, v]) => v !== null)) return "at least one day must have business hours";
   return null;
 }
 
@@ -133,7 +140,7 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     description: body.description,
     lat: body.lat,
     lon: body.lon,
-    business_hours: (body.business_hours ?? null) as Json,
+    business_hours: body.business_hours as unknown as Json,
     is_hide: false,
     likes_count: 0,
     views_count: 0,

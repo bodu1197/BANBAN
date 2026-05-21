@@ -162,6 +162,9 @@ function validateEditForm(
   if (introduceLen < INTRODUCE_MIN_LENGTH) {
     return `소개글을 ${INTRODUCE_MIN_LENGTH}자 이상 작성해주세요. (현재 ${introduceLen}자)`;
   }
+  if (!Object.values(formData.business_hours).some(Boolean)) {
+    return "영업시간을 최소 1일 이상 설정해 주세요.";
+  }
   return null;
 }
 
