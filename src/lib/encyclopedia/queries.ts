@@ -1,4 +1,5 @@
 import "server-only";
+import path from "path";
 import sharp from "sharp";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -34,21 +35,24 @@ const TEXT_PANEL_WIDTH = 600;
 const IMAGE_PANEL_WIDTH = THUMBNAIL_WIDTH - TEXT_PANEL_WIDTH;
 const PANEL_PADDING = 40;
 const TITLE_MAX_LENGTH = 120;
-const BG_COLOR = { r: 26, g: 26, b: 46 };
+const FONT_PATH = path.join(process.cwd(), "src/lib/encyclopedia/fonts/NotoSansKR.ttf");
 
-type EncyclopediaCategory = "눈썹" | "아이라인" | "입술" | "헤어라인" | "속눈썹" | "관리" | "안전" | "트렌드" | "기타";
+const BG_PALETTE: readonly { r: number; g: number; b: number }[] = [
+  { r: 26, g: 26, b: 46 },
+  { r: 18, g: 40, b: 44 },
+  { r: 44, g: 20, b: 30 },
+  { r: 20, g: 36, b: 28 },
+  { r: 38, g: 22, b: 46 },
+  { r: 30, g: 34, b: 44 },
+  { r: 42, g: 28, b: 18 },
+  { r: 24, g: 24, b: 50 },
+  { r: 36, g: 38, b: 22 },
+  { r: 48, g: 20, b: 30 },
+];
 
-const CATEGORY_COLORS: Record<EncyclopediaCategory, string> = {
-  눈썹: "#E8C9A0",
-  아이라인: "#B8A8D0",
-  입술: "#E8A0A0",
-  헤어라인: "#A0C8E8",
-  속눈썹: "#C0B0E8",
-  관리: "#A0E8C8",
-  안전: "#E8D8A0",
-  트렌드: "#E8A0D0",
-  기타: "#C8C8C8",
-};
+function pickBgColor(topicId: number): { r: number; g: number; b: number } {
+  return BG_PALETTE[topicId % BG_PALETTE.length];
+}
 
 function escapePango(text: string): string {
   return text
@@ -59,40 +63,108 @@ function escapePango(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function buildPangoMarkup(title: string, category: string): string {
-  const catColor = CATEGORY_COLORS[category as EncyclopediaCategory] ?? CATEGORY_COLORS["기타"];
-  const safeTitle = escapePango(title.slice(0, TITLE_MAX_LENGTH));
-  const safeCat = escapePango(category);
-  return [
-    `<span foreground="${catColor}" size="16pt" weight="bold">${safeCat}</span>`,
-    "",
-    `<span foreground="white" size="24pt" weight="bold">${safeTitle}</span>`,
-    "",
-    "",
-    "",
-    "",
-    `<span foreground="#aaaaaa" size="11pt">반언니 백과사전</span>`,
-  ].join("\n");
+const MAIN_MAX_PT = 130;
+const MAIN_MIN_PT = 60;
+const SUB_MAX_PT = 56;
+const SUB_MIN_PT = 32;
+const TITLE_GAP = 20;
+const MAIN_HEIGHT_RATIO = 0.7;
+const FONT_SIZE_STEP = 4;
+const SUB_TEXT_COLOR = "#FF8C6B";
+// NotoSansKR 기준 — 글자 폭 ≈ pt × 1.05, 공백 ≈ 글자 폭 × 0.35
+const CHAR_WIDTH_RATIO = 1.05;
+const SPACE_WIDTH_RATIO = 0.35;
+
+function wrapKorean(text: string, ptSize: number, maxWidth: number): string {
+  const charPx = ptSize * CHAR_WIDTH_RATIO;
+  const spacePx = charPx * SPACE_WIDTH_RATIO;
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  let lineW = 0;
+
+  for (const word of words) {
+    const wordW = word.length * charPx;
+    const gap = line ? spacePx : 0;
+    if (lineW + gap + wordW <= maxWidth) {
+      line += (line ? " " : "") + word;
+      lineW += gap + wordW;
+    } else {
+      if (line) lines.push(line);
+      line = word;
+      lineW = wordW;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.join("\n");
 }
 
-async function renderTextPanel(title: string, category: string): Promise<Buffer> {
-  const textRaw = await sharp({
-    text: {
-      text: buildPangoMarkup(title, category),
-      width: TEXT_PANEL_WIDTH - PANEL_PADDING * 2,
-      rgba: true,
-    },
+async function renderPangoText(
+  markup: string,
+  maxWidth: number,
+): Promise<{ buf: Buffer; w: number; h: number }> {
+  const buf = await sharp({
+    text: { text: markup, fontfile: FONT_PATH, width: maxWidth, rgba: true },
   }).png().toBuffer();
+  const { width: w, height: h } = await sharp(buf).metadata();
+  return { buf, w: w ?? 0, h: h ?? 0 };
+}
+
+async function renderWrapped(
+  text: string, color: string, pt: number, maxW: number,
+): Promise<{ buf: Buffer; w: number; h: number }> {
+  const wrapped = wrapKorean(text, pt, maxW);
+  return renderPangoText(
+    `<span foreground="${color}" size="${pt}pt" weight="bold">${escapePango(wrapped)}</span>`, maxW,
+  );
+}
+
+async function fitText(
+  text: string, color: string, maxW: number, maxH: number, startPt: number, minPt: number,
+): Promise<{ buf: Buffer; h: number; pt: number }> {
+  let pt = startPt;
+  let result = await renderWrapped(text, color, pt, maxW);
+  while (result.h > maxH && pt > minPt) {
+    pt -= FONT_SIZE_STEP;
+    result = await renderWrapped(text, color, pt, maxW);
+  }
+  return { buf: result.buf, h: result.h, pt };
+}
+
+async function renderTextPanel(title: string, topicId: number): Promise<Buffer> {
+  const bg = pickBgColor(topicId);
+  const maxW = TEXT_PANEL_WIDTH - PANEL_PADDING * 2;
+  const maxH = THUMBNAIL_HEIGHT - PANEL_PADDING * 2;
+  const trimmed = title.slice(0, TITLE_MAX_LENGTH);
+  const colonIdx = trimmed.indexOf(":");
+
+  let layers: { input: Buffer; left: number; top: number }[];
+
+  if (colonIdx > 0 && colonIdx < trimmed.length - 1) {
+    const mainText = escapePango(trimmed.slice(0, colonIdx).trim());
+    const subText = escapePango(trimmed.slice(colonIdx + 1).trim());
+    const mainMaxH = Math.round(maxH * MAIN_HEIGHT_RATIO);
+
+    const main = await fitText(mainText, "white", maxW, mainMaxH, MAIN_MAX_PT, MAIN_MIN_PT);
+    const subMaxH = maxH - main.h - TITLE_GAP;
+    const sub = await fitText(subText, SUB_TEXT_COLOR, maxW, subMaxH, SUB_MAX_PT, SUB_MIN_PT);
+
+    const totalH = main.h + TITLE_GAP + sub.h;
+    const startY = Math.max(PANEL_PADDING, Math.round((THUMBNAIL_HEIGHT - totalH) / 2));
+    layers = [
+      { input: main.buf, left: PANEL_PADDING, top: startY },
+      { input: sub.buf, left: PANEL_PADDING, top: startY + main.h + TITLE_GAP },
+    ];
+  } else {
+    const single = await fitText(escapePango(trimmed), "white", maxW, maxH, MAIN_MAX_PT, MAIN_MIN_PT);
+    const topOffset = Math.max(PANEL_PADDING, Math.round((THUMBNAIL_HEIGHT - single.h) / 2));
+    layers = [{ input: single.buf, left: PANEL_PADDING, top: topOffset }];
+  }
 
   return sharp({
-    create: {
-      width: TEXT_PANEL_WIDTH,
-      height: THUMBNAIL_HEIGHT,
-      channels: 4 as const,
-      background: { ...BG_COLOR, alpha: 255 },
-    },
+    create: { width: TEXT_PANEL_WIDTH, height: THUMBNAIL_HEIGHT, channels: 4 as const, background: { ...bg, alpha: 255 } },
   })
-    .composite([{ input: textRaw, left: PANEL_PADDING, top: PANEL_PADDING }])
+    .composite(layers)
     .png()
     .toBuffer();
 }
@@ -100,10 +172,11 @@ async function renderTextPanel(title: string, category: string): Promise<Buffer>
 async function composeThumbnail(
   imageBuffer: Buffer,
   title: string,
-  category: string,
+  topicId: number,
 ): Promise<Buffer> {
+  const bg = pickBgColor(topicId);
   const [textPanel, rightImage] = await Promise.all([
-    renderTextPanel(title, category),
+    renderTextPanel(title, topicId),
     sharp(imageBuffer)
       .resize(IMAGE_PANEL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
       .toBuffer(),
@@ -114,7 +187,7 @@ async function composeThumbnail(
       width: THUMBNAIL_WIDTH,
       height: THUMBNAIL_HEIGHT,
       channels: 3 as const,
-      background: BG_COLOR,
+      background: bg,
     },
   })
     .composite([
@@ -130,13 +203,12 @@ export async function uploadThumbnailToStorage(
   topicId: number,
   slug: string,
   title: string = "",
-  category: string = "",
 ): Promise<string> {
   const supabase = createAdminClient();
   const fileName = `thumbnails/${slug}-${topicId}.webp`;
 
-  const webpBuffer = (title && category)
-    ? await composeThumbnail(imageBuffer, title, category)
+  const webpBuffer = title
+    ? await composeThumbnail(imageBuffer, title, topicId)
     : await sharp(imageBuffer)
         .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
         .webp({ quality: THUMBNAIL_QUALITY })

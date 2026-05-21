@@ -83,6 +83,11 @@ const nextConfig: NextConfig = {
   // Supabase packages ship ESM — no need to transpile (saves ~20KB parsed size)
   transpilePackages: [],
 
+  outputFileTracingIncludes: {
+    "/api/cron/encyclopedia-generate/*": ["./src/lib/encyclopedia/fonts/**/*"],
+    "/api/admin/encyclopedia/*": ["./src/lib/encyclopedia/fonts/**/*"],
+  },
+
   // Experimental features for performance
   experimental: {
     // NOTE: optimizeCss / inlineCss are App Router 비호환.
