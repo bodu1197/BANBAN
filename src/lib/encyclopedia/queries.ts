@@ -30,19 +30,104 @@ const ENCYCLOPEDIA_BUCKET = "encyclopedia";
 const THUMBNAIL_WIDTH = 1200;
 const THUMBNAIL_HEIGHT = 630;
 const THUMBNAIL_QUALITY = 85;
+const TEXT_PANEL_WIDTH = 480;
+const IMAGE_PANEL_WIDTH = THUMBNAIL_WIDTH - TEXT_PANEL_WIDTH;
+const SVG_PADDING = 40;
+const TITLE_BOX_WIDTH = TEXT_PANEL_WIDTH - SVG_PADDING * 2;
+const TITLE_BOX_Y = 110;
+const TITLE_BOX_HEIGHT = 430;
+const TITLE_MAX_LENGTH = 120;
+
+type EncyclopediaCategory = "눈썹" | "아이라인" | "입술" | "헤어라인" | "속눈썹" | "관리" | "안전" | "트렌드" | "기타";
+
+const CATEGORY_COLORS: Record<EncyclopediaCategory, string> = {
+  눈썹: "#E8C9A0",
+  아이라인: "#B8A8D0",
+  입술: "#E8A0A0",
+  헤어라인: "#A0C8E8",
+  속눈썹: "#C0B0E8",
+  관리: "#A0E8C8",
+  안전: "#E8D8A0",
+  트렌드: "#E8A0D0",
+  기타: "#C8C8C8",
+};
+
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function buildTextPanelSvg(title: string, category: string): Buffer {
+  const escaped = escapeXml(title.slice(0, TITLE_MAX_LENGTH));
+  const escapedCat = escapeXml(category);
+  const catColor = CATEGORY_COLORS[category as EncyclopediaCategory] ?? CATEGORY_COLORS["기타"];
+
+  const svg = `<svg width="${TEXT_PANEL_WIDTH}" height="${THUMBNAIL_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="${TEXT_PANEL_WIDTH}" height="${THUMBNAIL_HEIGHT}" fill="url(#bg)"/>
+  <rect x="${SVG_PADDING}" y="${SVG_PADDING}" width="8" height="50" rx="4" fill="${catColor}"/>
+  <text x="${SVG_PADDING + 20}" y="${SVG_PADDING + 36}" font-family="sans-serif" font-size="24" font-weight="600" fill="${catColor}" letter-spacing="2">${escapedCat}</text>
+  <foreignObject x="${SVG_PADDING}" y="${TITLE_BOX_Y}" width="${TITLE_BOX_WIDTH}" height="${TITLE_BOX_HEIGHT}">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="color:#ffffff;font-family:sans-serif;font-size:42px;font-weight:700;line-height:1.35;word-break:keep-all;overflow-wrap:break-word;">${escaped}</div>
+  </foreignObject>
+  <text x="${SVG_PADDING}" y="${THUMBNAIL_HEIGHT - SVG_PADDING}" font-family="sans-serif" font-size="16" fill="#ffffff" opacity="0.7">반언니 백과사전</text>
+</svg>`;
+
+  return Buffer.from(svg);
+}
+
+async function composeThumbnail(
+  imageBuffer: Buffer,
+  title: string,
+  category: string,
+): Promise<Buffer> {
+  const rightImage = await sharp(imageBuffer)
+    .resize(IMAGE_PANEL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
+    .toBuffer();
+
+  const textPanelSvg = buildTextPanelSvg(title, category);
+
+  return sharp({
+    create: {
+      width: THUMBNAIL_WIDTH,
+      height: THUMBNAIL_HEIGHT,
+      channels: 3 as const,
+      background: { r: 26, g: 26, b: 46 },
+    },
+  })
+    .composite([
+      { input: textPanelSvg, left: 0, top: 0 },
+      { input: rightImage, left: TEXT_PANEL_WIDTH, top: 0 },
+    ])
+    .webp({ quality: THUMBNAIL_QUALITY })
+    .toBuffer();
+}
 
 export async function uploadThumbnailToStorage(
   imageBuffer: Buffer,
   topicId: number,
   slug: string,
+  title: string = "",
+  category: string = "",
 ): Promise<string> {
   const supabase = createAdminClient();
   const fileName = `thumbnails/${slug}-${topicId}.webp`;
 
-  const webpBuffer = await sharp(imageBuffer)
-    .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
-    .webp({ quality: THUMBNAIL_QUALITY })
-    .toBuffer();
+  const webpBuffer = (title && category)
+    ? await composeThumbnail(imageBuffer, title, category)
+    : await sharp(imageBuffer)
+        .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
+        .webp({ quality: THUMBNAIL_QUALITY })
+        .toBuffer();
 
   const { error } = await supabase.storage
     .from(ENCYCLOPEDIA_BUCKET)
@@ -173,6 +258,7 @@ export async function pickRelatedPortfolioImages(
   }
   if (portfolioIds.length === 0) return [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
   const { data: imgs } = await (supabase as any)
     .from("portfolio_media")
     .select("portfolio_id, storage_path")
