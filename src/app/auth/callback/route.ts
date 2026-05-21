@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { getProviderSlug } from "@/lib/auth-labels";
+import { getProviderSlug, normalizeTypeSocial } from "@/lib/auth-labels";
+import type { User, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 function getRedirectUrl(request: Request, origin: string, path: string): string {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -32,6 +34,51 @@ async function findEmailConflict(
     .limit(1)
     .maybeSingle();
   return data as ConflictProfile | null;
+}
+
+const NICKNAME_REGEX = /^[가-힣A-Za-z0-9_]{2,12}$/;
+
+function deriveNickname(user: User): string {
+  const meta = user.user_metadata ?? {};
+  const raw = String(meta.full_name ?? meta.name ?? meta.preferred_username ?? "").trim();
+  if (raw && NICKNAME_REGEX.test(raw.slice(0, 12))) return raw.slice(0, 12);
+  const emailPrefix = (user.email ?? "").split("@")[0].slice(0, 12);
+  return NICKNAME_REGEX.test(emailPrefix) ? emailPrefix : "회원";
+}
+
+async function ensureProfile(
+  adminClient: SupabaseClient<Database>,
+  user: User,
+): Promise<void> {
+  const now = new Date().toISOString();
+
+  const { data: existing } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (existing) {
+    await adminClient.from("profiles").update({ last_login_at: now }).eq("id", user.id);
+    return;
+  }
+
+  const normalizedEmail = (user.email ?? "").toLowerCase();
+  const provider = user.app_metadata?.provider as string | undefined;
+
+  const { error } = await adminClient.from("profiles").upsert({
+    id: user.id,
+    email: normalizedEmail,
+    nickname: deriveNickname(user),
+    username: normalizedEmail,
+    type_social: normalizeTypeSocial(provider),
+    is_admin: false,
+    language: "ko",
+    message_push_enabled: true,
+    last_login_at: now,
+  }, { onConflict: "id" });
+
+  if (error) throw error;
 }
 
 async function handleCallback(request: Request, code: string | null, next: string): Promise<NextResponse> {
@@ -67,7 +114,7 @@ async function handleCallback(request: Request, code: string | null, next: strin
   }
 
   try {
-    await adminClient.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", user.id);
+    await ensureProfile(adminClient, user);
     await adminClient.from("artists").update({ status: "active" }).eq("user_id", user.id).eq("status", "dormant");
   } catch {
     // eslint-disable-next-line no-console

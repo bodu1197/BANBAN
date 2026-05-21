@@ -18,7 +18,7 @@ const TYPE_TO_SLUG: Readonly<Record<SocialProvider, ProviderSlug>> = {
   APPLE: "apple",
 } as const;
 
-function normalizeTypeSocial(value: string | null | undefined): SocialProvider {
+export function normalizeTypeSocial(value: string | null | undefined): SocialProvider {
   const upper = (value ?? "").toUpperCase();
   return upper === "GOOGLE" || upper === "KAKAO" || upper === "APPLE" ? upper : "NONE";
 }
