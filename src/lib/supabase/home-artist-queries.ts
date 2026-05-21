@@ -184,9 +184,7 @@ async function fetchNewArtistsInternal(limit: number): Promise<HomeArtist[]> {
     .eq("is_hide", false)
     .eq("status", "active")
     .eq("type_artist", "SEMI_PERMANENT")
-    .gte("created_at", oneWeekAgo)
-    .order("created_at", { ascending: false })
-    .limit(limit * 3);
+    .gte("created_at", oneWeekAgo);
 
   if (error) {
     throw new Error(`Failed to fetch new artists: ${error.message}`);
