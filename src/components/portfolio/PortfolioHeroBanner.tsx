@@ -29,7 +29,7 @@ interface PortfolioHeroBannerProps {
 const TABS = [
   { id: "desc", label: "이벤트 설명", sectionId: PORTFOLIO_SECTION_IDS.description },
   { id: "reviews", label: "후기", sectionId: PORTFOLIO_SECTION_IDS.reviews },
-  { id: "artist", label: "병원 정보", sectionId: PORTFOLIO_SECTION_IDS.artist },
+  { id: "artist", label: "샵 정보", sectionId: PORTFOLIO_SECTION_IDS.artist },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];

@@ -36,7 +36,7 @@ export function PortfolioSecondarySection({
         artistHref={`/artists/${artist.id}`}
         totalCountLabel={totalCountLabel}
         seeAllLabel={STRINGS.common.seeAll}
-        sectionTitle={STRINGS.pages.artistsList}
+        sectionTitle={artist.title}
         artistPortfolios={artistPortfolios}
         artistPortfolioCount={artistPortfolioCount}
       />
