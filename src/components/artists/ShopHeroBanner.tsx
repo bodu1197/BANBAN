@@ -7,6 +7,7 @@ import { ArtistLikeButton } from "./ArtistLikeButton";
 import { STRINGS } from "@/lib/strings";
 import { sanitizeHtmlServerSide } from "@/lib/text-utils";
 import { UNAVAILABLE_PLACEHOLDER, UNAVAILABLE_RATING_LABEL } from "@/lib/ui-placeholders";
+import { AddressActions } from "./AddressActions";
 
 interface ShopHeroBannerProps {
   shop: ArtistWithDetails;
@@ -24,7 +25,8 @@ export function ShopHeroBanner({
   isLiked = false,
 }: Readonly<ShopHeroBannerProps>): React.ReactElement {
   const regionName = shop.region?.name ?? "";
-  const address = regionName || shop.address;
+  const fullAddress = [shop.address, shop.address_detail].filter(Boolean).join(" ");
+  const displayAddress = fullAddress || regionName;
 
   const description = shop.description;
   const sanitizedDescription = description && description.includes("<")
@@ -36,7 +38,8 @@ export function ShopHeroBanner({
       <HeroCarousel images={heroImages} shopName={shop.title} />
       <ShopInfo
         shop={shop}
-        address={address}
+        regionName={regionName}
+        displayAddress={displayAddress}
         avgRating={avgRating}
         reviewCount={reviewCount}
         isLiked={isLiked}
@@ -87,10 +90,11 @@ function HeroCarousel({
 }
 
 function ShopInfo({
-  shop, address, avgRating, reviewCount, isLiked,
+  shop, regionName, displayAddress, avgRating, reviewCount, isLiked,
 }: Readonly<{
   shop: ArtistWithDetails;
-  address: string;
+  regionName: string;
+  displayAddress: string;
   avgRating: number;
   reviewCount: number;
   isLiked: boolean;
@@ -103,7 +107,7 @@ function ShopInfo({
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold leading-tight md:text-2xl">{shop.title}</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            반영구 메이크업{address ? ` · ${address}` : ""}
+            반영구 메이크업{regionName ? ` · ${regionName}` : ""}
           </p>
           <div className="mt-2 inline-flex items-center gap-1 text-sm">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
@@ -123,11 +127,14 @@ function ShopInfo({
           label={STRINGS.artist.likes}
         />
       </div>
-      {address ? (
-        <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="h-3.5 w-3.5" aria-hidden />
-          {address}
-        </p>
+      {displayAddress ? (
+        <div className="mt-3 space-y-2">
+          <p className="flex items-start gap-1 text-xs text-muted-foreground">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>{displayAddress}</span>
+          </p>
+          <AddressActions address={displayAddress} />
+        </div>
       ) : null}
     </div>
   );
