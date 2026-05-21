@@ -171,9 +171,14 @@ function ArticleBody({
   article,
 }: Readonly<{ article: BoardArticle }>): React.ReactElement {
   const nodes = parseMarkdown(article.content);
+  const coverIdx = article.cover_image_url
+    ? nodes.findIndex((n) => n.type === "img" && n.src === article.cover_image_url)
+    : -1;
+  const filtered = coverIdx >= 0 ? nodes.filter((_, i) => i !== coverIdx) : nodes;
+
   return (
     <div className="prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground">
-      {nodes.map((node, i) => renderNode(node, `node-${i}`))}
+      {filtered.map((node, i) => renderNode(node, `node-${i}`))}
     </div>
   );
 }

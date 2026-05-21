@@ -153,10 +153,6 @@ function buildContentMarkdown(
     lines.push(raw.introduction.trim(), "");
   }
 
-  if (images[0]) {
-    lines.push(`![${images[0].alt}](${images[0].url})`, "");
-  }
-
   sections.forEach((s, i) => {
     lines.push(`## ${s.heading}`, "");
     lines.push(s.body.trim(), "");
