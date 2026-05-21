@@ -6,13 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type ExhibitionEntryStatus = 'pending' | 'approved' | 'rejected';
-export type SexType = 'MALE' | 'FEMALE' | 'OTHER';
-export type ArtistType = 'SEMI_PERMANENT';
-export type ChatRoomStatus = 'ACTIVE' | 'CLOSED' | 'REPORTED';
-export type AttachmentType = 'image' | 'file';
-export type LikeableType = 'artist' | 'portfolio' | 'post' | 'Artist' | 'Portfolio' | 'Post';
-
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -388,6 +381,7 @@ export type Database = {
           bank_account: string | null
           bank_holder: string | null
           bank_name: string | null
+          business_hours: Json | null
           contact: string
           created_at: string | null
           deleted_at: string | null
@@ -426,6 +420,7 @@ export type Database = {
           bank_account?: string | null
           bank_holder?: string | null
           bank_name?: string | null
+          business_hours?: Json | null
           contact: string
           created_at?: string | null
           deleted_at?: string | null
@@ -464,6 +459,7 @@ export type Database = {
           bank_account?: string | null
           bank_holder?: string | null
           bank_name?: string | null
+          business_hours?: Json | null
           contact?: string
           created_at?: string | null
           deleted_at?: string | null
@@ -572,72 +568,6 @@ export type Database = {
           start_at?: string | null
           subtitle?: string | null
           title?: string | null
-        }
-        Relationships: []
-      }
-      home_banners: {
-        Row: {
-          id: string
-          slot: string
-          image_path: string
-          link_url: string
-          alt_text: string
-          is_active: boolean
-          updated_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          slot: string
-          image_path: string
-          link_url?: string
-          alt_text?: string
-          is_active?: boolean
-          updated_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          slot?: string
-          image_path?: string
-          link_url?: string
-          alt_text?: string
-          is_active?: boolean
-          updated_at?: string
-          created_at?: string
-        }
-        Relationships: []
-      }
-      quick_menu_items: {
-        Row: {
-          id: string
-          order_index: number
-          label: string
-          icon_path: string
-          link_url: string
-          is_active: boolean
-          updated_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          order_index?: number
-          label: string
-          icon_path: string
-          link_url?: string
-          is_active?: boolean
-          updated_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          order_index?: number
-          label?: string
-          icon_path?: string
-          link_url?: string
-          is_active?: boolean
-          updated_at?: string
-          created_at?: string
         }
         Relationships: []
       }
@@ -1292,20 +1222,20 @@ export type Database = {
           cover_image_alt: string | null
           cover_image_url: string | null
           created_at: string
-          excerpt: string
+          excerpt: string | null
           faq: Json
           id: string
           inline_images: Json
           keywords: string[]
-          meta_description: string
-          meta_title: string
+          meta_description: string | null
+          meta_title: string | null
           published: boolean
           published_at: string
           reading_time_minutes: number
           slug: string
           tags: string[]
           title: string
-          topic_id: number
+          topic_id: number | null
           updated_at: string
           view_count: number
         }
@@ -1315,20 +1245,20 @@ export type Database = {
           cover_image_alt?: string | null
           cover_image_url?: string | null
           created_at?: string
-          excerpt: string
+          excerpt?: string | null
           faq?: Json
           id?: string
           inline_images?: Json
           keywords?: string[]
-          meta_description: string
-          meta_title: string
+          meta_description?: string | null
+          meta_title?: string | null
           published?: boolean
           published_at?: string
           reading_time_minutes?: number
           slug: string
           tags?: string[]
           title: string
-          topic_id: number
+          topic_id?: number | null
           updated_at?: string
           view_count?: number
         }
@@ -1338,20 +1268,20 @@ export type Database = {
           cover_image_alt?: string | null
           cover_image_url?: string | null
           created_at?: string
-          excerpt?: string
+          excerpt?: string | null
           faq?: Json
           id?: string
           inline_images?: Json
           keywords?: string[]
-          meta_description?: string
-          meta_title?: string
+          meta_description?: string | null
+          meta_title?: string | null
           published?: boolean
           published_at?: string
           reading_time_minutes?: number
           slug?: string
           tags?: string[]
           title?: string
-          topic_id?: number
+          topic_id?: number | null
           updated_at?: string
           view_count?: number
         }
@@ -1581,6 +1511,39 @@ export type Database = {
         }
         Relationships: []
       }
+      home_banners: {
+        Row: {
+          alt_text: string
+          created_at: string
+          id: string
+          image_path: string
+          is_active: boolean
+          link_url: string
+          slot: string
+          updated_at: string
+        }
+        Insert: {
+          alt_text?: string
+          created_at?: string
+          id?: string
+          image_path: string
+          is_active?: boolean
+          link_url?: string
+          slot: string
+          updated_at?: string
+        }
+        Update: {
+          alt_text?: string
+          created_at?: string
+          id?: string
+          image_path?: string
+          is_active?: boolean
+          link_url?: string
+          slot?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inquiries: {
         Row: {
           admin_replied_at: string | null
@@ -1764,7 +1727,7 @@ export type Database = {
         Insert: {
           country?: string | null
           created_at?: string
-          id: number
+          id?: never
           ip?: string | null
           path: string
           referer?: string | null
@@ -1774,7 +1737,7 @@ export type Database = {
         Update: {
           country?: string | null
           created_at?: string
-          id?: number
+          id?: never
           ip?: string | null
           path?: string
           referer?: string | null
@@ -2361,6 +2324,39 @@ export type Database = {
           },
         ]
       }
+      quick_menu_items: {
+        Row: {
+          created_at: string
+          icon_path: string
+          id: string
+          is_active: boolean
+          label: string
+          link_url: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icon_path: string
+          id?: string
+          is_active?: boolean
+          label: string
+          link_url?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icon_path?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          link_url?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quote_bids: {
         Row: {
           artist_id: string
@@ -2877,6 +2873,13 @@ export type Database = {
           trigger_name: string
         }[]
       }
+      get_blog_category_counts: {
+        Args: { p_target_gender?: string; p_type_artist?: string }
+        Returns: {
+          category_name: string
+          count: number
+        }[]
+      }
       get_function_definition: { Args: { func_name: string }; Returns: string }
       get_general_members: {
         Args: { p_limit?: number; p_offset?: number; p_search?: string }
@@ -2984,6 +2987,60 @@ export type Database = {
           region_name: string
           title: string
           type_artist: string
+        }[]
+      }
+      search_artist_insights: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_region_id?: string
+          p_type_artist?: string
+        }
+        Returns: {
+          artist_id: string
+          artist_name: string
+          avg_rating: number
+          content: string
+          cover_image_url: string
+          created_at: string
+          id: string
+          meta_description: string
+          portfolio_count: number
+          published: boolean
+          review_count: number
+          slug: string
+          specialties: string[]
+          summary: string
+          tags: string[]
+          title: string
+          total_count: number
+        }[]
+      }
+      search_blog_posts: {
+        Args: {
+          p_category_name?: string
+          p_limit?: number
+          p_offset?: number
+          p_region_id?: string
+          p_search_word?: string
+          p_target_gender?: string
+          p_type_artist?: string
+        }
+        Returns: {
+          artist_id: string
+          artist_name: string
+          category_name: string
+          content: string
+          created_at: string
+          id: string
+          image_url: string
+          meta_description: string
+          portfolio_id: string
+          published: boolean
+          slug: string
+          tags: string[]
+          title: string
+          total_count: number
         }[]
       }
       search_portfolios_by_categories: {
@@ -3205,3 +3262,4 @@ export type PointPolicy = Tables<'point_policies'>
 export type AttendanceLog = Tables<'attendance_logs'>
 export type ExhibitionEntry = Tables<'exhibition_entries'>
 export type BeforeAfterPhoto = Tables<'before_after_photos'>
+export type ArtistType = 'SEMI_PERMANENT';

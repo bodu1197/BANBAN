@@ -3,7 +3,9 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { isHttpUrl } from "@/lib/url-utils";
-import type { Database } from "@/types/database";
+import { DAY_KEYS, isDayHours } from "@/types/artist-form";
+import type { BusinessHoursMap } from "@/types/artist-form";
+import type { Database, Json } from "@/types/database";
 
 interface RegisterBody {
   type_artist: string;
@@ -20,6 +22,7 @@ interface RegisterBody {
   description: string | null;
   lat: number | null;
   lon: number | null;
+  business_hours: BusinessHoursMap | null;
 }
 
 const MAX_TITLE_LENGTH = 200;
@@ -78,11 +81,24 @@ function validateCoordinates(body: RegisterBody): string | null {
   return null;
 }
 
+function validateBusinessHours(bh: unknown): string | null {
+  if (bh === null || bh === undefined) return null;
+  if (typeof bh !== "object" || Array.isArray(bh)) return "business_hours must be an object";
+  const VALID_DAYS = new Set<string>(DAY_KEYS);
+  for (const key of Object.keys(bh as Record<string, unknown>)) {
+    if (!VALID_DAYS.has(key)) return `invalid day key: ${key}`;
+    const val = (bh as Record<string, unknown>)[key];
+    if (val !== null && !isDayHours(val)) return `${key}: must be {open: "HH:MM", close: "HH:MM"} or null`;
+  }
+  return null;
+}
+
 function validateRegisterBody(body: RegisterBody): string | null {
   return (
     validateRequiredStrings(body) ??
     validateOptionalUrls(body) ??
-    validateCoordinates(body)
+    validateCoordinates(body) ??
+    validateBusinessHours(body.business_hours)
   );
 }
 
@@ -117,6 +133,7 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     description: body.description,
     lat: body.lat,
     lon: body.lon,
+    business_hours: (body.business_hours ?? null) as Json,
     is_hide: false,
     likes_count: 0,
     views_count: 0,

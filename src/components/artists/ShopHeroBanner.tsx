@@ -7,7 +7,9 @@ import { ArtistLikeButton } from "./ArtistLikeButton";
 import { STRINGS } from "@/lib/strings";
 import { sanitizeHtmlServerSide } from "@/lib/text-utils";
 import { UNAVAILABLE_PLACEHOLDER, UNAVAILABLE_RATING_LABEL } from "@/lib/ui-placeholders";
+import { parseBusinessHours } from "@/types/artist-form";
 import { AddressActions } from "./AddressActions";
+import { BusinessHours } from "./BusinessHours";
 
 interface ShopHeroBannerProps {
   shop: ArtistWithDetails;
@@ -135,6 +137,9 @@ function ShopInfo({
           </p>
           <AddressActions address={displayAddress} />
         </div>
+      ) : null}
+      {shop.business_hours ? (
+        <BusinessHours hours={parseBusinessHours(shop.business_hours)} />
       ) : null}
     </div>
   );

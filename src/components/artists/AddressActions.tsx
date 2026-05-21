@@ -1,7 +1,7 @@
 // @client-reason: navigator.clipboard + window.open은 브라우저 API
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Copy, Check, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -14,10 +14,15 @@ interface AddressActionsProps {
 export function AddressActions({ address }: Readonly<AddressActionsProps>): React.ReactElement {
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (!copied) return;
+    const timer = globalThis.setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(address);
     setCopied(true);
-    globalThis.setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
   }, [address]);
 
   const handleMap = useCallback(() => {

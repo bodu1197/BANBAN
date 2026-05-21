@@ -28,6 +28,9 @@ import {
   buildFormLabelsFromDict,
 } from "@/components/artist-form/ArtistFormFields";
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
+import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
+import { parseBusinessHours } from "@/types/artist-form";
+import type { BusinessHoursMap } from "@/types/artist-form";
 
 interface ArtistMedia {
   id: string;
@@ -50,6 +53,7 @@ interface ArtistData {
   introduce: string;
   description: string | null;
   profile_image_path: string | null;
+  business_hours: BusinessHoursMap | null;
   artist_media: ArtistMedia[];
   region: { id: string; name: string } | null;
 }
@@ -170,6 +174,7 @@ function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; 
     address_detail: formData.address_detail || null, region_id: formData.region_id,
     introduce: normalizeFancyText(formData.introduce),
     description: formData.description ? normalizeFancyText(formData.description) : null,
+    business_hours: formData.business_hours,
   };
   if (coords) { data.lat = coords.lat; data.lon = coords.lon; }
   return data;
@@ -269,6 +274,7 @@ export function ArtistEditClient({ artist,
       bank_holder: "",
       bank_name: "",
       bank_account: "",
+      business_hours: parseBusinessHours(artist.business_hours),
     };
   });
 
@@ -404,6 +410,10 @@ export function ArtistEditClient({ artist,
           <GuidedIntroduce
             value={formData.introduce}
             onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
+          />
+          <BusinessHoursField
+            value={formData.business_hours}
+            onChange={(hours) => setFormData((prev) => ({ ...prev, business_hours: hours }))}
           />
           <CategoryCheckboxGroup label={t.shopInfo} categories={shopCategories} selectedIds={formData.shop_category_ids} onToggle={handleCheckboxChange} field="shop_category_ids" />
         </div>

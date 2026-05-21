@@ -6,6 +6,48 @@ export interface ArtistFormCategory {
   category_type: string | null;
 }
 
+export interface DayHours {
+  open: string;
+  close: string;
+}
+
+export type BusinessHoursMap = Record<string, DayHours | null>;
+
+export const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+export const DEFAULT_OPEN_TIME = "10:00";
+export const DEFAULT_CLOSE_TIME = "19:00";
+
+export const DEFAULT_BUSINESS_HOURS: BusinessHoursMap = {
+  mon: { open: DEFAULT_OPEN_TIME, close: DEFAULT_CLOSE_TIME },
+  tue: { open: DEFAULT_OPEN_TIME, close: DEFAULT_CLOSE_TIME },
+  wed: { open: DEFAULT_OPEN_TIME, close: DEFAULT_CLOSE_TIME },
+  thu: { open: DEFAULT_OPEN_TIME, close: DEFAULT_CLOSE_TIME },
+  fri: { open: DEFAULT_OPEN_TIME, close: DEFAULT_CLOSE_TIME },
+  sat: { open: DEFAULT_OPEN_TIME, close: DEFAULT_CLOSE_TIME },
+  sun: null,
+};
+
+const TIME_RE = /^\d{2}:\d{2}$/;
+
+export function isDayHours(v: unknown): v is DayHours {
+  if (typeof v !== "object" || v === null) return false;
+  const { open, close } = v as Record<string, unknown>;
+  return typeof open === "string" && typeof close === "string" && TIME_RE.test(open) && TIME_RE.test(close);
+}
+
+export function parseBusinessHours(raw: unknown): BusinessHoursMap {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return DEFAULT_BUSINESS_HOURS;
+  const src = raw as Record<string, unknown>;
+  const result: BusinessHoursMap = {};
+  for (const key of DAY_KEYS) {
+    // eslint-disable-next-line security/detect-object-injection -- iterating known constant keys
+    const val = src[key];
+    // eslint-disable-next-line security/detect-object-injection -- iterating known constant keys
+    result[key] = isDayHours(val) ? val : null;
+  }
+  return result;
+}
+
 export interface ArtistFormData {
   type_artist: ArtistType;
   title: string;
@@ -22,6 +64,7 @@ export interface ArtistFormData {
   bank_holder: string;
   bank_name: string;
   bank_account: string;
+  business_hours: BusinessHoursMap;
 }
 
 export const INITIAL_FORM_DATA: ArtistFormData = {
@@ -40,6 +83,7 @@ export const INITIAL_FORM_DATA: ArtistFormData = {
   bank_holder: "",
   bank_name: "",
   bank_account: "",
+  business_hours: DEFAULT_BUSINESS_HOURS,
 };
 
 export const BANK_OPTIONS = [

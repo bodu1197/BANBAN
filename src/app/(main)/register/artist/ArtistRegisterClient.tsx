@@ -29,6 +29,7 @@ import {
   buildFormLabelsFromDict,
 } from "@/components/artist-form/ArtistFormFields";
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
+import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
 
 interface ArtistRegisterClientProps {
   categories: ArtistFormCategory[];
@@ -121,6 +122,7 @@ export function ArtistRegisterClient({ categories,
           description: formData.description ? normalizeFancyText(formData.description) : null,
           lat: coords?.lat ?? null,
           lon: coords?.lon ?? null,
+          business_hours: formData.business_hours,
         }),
       });
 
@@ -233,6 +235,10 @@ export function ArtistRegisterClient({ categories,
           <GuidedIntroduce
             value={formData.introduce}
             onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
+          />
+          <BusinessHoursField
+            value={formData.business_hours}
+            onChange={(hours) => setFormData((prev) => ({ ...prev, business_hours: hours }))}
           />
           <CategoryCheckboxGroup label={t.shopInfo} categories={shopCategories} selectedIds={formData.shop_category_ids} onToggle={handleCheckboxChange} field="shop_category_ids" />
         </div>
