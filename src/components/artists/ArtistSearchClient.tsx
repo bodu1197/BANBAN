@@ -1,7 +1,7 @@
 // @client-reason: URL-synced filters, category tabs, like toggle, geolocation for nearby artists
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, Suspense, useTransition } from "react";
+import { useState, useCallback, useMemo, Suspense, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { STRINGS } from "@/lib/strings";
 import { useArtistSearch } from "@/hooks/useArtistSearch";
@@ -110,8 +110,9 @@ function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedId
 
 type GeoStatus = "idle" | "loading" | "success" | "denied" | "error";
 
-function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount }: Readonly<{
+function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount, onRequestNearby }: Readonly<{
   geoStatus: GeoStatus; hasFilters: boolean; isNearbyMode: boolean; totalCount: number;
+  onRequestNearby: () => void;
 }>): React.ReactElement | null {
   if (isNearbyMode) {
     return (
@@ -119,6 +120,20 @@ function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount }: Re
         <Navigation className="h-4 w-4" />
         <span>내 주변 {totalCount}개의 샵 (거리순)</span>
       </div>
+    );
+  }
+
+  if (geoStatus === "idle" && !hasFilters) {
+    return (
+      <button
+        type="button"
+        onClick={onRequestNearby}
+        className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-primary/30 bg-brand-primary/5 px-3 py-2.5 text-sm font-medium text-brand-primary transition-colors hover:bg-brand-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="내주변 업소찾기"
+      >
+        <Navigation className="h-4 w-4" />
+        <span>내주변 업소찾기</span>
+      </button>
     );
   }
 
@@ -134,7 +149,7 @@ function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount }: Re
   if (geoStatus === "loading") {
     return (
       <div className="mb-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-brand-primary" />
+        <div className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-muted-foreground border-t-brand-primary" />
         <span>위치를 확인하고 있습니다...</span>
       </div>
     );
@@ -208,13 +223,6 @@ function ArtistSearchInner({ initialArtists,
 
   const resolved = useResolvedArtists(searchArtists, searchLoading, isLoadingMore, initialTotalCount, nearby, isNearbyMode);
 
-  // 페이지 진입 시 자동으로 위치 요청 (1회)
-  useEffect(() => {
-    if (geo.status === "idle") {
-      geo.request();
-    }
-  }, [geo]);
-
   const [likedIds, setLikedIds] = useState<Set<string>>(() => new Set(initialLikedIds));
 
   const d = STRINGS;
@@ -267,6 +275,7 @@ function ArtistSearchInner({ initialArtists,
           hasFilters={hasFilters}
           isNearbyMode={isNearbyMode}
           totalCount={resolved.totalCount}
+          onRequestNearby={geo.request}
         />
 
         <div className="mb-4 h-px bg-border" />
