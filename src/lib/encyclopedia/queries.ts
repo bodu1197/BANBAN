@@ -30,13 +30,11 @@ const ENCYCLOPEDIA_BUCKET = "encyclopedia";
 const THUMBNAIL_WIDTH = 1200;
 const THUMBNAIL_HEIGHT = 630;
 const THUMBNAIL_QUALITY = 85;
-const TEXT_PANEL_WIDTH = 480;
+const TEXT_PANEL_WIDTH = 600;
 const IMAGE_PANEL_WIDTH = THUMBNAIL_WIDTH - TEXT_PANEL_WIDTH;
-const SVG_PADDING = 40;
-const TITLE_BOX_WIDTH = TEXT_PANEL_WIDTH - SVG_PADDING * 2;
-const TITLE_BOX_Y = 110;
-const TITLE_BOX_HEIGHT = 430;
+const PANEL_PADDING = 40;
 const TITLE_MAX_LENGTH = 120;
+const BG_COLOR = { r: 26, g: 26, b: 46 };
 
 type EncyclopediaCategory = "눈썹" | "아이라인" | "입술" | "헤어라인" | "속눈썹" | "관리" | "안전" | "트렌드" | "기타";
 
@@ -52,7 +50,7 @@ const CATEGORY_COLORS: Record<EncyclopediaCategory, string> = {
   기타: "#C8C8C8",
 };
 
-function escapeXml(text: string): string {
+function escapePango(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -61,28 +59,42 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function buildTextPanelSvg(title: string, category: string): Buffer {
-  const escaped = escapeXml(title.slice(0, TITLE_MAX_LENGTH));
-  const escapedCat = escapeXml(category);
+function buildPangoMarkup(title: string, category: string): string {
   const catColor = CATEGORY_COLORS[category as EncyclopediaCategory] ?? CATEGORY_COLORS["기타"];
+  const safeTitle = escapePango(title.slice(0, TITLE_MAX_LENGTH));
+  const safeCat = escapePango(category);
+  return [
+    `<span foreground="${catColor}" size="16pt" weight="bold">${safeCat}</span>`,
+    "",
+    `<span foreground="white" size="24pt" weight="bold">${safeTitle}</span>`,
+    "",
+    "",
+    "",
+    "",
+    `<span foreground="#aaaaaa" size="11pt">반언니 백과사전</span>`,
+  ].join("\n");
+}
 
-  const svg = `<svg width="${TEXT_PANEL_WIDTH}" height="${THUMBNAIL_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a1a2e"/>
-      <stop offset="100%" stop-color="#16213e"/>
-    </linearGradient>
-  </defs>
-  <rect width="${TEXT_PANEL_WIDTH}" height="${THUMBNAIL_HEIGHT}" fill="url(#bg)"/>
-  <rect x="${SVG_PADDING}" y="${SVG_PADDING}" width="8" height="50" rx="4" fill="${catColor}"/>
-  <text x="${SVG_PADDING + 20}" y="${SVG_PADDING + 36}" font-family="sans-serif" font-size="24" font-weight="600" fill="${catColor}" letter-spacing="2">${escapedCat}</text>
-  <foreignObject x="${SVG_PADDING}" y="${TITLE_BOX_Y}" width="${TITLE_BOX_WIDTH}" height="${TITLE_BOX_HEIGHT}">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="color:#ffffff;font-family:sans-serif;font-size:42px;font-weight:700;line-height:1.35;word-break:keep-all;overflow-wrap:break-word;">${escaped}</div>
-  </foreignObject>
-  <text x="${SVG_PADDING}" y="${THUMBNAIL_HEIGHT - SVG_PADDING}" font-family="sans-serif" font-size="16" fill="#ffffff" opacity="0.7">반언니 백과사전</text>
-</svg>`;
+async function renderTextPanel(title: string, category: string): Promise<Buffer> {
+  const textRaw = await sharp({
+    text: {
+      text: buildPangoMarkup(title, category),
+      width: TEXT_PANEL_WIDTH - PANEL_PADDING * 2,
+      rgba: true,
+    },
+  }).png().toBuffer();
 
-  return Buffer.from(svg);
+  return sharp({
+    create: {
+      width: TEXT_PANEL_WIDTH,
+      height: THUMBNAIL_HEIGHT,
+      channels: 4 as const,
+      background: { ...BG_COLOR, alpha: 255 },
+    },
+  })
+    .composite([{ input: textRaw, left: PANEL_PADDING, top: PANEL_PADDING }])
+    .png()
+    .toBuffer();
 }
 
 async function composeThumbnail(
@@ -90,22 +102,23 @@ async function composeThumbnail(
   title: string,
   category: string,
 ): Promise<Buffer> {
-  const rightImage = await sharp(imageBuffer)
-    .resize(IMAGE_PANEL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
-    .toBuffer();
-
-  const textPanelSvg = buildTextPanelSvg(title, category);
+  const [textPanel, rightImage] = await Promise.all([
+    renderTextPanel(title, category),
+    sharp(imageBuffer)
+      .resize(IMAGE_PANEL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
+      .toBuffer(),
+  ]);
 
   return sharp({
     create: {
       width: THUMBNAIL_WIDTH,
       height: THUMBNAIL_HEIGHT,
       channels: 3 as const,
-      background: { r: 26, g: 26, b: 46 },
+      background: BG_COLOR,
     },
   })
     .composite([
-      { input: textPanelSvg, left: 0, top: 0 },
+      { input: textPanel, left: 0, top: 0 },
       { input: rightImage, left: TEXT_PANEL_WIDTH, top: 0 },
     ])
     .webp({ quality: THUMBNAIL_QUALITY })
