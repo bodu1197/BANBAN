@@ -71,28 +71,28 @@ export function RegionSelector({
 
   return (
     <>
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex w-full items-center gap-2 px-4 py-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
           className={cn(
-            "flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            selectedId ? "border-brand-primary" : "border-border hover:border-brand-primary",
+            "flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            (selectedId || selectedSido) ? "border-brand-primary bg-brand-primary/5" : "border-border bg-muted/30 hover:border-brand-primary focus-visible:border-brand-primary",
           )}
         >
-          <span className={selectedId ? "font-medium text-brand-primary" : "text-muted-foreground"}>
+          <span className={(selectedId || selectedSido) ? "text-brand-primary" : "text-muted-foreground"}>
             {selectedName}
           </span>
-          <span className="ml-2 text-muted-foreground">&gt;</span>
+          <span className="text-muted-foreground" aria-hidden="true">&gt;</span>
         </button>
         {(selectedId || selectedSido) && (
           <button
             type="button"
             onClick={() => { onSelectRegions(null, null); }}
             aria-label={labels.resetRegion}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="text-sm leading-none">&times;</span>
+            <span className="text-base leading-none">&times;</span>
           </button>
         )}
       </div>
