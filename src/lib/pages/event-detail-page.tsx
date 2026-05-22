@@ -152,10 +152,12 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
         event={event}
         shopData={shopData}
         heroBanner={heroBanner}
+        recommendedSection={
+          <Suspense fallback={<RecommendedSkeleton />}>
+            <RecommendedEvents eventId={event.id} artistId={event.artist_id} />
+          </Suspense>
+        }
       />
-      <Suspense fallback={<RecommendedSkeleton />}>
-        <RecommendedEvents eventId={event.id} artistId={event.artist_id} />
-      </Suspense>
     </main>
   );
 }

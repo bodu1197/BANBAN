@@ -30,12 +30,14 @@ interface EventDetailClientProps {
   event: EventWithDetails;
   shopData: EventShopData;
   heroBanner: React.ReactNode;
+  recommendedSection?: React.ReactNode;
 }
 
 export function EventDetailClient({
   event,
   shopData,
   heroBanner,
+  recommendedSection,
 }: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
   const isImageBased = hasDetailImages(event.event_media);
@@ -46,25 +48,24 @@ export function EventDetailClient({
 
       {heroBanner}
 
-      {/* sticky TabNav의 containing block을 Footer 영역까지 확장 — 스크롤 끝까지 탭 고정 유지 */}
-      <div className="min-h-screen">
-        <section id={EVENT_SECTION_IDS.description} aria-label="이벤트 설명">
-          {isImageBased ? (
-            <ImageBasedContent event={event} detailMedia={detailMedia} />
-          ) : (
-            <LegacyTextContent event={event} />
-          )}
-        </section>
+      <section id={EVENT_SECTION_IDS.description} aria-label="이벤트 설명">
+        {isImageBased ? (
+          <ImageBasedContent event={event} detailMedia={detailMedia} />
+        ) : (
+          <LegacyTextContent event={event} />
+        )}
+      </section>
 
-        <section id={EVENT_SECTION_IDS.reviews} aria-label="후기" className="px-4 py-6">
-          <ReviewsSection artistId={event.artist_id} artistName={event.artist.title} />
-        </section>
+      <section id={EVENT_SECTION_IDS.reviews} aria-label="후기" className="px-4 py-6">
+        <ReviewsSection artistId={event.artist_id} artistName={event.artist.title} />
+      </section>
 
-        <section id={EVENT_SECTION_IDS.shop} aria-label="샵 정보" className="px-4 pb-6">
-          <h2 className="mb-3 text-base font-bold">샵 정보</h2>
-          <EventShopCard shop={shopData} />
-        </section>
-      </div>
+      <section id={EVENT_SECTION_IDS.shop} aria-label="샵 정보" className="px-4 pb-6">
+        <h2 className="mb-3 text-base font-bold">샵 정보</h2>
+        <EventShopCard shop={shopData} />
+      </section>
+
+      {recommendedSection}
 
       <EventBottomBar
         kakaoUrl={event.artist.kakao_url}
