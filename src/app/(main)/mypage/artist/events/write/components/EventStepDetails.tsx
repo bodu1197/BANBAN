@@ -130,8 +130,9 @@ export function EventStepDetails({
             <input
               id="evt-shop-name"
               type="text"
-              value={values.shopName || artistTitle}
+              value={values.shopName}
               onChange={(e) => onChange({ shopName: e.target.value })}
+              placeholder={artistTitle}
               className={INPUT_CLASS}
             />
           </div>
