@@ -186,13 +186,33 @@ export async function deleteEvent(id: string): Promise<void> {
 
 export async function insertEventMedia(
   eventId: string,
-  media: Array<{ storage_path: string; media_type: string; order_index: number }>,
+  media: Array<{ storage_path: string; media_type: string; order_index: number; alt_text?: string | null; section_prompt?: string | null }>,
 ): Promise<void> {
   if (media.length === 0) return;
   const supabase = createAdminClient();
-  const rows = media.map((m) => ({ event_id: eventId, ...m }));
+  const rows = media.map((m) => ({
+    event_id: eventId,
+    storage_path: m.storage_path,
+    media_type: m.media_type,
+    order_index: m.order_index,
+    alt_text: m.alt_text ?? null,
+    section_prompt: m.section_prompt ?? null,
+  }));
   const { error } = await supabase.from("event_media").insert(rows);
   if (error) throw new Error(`이벤트 미디어 저장 실패: ${error.message}`);
+}
+
+export async function deleteEventMediaByType(
+  eventId: string,
+  mediaType: string,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("event_media")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("media_type", mediaType);
+  if (error) throw new Error(`이벤트 미디어 삭제 실패: ${error.message}`);
 }
 
 export async function insertEventCategories(

@@ -86,6 +86,61 @@ export interface GeneratedEventContent {
   seoDescription: string;
 }
 
+// --- Detail Image-based Page Types ---
+
+export const DETAIL_SECTION_TYPES = [
+  "detail_hero",
+  "detail_intro",
+  "detail_before_after",
+  "detail_audience",
+  "detail_process",
+  "detail_shop",
+  "detail_cta",
+] as const;
+
+export type DetailSectionType = (typeof DETAIL_SECTION_TYPES)[number];
+
+export const DETAIL_SECTION_LABELS: Record<DetailSectionType, string> = {
+  detail_hero: "히어로 배너",
+  detail_intro: "시술 소개",
+  detail_before_after: "시술 전후",
+  detail_audience: "추천 대상",
+  detail_process: "시술 과정",
+  detail_shop: "샵 정보",
+  detail_cta: "예약 안내",
+};
+
+export const EDIT_SECTIONS: DetailSectionType[] = [
+  "detail_hero",
+  "detail_before_after",
+  "detail_shop",
+];
+
+export interface DetailSectionCopy {
+  detail_hero: { headline: string; subtext: string; colorTheme: string };
+  detail_intro: { heading: string; benefits: string[]; bodyText: string };
+  detail_before_after: { heading: string; caption: string };
+  detail_audience: { heading: string; items: Array<{ emoji: string; text: string }> };
+  detail_process: { heading: string; steps: string[]; precautions: string[] };
+  detail_shop: { heading: string; details: string[] };
+  detail_cta: { heading: string; urgencyText: string; ctaButton: string };
+}
+
+export interface GeneratedDetailCopy {
+  sections: DetailSectionCopy;
+  seoDescription: string;
+  altTexts: Record<DetailSectionType, string>;
+}
+
+export interface DetailSectionResult {
+  sectionType: DetailSectionType;
+  storagePath: string;
+  b64Preview: string;
+  altText: string;
+  status: "pending" | "generating" | "completed" | "failed";
+  error?: string;
+}
+
 export const INITIAL_FORM_VALUES: EventFormValues = {
   category: "",
   procedureName: "",

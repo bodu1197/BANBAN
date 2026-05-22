@@ -11,14 +11,16 @@ import {
   INITIAL_FORM_VALUES,
   type EventFormValues,
   type EventMediaSlot,
-  type GeneratedEventContent,
+  type GeneratedDetailCopy,
+  type DetailSectionResult,
 } from "@/components/event-form/types";
 import { EventStepBasic } from "./EventStepBasic";
 import { EventStepDetails } from "./EventStepDetails";
 import { EventStepPhotos } from "./EventStepPhotos";
-import { EventStepPreview } from "./EventStepPreview";
+import { EventStepGenerate } from "./EventStepGenerate";
 
 const STEPS = ["기본 정보", "상세 정보", "사진 업로드", "AI 생성 & 등록"] as const;
+const DETAIL_SECTION_ORDER_OFFSET = 100;
 
 export function EventWriteClient(): React.ReactElement {
   const router = useRouter();
@@ -30,11 +32,9 @@ export function EventWriteClient(): React.ReactElement {
     { file: null, preview: "", type: "before_after", label: "시술 전후 사진" },
     { file: null, preview: "", type: "shop", label: "샵/작업 공간" },
   ]);
-  const [aiContent, setAiContent] = useState<GeneratedEventContent | null>(null);
-  const [aiImagePath, setAiImagePath] = useState<string | null>(null);
-  const [aiImagePreview, setAiImagePreview] = useState<string | null>(null);
+  const [detailCopy, setDetailCopy] = useState<GeneratedDetailCopy | null>(null);
+  const [detailSections, setDetailSections] = useState<DetailSectionResult[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const updateForm = useCallback((updates: Partial<EventFormValues>) => {
     setFormValues((prev) => ({ ...prev, ...updates }));
@@ -53,65 +53,13 @@ export function EventWriteClient(): React.ReactElement {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   }, []);
 
-  const generateAiContent = useCallback(async () => {
-    if (!artist) return;
-    setIsGenerating(true);
-    try {
-      const body = {
-        ...formValues,
-        discountRate,
-        shopName: formValues.shopName || artist.title,
-      };
-      const res = await fetch("/api/ai/generate-event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setAiContent(data.content as GeneratedEventContent);
-    } catch (e) {
-      alert(`AI 생성 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [formValues, artist, discountRate]);
-
-  const generateAiImage = useCallback(async () => {
-    if (!artist) return;
-    setIsGenerating(true);
-    try {
-      const res = await fetch("/api/ai/generate-event-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: formValues.category,
-          procedureName: formValues.procedureName,
-          title: formValues.title,
-          price: Number(formValues.price),
-          priceOrigin: Number(formValues.priceOrigin),
-          discountRate,
-          shopName: formValues.shopName || artist.title,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setAiImagePath(data.path as string);
-      setAiImagePreview(data.b64Preview as string);
-    } catch (e) {
-      alert(`이미지 생성 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [formValues, artist, discountRate]);
-
   const handleSubmit = useCallback(async () => {
-    if (!artist || !aiContent) return;
+    if (!artist || detailSections.length === 0) return;
     setIsSubmitting(true);
     try {
       const supabase = createClient();
 
-      const uploadedPaths = await Promise.all(
+      const uploadedOriginals = await Promise.all(
         mediaSlots.map(async (slot, i) => {
           if (!slot.file) return null;
           const optimized = await optimizeImage(slot.file, { maxWidth: 1600, maxHeight: 1600, quality: 0.85 });
@@ -125,6 +73,15 @@ export function EventWriteClient(): React.ReactElement {
           return { storage_path: path, media_type: slot.type, order_index: i };
         }),
       ).then((results) => results.filter((r): r is NonNullable<typeof r> => r !== null));
+
+      const detailMedia = detailSections
+        .filter((s) => s.status === "completed" && s.storagePath)
+        .map((s, i) => ({
+          storage_path: s.storagePath,
+          media_type: s.sectionType,
+          order_index: DETAIL_SECTION_ORDER_OFFSET + i,
+          alt_text: s.altText || null,
+        }));
 
       const allTargets = [
         ...formValues.targetAudience,
@@ -155,15 +112,17 @@ export function EventWriteClient(): React.ReactElement {
         procedure_advantages: formValues.procedureAdvantages.filter(Boolean),
         precautions: formValues.precautions ?? null,
         artist_introduction: formValues.artistIntroduction ?? null,
-        ai_generated_content: aiContent,
-        ai_generated_image_path: aiImagePath,
+        ai_generated_content: detailCopy,
+        ai_generated_image_path: null,
         status: "published",
       };
+
+      const allMedia = [...uploadedOriginals, ...detailMedia];
 
       const res = await fetch("/api/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: eventPayload, media: uploadedPaths }),
+        body: JSON.stringify({ event: eventPayload, media: allMedia }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
@@ -175,12 +134,12 @@ export function EventWriteClient(): React.ReactElement {
     } finally {
       setIsSubmitting(false);
     }
-  }, [artist, aiContent, aiImagePath, formValues, mediaSlots, router]);
+  }, [artist, detailCopy, detailSections, formValues, mediaSlots, discountRate, router]);
 
   if (authLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center" role="status" aria-label="로딩 중">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+        <div className="h-8 w-8 motion-safe:animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
       </div>
     );
   }
@@ -208,7 +167,7 @@ export function EventWriteClient(): React.ReactElement {
               i === currentStep
                 ? "bg-brand-primary text-white"
                 : i < currentStep
-                  ? "bg-brand-primary/20 text-brand-primary cursor-pointer"
+                  ? "bg-brand-primary/20 text-brand-primary cursor-pointer hover:bg-brand-primary/30 focus-visible:bg-brand-primary/30"
                   : "bg-muted text-muted-foreground"
             }`}
             aria-label={`${label} (${i + 1}/${STEPS.length})`}
@@ -240,15 +199,15 @@ export function EventWriteClient(): React.ReactElement {
         />
       )}
       {currentStep === 3 && (
-        <EventStepPreview
+        <EventStepGenerate
           values={formValues}
           mediaSlots={mediaSlots}
-          aiContent={aiContent}
-          aiImagePreview={aiImagePreview}
-          isGenerating={isGenerating}
+          discountRate={discountRate}
+          detailCopy={detailCopy}
+          detailSections={detailSections}
           isSubmitting={isSubmitting}
-          onGenerateText={generateAiContent}
-          onGenerateImage={generateAiImage}
+          onDetailCopyChange={setDetailCopy}
+          onDetailSectionsChange={setDetailSections}
           onSubmit={handleSubmit}
           onBack={handleBack}
         />

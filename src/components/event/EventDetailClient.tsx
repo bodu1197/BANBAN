@@ -1,25 +1,137 @@
-// @client-reason: Image carousel swipe + interactive FAQ accordion
+// @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { EventWithDetails } from "@/lib/supabase/event-queries";
-import type { GeneratedEventContent } from "@/components/event-form/types";
+import type { GeneratedEventContent, GeneratedDetailCopy } from "@/components/event-form/types";
 import { getAvatarUrl } from "@/lib/supabase/storage-utils";
+import { EventDetailImageStack } from "./EventDetailImageStack";
+
+function hasDetailImages(media: EventWithDetails["event_media"]): boolean {
+  return media.some((m) => m.media_type.startsWith("detail_"));
+}
+
+function isLegacyContent(obj: unknown): obj is GeneratedEventContent {
+  return obj !== null && typeof obj === "object" && "headline" in (obj as Record<string, unknown>);
+}
 
 export function EventDetailClient({
   event,
 }: Readonly<{ event: EventWithDetails }>): React.ReactElement {
-  const [currentImage, setCurrentImage] = useState(0);
-  const aiContent = event.ai_generated_content as GeneratedEventContent | null;
-  const media = event.event_media;
-  const discountRate = event.discount_rate ?? 0;
-
-  const heroImages = media.length > 0 ? media : [];
+  const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
+  const isImageBased = hasDetailImages(event.event_media);
 
   return (
     <div className="space-y-0">
+      {isImageBased ? (
+        <ImageBasedView event={event} detailMedia={detailMedia} />
+      ) : (
+        <LegacyTextView event={event} />
+      )}
+
+      {/* Sticky CTA Footer */}
+      <div className="sticky bottom-0 border-t border-input bg-background px-4 py-3">
+        <Link
+          href={event.artist.kakao_url ?? `tel:${event.artist.contact}`}
+          className="block w-full rounded-lg bg-brand-primary py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          상담 예약하기
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function isDetailCopy(obj: unknown): obj is GeneratedDetailCopy {
+  return obj !== null && typeof obj === "object" && "altTexts" in (obj as Record<string, unknown>);
+}
+
+function ImageBasedView({
+  event,
+  detailMedia,
+}: Readonly<{
+  event: EventWithDetails;
+  detailMedia: EventWithDetails["event_media"];
+}>): React.ReactElement {
+  const copy = isDetailCopy(event.ai_generated_content) ? event.ai_generated_content : null;
+
+  return (
+    <>
+      {/* SEO Text Header */}
+      <header className="space-y-2 px-4 py-4">
+        <p className="text-xs text-muted-foreground">{event.procedure_name}</p>
+        <h1 className="text-xl font-bold text-foreground">{event.title}</h1>
+        <div className="flex items-center gap-3">
+          {(event.discount_rate ?? 0) > 0 && (
+            <span className="rounded-md bg-red-500 px-2 py-0.5 text-sm font-bold text-white">
+              {event.discount_rate}%
+            </span>
+          )}
+          <div className="flex items-baseline gap-2">
+            {(event.discount_rate ?? 0) > 0 && (
+              <span className="text-xs text-muted-foreground line-through">
+                {event.price_origin.toLocaleString()}원
+              </span>
+            )}
+            <span className="text-lg font-bold">{event.price.toLocaleString()}원</span>
+          </div>
+        </div>
+        {event.procedure_summary && (
+          <p className="text-sm text-muted-foreground">{event.procedure_summary}</p>
+        )}
+      </header>
+
+      {/* AI-generated Image Stack */}
+      <EventDetailImageStack sections={detailMedia} />
+
+      {/* SEO hidden text from detail copy — crawlable by search engines */}
+      {copy?.sections && (
+        <aside className="sr-only" aria-hidden="true">
+          <h2>{copy.sections.detail_intro?.heading}</h2>
+          <p>{copy.sections.detail_intro?.bodyText}</p>
+          <ul>
+            {copy.sections.detail_intro?.benefits.map((b, i) => <li key={i}>{b}</li>)}
+          </ul>
+          <h2>{copy.sections.detail_audience?.heading}</h2>
+          <ul>
+            {copy.sections.detail_audience?.items.map((item, i) => <li key={i}>{item.text}</li>)}
+          </ul>
+          <h2>{copy.sections.detail_process?.heading}</h2>
+          <ol>
+            {copy.sections.detail_process?.steps.map((s, i) => <li key={i}>{s}</li>)}
+          </ol>
+          {copy.sections.detail_shop && (
+            <>
+              <h2>{copy.sections.detail_shop.heading}</h2>
+              <ul>
+                {copy.sections.detail_shop.details.map((d, i) => <li key={i}>{d}</li>)}
+              </ul>
+            </>
+          )}
+        </aside>
+      )}
+
+      {/* Artist Mini Card */}
+      <div className="px-4 py-5">
+        <ArtistMiniCard event={event} />
+      </div>
+    </>
+  );
+}
+
+function LegacyTextView({
+  event,
+}: Readonly<{ event: EventWithDetails }>): React.ReactElement {
+  const [currentImage, setCurrentImage] = useState(0);
+  const aiContent = isLegacyContent(event.ai_generated_content) ? event.ai_generated_content : null;
+  const media = event.event_media;
+  const discountRate = event.discount_rate ?? 0;
+  const heroImages = media.length > 0 ? media : [];
+
+  return (
+    <>
       {/* Image Carousel */}
       {heroImages.length > 0 && (
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
@@ -39,7 +151,7 @@ export function EventDetailClient({
                   type="button"
                   onClick={() => setCurrentImage(i)}
                   className={`h-2 w-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                    i === currentImage ? "bg-white focus-visible:ring-white" : "bg-white/40 focus-visible:ring-white"
+                    i === currentImage ? "bg-white focus-visible:ring-white" : "bg-white/40 hover:bg-white/70 focus-visible:bg-white/70 focus-visible:ring-white"
                   }`}
                   aria-label={`이미지 ${i + 1}`}
                 />
@@ -146,7 +258,7 @@ export function EventDetailClient({
             <div className="space-y-2">
               {aiContent.faq.map((item, i) => (
                 <details key={i} className="group rounded-lg border border-input">
-                  <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-foreground">
+                  <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     {item.question}
                   </summary>
                   <p className="px-4 pb-3 text-sm text-muted-foreground">{item.answer}</p>
@@ -160,67 +272,53 @@ export function EventDetailClient({
         <section className="space-y-3 rounded-lg border border-input p-4">
           <h2 className="text-base font-bold text-foreground">샵 정보</h2>
           <div className="space-y-1.5 text-sm">
-            {event.shop_name && (
-              <p className="font-medium">{event.shop_name}</p>
-            )}
-            {event.shop_region && (
-              <p className="text-muted-foreground">{event.shop_region}</p>
-            )}
-            {event.shop_business_hours && (
-              <p className="text-muted-foreground">영업시간: {event.shop_business_hours}</p>
-            )}
-            {event.shop_parking && (
-              <p className="text-muted-foreground">주차: {event.shop_parking}</p>
-            )}
-            {event.shop_booking_method && (
-              <p className="text-muted-foreground">예약: {event.shop_booking_method}</p>
-            )}
+            {event.shop_name && <p className="font-medium">{event.shop_name}</p>}
+            {event.shop_region && <p className="text-muted-foreground">{event.shop_region}</p>}
+            {event.shop_business_hours && <p className="text-muted-foreground">영업시간: {event.shop_business_hours}</p>}
+            {event.shop_parking && <p className="text-muted-foreground">주차: {event.shop_parking}</p>}
+            {event.shop_booking_method && <p className="text-muted-foreground">예약: {event.shop_booking_method}</p>}
           </div>
         </section>
 
         {/* Artist Mini Card */}
-        <Link
-          href={`/artists/${event.artist.id}`}
-          className="flex items-center gap-3 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted/50"
-        >
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
-            {event.artist.profile_image_path ? (
-              <Image
-                src={getAvatarUrl(event.artist.profile_image_path) ?? ""}
-                alt={event.artist.title}
-                fill
-                className="object-cover"
-                sizes="48px"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{event.artist.title}</p>
-            {event.artist.introduce && (
-              <p className="truncate text-xs text-muted-foreground">{event.artist.introduce}</p>
-            )}
-          </div>
-          <svg className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
+        <ArtistMiniCard event={event} />
       </div>
+    </>
+  );
+}
 
-      {/* Sticky CTA Footer */}
-      <div className="sticky bottom-0 border-t border-input bg-background px-4 py-3">
-        <Link
-          href={event.artist.kakao_url ?? `tel:${event.artist.contact}`}
-          className="block w-full rounded-lg bg-brand-primary py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {aiContent?.callToAction ?? "상담 예약하기"}
-        </Link>
+function ArtistMiniCard({ event }: Readonly<{ event: EventWithDetails }>): React.ReactElement {
+  return (
+    <Link
+      href={`/artists/${event.artist.id}`}
+      className="flex items-center gap-3 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted/50"
+    >
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
+        {event.artist.profile_image_path ? (
+          <Image
+            src={getAvatarUrl(event.artist.profile_image_path) ?? ""}
+            alt={event.artist.title}
+            fill
+            className="object-cover"
+            sizes="48px"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+            <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          </div>
+        )}
       </div>
-    </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{event.artist.title}</p>
+        {event.artist.introduce && (
+          <p className="truncate text-xs text-muted-foreground">{event.artist.introduce}</p>
+        )}
+      </div>
+      <svg className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </Link>
   );
 }

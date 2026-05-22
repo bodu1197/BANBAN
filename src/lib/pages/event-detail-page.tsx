@@ -5,15 +5,26 @@ import { EventDetailClient } from "@/components/event/EventDetailClient";
 import { EventCard } from "@/components/event/EventCard";
 import { buildPageSeo } from "@/lib/seo";
 import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
-import type { GeneratedEventContent } from "@/components/event-form/types";
+import type { GeneratedEventContent, GeneratedDetailCopy } from "@/components/event-form/types";
+
+function isDetailCopy(obj: unknown): obj is GeneratedDetailCopy {
+  return obj !== null && typeof obj === "object" && "altTexts" in (obj as Record<string, unknown>);
+}
+
+function isLegacyContent(obj: unknown): obj is GeneratedEventContent {
+  return obj !== null && typeof obj === "object" && "headline" in (obj as Record<string, unknown>);
+}
 
 export async function generateEventMetadata(id: string): Promise<Metadata> {
   const event = await fetchEventById(id);
   if (!event) return { title: "이벤트를 찾을 수 없습니다 | 반언니" };
 
-  const aiContent = event.ai_generated_content as GeneratedEventContent | null;
-  const description = aiContent?.seoDescription ?? event.procedure_summary;
-  const heroMedia = event.event_media?.[0];
+  const aiRaw = event.ai_generated_content;
+  const detailCopy = isDetailCopy(aiRaw) ? aiRaw : null;
+  const legacyContent = detailCopy ? null : (isLegacyContent(aiRaw) ? aiRaw : null);
+  const description = detailCopy?.seoDescription ?? legacyContent?.seoDescription ?? event.procedure_summary;
+  const detailHero = event.event_media?.find((m) => m.media_type === "detail_hero");
+  const heroMedia = detailHero ?? event.event_media?.[0];
   const heroImage = heroMedia ? getEventStorageUrl(heroMedia.storage_path) : null;
 
   return {

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const body = await request.json() as {
       event: Omit<EventInsert, "artist_id">;
-      media: Array<{ storage_path: string; media_type: string; order_index: number }>;
+      media: Array<{ storage_path: string; media_type: string; order_index: number; alt_text?: string | null }>;
       categoryIds?: string[];
     };
 

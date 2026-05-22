@@ -1391,27 +1391,33 @@ export type Database = {
       }
       event_media: {
         Row: {
+          alt_text: string | null
           created_at: string | null
           event_id: string
           id: string
           media_type: string
           order_index: number | null
+          section_prompt: string | null
           storage_path: string
         }
         Insert: {
+          alt_text?: string | null
           created_at?: string | null
           event_id: string
           id?: string
           media_type?: string
           order_index?: number | null
+          section_prompt?: string | null
           storage_path: string
         }
         Update: {
+          alt_text?: string | null
           created_at?: string | null
           event_id?: string
           id?: string
           media_type?: string
           order_index?: number | null
+          section_prompt?: string | null
           storage_path?: string
         }
         Relationships: [
