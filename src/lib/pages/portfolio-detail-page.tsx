@@ -94,17 +94,18 @@ async function StreamedSecondaryData({ id, artistId, artistType, price, artist, 
 }>): Promise<React.ReactElement> {
     const [
         { data: artistPortfolios, count: artistPortfolioCount },
-        otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions,
+        randomPool, lowerPrice, higherPrice, sameBodyPart,
         shopStats,
     ] = await Promise.all([
         fetchPortfoliosByArtist(artistId, { limit: 10 }),
-        fetchRandomPortfolios(id, artistType, 5),
+        fetchRandomPortfolios(id, artistType, 10),
         fetchLowerPricePortfolios(price, id, artistType, 5),
         fetchHigherPricePortfolios(price, id, artistType, 5),
         fetchSameCategoryPortfolios(id, artistType, 5),
-        fetchRandomPortfolios(id, artistType, 5),
         fetchArtistShopStats(artistId),
     ]);
+    const otherCustomersViewed = randomPool.slice(0, 5);
+    const styleSuggestions = randomPool.slice(5);
 
     const shopCardData: ArtistShopCardData = {
         artistId: artist.id,

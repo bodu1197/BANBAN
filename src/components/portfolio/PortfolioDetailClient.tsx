@@ -22,13 +22,6 @@ import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import { useAuth } from "@/hooks/useAuth";
 import { togglePortfolioLike } from "@/lib/actions/portfolio-likes";
 import { reportContent } from "@/lib/actions/report";
-import { useRouter } from "next/navigation";
-// 1:1 채팅 — 당분간 비활성화
-// import dynamic from "next/dynamic";
-// const InlineChat = dynamic(
-//   () => import("@/components/chat/InlineChat").then((m) => ({ default: m.InlineChat })),
-//   { ssr: false }
-// );
 
 function useCanEdit(userId: string | undefined, myArtistId: string | undefined, portfolioArtistId: string): boolean {
   const isOwner = myArtistId === portfolioArtistId;
@@ -200,9 +193,6 @@ export function PortfolioDetailClient({
       <PortfolioBottomBar
         kakaoUrl={artist.kakao_url}
         contact={artist.contact}
-        artistUserId={artist.user_id}
-        artistName={artist.title}
-        currentUser={user}
         artistId={portfolio.artist_id}
         portfolioId={portfolio.id}
       />
@@ -252,8 +242,8 @@ function scrollToShopSection(): void {
   el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
-function BottomBarIcons({ kakaoUrl, contact, onChat: _onChat, artistId, portfolioId }: Readonly<{
-  kakaoUrl?: string | null; contact?: string | null; onChat: () => void;
+function BottomBarIcons({ kakaoUrl, contact, artistId, portfolioId }: Readonly<{
+  kakaoUrl?: string | null; contact?: string | null;
   artistId: string; portfolioId: string;
 }>): React.ReactElement {
   return (
@@ -286,40 +276,16 @@ function BottomBarIcons({ kakaoUrl, contact, onChat: _onChat, artistId, portfoli
   );
 }
 
-function PortfolioBottomBar({ kakaoUrl, contact, artistUserId: _artistUserId, artistName: _artistName, currentUser, artistId, portfolioId }: Readonly<{
+function PortfolioBottomBar({ kakaoUrl, contact, artistId, portfolioId }: Readonly<{
   kakaoUrl?: string | null; contact?: string | null;
-  artistUserId: string; artistName: string;
-  currentUser: { id: string } | null | undefined;
   artistId: string; portfolioId: string;
 }>): React.ReactElement {
-  // 1:1 채팅 — 당분간 비활성화
-  const [_chatOpen, _setChatOpen] = useState(false);
-  const router = useRouter();
-
-  const handleChat = (): void => {
-    if (currentUser) _setChatOpen(true);
-    else router.push("/login");
-  };
-
   return (
-    <>
-      <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
-        <div className="flex items-center gap-1.5">
-          <BottomBarIcons kakaoUrl={kakaoUrl} contact={contact} onChat={handleChat} artistId={artistId} portfolioId={portfolioId} />
-        </div>
+    <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
+      <div className="flex items-center gap-1.5">
+        <BottomBarIcons kakaoUrl={kakaoUrl} contact={contact} artistId={artistId} portfolioId={portfolioId} />
       </div>
-      {/* 1:1 채팅 — 당분간 비활성화
-      {currentUser ? (
-        <InlineChat
-          otherUserId={artistUserId}
-          otherName={artistName}
-          currentUserId={currentUser.id}
-          isOpen={chatOpen}
-          onClose={() => setChatOpen(false)}
-        />
-      ) : null}
-      */}
-    </>
+    </div>
   );
 }
 
@@ -359,6 +325,9 @@ function PortfolioReportModal({ portfolioId, onClose }: Readonly<{
   const [reason, setReason] = useState<string>(REPORT_REASONS[0].value);
   const [description, setDescription] = useState("");
   const [isPending, startTransition] = useTransition();
+  const panelRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) node.focus();
+  }, []);
 
   function handleSubmit(): void {
     startTransition(async () => {
@@ -370,10 +339,14 @@ function PortfolioReportModal({ portfolioId, onClose }: Readonly<{
     });
   }
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") onClose();
+  }, [onClose]);
+
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="portfolio-report-title" className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="portfolio-report-title" className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4" onKeyDown={handleKeyDown}>
       <button type="button" aria-label={STRINGS.common.close} onClick={onClose} className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full max-w-md rounded-t-2xl bg-background p-5 shadow-xl md:rounded-2xl">
+      <div ref={panelRef} tabIndex={-1} className="relative w-full max-w-md rounded-t-2xl bg-background p-5 shadow-xl outline-none md:rounded-2xl">
         <h2 id="portfolio-report-title" className="mb-1 text-base font-bold">포트폴리오 신고</h2>
         <p className="mb-4 text-xs text-muted-foreground">신고 사유를 선택해주세요. 허위 신고 시 제재될 수 있습니다.</p>
         <ReportReasonFieldset reason={reason} onChange={setReason} />

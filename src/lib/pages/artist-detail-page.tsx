@@ -221,8 +221,6 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
       <FloatingCTA
         kakaoUrl={artist.kakao_url}
         contact={artist.contact ?? null}
-        artistUserId={artist.user_id}
-        artistName={artist.title}
         artistId={id}
       />
     </main>

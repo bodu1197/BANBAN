@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Clock, Users, Tag, Star, Instagram, ChevronLeft, ChevronRight, Phone, ArrowLeft } from "lucide-react";
+import { KakaoIcon } from "@/components/ui/KakaoIcon";
 import type { CourseDetail } from "@/lib/supabase/course-queries";
 type TabKey = "highlights" | "curriculum" | "reviews" | "artistInfo";
 
@@ -403,9 +404,7 @@ function CourseBottomBar({ kakaoUrl, contact }: Readonly<{
             <div className="flex items-center gap-1.5">
                 {hasKakao ? (
                     <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className={CONTACT_BTN} aria-label="카카오톡">
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.21 4.65 6.58-.15.55-.58 2.07-.66 2.39-.1.4.15.39.31.28.13-.08 2.02-1.37 2.84-1.93.9.13 1.83.2 2.79.2 5.52 0 10-3.58 10-7.52C22 6.58 17.52 3 12 3z" />
-                        </svg>
+                        <KakaoIcon />
                     </a>
                 ) : null}
                 {hasContact ? (
