@@ -11,6 +11,7 @@ import {
   getAvatarUrl,
   getArtistMediaUrl,
 } from "@/lib/supabase/queries";
+import { fetchEventsByArtist } from "@/lib/supabase/event-queries";
 import { ArtistTopBar } from "@/components/artists/ArtistTopBar";
 import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
 import { ShopBlogClient } from "@/components/artists/ShopBlogClient";
@@ -133,12 +134,13 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
     notFound();
   }
 
-  const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos] = await Promise.all([
+  const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos, events] = await Promise.all([
     fetchPortfoliosByArtist(id, { limit: 50 }),
     fetchReviewsByArtist(id),
     getUser().catch(() => null),
     fetchLikedArtistIds(),
     fetchBeforeAfterByArtist(id),
+    fetchEventsByArtist(id),
   ]);
 
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
@@ -189,9 +191,11 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
             isLiked={likedIds.includes(id)}
           />
         }
+        events={events}
         portfolios={portfolios}
         reviews={reviews}
         beforeAfterPhotos={beforeAfterPhotos}
+        eventCount={events.length}
         portfolioCount={portfolios.length}
         beforeAfterCount={beforeAfterPhotos.length}
         reviewCount={reviewCount}
@@ -199,11 +203,13 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
         noPortfolioMessage={STRINGS.artist.noPortfolio}
         noReviewsMessage={STRINGS.artist.noReviews}
         noBeforeAfterMessage={STRINGS.artist.noBeforeAfter}
+        noEventsMessage={STRINGS.artist.noEvents}
         beforeAfterCountLabel={STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length))}
         gridViewLabel={STRINGS.common.gridView}
         listViewLabel={STRINGS.common.listView}
         beforeLabel={STRINGS.artist.beforeLabel}
         afterLabel={STRINGS.artist.afterLabel}
+        eventsLabel={STRINGS.artist.events}
         portfolioLabel={STRINGS.artist.portfolio}
         beforeAfterLabel={STRINGS.artist.beforeAfter}
         reviewsLabel={STRINGS.artist.reviews}

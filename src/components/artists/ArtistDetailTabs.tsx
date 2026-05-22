@@ -4,6 +4,8 @@
 import { lazy, Suspense } from "react";
 import Link from "next/link";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
+import type { EventCardData } from "@/lib/supabase/event-queries";
+import { EventCard } from "@/components/event/EventCard";
 import { PortfolioTabContent } from "./PortfolioTabContent";
 import { BeforeAfterTabContent } from "./BeforeAfterTabContent";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,12 +31,14 @@ function ReviewsSkeleton(): React.ReactElement {
 
 interface ArtistDetailTabsProps {
   activeTab: ShopTabId;
+  events: EventCardData[];
   portfolios: PortfolioWithMedia[];
   reviews: ReviewWithUser[];
   beforeAfterPhotos: BeforeAfterPhoto[];
   totalCountLabel: string;
   noPortfolioMessage: string;
   noReviewsMessage: string;
+  noEventsMessage: string;
   gridViewLabel?: string;
   listViewLabel?: string;
   artistId: string;
@@ -59,10 +63,29 @@ function WriteReviewLink({ artistId, label }: Readonly<{ artistId: string; label
   );
 }
 
+function EventsTabContent({
+  events,
+  emptyMessage,
+}: Readonly<{ events: EventCardData[]; emptyMessage: string }>): React.ReactElement {
+  if (events.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>;
+  }
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {events.map((e) => (
+        <EventCard key={e.id} event={e} />
+      ))}
+    </div>
+  );
+}
+
 function renderTabPanel(
   activeTab: ShopTabId,
   props: Readonly<ArtistDetailTabsProps>,
 ): React.ReactNode {
+  if (activeTab === "events") {
+    return <EventsTabContent events={props.events} emptyMessage={props.noEventsMessage} />;
+  }
   if (activeTab === "portfolio") {
     return (
       <PortfolioTabContent

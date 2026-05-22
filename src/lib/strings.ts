@@ -126,7 +126,9 @@ export const STRINGS ={
     "noBeforeAfter": "시술 전후 사진이 없습니다",
     "beforeLabel": "시술 전",
     "afterLabel": "시술 후",
-    "beforeAfterCount": "총 {count}개"
+    "beforeAfterCount": "총 {count}개",
+    "events": "이벤트",
+    "noEvents": "이벤트가 없습니다"
   },
   "portfolio": {
     "writeReview": "리뷰 작성하기",

@@ -3,14 +3,17 @@
 
 import { useState } from "react";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
+import type { EventCardData } from "@/lib/supabase/event-queries";
 import { ShopTabsNav, type ShopTabId } from "./ShopTabsNav";
 import { ArtistDetailTabs } from "./ArtistDetailTabs";
 
 interface ShopBlogClientProps {
   hero: React.ReactNode;
+  events: EventCardData[];
   portfolios: PortfolioWithMedia[];
   reviews: ReviewWithUser[];
   beforeAfterPhotos: BeforeAfterPhoto[];
+  eventCount: number;
   portfolioCount: number;
   beforeAfterCount: number;
   reviewCount: number;
@@ -18,11 +21,13 @@ interface ShopBlogClientProps {
   noPortfolioMessage: string;
   noReviewsMessage: string;
   noBeforeAfterMessage: string;
+  noEventsMessage: string;
   beforeAfterCountLabel: string;
   gridViewLabel: string;
   listViewLabel: string;
   beforeLabel: string;
   afterLabel: string;
+  eventsLabel: string;
   portfolioLabel: string;
   beforeAfterLabel: string;
   reviewsLabel: string;
@@ -33,9 +38,11 @@ interface ShopBlogClientProps {
 
 export function ShopBlogClient({
   hero,
+  events,
   portfolios,
   reviews,
   beforeAfterPhotos,
+  eventCount,
   portfolioCount,
   beforeAfterCount,
   reviewCount,
@@ -43,11 +50,13 @@ export function ShopBlogClient({
   noPortfolioMessage,
   noReviewsMessage,
   noBeforeAfterMessage,
+  noEventsMessage,
   beforeAfterCountLabel,
   gridViewLabel,
   listViewLabel,
   beforeLabel,
   afterLabel,
+  eventsLabel,
   portfolioLabel,
   beforeAfterLabel,
   reviewsLabel,
@@ -55,9 +64,10 @@ export function ShopBlogClient({
   artistId,
   isLoggedIn,
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<ShopTabId>("portfolio");
+  const [activeTab, setActiveTab] = useState<ShopTabId>("events");
 
   const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count: number }> = [
+    { id: "events", label: eventsLabel, count: eventCount },
     { id: "portfolio", label: portfolioLabel, count: portfolioCount },
     { id: "beforeAfter", label: beforeAfterLabel, count: beforeAfterCount },
     { id: "reviews", label: reviewsLabel, count: reviewCount },
@@ -69,6 +79,7 @@ export function ShopBlogClient({
       {hero}
       <ArtistDetailTabs
         activeTab={activeTab}
+        events={events}
         portfolios={portfolios}
         reviews={reviews}
         beforeAfterPhotos={beforeAfterPhotos}
@@ -76,6 +87,7 @@ export function ShopBlogClient({
         noPortfolioMessage={noPortfolioMessage}
         noReviewsMessage={noReviewsMessage}
         noBeforeAfterMessage={noBeforeAfterMessage}
+        noEventsMessage={noEventsMessage}
         beforeAfterCountLabel={beforeAfterCountLabel}
         gridViewLabel={gridViewLabel}
         listViewLabel={listViewLabel}

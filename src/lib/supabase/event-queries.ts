@@ -140,6 +140,7 @@ export const fetchEventsByArtist = cache(async function fetchEventsByArtist(
     .from("events")
     .select(EVENT_CARD_SELECT)
     .eq("artist_id", artistId)
+    .eq("status", "published")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
