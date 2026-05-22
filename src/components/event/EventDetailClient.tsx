@@ -18,6 +18,10 @@ import { EventDetailImageStack } from "./EventDetailImageStack";
 import { EventShopCard, type EventShopData } from "./EventShopCard";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
 
+const RETOUCH_LABELS: Record<string, string> = {
+  included: "포함", separate: "별도", none: "없음", extra: "추가비",
+} as const;
+
 function hasDetailImages(media: EventWithDetails["event_media"]): boolean {
   return media.some((m) => m.media_type.startsWith("detail_"));
 }
@@ -135,17 +139,19 @@ function LegacyImageCarousel({
         priority
       />
       {images.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+        <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">
           {images.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setCurrentImage(i)}
-              className={`h-2 w-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                i === currentImage ? "bg-white focus-visible:ring-white" : "bg-white/40 hover:bg-white/70 focus-visible:bg-white/70 focus-visible:ring-white"
-              }`}
-              aria-label={`이미지 ${i + 1}`}
-            />
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center focus-visible:outline-none"
+              aria-label={`이미지 ${i + 1}/${images.length}`}
+            >
+              <span className={`block h-2 w-2 rounded-full transition-colors ${
+                i === currentImage ? "bg-white" : "bg-white/40"
+              }`} />
+            </button>
           ))}
         </div>
       )}
@@ -243,7 +249,7 @@ function InfoCardGrid({ event }: Readonly<{ event: EventWithDetails }>): React.R
         <div className="text-center">
           <p className="text-xs text-muted-foreground">리터치</p>
           <p className="text-sm font-medium">
-            {{ included: "포함", separate: "별도", none: "없음", extra: "추가비" }[event.retouch_type] ?? event.retouch_type}
+            {RETOUCH_LABELS[event.retouch_type] ?? event.retouch_type}
           </p>
         </div>
       )}
@@ -368,7 +374,10 @@ function EventHeader(): React.ReactElement {
 
 function scrollToShop(): void {
   const el = document.getElementById(EVENT_SECTION_IDS.shop);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!el) return;
+  const reduced = typeof globalThis.matchMedia === "function"
+    && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 function BottomBarButtons({ safeKakao, safeContact, artistId, eventId }: Readonly<{
