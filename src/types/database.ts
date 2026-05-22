@@ -3363,3 +3363,16 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+type TableRow<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+
+export type Profile = TableRow<'profiles'>
+export type Artist = TableRow<'artists'>
+export type Portfolio = TableRow<'portfolios'>
+export type PortfolioMedia = TableRow<'portfolio_media'>
+export type Region = TableRow<'regions'>
+export type Category = TableRow<'categories'>
+export type Review = TableRow<'reviews'>
+export type Like = TableRow<'likes'>
+export type BeforeAfterPhoto = TableRow<'before_after_photos'>
+export type ArtistType = 'SEMI_PERMANENT';
