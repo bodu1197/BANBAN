@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { updateEvent } from "@/lib/supabase/event-queries";
 import { calcDiscountRate } from "@/components/portfolio-form/portfolio-helpers";
+import { EVENT_FIELD_LIMITS } from "@/components/event-form/types";
 import type { Database } from "@/types/database";
 
 type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
@@ -47,6 +48,42 @@ function isStringArray(v: unknown): v is string[] {
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function checkArrayItemLengths(raw: unknown, max: number, label: string): string | null {
+  if (!isStringArray(raw)) return null;
+  for (const item of raw) {
+    if (item.length > max) return `${label} 항목이 너무 깁니다`;
+  }
+  return null;
+}
+
+function validateLengths(body: Record<string, unknown>): string | null {
+  const L = EVENT_FIELD_LIMITS;
+  const checks: Array<[string, unknown, number]> = [
+    ["procedure_name", body.procedure_name, L.procedure_name],
+    ["title", body.title, L.title],
+    ["procedure_summary", body.procedure_summary, L.procedure_summary],
+    ["event_period_text", body.event_period_text, L.event_period_text],
+    ["retouch_type", body.retouch_type, L.retouch_type],
+    ["retouch_description", body.retouch_description, L.retouch_description],
+    ["shop_name", body.shop_name, L.shop_name],
+    ["shop_region", body.shop_region, L.shop_region],
+    ["shop_business_hours", body.shop_business_hours, L.shop_business_hours],
+    ["shop_parking", body.shop_parking, L.shop_parking],
+    ["shop_booking_method", body.shop_booking_method, L.shop_booking_method],
+    ["procedure_duration", body.procedure_duration, L.procedure_duration],
+    ["maintenance_period", body.maintenance_period, L.maintenance_period],
+    ["precautions", body.precautions, L.precautions],
+    ["artist_introduction", body.artist_introduction, L.artist_introduction],
+  ];
+  for (const [name, val, max] of checks) {
+    if (typeof val === "string" && val.length > max) {
+      return `${name} 필드가 최대 길이(${String(max)}자)를 초과했습니다`;
+    }
+  }
+  return checkArrayItemLengths(body.target_audience, L.target_audience_item, "추천 대상")
+    ?? checkArrayItemLengths(body.procedure_advantages, L.procedure_advantages_item, "시술 장점");
 }
 
 function buildUpdatePayload(body: Record<string, unknown>): EventUpdate {
@@ -109,6 +146,10 @@ export async function PUT(
     const raw: unknown = await request.json();
     if (!isPlainObject(raw)) {
       return NextResponse.json({ error: "잘못된 요청 형식" }, { status: 400 });
+    }
+    const lengthError = validateLengths(raw);
+    if (lengthError) {
+      return NextResponse.json({ error: lengthError }, { status: 400 });
     }
     await updateEvent(id, buildUpdatePayload(raw));
 

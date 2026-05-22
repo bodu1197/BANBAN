@@ -141,6 +141,26 @@ export interface DetailSectionResult {
   error?: string;
 }
 
+export const EVENT_FIELD_LIMITS = {
+  procedure_name: 100,
+  title: 200,
+  procedure_summary: 100,
+  event_period_text: 200,
+  retouch_type: 50,
+  retouch_description: 500,
+  shop_name: 100,
+  shop_region: 100,
+  shop_business_hours: 100,
+  shop_parking: 50,
+  shop_booking_method: 100,
+  procedure_duration: 50,
+  maintenance_period: 50,
+  precautions: 2000,
+  artist_introduction: 2000,
+  target_audience_item: 50,
+  procedure_advantages_item: 200,
+} as const;
+
 export const INITIAL_FORM_VALUES: EventFormValues = {
   category: "",
   procedureName: "",

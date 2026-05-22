@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import type { EventFormValues } from "@/components/event-form/types";
+import { EVENT_FIELD_LIMITS, type EventFormValues } from "@/components/event-form/types";
 import { INPUT_CLASS, LABEL_CLASS } from "@/components/event-form/form-styles";
 
 function AdvantageInput({
@@ -35,6 +35,7 @@ function AdvantageInput({
       type="text"
       value={val}
       onChange={handleChange}
+      maxLength={EVENT_FIELD_LIMITS.procedure_advantages_item}
       placeholder={`장점 ${String(index + 1)}`}
       aria-label={`시술 장점 ${String(index + 1)}`}
       className={`${className ?? ""} ${INPUT_CLASS}`.trim()}
@@ -60,6 +61,7 @@ function OptionalFieldsBody({
             type="text"
             value={values.procedureDuration}
             onChange={(e) => onChange({ procedureDuration: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.procedure_duration}
             placeholder="약 60분"
             className={INPUT_CLASS}
           />
@@ -71,6 +73,7 @@ function OptionalFieldsBody({
             type="text"
             value={values.maintenancePeriod}
             onChange={(e) => onChange({ maintenancePeriod: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.maintenance_period}
             placeholder="6개월~1년"
             className={INPUT_CLASS}
           />
@@ -90,6 +93,7 @@ function OptionalFieldsBody({
           id="edit-precautions"
           value={values.precautions}
           onChange={(e) => onChange({ precautions: e.target.value })}
+          maxLength={EVENT_FIELD_LIMITS.precautions}
           placeholder="예: 시술 직후 색이 진해 보일 수 있어요."
           rows={3}
           className={INPUT_CLASS}
@@ -102,6 +106,7 @@ function OptionalFieldsBody({
           id="edit-artist-intro"
           value={values.artistIntroduction}
           onChange={(e) => onChange({ artistIntroduction: e.target.value })}
+          maxLength={EVENT_FIELD_LIMITS.artist_introduction}
           placeholder="예: 자연눈썹과 콤보눈썹을 중심으로 섬세한 디자인을 진행합니다."
           rows={3}
           className={INPUT_CLASS}

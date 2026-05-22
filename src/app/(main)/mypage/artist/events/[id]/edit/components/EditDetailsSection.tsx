@@ -1,7 +1,7 @@
 // @client-reason: Controlled inputs for event detail fields
 "use client";
 
-import { TARGET_AUDIENCE_OPTIONS, type EventFormValues } from "@/components/event-form/types";
+import { TARGET_AUDIENCE_OPTIONS, EVENT_FIELD_LIMITS, type EventFormValues } from "@/components/event-form/types";
 import { INPUT_CLASS, LABEL_CLASS } from "@/components/event-form/form-styles";
 
 function TargetAudienceField({
@@ -46,6 +46,7 @@ function TargetAudienceField({
         type="text"
         value={values.customTarget}
         onChange={(e) => onChange({ customTarget: e.target.value })}
+        maxLength={EVENT_FIELD_LIMITS.target_audience_item}
         placeholder="직접 입력 (선택)"
         className={`mt-2 ${INPUT_CLASS}`}
       />
@@ -74,6 +75,7 @@ function ShopInfoFieldset({
             type="text"
             value={values.shopName}
             onChange={(e) => onChange({ shopName: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.shop_name}
             placeholder={artistTitle}
             className={INPUT_CLASS}
           />
@@ -85,6 +87,7 @@ function ShopInfoFieldset({
             type="text"
             value={values.shopRegion}
             onChange={(e) => onChange({ shopRegion: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.shop_region}
             placeholder="서울 강남구"
             className={INPUT_CLASS}
           />
@@ -97,6 +100,7 @@ function ShopInfoFieldset({
           type="text"
           value={values.shopBusinessHours}
           onChange={(e) => onChange({ shopBusinessHours: e.target.value })}
+          maxLength={EVENT_FIELD_LIMITS.shop_business_hours}
           placeholder="10:00 ~ 20:00"
           className={INPUT_CLASS}
         />
@@ -109,6 +113,7 @@ function ShopInfoFieldset({
             type="text"
             value={values.shopParking}
             onChange={(e) => onChange({ shopParking: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.shop_parking}
             placeholder="가능 / 불가"
             className={INPUT_CLASS}
           />
@@ -120,6 +125,7 @@ function ShopInfoFieldset({
             type="text"
             value={values.shopBookingMethod}
             onChange={(e) => onChange({ shopBookingMethod: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.shop_booking_method}
             placeholder="카카오톡, 전화"
             className={INPUT_CLASS}
           />
@@ -150,6 +156,7 @@ export function EditDetailsSection({
           type="text"
           value={values.eventPeriodText}
           onChange={(e) => onChange({ eventPeriodText: e.target.value })}
+          maxLength={EVENT_FIELD_LIMITS.event_period_text}
           placeholder="예: 2026년 6월 30일까지, 선착순 20명"
           className={INPUT_CLASS}
         />

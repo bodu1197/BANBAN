@@ -1,7 +1,7 @@
 // @client-reason: Controlled inputs for basic event fields
 "use client";
 
-import { RETOUCH_TYPES, type EventFormValues } from "@/components/event-form/types";
+import { RETOUCH_TYPES, EVENT_FIELD_LIMITS, type EventFormValues } from "@/components/event-form/types";
 import { INPUT_CLASS, LABEL_CLASS } from "@/components/event-form/form-styles";
 import { calcDiscountRate } from "@/components/portfolio-form/portfolio-helpers";
 
@@ -106,6 +106,7 @@ function RetouchField({
             type="text"
             value={values.retouchDescription}
             onChange={(e) => onChange({ retouchDescription: e.target.value })}
+            maxLength={EVENT_FIELD_LIMITS.retouch_description}
             placeholder="예: 리터치 1회 포함, 색상 변경 시 추가비 발생"
             className={`mt-2 ${INPUT_CLASS}`}
           />
@@ -135,6 +136,7 @@ export function EditBasicSection({
           type="text"
           value={values.procedureName}
           onChange={(e) => onChange({ procedureName: e.target.value })}
+          maxLength={EVENT_FIELD_LIMITS.procedure_name}
           className={INPUT_CLASS}
         />
       </div>
@@ -148,6 +150,7 @@ export function EditBasicSection({
           type="text"
           value={values.title}
           onChange={(e) => onChange({ title: e.target.value })}
+          maxLength={EVENT_FIELD_LIMITS.title}
           className={INPUT_CLASS}
         />
       </div>
