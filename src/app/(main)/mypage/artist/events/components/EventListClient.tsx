@@ -160,6 +160,12 @@ export function EventListClient(): React.ReactElement {
 
                 {/* Actions */}
                 <div className="flex shrink-0 flex-col gap-1.5">
+                  <Link
+                    href={`/mypage/artist/events/${event.id}/edit`}
+                    className="flex min-h-[44px] items-center justify-center rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted"
+                  >
+                    수정
+                  </Link>
                   <button
                     type="button"
                     onClick={() => handleStatusToggle(event.id, event.status)}
