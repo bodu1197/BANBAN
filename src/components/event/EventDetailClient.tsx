@@ -1,29 +1,38 @@
-// @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA, back navigation
+// @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA, tab scroll, collapsible panels
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Phone } from "lucide-react";
+import { ArrowLeft, Share2, Phone, ChevronDown, Heart, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { THEME_BTN, KAKAO_BTN, PRIMARY_BTN } from "@/components/ui/cta-button-styles";
+import { KakaoIcon } from "@/components/ui/KakaoIcon";
 import { toast } from "sonner";
 import type { EventWithDetails } from "@/lib/supabase/event-queries";
 import type { GeneratedEventContent, GeneratedDetailCopy } from "@/components/event-form/types";
-import { getAvatarUrl } from "@/lib/supabase/storage-utils";
+import { isLegacyContent, isDetailCopy } from "@/lib/event-content-types";
+import { isSafeUrl, isSafePhone, trackContactClick } from "@/lib/contact-utils";
 import { EventDetailImageStack } from "./EventDetailImageStack";
+import { EventShopCard, type EventShopData } from "./EventShopCard";
+import { EVENT_SECTION_IDS } from "./event-section-ids";
 
 function hasDetailImages(media: EventWithDetails["event_media"]): boolean {
   return media.some((m) => m.media_type.startsWith("detail_"));
 }
 
-function isLegacyContent(obj: unknown): obj is GeneratedEventContent {
-  return obj !== null && typeof obj === "object" && "headline" in (obj as Record<string, unknown>);
+interface EventDetailClientProps {
+  event: EventWithDetails;
+  shopData: EventShopData;
+  heroBanner: React.ReactNode;
 }
 
 export function EventDetailClient({
   event,
-}: Readonly<{ event: EventWithDetails }>): React.ReactElement {
+  shopData,
+  heroBanner,
+}: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
   const isImageBased = hasDetailImages(event.event_media);
 
@@ -31,11 +40,24 @@ export function EventDetailClient({
     <div className="flex flex-col pb-20">
       <EventHeader />
 
-      {isImageBased ? (
-        <ImageBasedView event={event} detailMedia={detailMedia} />
-      ) : (
-        <LegacyTextView event={event} />
-      )}
+      {heroBanner}
+
+      <section id={EVENT_SECTION_IDS.description} aria-label="이벤트 설명">
+        {isImageBased ? (
+          <ImageBasedContent event={event} detailMedia={detailMedia} />
+        ) : (
+          <LegacyTextContent event={event} />
+        )}
+      </section>
+
+      <section id={EVENT_SECTION_IDS.reviews} aria-label="후기" className="px-4 py-6">
+        <ReviewsSection artistId={event.artist_id} artistName={event.artist.title} />
+      </section>
+
+      <section id={EVENT_SECTION_IDS.shop} aria-label="샵 정보" className="px-4 pb-6">
+        <h2 className="mb-3 text-base font-bold">샵 정보</h2>
+        <EventShopCard shop={shopData} />
+      </section>
 
       <EventBottomBar
         kakaoUrl={event.artist.kakao_url}
@@ -47,11 +69,29 @@ export function EventDetailClient({
   );
 }
 
-function isDetailCopy(obj: unknown): obj is GeneratedDetailCopy {
-  return obj !== null && typeof obj === "object" && "altTexts" in (obj as Record<string, unknown>);
+function SeoHiddenCopy({ copy }: Readonly<{ copy: GeneratedDetailCopy }>): React.ReactElement | null {
+  if (!copy.sections) return null;
+  const s = copy.sections;
+  return (
+    <aside className="sr-only">
+      <h3>{s.detail_intro?.heading}</h3>
+      <p>{s.detail_intro?.bodyText}</p>
+      <ul>{s.detail_intro?.benefits.map((b, i) => <li key={i}>{b}</li>)}</ul>
+      <h3>{s.detail_audience?.heading}</h3>
+      <ul>{s.detail_audience?.items.map((item, i) => <li key={i}>{item.text}</li>)}</ul>
+      <h3>{s.detail_process?.heading}</h3>
+      <ol>{s.detail_process?.steps.map((s2, i) => <li key={i}>{s2}</li>)}</ol>
+      {s.detail_shop && (
+        <>
+          <h3>{s.detail_shop.heading}</h3>
+          <ul>{s.detail_shop.details.map((d, i) => <li key={i}>{d}</li>)}</ul>
+        </>
+      )}
+    </aside>
+  );
 }
 
-function ImageBasedView({
+function ImageBasedContent({
   event,
   detailMedia,
 }: Readonly<{
@@ -62,231 +102,232 @@ function ImageBasedView({
 
   return (
     <>
-      {/* SEO Text Header */}
-      <header className="mx-auto max-w-3xl space-y-2 px-4 py-4">
-        <p className="text-xs text-muted-foreground">{event.procedure_name}</p>
-        <h1 className="text-xl font-bold text-foreground">{event.title}</h1>
-        <div className="flex items-center gap-3">
-          {(event.discount_rate ?? 0) > 0 && (
-            <span className="rounded-md bg-red-500 px-2 py-0.5 text-sm font-bold text-white">
-              {event.discount_rate}%
-            </span>
-          )}
-          <div className="flex items-baseline gap-2">
-            {(event.discount_rate ?? 0) > 0 && (
-              <span className="text-xs text-muted-foreground line-through">
-                {event.price_origin.toLocaleString()}원
-              </span>
-            )}
-            <span className="text-lg font-bold">{event.price.toLocaleString()}원</span>
-          </div>
-        </div>
-        {event.procedure_summary && (
-          <p className="text-sm text-muted-foreground">{event.procedure_summary}</p>
-        )}
-      </header>
-
-      {/* AI-generated Image Stack */}
       <EventDetailImageStack sections={detailMedia} />
-
-      {/* SEO hidden text from detail copy — crawlable by search engines */}
-      {copy?.sections && (
-        <aside className="sr-only">
-          <h2>{copy.sections.detail_intro?.heading}</h2>
-          <p>{copy.sections.detail_intro?.bodyText}</p>
-          <ul>
-            {copy.sections.detail_intro?.benefits.map((b, i) => <li key={i}>{b}</li>)}
-          </ul>
-          <h2>{copy.sections.detail_audience?.heading}</h2>
-          <ul>
-            {copy.sections.detail_audience?.items.map((item, i) => <li key={i}>{item.text}</li>)}
-          </ul>
-          <h2>{copy.sections.detail_process?.heading}</h2>
-          <ol>
-            {copy.sections.detail_process?.steps.map((s, i) => <li key={i}>{s}</li>)}
-          </ol>
-          {copy.sections.detail_shop && (
-            <>
-              <h2>{copy.sections.detail_shop.heading}</h2>
-              <ul>
-                {copy.sections.detail_shop.details.map((d, i) => <li key={i}>{d}</li>)}
-              </ul>
-            </>
-          )}
-        </aside>
-      )}
-
-      {/* Artist Mini Card */}
-      <div className="mx-auto max-w-3xl px-4 py-5">
-        <ArtistMiniCard event={event} />
+      <CollapsibleDetailPanel event={event} />
+      {copy ? <SeoHiddenCopy copy={copy} /> : null}
+      <div className="mx-auto max-w-3xl px-4 py-3">
+        <p className="text-xs text-muted-foreground">
+          이 페이지는 {event.shop_name || event.artist.title}에서 운영중입니다.
+        </p>
       </div>
     </>
   );
 }
 
-function LegacyTextView({
+function LegacyImageCarousel({
+  images,
+  title,
+}: Readonly<{
+  images: EventWithDetails["event_media"];
+  title: string;
+}>): React.ReactElement | null {
+  const [currentImage, setCurrentImage] = useState(0);
+  if (images.length === 0) return null;
+
+  return (
+    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <Image
+        src={images[currentImage]?.storage_path ?? ""}
+        alt={title}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw, 768px"
+        priority
+      />
+      {images.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setCurrentImage(i)}
+              className={`h-2 w-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                i === currentImage ? "bg-white focus-visible:ring-white" : "bg-white/40 hover:bg-white/70 focus-visible:bg-white/70 focus-visible:ring-white"
+              }`}
+              aria-label={`이미지 ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AiContentSections({ aiContent }: Readonly<{ aiContent: GeneratedEventContent }>): React.ReactElement {
+  return (
+    <>
+      {aiContent.headline && (
+        <p className="text-lg font-semibold text-foreground">{aiContent.headline}</p>
+      )}
+      {aiContent.subheadline && (
+        <p className="text-sm text-muted-foreground">{aiContent.subheadline}</p>
+      )}
+      {aiContent.sections && aiContent.sections.length > 0 && (
+        <div className="space-y-6">
+          {aiContent.sections.map((section, i) => (
+            <section key={i} className="space-y-2">
+              <h2 className="text-base font-bold text-foreground">{section.heading}</h2>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{section.body}</p>
+            </section>
+          ))}
+        </div>
+      )}
+      {aiContent.targetAudienceExpanded && aiContent.targetAudienceExpanded.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground">이런 분께 추천해요</h2>
+          <div className="space-y-2">
+            {aiContent.targetAudienceExpanded.map((t, i) => (
+              <div key={i} className="rounded-lg bg-muted/50 px-4 py-3">
+                <p className="text-sm font-medium text-foreground">{t.label}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {aiContent.faq && aiContent.faq.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground">자주 묻는 질문</h2>
+          <div className="space-y-2">
+            {aiContent.faq.map((item, i) => (
+              <details key={i} className="group rounded-lg border border-input">
+                <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {item.question}
+                </summary>
+                <p className="px-4 pb-3 text-sm text-muted-foreground">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+function LegacyTextContent({
   event,
 }: Readonly<{ event: EventWithDetails }>): React.ReactElement {
-  const [currentImage, setCurrentImage] = useState(0);
   const aiContent = isLegacyContent(event.ai_generated_content) ? event.ai_generated_content : null;
-  const media = event.event_media;
-  const discountRate = event.discount_rate ?? 0;
-  const heroImages = media.length > 0 ? media : [];
 
   return (
     <>
-      {/* Image Carousel */}
-      {heroImages.length > 0 && (
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-          <Image
-            src={heroImages[currentImage]?.storage_path ?? ""}
-            alt={event.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 768px"
-            priority
-          />
-          {heroImages.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-              {heroImages.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setCurrentImage(i)}
-                  className={`h-2 w-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                    i === currentImage ? "bg-white focus-visible:ring-white" : "bg-white/40 hover:bg-white/70 focus-visible:bg-white/70 focus-visible:ring-white"
-                  }`}
-                  aria-label={`이미지 ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
+      <LegacyImageCarousel images={event.event_media} title={event.title} />
       <div className="space-y-6 px-4 py-5">
-        {/* Price Banner */}
-        <div className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-3 dark:bg-red-950/30">
-          {discountRate > 0 && (
-            <span className="rounded-md bg-red-500 px-2.5 py-1 text-sm font-bold text-white">
-              {discountRate}%
-            </span>
-          )}
-          <div className="flex flex-col">
-            {discountRate > 0 && (
-              <span className="text-xs text-muted-foreground line-through">
-                {event.price_origin.toLocaleString()}원
-              </span>
-            )}
-            <span className="text-xl font-bold text-foreground">
-              {event.price.toLocaleString()}원
-            </span>
-          </div>
-          {event.event_period_text && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              {event.event_period_text}
-            </span>
-          )}
-        </div>
-
-        {/* Title + Headline */}
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">{event.procedure_name}</p>
-          <h1 className="text-xl font-bold text-foreground">{event.title}</h1>
-          {aiContent?.headline && (
-            <p className="text-lg font-semibold text-foreground">{aiContent.headline}</p>
-          )}
-          {aiContent?.subheadline && (
-            <p className="text-sm text-muted-foreground">{aiContent.subheadline}</p>
-          )}
-        </div>
-
-        {/* Info Card */}
-        <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3">
-          {event.procedure_duration && (
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">시술 시간</p>
-              <p className="text-sm font-medium">{event.procedure_duration}</p>
-            </div>
-          )}
-          {event.maintenance_period && (
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">유지 기간</p>
-              <p className="text-sm font-medium">{event.maintenance_period}</p>
-            </div>
-          )}
-          {event.retouch_type && (
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground">리터치</p>
-              <p className="text-sm font-medium">
-                {{ included: "포함", separate: "별도", none: "없음", extra: "추가비" }[event.retouch_type] ?? event.retouch_type}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* AI Generated Sections */}
-        {aiContent?.sections && aiContent.sections.length > 0 && (
-          <div className="space-y-6">
-            {aiContent.sections.map((section, i) => (
-              <section key={i} className="space-y-2">
-                <h2 className="text-base font-bold text-foreground">{section.heading}</h2>
-                <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                  {section.body}
-                </p>
-              </section>
-            ))}
-          </div>
-        )}
-
-        {/* Target Audience */}
-        {aiContent?.targetAudienceExpanded && aiContent.targetAudienceExpanded.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-base font-bold text-foreground">이런 분께 추천해요</h2>
-            <div className="space-y-2">
-              {aiContent.targetAudienceExpanded.map((t, i) => (
-                <div key={i} className="rounded-lg bg-muted/50 px-4 py-3">
-                  <p className="text-sm font-medium text-foreground">{t.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* FAQ */}
-        {aiContent?.faq && aiContent.faq.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-base font-bold text-foreground">자주 묻는 질문</h2>
-            <div className="space-y-2">
-              {aiContent.faq.map((item, i) => (
-                <details key={i} className="group rounded-lg border border-input">
-                  <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    {item.question}
-                  </summary>
-                  <p className="px-4 pb-3 text-sm text-muted-foreground">{item.answer}</p>
-                </details>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Shop Info */}
-        <section className="space-y-3 rounded-lg border border-input p-4">
-          <h2 className="text-base font-bold text-foreground">샵 정보</h2>
-          <div className="space-y-1.5 text-sm">
-            {event.shop_name && <p className="font-medium">{event.shop_name}</p>}
-            {event.shop_region && <p className="text-muted-foreground">{event.shop_region}</p>}
-            {event.shop_business_hours && <p className="text-muted-foreground">영업시간: {event.shop_business_hours}</p>}
-            {event.shop_parking && <p className="text-muted-foreground">주차: {event.shop_parking}</p>}
-            {event.shop_booking_method && <p className="text-muted-foreground">예약: {event.shop_booking_method}</p>}
-          </div>
-        </section>
-
-        {/* Artist Mini Card */}
-        <ArtistMiniCard event={event} />
+        {aiContent ? <AiContentSections aiContent={aiContent} /> : null}
+        <InfoCardGrid event={event} />
+        <CollapsibleDetailPanel event={event} />
       </div>
     </>
+  );
+}
+
+function InfoCardGrid({ event }: Readonly<{ event: EventWithDetails }>): React.ReactElement | null {
+  const hasAny = event.procedure_duration || event.maintenance_period || event.retouch_type;
+  if (!hasAny) return null;
+
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3">
+      {event.procedure_duration && (
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">시술 시간</p>
+          <p className="text-sm font-medium">{event.procedure_duration}</p>
+        </div>
+      )}
+      {event.maintenance_period && (
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">유지 기간</p>
+          <p className="text-sm font-medium">{event.maintenance_period}</p>
+        </div>
+      )}
+      {event.retouch_type && (
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">리터치</p>
+          <p className="text-sm font-medium">
+            {{ included: "포함", separate: "별도", none: "없음", extra: "추가비" }[event.retouch_type] ?? event.retouch_type}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function toStringArray(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+}
+
+function buildDetailRows(event: EventWithDetails): Array<{ label: string; value: string }> {
+  const rows: Array<{ label: string; value: string }> = [];
+  if (event.event_period_text) rows.push({ label: "이벤트 기간", value: event.event_period_text });
+  const targets = toStringArray(event.target_audience).join(", ");
+  if (targets) rows.push({ label: "추천 대상", value: targets });
+  const advantages = toStringArray(event.procedure_advantages).filter(Boolean).join(", ");
+  if (advantages) rows.push({ label: "시술 장점", value: advantages });
+  if (event.precautions) rows.push({ label: "주의사항", value: event.precautions });
+  if (event.retouch_description) rows.push({ label: "리터치 안내", value: event.retouch_description });
+  if (event.artist_introduction) rows.push({ label: "아티스트 소개", value: event.artist_introduction });
+  return rows;
+}
+
+function CollapsibleDetailPanel({
+  event,
+}: Readonly<{ event: EventWithDetails }>): React.ReactElement {
+  const rows = buildDetailRows(event);
+  if (rows.length === 0) return <></>;
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-3">
+      <details className="group rounded-lg border border-input" aria-label="시술 상세 정보">
+        <summary className="flex w-full cursor-pointer list-none items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+          <span className="font-medium">시술 정보 더보기</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="space-y-3 border-t border-dashed border-input p-4 text-sm">
+          {rows.map((row) => (
+            <DetailRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: Readonly<{ label: string; value: string }>): React.ReactElement {
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-0.5 whitespace-pre-line text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function ReviewsSection({
+  artistId,
+  artistName,
+}: Readonly<{ artistId: string; artistName: string }>): React.ReactElement {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold">후기</h2>
+        <Link
+          href={`/reviews/write?id=${artistId}`}
+          className="inline-flex items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Edit2 className="h-3 w-3" aria-hidden />
+          후기 작성
+        </Link>
+      </div>
+      <Link
+        href={`/artists/${artistId}`}
+        className="flex items-center gap-2 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Heart className="h-5 w-5 text-brand-primary" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{artistName}의 전체 후기 보기</p>
+          <p className="text-xs text-muted-foreground">샵 페이지에서 실제 후기를 확인하세요</p>
+        </div>
+        <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground" aria-hidden />
+      </Link>
+    </div>
   );
 }
 
@@ -325,30 +366,38 @@ function EventHeader(): React.ReactElement {
   );
 }
 
-const BASE_BTN = "flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const THEME_BTN = `${BASE_BTN} border-border bg-background text-foreground hover:bg-muted focus-visible:bg-muted`;
-const KAKAO_BTN = `${BASE_BTN} border-transparent bg-brand-kakao text-brand-kakao-foreground hover:brightness-95 focus-visible:brightness-95`;
-
-function trackContactClick(artistId: string, clickType: "kakao" | "phone", sourceId: string): void {
-  void fetch("/api/contact-click", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId, clickType, sourcePage: "event", sourceId }),
-    keepalive: true,
-  });
+function scrollToShop(): void {
+  const el = document.getElementById(EVENT_SECTION_IDS.shop);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function isSafeUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:" || parsed.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
-
-function isSafePhone(phone: string): boolean {
-  return /^[\d\-+() ]+$/.test(phone);
+function BottomBarButtons({ safeKakao, safeContact, artistId, eventId }: Readonly<{
+  safeKakao: string | null;
+  safeContact: string | null;
+  artistId: string;
+  eventId: string;
+}>): React.ReactElement {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={scrollToShop} className={THEME_BTN} aria-label="샵 정보 보기">
+        샵 정보
+      </button>
+      {safeKakao ? (
+        <a href={safeKakao} target="_blank" rel="noopener noreferrer" className={KAKAO_BTN} aria-label="카카오톡 상담" onClick={() => trackContactClick(artistId, "kakao", "event", eventId)}>
+          <KakaoIcon />
+          카톡상담
+        </a>
+      ) : null}
+      {safeContact ? (
+        <a href={`tel:${safeContact}`} className={PRIMARY_BTN} aria-label="전화 상담" onClick={() => trackContactClick(artistId, "phone", "event", eventId)}>
+          <Phone className="h-4 w-4" />
+          상담 신청
+        </a>
+      ) : (
+        <Link href={`/artists/${artistId}`} className={PRIMARY_BTN}>상담 신청</Link>
+      )}
+    </div>
+  );
 }
 
 function EventBottomBar({ kakaoUrl, contact, artistId, eventId }: Readonly<{
@@ -356,78 +405,13 @@ function EventBottomBar({ kakaoUrl, contact, artistId, eventId }: Readonly<{
   contact?: string | null;
   artistId: string;
   eventId: string;
-}>): React.ReactElement | null {
+}>): React.ReactElement {
   const safeKakao = kakaoUrl && isSafeUrl(kakaoUrl) ? kakaoUrl : null;
   const safeContact = contact && isSafePhone(contact) ? contact : null;
 
-  if (!safeKakao && !safeContact) return null;
-
   return (
     <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
-      <div className="flex items-center gap-1.5">
-        {safeKakao ? (
-          <a
-            href={safeKakao}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={KAKAO_BTN}
-            aria-label="카카오톡 상담"
-            onClick={() => trackContactClick(artistId, "kakao", eventId)}
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.21 4.65 6.58-.15.55-.58 2.07-.66 2.39-.1.4.15.39.31.28.13-.08 2.02-1.37 2.84-1.93.9.13 1.83.2 2.79.2 5.52 0 10-3.58 10-7.52C22 6.58 17.52 3 12 3z" />
-            </svg>
-            카카오톡
-          </a>
-        ) : null}
-        {safeContact ? (
-          <a
-            href={`tel:${safeContact}`}
-            className={THEME_BTN}
-            aria-label="전화 상담"
-            onClick={() => trackContactClick(artistId, "phone", eventId)}
-          >
-            <Phone className="h-4 w-4" />
-            전화
-          </a>
-        ) : null}
-      </div>
+      <BottomBarButtons safeKakao={safeKakao} safeContact={safeContact} artistId={artistId} eventId={eventId} />
     </div>
-  );
-}
-
-function ArtistMiniCard({ event }: Readonly<{ event: EventWithDetails }>): React.ReactElement {
-  return (
-    <Link
-      href={`/artists/${event.artist.id}`}
-      className="flex items-center gap-3 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted/50"
-    >
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted">
-        {event.artist.profile_image_path ? (
-          <Image
-            src={getAvatarUrl(event.artist.profile_image_path) ?? ""}
-            alt={event.artist.title}
-            fill
-            className="object-cover"
-            sizes="48px"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </div>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{event.artist.title}</p>
-        {event.artist.introduce && (
-          <p className="truncate text-xs text-muted-foreground">{event.artist.introduce}</p>
-        )}
-      </div>
-      <svg className="h-5 w-5 shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-    </Link>
   );
 }

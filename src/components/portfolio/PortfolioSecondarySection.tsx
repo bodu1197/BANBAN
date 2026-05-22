@@ -1,5 +1,6 @@
 import { PortfolioArtistSection } from "./PortfolioArtistSection";
 import { PortfolioRecommendations } from "./PortfolioRecommendations";
+import { ArtistShopCard, type ArtistShopCardData } from "@/components/shared/ArtistShopCard";
 import { STRINGS } from "@/lib/strings";
 import type { PortfolioWithMedia, PortfolioRecommendation } from "@/lib/supabase/queries";
 
@@ -13,6 +14,7 @@ interface PortfolioSecondarySectionProps {
   };
   artistPortfolios: PortfolioWithMedia[];
   artistPortfolioCount: number;
+  shopStats: ArtistShopCardData;
   recommendations: {
     otherCustomersViewed: PortfolioRecommendation[];
     lowerPrice: PortfolioRecommendation[];
@@ -26,12 +28,18 @@ export function PortfolioSecondarySection({
   artist,
   artistPortfolios,
   artistPortfolioCount,
+  shopStats,
   recommendations,
 }: Readonly<PortfolioSecondarySectionProps>): React.ReactElement {
   const totalCountLabel = STRINGS.artist.totalCount.replace("{count}", String(artistPortfolioCount));
 
   return (
     <>
+      <section className="border-t px-4 py-6">
+        <h2 className="mb-3 text-base font-bold">샵 정보</h2>
+        <ArtistShopCard shop={shopStats} />
+      </section>
+
       <PortfolioArtistSection
         artistHref={`/artists/${artist.id}`}
         totalCountLabel={totalCountLabel}

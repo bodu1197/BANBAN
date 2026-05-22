@@ -7,7 +7,10 @@ import Link from "next/link";
 import { Heart, Edit2, Pencil, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { THEME_BTN, KAKAO_BTN, PRIMARY_BTN } from "@/components/ui/cta-button-styles";
+import { KakaoIcon } from "@/components/ui/KakaoIcon";
 import { toast } from "sonner";
+import { isSafeUrl, isSafePhone, trackContactClick } from "@/lib/contact-utils";
 import { PortfolioMediaViewer } from "./PortfolioMediaViewer";
 import { PortfolioHeader } from "./PortfolioHeader";
 import { PortfolioInfoSection } from "./PortfolioInfoSection";
@@ -241,17 +244,12 @@ function PortfolioActionButtons({ isLiked, likesCount, onLikeToggle, reviewHref,
   );
 }
 
-const BASE_BTN = "flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const THEME_BTN = `${BASE_BTN} border-border bg-background text-foreground hover:bg-muted focus-visible:bg-muted`;
-const KAKAO_BTN = `${BASE_BTN} border-transparent bg-brand-kakao text-brand-kakao-foreground hover:brightness-95 focus-visible:brightness-95`;
-
-function trackContactClick(artistId: string, clickType: "kakao" | "phone", sourceId: string): void {
-  void fetch("/api/contact-click", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId, clickType, sourcePage: "portfolio", sourceId }),
-    keepalive: true,
-  });
+function scrollToShopSection(): void {
+  const el = document.getElementById(PORTFOLIO_SECTION_IDS.artist);
+  if (!el) return;
+  const reduced = typeof globalThis.matchMedia === "function"
+    && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 function BottomBarIcons({ kakaoUrl, contact, onChat: _onChat, artistId, portfolioId }: Readonly<{
@@ -260,26 +258,30 @@ function BottomBarIcons({ kakaoUrl, contact, onChat: _onChat, artistId, portfoli
 }>): React.ReactElement {
   return (
     <div className="flex flex-1 items-center gap-1.5">
-      {/* 1:1 채팅 — 당분간 비활성화
-      <button type="button" onClick={onChat} className={THEME_BTN} aria-label="1:1 채팅">
-        <MessageCircle className="h-4 w-4" />
-        채팅
+      <button
+        type="button"
+        onClick={scrollToShopSection}
+        className={THEME_BTN}
+        aria-label="샵 정보 보기"
+      >
+        샵 정보
       </button>
-      */}
-      {kakaoUrl ? (
-        <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className={KAKAO_BTN} aria-label="카카오톡" onClick={() => trackContactClick(artistId, "kakao", portfolioId)}>
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.21 4.65 6.58-.15.55-.58 2.07-.66 2.39-.1.4.15.39.31.28.13-.08 2.02-1.37 2.84-1.93.9.13 1.83.2 2.79.2 5.52 0 10-3.58 10-7.52C22 6.58 17.52 3 12 3z" />
-          </svg>
-          카카오톡
+      {kakaoUrl && isSafeUrl(kakaoUrl) ? (
+        <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className={KAKAO_BTN} aria-label="카톡상담" onClick={() => trackContactClick(artistId, "kakao", "portfolio", portfolioId)}>
+          <KakaoIcon />
+          카톡상담
         </a>
       ) : null}
-      {contact ? (
-        <a href={`tel:${contact}`} className={THEME_BTN} aria-label="전화" onClick={() => trackContactClick(artistId, "phone", portfolioId)}>
+      {contact && isSafePhone(contact) ? (
+        <a href={`tel:${contact}`} className={PRIMARY_BTN} aria-label="상담 신청" onClick={() => trackContactClick(artistId, "phone", "portfolio", portfolioId)}>
           <Phone className="h-4 w-4" />
-          전화
+          상담 신청
         </a>
-      ) : null}
+      ) : (
+        <Link href={`/artists/${artistId}`} className={PRIMARY_BTN}>
+          상담 신청
+        </Link>
+      )}
     </div>
   );
 }
@@ -361,9 +363,9 @@ function PortfolioReportModal({ portfolioId, onClose }: Readonly<{
   function handleSubmit(): void {
     startTransition(async () => {
       const result = await reportContent("portfolio", portfolioId, reason, description);
-      if (result.alreadyReported) { alert("이미 신고한 포트폴리오입니다"); onClose(); return; }
-      if (!result.success) { alert("신고 처리에 실패했습니다"); return; }
-      alert("신고가 접수되었습니다");
+      if (result.alreadyReported) { toast.info("이미 신고한 포트폴리오입니다"); onClose(); return; }
+      if (!result.success) { toast.error("신고 처리에 실패했습니다"); return; }
+      toast.success("신고가 접수되었습니다");
       onClose();
     });
   }
@@ -375,7 +377,7 @@ function PortfolioReportModal({ portfolioId, onClose }: Readonly<{
         <h2 id="portfolio-report-title" className="mb-1 text-base font-bold">포트폴리오 신고</h2>
         <p className="mb-4 text-xs text-muted-foreground">신고 사유를 선택해주세요. 허위 신고 시 제재될 수 있습니다.</p>
         <ReportReasonFieldset reason={reason} onChange={setReason} />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="추가 설명 (선택)" rows={3} maxLength={500} className="mb-4 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="추가 설명 (선택)" aria-label="추가 설명" rows={3} maxLength={500} className="mb-4 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         <ReportModalActions isPending={isPending} onClose={onClose} onSubmit={handleSubmit} />
       </div>
     </div>

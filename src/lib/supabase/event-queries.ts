@@ -247,8 +247,8 @@ export async function incrementEventViews(id: string): Promise<void> {
         .update({ views_count: (data.views_count ?? 0) + 1 })
         .eq("id", id);
     }
-  } catch (err: unknown) {
-    console.error("[incrementEventViews]", err);
+  } catch {
+    /* non-fatal view counter */
   }
 }
 
@@ -289,4 +289,68 @@ export const fetchRelatedEvents = cache(async function fetchRelatedEvents(
   if (!data) return [];
 
   return data.map(mapRowToEventCard);
+});
+
+export interface ArtistShopStats {
+  eventCount: number;
+  portfolioCount: number;
+}
+
+export const fetchArtistShopStats = cache(async function fetchArtistShopStats(
+  artistId: string,
+): Promise<ArtistShopStats> {
+  const supabase = await createClient();
+  const [events, portfolios] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", artistId)
+      .eq("status", "published")
+      .is("deleted_at", null),
+    supabase
+      .from("portfolios")
+      .select("id", { count: "exact", head: true })
+      .eq("artist_id", artistId)
+      .eq("status", "published")
+      .is("deleted_at", null),
+  ]);
+  return {
+    eventCount: events.count ?? 0,
+    portfolioCount: portfolios.count ?? 0,
+  };
+});
+
+export const fetchRecommendedEvents = cache(async function fetchRecommendedEvents(
+  excludeId: string,
+  artistId: string,
+  limit = 15,
+): Promise<EventCardData[]> {
+  const supabase = await createClient();
+  const [sameArtist, popular] = await Promise.all([
+    supabase
+      .from("events")
+      .select(EVENT_CARD_SELECT)
+      .eq("status", "published")
+      .eq("artist_id", artistId)
+      .neq("id", excludeId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("events")
+      .select(EVENT_CARD_SELECT)
+      .eq("status", "published")
+      .neq("id", excludeId)
+      .neq("artist_id", artistId)
+      .is("deleted_at", null)
+      .order("views_count", { ascending: false, nullsFirst: false })
+      .limit(limit),
+  ]);
+
+  const sameArtistCards = (sameArtist.data ?? []).map(mapRowToEventCard);
+  const popularCards = (popular.data ?? []).map(mapRowToEventCard);
+  const seen = new Set(sameArtistCards.map((e) => e.id));
+  const deduped = popularCards.filter((e) => !seen.has(e.id));
+
+  return [...sameArtistCards, ...deduped].slice(0, limit);
 });

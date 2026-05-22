@@ -14,6 +14,8 @@ import {
     fetchArtistReviewStats,
     type ArtistReviewStats,
 } from "@/lib/supabase/queries";
+import { fetchArtistShopStats } from "@/lib/supabase/event-queries";
+import type { ArtistShopCardData } from "@/components/shared/ArtistShopCard";
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
 import { PortfolioDetailClient } from "@/components/portfolio/PortfolioDetailClient";
@@ -76,7 +78,7 @@ async function handleLegacyRedirect(id: string): Promise<void> {
     notFound();
 }
 
-async function StreamedSecondaryData({ id, artistId, artistType, price, artist }: Readonly<{
+async function StreamedSecondaryData({ id, artistId, artistType, price, artist, reviewStats }: Readonly<{
     id: string;
     artistId: string;
     artistType: ArtistType;
@@ -88,10 +90,12 @@ async function StreamedSecondaryData({ id, artistId, artistType, price, artist }
         address: string;
         region?: { name: string } | null;
     };
+    reviewStats: ArtistReviewStats;
 }>): Promise<React.ReactElement> {
     const [
         { data: artistPortfolios, count: artistPortfolioCount },
         otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions,
+        shopStats,
     ] = await Promise.all([
         fetchPortfoliosByArtist(artistId, { limit: 10 }),
         fetchRandomPortfolios(id, artistType, 5),
@@ -99,13 +103,26 @@ async function StreamedSecondaryData({ id, artistId, artistType, price, artist }
         fetchHigherPricePortfolios(price, id, artistType, 5),
         fetchSameCategoryPortfolios(id, artistType, 5),
         fetchRandomPortfolios(id, artistType, 5),
+        fetchArtistShopStats(artistId),
     ]);
+
+    const shopCardData: ArtistShopCardData = {
+        artistId: artist.id,
+        artistName: artist.title,
+        artistAvatar: getAvatarUrl(artist.profile_image_path),
+        address: artist.region?.name ?? artist.address ?? "",
+        avgRating: reviewStats.avgRating,
+        reviewCount: reviewStats.reviewCount,
+        eventCount: shopStats.eventCount,
+        portfolioCount: shopStats.portfolioCount,
+    };
 
     return (
         <PortfolioSecondarySection
             artist={artist}
             artistPortfolios={artistPortfolios.filter(p => p.id !== id)}
             artistPortfolioCount={artistPortfolioCount}
+            shopStats={shopCardData}
             recommendations={{ otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions }}
         />
     );
@@ -250,6 +267,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                         artistType={artistType}
                         price={portfolio.price ?? 0}
                         artist={portfolio.artist}
+                        reviewStats={reviewStats}
                     />
                 </Suspense>
             </section>
