@@ -4,8 +4,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { createClient } from "@/lib/supabase/client";
-import { optimizeImage } from "@/lib/utils/image-optimizer";
 import { calcDiscountRate } from "@/components/portfolio-form/portfolio-helpers";
 import {
   INITIAL_FORM_VALUES,
@@ -57,20 +55,31 @@ export function EventWriteClient(): React.ReactElement {
     if (!artist || detailSections.length === 0) return;
     setIsSubmitting(true);
     try {
-      const supabase = createClient();
-
       const uploadedOriginals = await Promise.all(
         mediaSlots.map(async (slot, i) => {
           if (!slot.file) return null;
-          const optimized = await optimizeImage(slot.file, { maxWidth: 1600, maxHeight: 1600, quality: 0.85 });
-          const path = `${artist.id}/${Date.now()}_${crypto.randomUUID().slice(0, 8)}.webp`;
-          const { error } = await supabase.storage.from("events").upload(path, optimized, {
-            cacheControl: "31536000",
-            upsert: false,
-            contentType: "image/webp",
-          });
-          if (error) throw new Error(`사진 업로드 실패: ${error.message}`);
-          return { storage_path: path, media_type: slot.type, order_index: i };
+          const body = new FormData();
+          body.append("file", slot.file);
+          body.append("mediaType", slot.type);
+          body.append("orderIndex", String(i));
+          const res = await fetch("/api/events/upload", { method: "POST", body });
+          const result: unknown = await res.json();
+          if (!res.ok) {
+            const errMsg = typeof result === "object" && result !== null && "error" in result
+              ? String((result as Record<string, unknown>).error)
+              : "알 수 없는 오류";
+            throw new Error(`${slot.label} 업로드 실패: ${errMsg}`);
+          }
+          if (
+            typeof result !== "object" || result === null
+            || typeof (result as Record<string, unknown>).storage_path !== "string"
+            || typeof (result as Record<string, unknown>).media_type !== "string"
+            || typeof (result as Record<string, unknown>).order_index !== "number"
+          ) {
+            throw new Error(`${slot.label} 업로드 응답이 올바르지 않습니다`);
+          }
+          const { storage_path, media_type, order_index } = result as { storage_path: string; media_type: string; order_index: number };
+          return { storage_path, media_type, order_index };
         }),
       ).then((results) => results.filter((r): r is NonNullable<typeof r> => r !== null));
 
@@ -124,8 +133,16 @@ export function EventWriteClient(): React.ReactElement {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event: eventPayload, media: allMedia }),
       });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
+      const result: unknown = await res.json();
+      if (!res.ok) {
+        const errMsg = typeof result === "object" && result !== null && "error" in result
+          ? String((result as Record<string, unknown>).error)
+          : "이벤트 등록에 실패했습니다";
+        throw new Error(errMsg);
+      }
+      if (typeof result !== "object" || result === null || typeof (result as Record<string, unknown>).id !== "string") {
+        throw new Error("이벤트 등록 응답이 올바르지 않습니다");
+      }
       const { id } = result as { id: string };
 
       router.push(`/events/${id}`);
