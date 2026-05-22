@@ -68,23 +68,25 @@ export function EventHeroBanner({
   }, []);
 
   return (
-    <section aria-label="이벤트 정보" className="bg-background">
-      <HeroHeader
-        artist={artist}
-        title={title}
-        procedureName={procedureName}
-        avgRating={avgRating}
-        reviewCount={reviewCount}
-        onReviewsClick={() => handleTabClick("reviews")}
-      />
-      <PriceBlock
-        price={price}
-        priceOrigin={priceOrigin}
-        discountRate={discountRate}
-        eventPeriodText={eventPeriodText}
-      />
+    <>
+      <section aria-label="이벤트 정보" className="bg-background">
+        <HeroHeader
+          artist={artist}
+          title={title}
+          procedureName={procedureName}
+          avgRating={avgRating}
+          reviewCount={reviewCount}
+          onReviewsClick={() => handleTabClick("reviews")}
+        />
+        <PriceBlock
+          price={price}
+          priceOrigin={priceOrigin}
+          discountRate={discountRate}
+          eventPeriodText={eventPeriodText}
+        />
+      </section>
       <TabNav activeTab={activeTab} onTabClick={handleTabClick} reviewCount={reviewCount} />
-    </section>
+    </>
   );
 }
 

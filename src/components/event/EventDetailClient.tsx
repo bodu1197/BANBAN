@@ -95,6 +95,35 @@ function SeoHiddenCopy({ copy }: Readonly<{ copy: GeneratedDetailCopy }>): React
   );
 }
 
+const COLLAPSED_HEIGHT = 600;
+
+function ExpandableContentArea({ children }: Readonly<{ children: React.ReactNode }>): React.ReactElement {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="relative">
+      <div
+        className={expanded ? "" : "overflow-hidden"}
+        style={expanded ? undefined : { maxHeight: COLLAPSED_HEIGHT }}
+      >
+        {children}
+      </div>
+      {expanded ? null : (
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-24">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="rounded-full border border-border bg-background px-6 py-2.5 text-sm font-semibold shadow-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            이벤트 정보 더보기
+            <ChevronDown className="ml-1 inline-block h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ImageBasedContent({
   event,
   detailMedia,
@@ -106,8 +135,10 @@ function ImageBasedContent({
 
   return (
     <>
-      <EventDetailImageStack sections={detailMedia} />
-      <CollapsibleDetailPanel event={event} />
+      <ExpandableContentArea>
+        <EventDetailImageStack sections={detailMedia} />
+        <CollapsibleDetailPanel event={event} />
+      </ExpandableContentArea>
       {copy ? <SeoHiddenCopy copy={copy} /> : null}
       <div className="mx-auto max-w-3xl px-4 py-3">
         <p className="text-xs text-muted-foreground">
