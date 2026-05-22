@@ -52,8 +52,8 @@ const userMenuItems: QuickMenuItem[] = [
 ];
 
 const artistMenuItems: QuickMenuItem[] = [
-  { icon: Images, href: "/mypage/artist/portfolios", label: m.portfolioManage },
   { icon: CalendarDays, href: "/mypage/artist/events", label: m.eventManage },
+  { icon: Images, href: "/mypage/artist/portfolios", label: m.portfolioManage },
   { icon: Pencil, href: "/mypage/artist/before-after", label: m.beforeAfterManage },
   { icon: GraduationCap, href: "/mypage/artist/courses", label: m.courseManage },
   { icon: ShoppingCart, href: "/mypage/artist/ads/purchase", label: m.adPurchase },
