@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ad_duration_options: {
@@ -1410,6 +1385,154 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_media: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          media_type: string
+          order_index: number | null
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          media_type?: string
+          order_index?: number | null
+          storage_path: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          media_type?: string
+          order_index?: number | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_media_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          ai_generated_content: Json
+          ai_generated_image_path: string | null
+          artist_id: string
+          artist_introduction: string | null
+          created_at: string | null
+          deleted_at: string | null
+          discount_rate: number | null
+          event_end_at: string | null
+          event_period_text: string | null
+          event_start_at: string | null
+          id: string
+          likes_count: number | null
+          maintenance_period: string | null
+          precautions: string | null
+          price: number
+          price_origin: number
+          procedure_advantages: Json | null
+          procedure_duration: string | null
+          procedure_name: string
+          procedure_summary: string
+          retouch_description: string | null
+          retouch_type: string
+          shop_booking_method: string | null
+          shop_business_hours: string | null
+          shop_name: string | null
+          shop_parking: string | null
+          shop_region: string | null
+          status: string
+          target_audience: Json
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          ai_generated_content?: Json
+          ai_generated_image_path?: string | null
+          artist_id: string
+          artist_introduction?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          discount_rate?: number | null
+          event_end_at?: string | null
+          event_period_text?: string | null
+          event_start_at?: string | null
+          id?: string
+          likes_count?: number | null
+          maintenance_period?: string | null
+          precautions?: string | null
+          price: number
+          price_origin: number
+          procedure_advantages?: Json | null
+          procedure_duration?: string | null
+          procedure_name: string
+          procedure_summary: string
+          retouch_description?: string | null
+          retouch_type?: string
+          shop_booking_method?: string | null
+          shop_business_hours?: string | null
+          shop_name?: string | null
+          shop_parking?: string | null
+          shop_region?: string | null
+          status?: string
+          target_audience?: Json
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          ai_generated_content?: Json
+          ai_generated_image_path?: string | null
+          artist_id?: string
+          artist_introduction?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          discount_rate?: number | null
+          event_end_at?: string | null
+          event_period_text?: string | null
+          event_start_at?: string | null
+          id?: string
+          likes_count?: number | null
+          maintenance_period?: string | null
+          precautions?: string | null
+          price?: number
+          price_origin?: number
+          procedure_advantages?: Json | null
+          procedure_duration?: string | null
+          procedure_name?: string
+          procedure_summary?: string
+          retouch_description?: string | null
+          retouch_type?: string
+          shop_booking_method?: string | null
+          shop_business_hours?: string | null
+          shop_name?: string | null
+          shop_parking?: string | null
+          shop_region?: string | null
+          status?: string
+          target_audience?: Json
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "artists"
             referencedColumns: ["id"]
           },
         ]
@@ -3236,30 +3359,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
-
-// Convenience types
-export type Profile = Tables<'profiles'>
-export type Artist = Tables<'artists'>
-export type Portfolio = Tables<'portfolios'>
-export type PortfolioMedia = Tables<'portfolio_media'>
-export type Region = Tables<'regions'>
-export type Category = Tables<'categories'>
-export type Review = Tables<'reviews'>
-export type Like = Tables<'likes'>
-export type Banner = Tables<'banners'>
-export type Exhibition = Tables<'exhibitions'>
-export type ArtistMedia = Tables<'artist_media'>
-export type PointWalletRow = Tables<'point_wallets'>
-export type PointTransactionRow = Tables<'point_transactions'>
-export type PointPolicy = Tables<'point_policies'>
-export type AttendanceLog = Tables<'attendance_logs'>
-export type ExhibitionEntry = Tables<'exhibition_entries'>
-export type BeforeAfterPhoto = Tables<'before_after_photos'>
-export type ArtistType = 'SEMI_PERMANENT';

@@ -7,6 +7,7 @@ const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const STORAGE_BUCKET = "portfolios";
 const AVATARS_BUCKET = "avatars";
 const BANNERS_BUCKET = "banners";
+const EVENTS_BUCKET = "events";
 
 /**
  * Get the public URL for a storage path (portfolios bucket)
@@ -39,6 +40,12 @@ export function getBannerStorageUrl(path: string | null): string {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   return `${SUPABASE_URL}/storage/v1/object/public/${BANNERS_BUCKET}/${path}`;
+}
+
+export function getEventStorageUrl(path: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${SUPABASE_URL}/storage/v1/object/public/${EVENTS_BUCKET}/${path}`;
 }
 
 /**
