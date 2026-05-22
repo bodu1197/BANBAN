@@ -20,6 +20,7 @@ import {
   GraduationCap,
   MessageSquarePlus,
   ShoppingCart,
+  CalendarDays,
 } from "lucide-react";
 import { PointCoinIcon } from "@/components/icons/PointCoinIcon";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +53,7 @@ const userMenuItems: QuickMenuItem[] = [
 
 const artistMenuItems: QuickMenuItem[] = [
   { icon: Images, href: "/mypage/artist/portfolios", label: m.portfolioManage },
+  { icon: CalendarDays, href: "/mypage/artist/events", label: m.eventManage },
   { icon: Pencil, href: "/mypage/artist/before-after", label: m.beforeAfterManage },
   { icon: GraduationCap, href: "/mypage/artist/courses", label: m.courseManage },
   { icon: ShoppingCart, href: "/mypage/artist/ads/purchase", label: m.adPurchase },

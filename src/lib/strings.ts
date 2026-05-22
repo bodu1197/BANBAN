@@ -234,6 +234,7 @@ export const STRINGS ={
     "editArtistProfile": "아티스트 정보 수정",
     "dashboard": "대시보드",
     "portfolioManage": "작품등록",
+    "eventManage": "이벤트",
     "beforeAfterManage": "시술 전후 관리",
     "courseManage": "수강관리",
     "adManage": "광고 관리",
