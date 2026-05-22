@@ -212,8 +212,9 @@ function TabNav({
     if (next) onTabClick(next.id);
   };
 
+  // 69px = EventHeader height (py-3 24px + min-h-[44px] button + border-b 1px)
   return (
-    <div role="tablist" aria-label="이벤트 섹션" className="sticky top-[57px] z-30 grid grid-cols-3 border-y border-border bg-background">
+    <div role="tablist" aria-label="이벤트 섹션" className="sticky top-[69px] z-30 grid grid-cols-3 border-y border-border bg-background">
       {TABS.map((tab, index) => {
         const isActive = activeTab === tab.id;
         const labelText = tab.id === "reviews"
