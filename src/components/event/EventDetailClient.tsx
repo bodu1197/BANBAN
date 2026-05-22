@@ -1,9 +1,13 @@
-// @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA
+// @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA, back navigation
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Share2, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { EventWithDetails } from "@/lib/supabase/event-queries";
 import type { GeneratedEventContent, GeneratedDetailCopy } from "@/components/event-form/types";
 import { getAvatarUrl } from "@/lib/supabase/storage-utils";
@@ -24,24 +28,21 @@ export function EventDetailClient({
   const isImageBased = hasDetailImages(event.event_media);
 
   return (
-    <div className="space-y-0">
+    <div className="flex flex-col pb-20">
+      <EventHeader />
+
       {isImageBased ? (
         <ImageBasedView event={event} detailMedia={detailMedia} />
       ) : (
         <LegacyTextView event={event} />
       )}
 
-      {/* Sticky CTA Footer */}
-      <div className="sticky bottom-0 border-t border-input bg-background">
-        <div className="mx-auto max-w-3xl px-4 py-3">
-          <Link
-            href={event.artist.kakao_url ?? `tel:${event.artist.contact}`}
-            className="block w-full rounded-lg bg-brand-primary py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            상담 예약하기
-          </Link>
-        </div>
-      </div>
+      <EventBottomBar
+        kakaoUrl={event.artist.kakao_url}
+        contact={event.artist.contact}
+        artistId={event.artist_id}
+        eventId={event.id}
+      />
     </div>
   );
 }
@@ -90,7 +91,7 @@ function ImageBasedView({
 
       {/* SEO hidden text from detail copy — crawlable by search engines */}
       {copy?.sections && (
-        <aside className="sr-only" aria-hidden="true">
+        <aside className="sr-only">
           <h2>{copy.sections.detail_intro?.heading}</h2>
           <p>{copy.sections.detail_intro?.bodyText}</p>
           <ul>
@@ -286,6 +287,112 @@ function LegacyTextView({
         <ArtistMiniCard event={event} />
       </div>
     </>
+  );
+}
+
+function EventHeader(): React.ReactElement {
+  const router = useRouter();
+
+  const handleShare = (): void => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(globalThis.location.origin + globalThis.location.pathname);
+      toast.success("링크가 복사되었습니다");
+    }
+  };
+
+  return (
+    <header className="sticky top-0 z-50 flex items-center justify-between border-b bg-background px-2 py-3">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => router.back()}
+        aria-label="뒤로 가기"
+        className="min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
+      <div className="flex-1" />
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleShare}
+        aria-label="공유"
+        className="min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Share2 className="h-5 w-5" />
+      </Button>
+    </header>
+  );
+}
+
+const BASE_BTN = "flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const THEME_BTN = `${BASE_BTN} border-border bg-background text-foreground hover:bg-muted focus-visible:bg-muted`;
+const KAKAO_BTN = `${BASE_BTN} border-transparent bg-brand-kakao text-brand-kakao-foreground hover:brightness-95 focus-visible:brightness-95`;
+
+function trackContactClick(artistId: string, clickType: "kakao" | "phone", sourceId: string): void {
+  void fetch("/api/contact-click", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artistId, clickType, sourcePage: "event", sourceId }),
+    keepalive: true,
+  });
+}
+
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function isSafePhone(phone: string): boolean {
+  return /^[\d\-+() ]+$/.test(phone);
+}
+
+function EventBottomBar({ kakaoUrl, contact, artistId, eventId }: Readonly<{
+  kakaoUrl?: string | null;
+  contact?: string | null;
+  artistId: string;
+  eventId: string;
+}>): React.ReactElement | null {
+  const safeKakao = kakaoUrl && isSafeUrl(kakaoUrl) ? kakaoUrl : null;
+  const safeContact = contact && isSafePhone(contact) ? contact : null;
+
+  if (!safeKakao && !safeContact) return null;
+
+  return (
+    <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
+      <div className="flex items-center gap-1.5">
+        {safeKakao ? (
+          <a
+            href={safeKakao}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={KAKAO_BTN}
+            aria-label="카카오톡 상담"
+            onClick={() => trackContactClick(artistId, "kakao", eventId)}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3C6.48 3 2 6.58 2 10.9c0 2.78 1.86 5.21 4.65 6.58-.15.55-.58 2.07-.66 2.39-.1.4.15.39.31.28.13-.08 2.02-1.37 2.84-1.93.9.13 1.83.2 2.79.2 5.52 0 10-3.58 10-7.52C22 6.58 17.52 3 12 3z" />
+            </svg>
+            카카오톡
+          </a>
+        ) : null}
+        {safeContact ? (
+          <a
+            href={`tel:${safeContact}`}
+            className={THEME_BTN}
+            aria-label="전화 상담"
+            onClick={() => trackContactClick(artistId, "phone", eventId)}
+          >
+            <Phone className="h-4 w-4" />
+            전화
+          </a>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
