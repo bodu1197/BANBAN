@@ -47,7 +47,7 @@ async function RelatedEvents({
   if (related.length === 0) return <></>;
 
   return (
-    <section className="space-y-4 px-4 py-6">
+    <section className="mx-auto max-w-3xl space-y-4 px-4 py-6">
       <h2 className="text-base font-bold">다른 이벤트</h2>
       <div className="grid grid-cols-2 gap-3">
         {related.map((e) => (
@@ -65,7 +65,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
   void incrementEventViews(id);
 
   return (
-    <main className="mx-auto min-h-screen max-w-[768px] bg-background">
+    <main className="min-h-screen bg-background">
       <EventDetailClient event={event} />
       <Suspense
         fallback={

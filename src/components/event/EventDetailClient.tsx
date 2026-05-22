@@ -32,13 +32,15 @@ export function EventDetailClient({
       )}
 
       {/* Sticky CTA Footer */}
-      <div className="sticky bottom-0 border-t border-input bg-background px-4 py-3">
-        <Link
-          href={event.artist.kakao_url ?? `tel:${event.artist.contact}`}
-          className="block w-full rounded-lg bg-brand-primary py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          상담 예약하기
-        </Link>
+      <div className="sticky bottom-0 border-t border-input bg-background">
+        <div className="mx-auto max-w-3xl px-4 py-3">
+          <Link
+            href={event.artist.kakao_url ?? `tel:${event.artist.contact}`}
+            className="block w-full rounded-lg bg-brand-primary py-3 text-center text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            상담 예약하기
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -60,7 +62,7 @@ function ImageBasedView({
   return (
     <>
       {/* SEO Text Header */}
-      <header className="space-y-2 px-4 py-4">
+      <header className="mx-auto max-w-3xl space-y-2 px-4 py-4">
         <p className="text-xs text-muted-foreground">{event.procedure_name}</p>
         <h1 className="text-xl font-bold text-foreground">{event.title}</h1>
         <div className="flex items-center gap-3">
@@ -114,7 +116,7 @@ function ImageBasedView({
       )}
 
       {/* Artist Mini Card */}
-      <div className="px-4 py-5">
+      <div className="mx-auto max-w-3xl px-4 py-5">
         <ArtistMiniCard event={event} />
       </div>
     </>
