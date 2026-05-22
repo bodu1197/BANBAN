@@ -65,8 +65,14 @@ export function EventStepGenerate({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const rawText = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`텍스트 생성 서버 오류 (${res.status})`);
+      }
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "생성 실패");
       if (!data.content || typeof data.content !== "object" || !("sections" in data.content)) {
         throw new Error("AI 응답 구조가 올바르지 않습니다");
       }
@@ -110,8 +116,14 @@ export function EventStepGenerate({
           method: "POST",
           body: fd,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        const text = await res.text();
+        let data: Record<string, unknown>;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`이미지 생성 서버 오류 (${res.status})`);
+        }
+        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "이미지 생성 실패");
         if (typeof data.storagePath !== "string" || typeof data.b64Preview !== "string") {
           throw new Error("이미지 데이터가 올바르지 않습니다");
         }

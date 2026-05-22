@@ -11,7 +11,7 @@ import {
   type EventFormValues,
 } from "@/components/event-form/types";
 
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 const IMAGE_MODEL = "gpt-image-2";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -104,22 +104,24 @@ function buildSectionPrompt(
       ].join("\n");
     }
     case "detail_process": {
-      const s = copy.detail_process;
+      const s = copy.detail_process ?? { heading: "시술 과정", steps: [], precautions: [] };
+      const steps = Array.isArray(s.steps) ? s.steps : [];
+      const precautions = Array.isArray(s.precautions) ? s.precautions : [];
       return [
         baseStyle,
-        "시술 과정 및 주의사항 인포그래픽 이미지를 생성해주세요.",
+        "뷰티 시술 안내 인포그래픽 이미지를 생성해주세요.",
         "",
         `제목: "${s.heading}"`,
         "",
-        "시술 과정 (번호 매기기):",
-        ...s.steps.map((step, i) => `  ${i + 1}. "${step}"`),
+        steps.length > 0 ? "진행 순서:" : "",
+        ...steps.map((step, i) => `  ${i + 1}. "${step}"`),
         "",
-        "주의사항:",
-        ...s.precautions.map((p) => `  ⚠️ "${p}"`),
+        precautions.length > 0 ? "참고사항:" : "",
+        ...precautions.map((p) => `  "${p}"`),
         "",
         "깔끔한 인포그래픽 스타일. 번호와 아이콘 활용.",
         "스텝 바이 스텝 시각적 플로우.",
-      ].join("\n");
+      ].filter(Boolean).join("\n");
     }
     case "detail_shop": {
       const s = copy.detail_shop;
@@ -233,33 +235,42 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const client = new OpenAI({ apiKey });
+    const client = new OpenAI({ apiKey, timeout: 120_000 });
     const prompt = buildSectionPrompt(sectionType, form, copy, discountRate);
 
     let b64: string | undefined;
 
-    if (isEditSection && imageFile) {
-      const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-      const result = await client.images.edit({
-        model: IMAGE_MODEL,
-        image: await toFile(imageBuffer, "input.png", { type: "image/png" }),
-        prompt,
-        size: "1024x1536",
-      });
-      b64 = result.data?.[0]?.b64_json;
-    } else {
-      const result = await client.images.generate({
-        model: IMAGE_MODEL,
-        prompt,
-        n: 1,
-        size: "1024x1536",
-        quality: "medium",
-      });
-      b64 = result.data?.[0]?.b64_json;
+    try {
+      if (isEditSection && imageFile) {
+        const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+        const result = await client.images.edit({
+          model: IMAGE_MODEL,
+          image: await toFile(imageBuffer, "input.png", { type: "image/png" }),
+          prompt,
+          size: "1024x1536",
+        });
+        b64 = result.data?.[0]?.b64_json;
+      } else {
+        const result = await client.images.generate({
+          model: IMAGE_MODEL,
+          prompt,
+          n: 1,
+          size: "1024x1536",
+          quality: "medium",
+        });
+        b64 = result.data?.[0]?.b64_json;
+      }
+    } catch (openaiErr) {
+      // eslint-disable-next-line no-console
+      console.error(`[generate-event-section-image] ${sectionType}:`, openaiErr);
+      return NextResponse.json(
+        { error: `이미지 생성에 실패했습니다 (${sectionType}). 잠시 후 다시 시도해주세요.` },
+        { status: 502 },
+      );
     }
 
     if (!b64) {
-      return NextResponse.json({ error: "이미지 생성 실패" }, { status: 500 });
+      return NextResponse.json({ error: "이미지 데이터가 비어있습니다" }, { status: 500 });
     }
 
     const buffer = Buffer.from(b64, "base64");
