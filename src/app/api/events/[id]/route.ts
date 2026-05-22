@@ -45,6 +45,10 @@ function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every((item) => typeof item === "string");
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
 function buildUpdatePayload(body: Record<string, unknown>): EventUpdate {
   const priceOrigin = Number(body.price_origin) || 0;
   const price = Number(body.price) || 0;
@@ -102,8 +106,11 @@ export async function PUT(
       return NextResponse.json({ error: "본인의 이벤트만 수정할 수 있습니다" }, { status: 403 });
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
-    await updateEvent(id, buildUpdatePayload(body));
+    const raw: unknown = await request.json();
+    if (!isPlainObject(raw)) {
+      return NextResponse.json({ error: "잘못된 요청 형식" }, { status: 400 });
+    }
+    await updateEvent(id, buildUpdatePayload(raw));
 
     return NextResponse.json({ success: true });
   } catch (e) {

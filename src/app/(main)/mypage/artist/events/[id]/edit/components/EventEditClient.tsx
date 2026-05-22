@@ -20,7 +20,9 @@ function fallback(v: string | null | undefined): string {
 }
 
 function parseTargets(raw: unknown): { known: string[]; custom: string } {
-  const arr = Array.isArray(raw) ? (raw as string[]) : [];
+  const arr = Array.isArray(raw)
+    ? raw.filter((item): item is string => typeof item === "string")
+    : [];
   const opts = TARGET_AUDIENCE_OPTIONS as readonly string[];
   return {
     known: arr.filter((t) => opts.includes(t)),
@@ -29,7 +31,9 @@ function parseTargets(raw: unknown): { known: string[]; custom: string } {
 }
 
 function parseAdvantages(raw: unknown): [string, string, string] {
-  const arr = Array.isArray(raw) ? (raw as string[]) : [];
+  const arr = Array.isArray(raw)
+    ? raw.filter((item): item is string => typeof item === "string")
+    : [];
   return [arr[0] ?? "", arr[1] ?? "", arr[2] ?? ""];
 }
 
@@ -111,6 +115,28 @@ function isFormValid(values: EventFormValues): boolean {
   );
 }
 
+async function saveEvent(
+  eventId: string,
+  values: EventFormValues,
+  artistTitle: string,
+): Promise<void> {
+  const res = await fetch(`/api/events/${eventId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(buildSaveBody(values, artistTitle)),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const result: unknown = await res.json();
+  if (!res.ok) {
+    const errMsg =
+      typeof result === "object" && result !== null && "error" in result
+        ? String((result as Record<string, unknown>).error)
+        : "수정 실패";
+    throw new Error(errMsg);
+  }
+}
+
+// eslint-disable-next-line max-lines-per-function -- form wrapper with save logic + 3 section components
 export function EventEditClient({
   event,
   artistTitle,
@@ -129,19 +155,7 @@ export function EventEditClient({
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/events/${event.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildSaveBody(values, artistTitle)),
-      });
-      const result: unknown = await res.json();
-      if (!res.ok) {
-        const errMsg =
-          typeof result === "object" && result !== null && "error" in result
-            ? String((result as Record<string, unknown>).error)
-            : "수정 실패";
-        throw new Error(errMsg);
-      }
+      await saveEvent(event.id, values, artistTitle);
       router.push(`/events/${event.id}`);
       router.refresh();
     } catch (e) {

@@ -42,6 +42,75 @@ function AdvantageInput({
   );
 }
 
+// eslint-disable-next-line max-lines-per-function -- collapsible body with 4 optional field groups
+function OptionalFieldsBody({
+  values,
+  onChange,
+}: Readonly<{
+  values: EventFormValues;
+  onChange: (u: Partial<EventFormValues>) => void;
+}>): React.ReactElement {
+  return (
+    <section className="space-y-4 rounded-lg border border-dashed border-input p-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="edit-duration" className={LABEL_CLASS}>시술 시간</label>
+          <input
+            id="edit-duration"
+            type="text"
+            value={values.procedureDuration}
+            onChange={(e) => onChange({ procedureDuration: e.target.value })}
+            placeholder="약 60분"
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div>
+          <label htmlFor="edit-maintenance" className={LABEL_CLASS}>유지 기간</label>
+          <input
+            id="edit-maintenance"
+            type="text"
+            value={values.maintenancePeriod}
+            onChange={(e) => onChange({ maintenancePeriod: e.target.value })}
+            placeholder="6개월~1년"
+            className={INPUT_CLASS}
+          />
+        </div>
+      </div>
+
+      <div>
+        <p className={LABEL_CLASS}>시술 장점 (최대 3가지)</p>
+        <AdvantageInput index={0} values={values} onChange={onChange} />
+        <AdvantageInput index={1} values={values} onChange={onChange} className="mt-2" />
+        <AdvantageInput index={2} values={values} onChange={onChange} className="mt-2" />
+      </div>
+
+      <div>
+        <label htmlFor="edit-precautions" className={LABEL_CLASS}>시술 후 주의사항</label>
+        <textarea
+          id="edit-precautions"
+          value={values.precautions}
+          onChange={(e) => onChange({ precautions: e.target.value })}
+          placeholder="예: 시술 직후 색이 진해 보일 수 있어요."
+          rows={3}
+          className={INPUT_CLASS}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="edit-artist-intro" className={LABEL_CLASS}>아티스트 소개</label>
+        <textarea
+          id="edit-artist-intro"
+          value={values.artistIntroduction}
+          onChange={(e) => onChange({ artistIntroduction: e.target.value })}
+          placeholder="예: 자연눈썹과 콤보눈썹을 중심으로 섬세한 디자인을 진행합니다."
+          rows={3}
+          className={INPUT_CLASS}
+        />
+      </div>
+    </section>
+  );
+}
+
 export function EditOptionalSection({
   values,
   onChange,
@@ -64,65 +133,7 @@ export function EditOptionalSection({
         <span className="text-lg">{open ? "−" : "+"}</span>
       </button>
 
-      {open && (
-        <section className="space-y-4 rounded-lg border border-dashed border-input p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="edit-duration" className={LABEL_CLASS}>시술 시간</label>
-              <input
-                id="edit-duration"
-                type="text"
-                value={values.procedureDuration}
-                onChange={(e) => onChange({ procedureDuration: e.target.value })}
-                placeholder="약 60분"
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div>
-              <label htmlFor="edit-maintenance" className={LABEL_CLASS}>유지 기간</label>
-              <input
-                id="edit-maintenance"
-                type="text"
-                value={values.maintenancePeriod}
-                onChange={(e) => onChange({ maintenancePeriod: e.target.value })}
-                placeholder="6개월~1년"
-                className={INPUT_CLASS}
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className={LABEL_CLASS}>시술 장점 (최대 3가지)</p>
-            <AdvantageInput index={0} values={values} onChange={onChange} />
-            <AdvantageInput index={1} values={values} onChange={onChange} className="mt-2" />
-            <AdvantageInput index={2} values={values} onChange={onChange} className="mt-2" />
-          </div>
-
-          <div>
-            <label htmlFor="edit-precautions" className={LABEL_CLASS}>시술 후 주의사항</label>
-            <textarea
-              id="edit-precautions"
-              value={values.precautions}
-              onChange={(e) => onChange({ precautions: e.target.value })}
-              placeholder="예: 시술 직후 색이 진해 보일 수 있어요."
-              rows={3}
-              className={INPUT_CLASS}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="edit-artist-intro" className={LABEL_CLASS}>아티스트 소개</label>
-            <textarea
-              id="edit-artist-intro"
-              value={values.artistIntroduction}
-              onChange={(e) => onChange({ artistIntroduction: e.target.value })}
-              placeholder="예: 자연눈썹과 콤보눈썹을 중심으로 섬세한 디자인을 진행합니다."
-              rows={3}
-              className={INPUT_CLASS}
-            />
-          </div>
-        </section>
-      )}
+      {open && <OptionalFieldsBody values={values} onChange={onChange} />}
     </>
   );
 }
