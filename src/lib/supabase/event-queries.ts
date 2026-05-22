@@ -47,7 +47,9 @@ function mapRowToEventCard(
   },
 ): EventCardData {
   const media = Array.isArray(row.event_media) ? row.event_media : [];
-  const hero = media.find((m) => m.media_type === "hero");
+  const thumbnail = media.find((m) => m.media_type === "thumbnail")
+    ?? media.find((m) => m.media_type === "detail_hero")
+    ?? media.find((m) => m.media_type === "hero");
   const artist = Array.isArray(row.artist) ? row.artist[0] : row.artist;
   return {
     id: row.id,
@@ -61,7 +63,7 @@ function mapRowToEventCard(
     created_at: row.created_at,
     views_count: row.views_count,
     likes_count: row.likes_count,
-    hero_image: hero ? getEventStorageUrl(hero.storage_path) : null,
+    hero_image: thumbnail ? getEventStorageUrl(thumbnail.storage_path) : null,
     artist: artist ?? { title: "" },
   };
 }
@@ -249,6 +251,24 @@ export async function incrementEventViews(id: string): Promise<void> {
     console.error("[incrementEventViews]", err);
   }
 }
+
+export const fetchPopularEvents = cache(async function fetchPopularEvents(
+  limit = 8,
+): Promise<EventCardData[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("events")
+    .select(EVENT_CARD_SELECT)
+    .eq("status", "published")
+    .is("deleted_at", null)
+    .order("views_count", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (!data) return [];
+
+  return data.map(mapRowToEventCard);
+});
 
 export const fetchRelatedEvents = cache(async function fetchRelatedEvents(
   artistId: string,

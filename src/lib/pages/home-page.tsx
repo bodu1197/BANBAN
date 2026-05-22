@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
+import { fetchPopularEvents } from "@/lib/supabase/event-queries";
+import { EventCard } from "@/components/event/EventCard";
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
@@ -152,12 +154,13 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const [promoBanners, homeBanners, quickMenuItems] = await Promise.all([
+  const [promoBanners, homeBanners, quickMenuItems, popularEvents] = await Promise.all([
     safe(() => fetchPromoBanners(), []),
     safe(() => fetchHomeBanners(), []),
     safe(() => fetchQuickMenuItems(), []),
+    safe(() => fetchPopularEvents(4), []),
   ]);
-  return { promoBanners, homeBanners, quickMenuItems };
+  return { promoBanners, homeBanners, quickMenuItems, popularEvents };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -256,7 +259,7 @@ function HomeBottomSkeleton(): React.ReactElement {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const [topData, heroBanners] = await Promise.all([fetchTopHomeData(), fetchHeroBanners()]);
-  const { promoBanners, homeBanners, quickMenuItems } = topData;
+  const { promoBanners, homeBanners, quickMenuItems, popularEvents } = topData;
 
   const exhibitionBanner = homeBanners.find((b) => b.slot === "exhibition");
   const aiBanner = homeBanners.find((b) => b.slot === "ai-matching");
@@ -277,6 +280,20 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         <div className="pt-4">
           <QuickMenu items={quickMenuItems} />
         </div>
+        {popularEvents.length > 0 && (
+          <section className="py-4">
+            <SectionHeader
+              title={STRINGS.homepage.popularEventsSection}
+              moreLink="/events"
+              moreText={STRINGS.homepage.seeMore}
+            />
+            <div className="grid grid-cols-2 gap-3 px-4">
+              {popularEvents.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
+            </div>
+          </section>
+        )}
         {(exhibitionBanner ?? aiBanner) ? (
           <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">
             {exhibitionBanner ? (
