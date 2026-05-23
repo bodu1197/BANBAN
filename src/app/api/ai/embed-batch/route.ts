@@ -8,14 +8,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CLIP_URL } from "@/lib/ai-client";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
-import { SUPABASE_URL } from "@/lib/supabase/config";
+import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import pg from "pg";
 
 /** Allow up to 300s for batch embedding processing */
 export const maxDuration = 300;
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
-const STORAGE_BUCKET = "portfolios";
 const BATCH_SIZE = 10;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -101,7 +100,7 @@ async function embedChunk(chunk: MediaItem[]): Promise<{ processed: number; fail
         // 1) 모든 임베딩을 병렬로 (CLIP 서버 호출이 가장 큰 비용 — 네트워크 latency 병렬화 효과 큼)
         const results = await Promise.all(
             chunk.map(async (item) => {
-                const url = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${item.storage_path}`;
+                const url = getStorageUrl(item.storage_path) ?? "";
                 const emb = await embedOne(url);
                 return { item, emb };
             }),

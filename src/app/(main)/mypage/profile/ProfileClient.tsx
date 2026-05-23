@@ -169,7 +169,8 @@ export function ProfileClient(): React.ReactElement {
           // eslint-disable-next-line no-console -- Log upload errors for debugging
           console.error("Upload error:", uploadError);
         } else {
-          const avatarFullUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/avatars/${fileName}`;
+          const { getAvatarUrl } = await import("@/lib/supabase/storage-utils");
+          const avatarFullUrl = getAvatarUrl(fileName) ?? "";
 
           // Update user metadata
           await supabase.auth.updateUser({

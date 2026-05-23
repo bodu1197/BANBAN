@@ -13,13 +13,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { CLIP_URL } from "@/lib/ai-client";
 import { getUser } from "@/lib/supabase/auth";
-import { SUPABASE_URL } from "@/lib/supabase/config";
+import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import pg from "pg";
 
 export const maxDuration = 30;
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
-const STORAGE_BUCKET = "portfolios";
 const WEBHOOK_SECRET = process.env.EMBED_WEBHOOK_SECRET ?? "";
 
 async function isAuthorized(request: NextRequest): Promise<boolean> {
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return NextResponse.json({ error: "mediaId and storagePath are required" }, { status: 400 });
         }
 
-        const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${storagePath}`;
+        const imageUrl = getStorageUrl(storagePath) ?? "";
         const embedding = await fetchEmbedding(imageUrl);
         await saveEmbedding(mediaId, embedding);
 
