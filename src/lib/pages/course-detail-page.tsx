@@ -6,7 +6,19 @@ import { CourseDetailClient } from "@/components/course/CourseDetailClient";
 
 export async function generateCourseDetailMetadata(id: string): Promise<Metadata> {
     const course = await fetchCourseById(id);
-    if (!course) return { title: "Course Not Found" };
+    if (!course) {
+        return {
+            title: "수강 과정을 찾을 수 없습니다 | 반언니",
+            description: "요청하신 수강 과정을 찾을 수 없습니다.",
+            robots: { index: false, follow: false },
+            ...buildPageSeo({
+                title: "수강 과정을 찾을 수 없습니다",
+                description: "요청하신 수강 과정을 찾을 수 없습니다.",
+                path: `/courses/${id}`,
+                image: null,
+            }),
+        };
+    }
 
     const title = `${course.title} - ${course.artistName}`;
     const description = course.description?.slice(0, 160) ?? `${course.category} 반영구 수강 — ${course.artistName} 직강. 커리큘럼, 가격, 일정을 확인하세요.`;
@@ -30,7 +42,7 @@ export async function renderCourseDetailPage(id: string): Promise<React.ReactEle
     if (!course) notFound();
 
     const breadcrumbJsonLd = getBreadcrumbJsonLd([
-        { name: "홈", path: "" },
+        { name: "홈", path: "/" },
         { name: "수강", path: "/courses" },
         { name: course.title, path: `/courses/${id}` },
     ]);

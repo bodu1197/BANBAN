@@ -8,12 +8,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CLIP_URL } from "@/lib/ai-client";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { SUPABASE_URL } from "@/lib/supabase/config";
 import pg from "pg";
 
 /** Allow up to 300s for batch embedding processing */
 export const maxDuration = 300;
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const STORAGE_BUCKET = "portfolios";
 const BATCH_SIZE = 10;
@@ -95,22 +95,34 @@ async function embedOne(imageUrl: string): Promise<number[] | null> {
 }
 
 async function embedChunk(chunk: MediaItem[]): Promise<{ processed: number; failed: number }> {
-    let failCount = 0;
     const client = new pg.Client({ connectionString: DATABASE_URL });
     await client.connect();
     try {
-        for (const item of chunk) {
-            const url = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${item.storage_path}`;
-            const emb = await embedOne(url);
-            if (!emb) { failCount++; continue; }
+        // 1) 모든 임베딩을 병렬로 (CLIP 서버 호출이 가장 큰 비용 — 네트워크 latency 병렬화 효과 큼)
+        const results = await Promise.all(
+            chunk.map(async (item) => {
+                const url = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${item.storage_path}`;
+                const emb = await embedOne(url);
+                return { item, emb };
+            }),
+        );
+
+        // 2) 성공한 것만 추출하여 DB insert 직렬 처리.
+        //    pg.Client 는 단일 connection — 동시 query 호출 시 "another query is already in progress" 에러.
+        //    따라서 query 는 await 로 순차. (병렬화 필요시 pg.Pool 마이그레이션)
+        const succeeded = results.filter((r): r is { item: MediaItem; emb: number[] } => r.emb !== null);
+        const failCount = results.length - succeeded.length;
+
+        for (const r of succeeded) {
             await client.query(
                 `INSERT INTO portfolio_embeddings (portfolio_media_id, embedding) VALUES ($1, $2)
                  ON CONFLICT (portfolio_media_id) DO UPDATE SET embedding = $2`,
-                [item.id, JSON.stringify(emb)],
+                [r.item.id, JSON.stringify(r.emb)],
             );
         }
+
+        return { processed: succeeded.length, failed: failCount };
     } finally {
         await client.end();
     }
-    return { processed: chunk.length - failCount, failed: failCount };
 }

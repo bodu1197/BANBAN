@@ -268,42 +268,48 @@ export async function expireOldPoints(): Promise<number> {
 
     if (!expiring || expiring.length === 0) return 0;
 
-    let expiredCount = 0;
+    // Batch 1: 모든 만료 tx 를 한 번에 expired=true
+    const txIds = expiring.map((tx) => tx.id);
+    await supabase
+        .from("point_transactions")
+        .update({ expired: true })
+        .in("id", txIds);
+
+    // Batch 2: 모든 expiry transaction 한 번에 insert
+    const expiryRows = expiring.map((tx) => ({
+        wallet_id: tx.wallet_id,
+        type: "EXPIRE" as const,
+        amount: -tx.amount,
+        reason: "WELCOME_BONUS" as const,
+        description: "기한 만료 포인트 소멸",
+    }));
+    await supabase.from("point_transactions").insert(expiryRows);
+
+    // Wallet 별 차감액 합산 (같은 wallet 의 여러 tx 합치기)
+    const walletDeductions = new Map<string, number>();
     for (const tx of expiring) {
-        // Mark as expired
-        await supabase
-            .from("point_transactions")
-            .update({ expired: true })
-            .eq("id", tx.id);
-
-        // Create expiry transaction
-        await supabase
-            .from("point_transactions")
-            .insert({
-                wallet_id: tx.wallet_id,
-                type: "EXPIRE",
-                amount: -tx.amount,
-                reason: "WELCOME_BONUS",
-                description: "기한 만료 포인트 소멸",
-            });
-
-        // Deduct from wallet
-        const { data: wallet } = await supabase
-            .from("point_wallets")
-            .select("balance")
-            .eq("id", tx.wallet_id)
-            .single();
-
-        if (wallet) {
-            const newBalance = Math.max(0, wallet.balance - tx.amount);
-            await supabase
-                .from("point_wallets")
-                .update({ balance: newBalance, updated_at: now })
-                .eq("id", tx.wallet_id);
-        }
-
-        expiredCount++;
+        walletDeductions.set(tx.wallet_id, (walletDeductions.get(tx.wallet_id) ?? 0) + tx.amount);
     }
 
-    return expiredCount;
+    // Wallet 들의 현재 balance 한 번에 조회 후 병렬 update
+    const walletIds = [...walletDeductions.keys()];
+    const { data: wallets } = await supabase
+        .from("point_wallets")
+        .select("id, balance")
+        .in("id", walletIds);
+
+    if (wallets) {
+        await Promise.all(
+            (wallets as Array<{ id: string; balance: number }>).map(async (wallet) => {
+                const deduction = walletDeductions.get(wallet.id) ?? 0;
+                const newBalance = Math.max(0, wallet.balance - deduction);
+                await supabase
+                    .from("point_wallets")
+                    .update({ balance: newBalance, updated_at: now })
+                    .eq("id", wallet.id);
+            }),
+        );
+    }
+
+    return expiring.length;
 }

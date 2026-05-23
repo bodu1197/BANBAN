@@ -10,63 +10,75 @@ import { ArtistDetailTabs } from "./ArtistDetailTabs";
 
 const VALID_TABS: ReadonlySet<string> = new Set<ShopTabId>(["home", "events", "portfolio", "beforeAfter", "reviews"]);
 
-interface ShopBlogClientProps {
-  hero: React.ReactNode;
+/** 30개 individual props 를 3개 도메인 객체 (data / counts / labels) + 단일 값으로 그룹화 */
+export interface ShopBlogData {
   events: EventCardData[];
   portfolios: PortfolioWithMedia[];
   reviews: ReviewWithUser[];
   beforeAfterPhotos: BeforeAfterPhoto[];
-  eventCount: number;
-  portfolioCount: number;
-  beforeAfterCount: number;
-  reviewCount: number;
-  totalCountLabel: string;
-  noPortfolioMessage: string;
-  noReviewsMessage: string;
-  noBeforeAfterMessage: string;
-  noEventsMessage: string;
-  beforeAfterCountLabel: string;
-  gridViewLabel: string;
-  listViewLabel: string;
-  beforeLabel: string;
-  afterLabel: string;
-  eventsLabel: string;
-  portfolioLabel: string;
-  beforeAfterLabel: string;
-  reviewsLabel: string;
-  writeReviewLabel: string;
+}
+
+export interface ShopBlogCounts {
+  events: number;
+  portfolios: number;
+  beforeAfter: number;
+  reviews: number;
+}
+
+export interface ShopBlogLabels {
+  totalCount: string;
+  noPortfolio: string;
+  noReviews: string;
+  noBeforeAfter: string;
+  noEvents: string;
+  beforeAfterCount: string;
+  gridView: string;
+  listView: string;
+  before: string;
+  after: string;
+  events: string;
+  portfolio: string;
+  beforeAfter: string;
+  reviews: string;
+  writeReview: string;
+}
+
+interface ShopBlogClientProps {
+  hero: React.ReactNode;
+  data: ShopBlogData;
+  counts: ShopBlogCounts;
+  labels: ShopBlogLabels;
   artistId: string;
   isLoggedIn: boolean;
 }
 
 export function ShopBlogClient({
   hero,
-  events,
-  portfolios,
-  reviews,
-  beforeAfterPhotos,
-  eventCount,
-  portfolioCount,
-  beforeAfterCount,
-  reviewCount,
-  totalCountLabel,
-  noPortfolioMessage,
-  noReviewsMessage,
-  noBeforeAfterMessage,
-  noEventsMessage,
-  beforeAfterCountLabel,
-  gridViewLabel,
-  listViewLabel,
-  beforeLabel,
-  afterLabel,
-  eventsLabel,
-  portfolioLabel,
-  beforeAfterLabel,
-  reviewsLabel,
-  writeReviewLabel,
+  data,
+  counts,
+  labels,
   artistId,
   isLoggedIn,
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
+  const { events, portfolios, reviews, beforeAfterPhotos } = data;
+  const { events: eventCount, portfolios: portfolioCount, beforeAfter: beforeAfterCount, reviews: reviewCount } = counts;
+  const {
+    totalCount: totalCountLabel,
+    noPortfolio: noPortfolioMessage,
+    noReviews: noReviewsMessage,
+    noBeforeAfter: noBeforeAfterMessage,
+    noEvents: noEventsMessage,
+    beforeAfterCount: beforeAfterCountLabel,
+    gridView: gridViewLabel,
+    listView: listViewLabel,
+    before: beforeLabel,
+    after: afterLabel,
+    events: eventsLabel,
+    portfolio: portfolioLabel,
+    beforeAfter: beforeAfterLabel,
+    reviews: reviewsLabel,
+    writeReview: writeReviewLabel,
+  } = labels;
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") ?? "home";
   const [activeTab, setActiveTab] = useState<ShopTabId>(

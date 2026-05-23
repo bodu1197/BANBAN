@@ -64,16 +64,21 @@ export function useWebRTCCall({ conversationId, currentUserId, otherUserId }: Us
     const signalingRef = useRef<ReturnType<typeof createSignalingChannel> | null>(null);
     const pendingCallTypeRef = useRef<CallType>("audio");
     const callTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const localStreamRef = useRef<MediaStream | null>(null);
+
+    // localStream state → ref 동기화 (cleanup deps 비우기 위함, 무한 재생성 방지)
+    useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
 
     const cleanup = useCallback(() => {
         if (pcRef.current) { closePeerConnection(pcRef.current); pcRef.current = null; }
         if (callTimeoutRef.current) { clearTimeout(callTimeoutRef.current); callTimeoutRef.current = null; }
-        stopMediaStream(localStream);
+        stopMediaStream(localStreamRef.current);
+        localStreamRef.current = null;
         setLocalStream(null);
         setRemoteStream(null);
         setIsMuted(false);
         setIsVideoOff(false);
-    }, [localStream]);
+    }, []);
 
     const endCall = useCallback(() => {
         signalingRef.current?.send({ type: "call-end", to: otherUserId, payload: null });

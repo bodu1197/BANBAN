@@ -97,6 +97,9 @@ async function searchArtistsByKeyword(
   }));
 }
 
+// Public read-only 검색 — 60초 CDN/Vercel Data Cache + stale-while-revalidate 로 latency 단축.
+const SEARCH_CACHE_TTL = 60;
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const q = request.nextUrl.searchParams.get("q")?.trim();
   if (!q || q.length < 1) {
@@ -135,5 +138,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     adPortfolioIds: [...adInfo.portfolioIds],
   };
 
-  return NextResponse.json(response);
+  return NextResponse.json(response, {
+    headers: { "Cache-Control": `public, s-maxage=${SEARCH_CACHE_TTL}, stale-while-revalidate=120` },
+  });
 }

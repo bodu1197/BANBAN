@@ -115,7 +115,7 @@ function mergeRealtimeMsg(prev: Message[], newMsg: Message): Message[] {
 
 // ─── File Upload ─────────────────────────────────────────
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+import { SUPABASE_URL } from "@/lib/supabase/config";
 
 async function uploadChatFile(file: File): Promise<string> {
     const form = new FormData();

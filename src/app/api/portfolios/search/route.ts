@@ -41,6 +41,9 @@ function parseSearchParams(sp: URLSearchParams): PortfolioSearchParams | null {
   };
 }
 
+// Public 필터 검색 — 60s CDN cache (sort=random 은 동일 URL 에 동일 결과 반환, 다양성은 client 측에서)
+const PORTFOLIO_SEARCH_CACHE_TTL = 60;
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const params = parseSearchParams(request.nextUrl.searchParams);
   if (!params) {
@@ -48,5 +51,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const result = await searchPortfolios(params);
-  return NextResponse.json(result);
+  return NextResponse.json(result, {
+    headers: { "Cache-Control": `public, s-maxage=${PORTFOLIO_SEARCH_CACHE_TTL}, stale-while-revalidate=120` },
+  });
 }

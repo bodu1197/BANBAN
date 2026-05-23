@@ -2,7 +2,7 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getUser } from "@/lib/supabase/auth";
-import type { GeneratedDetailCopy } from "@/components/event-form/types";
+import type { GeneratedDetailCopy } from "@/lib/event/types";
 
 export const maxDuration = 300;
 

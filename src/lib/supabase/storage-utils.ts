@@ -3,7 +3,8 @@
  * These functions are safe to use in both client and server components
  */
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+import { SUPABASE_URL } from "./config";
+
 const STORAGE_BUCKET = "portfolios";
 const AVATARS_BUCKET = "avatars";
 const BANNERS_BUCKET = "banners";

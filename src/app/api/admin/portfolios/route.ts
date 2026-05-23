@@ -47,11 +47,16 @@ async function findArtistIds(supabase: SupabaseClient, search: string): Promise<
     return [...artistIds];
 }
 
-/** Build OR filter for portfolio search including artist matches */
+const UUID_RE_INTERNAL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Build OR filter for portfolio search including artist matches.
+ *  방어적 코딩: artistIds 는 UUID 형식인 값만 통과 (PostgREST `in()` 필터에 안전).
+ */
 function buildPortfolioFilter(search: string, artistIds: string[]): string {
     const s = escapeIlike(search);
     const base = `title.ilike.%${s}%,description.ilike.%${s}%`;
-    return artistIds.length > 0 ? `${base},artist_id.in.(${artistIds.join(",")})` : base;
+    const safeIds = artistIds.filter((id) => UUID_RE_INTERNAL.test(id));
+    return safeIds.length > 0 ? `${base},artist_id.in.(${safeIds.join(",")})` : base;
 }
 
 const PORTFOLIO_COLUMNS = "id, title, description, price_origin, price, discount_rate, likes_count, views_count, created_at, deleted_at";
@@ -132,6 +137,17 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     };
 
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+    // 음수/비정상 숫자 방어 (가격 조작 차단)
+    for (const numKey of ["price", "price_origin", "discount_rate"] as const) {
+        const v = body[numKey];
+        if (v !== undefined && (typeof v !== "number" || v < 0 || !Number.isFinite(v))) {
+            return NextResponse.json({ error: `invalid_${numKey}` }, { status: 400 });
+        }
+    }
+    if (body.discount_rate !== undefined && body.discount_rate > 100) {
+        return NextResponse.json({ error: "invalid_discount_rate" }, { status: 400 });
+    }
 
     const updates: Record<string, unknown> = {};
     if (body.title !== undefined) updates.title = body.title;

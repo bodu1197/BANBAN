@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SAM2_URL } from "@/lib/ai-client";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!SAM2_URL) {
         return NextResponse.json({ error: "SAM2 not configured" }, { status: 503 });

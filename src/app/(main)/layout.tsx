@@ -19,11 +19,11 @@ export default function MainLayout({
           dangerouslySetInnerHTML={{ __html: jsonLdSafe(websiteJsonLd) }}
         />
         <Header />
-        <div className="flex-1 pb-16">
+        <main id="main-content" className="flex-1 pb-16">
           <div className="mx-auto w-full max-w-[1024px] bg-background lg:rounded-t-[32px] overflow-clip">
             {children}
           </div>
-        </div>
+        </main>
         <Footer />
         <BottomNav />
         <IdleToaster />

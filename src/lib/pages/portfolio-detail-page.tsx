@@ -50,7 +50,17 @@ export async function generatePortfolioDetailMetadata(id: string): Promise<Metad
     if (isLegacyNumericId(id)) {
         const uuid = await findPortfolioByLegacyId(Number(id));
         if (uuid) permanentRedirect(`/portfolios/${uuid}`);
-        return { title: "Portfolio Not Found" };
+        return {
+            title: "포트폴리오를 찾을 수 없습니다 | 반언니",
+            description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+            robots: { index: false, follow: false },
+            ...buildPageSeo({
+                title: "포트폴리오를 찾을 수 없습니다",
+                description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+                path: `/portfolios/${id}`,
+                image: null,
+            }),
+        };
     }
 
     const portfolio = await fetchPortfolioById(id);
@@ -156,7 +166,7 @@ function buildJsonLd(
     portfolio: NonNullable<Awaited<ReturnType<typeof fetchPortfolioById>>>,
 ): { breadcrumb: ReturnType<typeof getBreadcrumbJsonLd>; product: ReturnType<typeof getProductJsonLd> } {
     const breadcrumb = getBreadcrumbJsonLd([
-        { name: "홈", path: "" },
+        { name: "홈", path: "/" },
         { name: "포트폴리오", path: "/portfolios" },
         { name: portfolio.title, path: `/portfolios/${id}` },
     ]);

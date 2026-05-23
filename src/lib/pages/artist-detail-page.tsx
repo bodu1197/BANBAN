@@ -32,13 +32,33 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
     if (uuid) {
       permanentRedirect(`/artists/${uuid}`);
     }
-    return { title: "Artist Not Found" };
+    return {
+      title: "아티스트를 찾을 수 없습니다 | 반언니",
+      description: "요청하신 아티스트를 찾을 수 없습니다.",
+      robots: { index: false, follow: false },
+      ...buildPageSeo({
+        title: "아티스트를 찾을 수 없습니다",
+        description: "요청하신 아티스트를 찾을 수 없습니다.",
+        path: `/artists/${id}`,
+        image: null,
+      }),
+    };
   }
 
   const artist = await fetchArtistById(id);
 
   if (!artist) {
-    return { title: "Artist Not Found" };
+    return {
+      title: "아티스트를 찾을 수 없습니다 | 반언니",
+      description: "요청하신 아티스트를 찾을 수 없습니다.",
+      robots: { index: false, follow: false },
+      ...buildPageSeo({
+        title: "아티스트를 찾을 수 없습니다",
+        description: "요청하신 아티스트를 찾을 수 없습니다.",
+        path: `/artists/${id}`,
+        image: null,
+      }),
+    };
   }
 
   const description = artist.introduce;
@@ -159,7 +179,7 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
   }));
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
-    { name: "홈", path: "" },
+    { name: "홈", path: "/" },
     { name: "아티스트", path: "/artists" },
     { name: artist.title, path: `/artists/${id}` },
   ]);
@@ -191,29 +211,30 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
             isLiked={likedIds.includes(id)}
           />
         }
-        events={events}
-        portfolios={portfolios}
-        reviews={reviews}
-        beforeAfterPhotos={beforeAfterPhotos}
-        eventCount={events.length}
-        portfolioCount={portfolios.length}
-        beforeAfterCount={beforeAfterPhotos.length}
-        reviewCount={reviewCount}
-        totalCountLabel={STRINGS.artist.totalCount.replace("{count}", String(portfolioImages.length))}
-        noPortfolioMessage={STRINGS.artist.noPortfolio}
-        noReviewsMessage={STRINGS.artist.noReviews}
-        noBeforeAfterMessage={STRINGS.artist.noBeforeAfter}
-        noEventsMessage={STRINGS.artist.noEvents}
-        beforeAfterCountLabel={STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length))}
-        gridViewLabel={STRINGS.common.gridView}
-        listViewLabel={STRINGS.common.listView}
-        beforeLabel={STRINGS.artist.beforeLabel}
-        afterLabel={STRINGS.artist.afterLabel}
-        eventsLabel={STRINGS.artist.events}
-        portfolioLabel={STRINGS.artist.portfolio}
-        beforeAfterLabel={STRINGS.artist.beforeAfter}
-        reviewsLabel={STRINGS.artist.reviews}
-        writeReviewLabel={STRINGS.review.writeReview}
+        data={{ events, portfolios, reviews, beforeAfterPhotos }}
+        counts={{
+          events: events.length,
+          portfolios: portfolios.length,
+          beforeAfter: beforeAfterPhotos.length,
+          reviews: reviewCount,
+        }}
+        labels={{
+          totalCount: STRINGS.artist.totalCount.replace("{count}", String(portfolioImages.length)),
+          noPortfolio: STRINGS.artist.noPortfolio,
+          noReviews: STRINGS.artist.noReviews,
+          noBeforeAfter: STRINGS.artist.noBeforeAfter,
+          noEvents: STRINGS.artist.noEvents,
+          beforeAfterCount: STRINGS.artist.beforeAfterCount.replace("{count}", String(beforeAfterPhotos.length)),
+          gridView: STRINGS.common.gridView,
+          listView: STRINGS.common.listView,
+          before: STRINGS.artist.beforeLabel,
+          after: STRINGS.artist.afterLabel,
+          events: STRINGS.artist.events,
+          portfolio: STRINGS.artist.portfolio,
+          beforeAfter: STRINGS.artist.beforeAfter,
+          reviews: STRINGS.artist.reviews,
+          writeReview: STRINGS.review.writeReview,
+        }}
         artistId={id}
         isLoggedIn={!!user}
       />

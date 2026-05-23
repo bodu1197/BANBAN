@@ -83,11 +83,32 @@ interface FormFieldProps {
 }
 
 function FormField({ id, label, type, value, onChange, placeholder, disabled, autoComplete, minLength, maxLength, pattern, dupStatus, onBlurCheck }: Readonly<FormFieldProps>): React.ReactElement {
+  const isInvalid = dupStatus === "taken";
+  const statusId = dupStatus ? `${id}-status` : undefined;
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlurCheck} placeholder={placeholder} required disabled={disabled} autoComplete={autoComplete} minLength={minLength} maxLength={maxLength} pattern={pattern} />
-      {dupStatus ? <DupStatusIcon status={dupStatus} field={id} /> : null}
+      <Label htmlFor={id}>
+        {label}
+        <span className="ml-0.5 text-destructive" aria-hidden="true">*</span>
+      </Label>
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlurCheck}
+        placeholder={placeholder}
+        required
+        aria-required="true"
+        aria-invalid={isInvalid}
+        aria-describedby={statusId}
+        disabled={disabled}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        maxLength={maxLength}
+        pattern={pattern}
+      />
+      {dupStatus ? <span id={statusId}><DupStatusIcon status={dupStatus} field={id} /></span> : null}
     </div>
   );
 }
@@ -164,7 +185,9 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
       <FormField id="password" label={STRINGS.auth.password} type="password" value={formData.password} onChange={updateField("password")} placeholder={STRINGS.auth.passwordRule} disabled={isPending} autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} />
       <FormField id="confirmPassword" label={STRINGS.auth.confirmPassword} type="password" value={confirmPassword} onChange={setConfirmPassword} disabled={isPending} autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} />
       <PasswordChecklist password={formData.password} confirmPassword={confirmPassword} />
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
+      )}
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onBack} className="flex-1" disabled={isPending}>{STRINGS.common.back}</Button>
         <Button type="submit" className="flex-1" disabled={isPending}>{isPending ? "..." : STRINGS.common.complete}</Button>

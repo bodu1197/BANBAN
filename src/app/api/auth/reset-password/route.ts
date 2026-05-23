@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(user.id, { password });
     if (updateAuthError) return jsonError("비밀번호 변경에 실패했습니다", 500);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
     await adminClient.from("profiles").update({ password: hashedPassword }).eq("id", user.id);
 
     return NextResponse.json({ success: true });

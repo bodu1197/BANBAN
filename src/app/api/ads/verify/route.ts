@@ -37,6 +37,8 @@ async function verifyPayment(impUid: string): Promise<V1Payment | null> {
     return data.response ?? null;
 }
 
+const IMP_UID_REGEX = /^[a-zA-Z0-9_-]+$/;
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
     const user = await getUser();
     if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -47,15 +49,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!impUid || !subscriptionId) {
         return NextResponse.json({ error: "missing_params" }, { status: 400 });
     }
+    if (!IMP_UID_REGEX.test(impUid)) {
+        return NextResponse.json({ error: "invalid_imp_uid" }, { status: 400 });
+    }
+    if (typeof expectedAmount !== "number" || expectedAmount < 0 || !Number.isFinite(expectedAmount)) {
+        return NextResponse.json({ error: "invalid_expected_amount" }, { status: 400 });
+    }
 
     const payment = await verifyPayment(impUid);
 
-    if (payment) {
-        if (payment.status !== "paid") return NextResponse.json({ error: "payment_not_paid" }, { status: 400 });
-        if (payment.amount !== expectedAmount) return NextResponse.json({ error: "amount_mismatch" }, { status: 400 });
+    if (!payment) {
+        return NextResponse.json({ error: "payment_verification_failed" }, { status: 400 });
+    }
+    if (payment.status !== "paid") {
+        return NextResponse.json({ error: "payment_not_paid" }, { status: 400 });
+    }
+    if (payment.amount !== expectedAmount) {
+        return NextResponse.json({ error: "amount_mismatch" }, { status: 400 });
     }
 
-    // Activate subscription
     const subscription = await activateSubscription(subscriptionId, impUid);
     return NextResponse.json({ success: true, subscription });
 }

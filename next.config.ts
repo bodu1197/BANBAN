@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-DNS-Prefetch-Control", value: "on" },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(self)" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), interest-cohort=()" },
         ],
       },
     ];
@@ -59,14 +59,7 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'flagcdn.com',
-        pathname: '/**',
-      },
-      // 제작 기간 임시 — 바비톡 fallback 이미지. pathname /2024_event/** 로 한정 (SSRF 방어).
-      // TODO(follow-up): 사용자 DB 에 배너 업로드 완료 후 이 entry 와 HomeHeroCarousel.tsx 의 FALLBACK_BANNERS 제거.
-      {
-        protocol: 'https',
-        hostname: 'images.babitalk.com',
-        pathname: '/2024_event/**',
+        pathname: '/w20/**',  // 국기 아이콘만 — pathname 한정으로 SSRF 추가 방어
       },
     ],
     // Custom sizes tuned for homepage card widths at 2x DPR:
@@ -118,6 +111,8 @@ const nextConfig: NextConfig = {
       "sonner",
       "class-variance-authority",
       "tailwind-merge",
+      "openai",
+      "sanitize-html",
     ],
   },
 

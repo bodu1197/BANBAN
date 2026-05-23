@@ -48,7 +48,11 @@ const WRITING_ANGLES = [
 ] as const;
 
 function pickAngle(): string {
-  return WRITING_ANGLES[Math.floor(Math.random() * WRITING_ANGLES.length)];
+  // SonarCloud S2245 회피 — AI prompt 다양성 목적의 비보안 random, 그래도 crypto-backed 사용.
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  // eslint-disable-next-line security/detect-object-injection -- numeric index from secureRandomInt range
+  return WRITING_ANGLES[buf[0] % WRITING_ANGLES.length];
 }
 
 const SYSTEM_PROMPT = [
@@ -74,7 +78,10 @@ const SYSTEM_PROMPT = [
 
 function buildPrompt(topic: EncyclopediaTopic): string {
   const angle = pickAngle();
-  const seed = Math.floor(Math.random() * 10000);
+  // SonarCloud S2245 회피 — seed 는 AI generation diversity 목적, 비보안.
+  const seedBuf = new Uint32Array(1);
+  crypto.getRandomValues(seedBuf);
+  const seed = seedBuf[0] % 10000;
   return [
     `# 작성 임무`,
     `"${SITE_NAME}" 뷰티 백과사전에 게시할 한국어 전문 정보 글을 작성하세요.`,

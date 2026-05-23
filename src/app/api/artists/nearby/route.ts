@@ -121,5 +121,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const rows = (data ?? []) as NearbyArtistRow[];
   const portfolioMap = await fetchPortfolioMap(supabase, rows.map((a) => a.id));
 
-  return NextResponse.json({ artists: mapArtistRows(rows, portfolioMap) });
+  return NextResponse.json(
+    { artists: mapArtistRows(rows, portfolioMap) },
+    // 같은 lat/lng + radius = 같은 결과. 짧은 CDN 캐시로 모바일 사용자 반복 호출 부담 감소.
+    { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } },
+  );
 }

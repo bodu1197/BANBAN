@@ -55,7 +55,7 @@ const EYELINER_STYLES: Record<string, string> = {
     "lash-line": "invisible lash line eyeliner, between-lash fill, semi-permanent eyeliner that only fills gaps between lashes",
 };
 
-function getStylePrompt(area: BeautyArea, style: string): string {
+function getStylePrompt(area: BeautyArea, style: string): string | null {
     const AREA_STYLE_MAP: Record<BeautyArea, Record<string, string>> = {
         eyebrow: EYEBROW_STYLES,
         lip: LIP_STYLES,
@@ -63,8 +63,11 @@ function getStylePrompt(area: BeautyArea, style: string): string {
     };
     // eslint-disable-next-line security/detect-object-injection -- Safe: area is validated from VALID_AREAS set
     const styles = AREA_STYLE_MAP[area];
-    // eslint-disable-next-line security/detect-object-injection -- Safe: style is user-selected from known list
-    return styles[style] || Object.values(styles)[0];
+    // 화이트리스트 강제 — 알려지지 않은 style 은 폴백 대신 null 반환하여 프롬프트 주입 차단.
+    // eslint-disable-next-line security/detect-object-injection -- Safe: style is validated by Object.hasOwn below
+    if (!Object.hasOwn(styles, style)) return null;
+    // eslint-disable-next-line security/detect-object-injection -- Safe: style verified by hasOwn above
+    return styles[style];
 }
 
 // ─── FLUX Fill [dev] Workflow ───────────────────────────────────────────────
@@ -90,7 +93,8 @@ function buildBeautySimWorkflow(
     area: BeautyArea,
     style: string,
 ): Record<string, unknown> {
-    const styleDesc = getStylePrompt(area, style);
+    // validateRequest 가 이미 검증했으므로 styleDesc 는 non-null 보장.
+    const styleDesc = getStylePrompt(area, style) ?? "";
 
     const editPrompt = `${styleDesc}. `
         + `Professional semi-permanent makeup on real skin, healed and natural-looking. `
@@ -137,13 +141,25 @@ function buildBeautySimWorkflow(
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
+// base64 payload 크기 제한 — 메모리 폭발/SSRF 우회 방어. 5MB base64 ≈ 3.75MB raw.
+const MAX_BASE64_LEN = 5 * 1024 * 1024 * 4 / 3;
+
 function validateRequest(body: BeautySimRequest): NextResponse | null {
     const { image, mask, area, style } = body;
     if (!image || !mask || !area || !style) {
         return NextResponse.json({ error: "image, mask, area, and style are required" }, { status: 400 });
     }
+    if (typeof image !== "string" || typeof mask !== "string") {
+        return NextResponse.json({ error: "image and mask must be base64 strings" }, { status: 400 });
+    }
+    if (image.length > MAX_BASE64_LEN || mask.length > MAX_BASE64_LEN) {
+        return NextResponse.json({ error: "payload too large (max 5MB each)" }, { status: 413 });
+    }
     if (!VALID_AREAS.has(area)) {
         return NextResponse.json({ error: `Invalid area: ${area}` }, { status: 400 });
+    }
+    if (typeof style !== "string" || getStylePrompt(area, style) === null) {
+        return NextResponse.json({ error: `Invalid style: ${String(style)}` }, { status: 400 });
     }
     return null;
 }

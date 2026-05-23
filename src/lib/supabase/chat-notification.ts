@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { notifyUser } from "./notification-queries";
 
 /**
@@ -5,8 +6,7 @@ import { notifyUser } from "./notification-queries";
  * Extracted to reduce complexity of the messages API route.
  */
 export async function notifyChatRecipient(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: SupabaseClient,
   conversationId: string,
   senderId: string,
   senderName: string,

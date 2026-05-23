@@ -25,7 +25,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .from("conversations")
         .select("id")
         .eq("id", conversationId)
-        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
+        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)  // user.id 는 Supabase Auth getUser 결과 UUID — 검증된 값.
         .single();
 
     if (!conv) return NextResponse.json({ error: "not_found" }, { status: 404 });

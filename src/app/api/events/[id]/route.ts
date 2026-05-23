@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { updateEvent } from "@/lib/supabase/event-queries";
-import { calcDiscountRate } from "@/components/portfolio-form/portfolio-helpers";
-import { EVENT_FIELD_LIMITS } from "@/components/event-form/types";
+import { calcDiscountRate } from "@/lib/portfolio/helpers";
+import { EVENT_FIELD_LIMITS } from "@/lib/event/constants";
 import type { Database } from "@/types/database";
 
 type EventUpdate = Database["public"]["Tables"]["events"]["Update"];

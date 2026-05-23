@@ -7,9 +7,11 @@ import {
   DETAIL_SECTION_TYPES,
   EDIT_SECTIONS,
   type DetailSectionType,
-  type DetailSectionCopy,
-  type EventFormValues,
-} from "@/components/event-form/types";
+} from "@/lib/event/constants";
+import type {
+  DetailSectionCopy,
+  EventFormValues,
+} from "@/lib/event/types";
 
 export const maxDuration = 180;
 

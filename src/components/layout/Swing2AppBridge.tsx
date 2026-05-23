@@ -3,24 +3,16 @@
 
 import { useEffect } from "react";
 
-interface Swing2AppPlugin {
-  app: {
-    login: {
-      doAppLogin: (userId: string, userName: string) => void;
-      doAppLogout: () => void;
-    };
-  };
-}
-
+// Swing2App 플러그인 타입은 globals.d.ts 의 Window.swingWebViewPlugin ambient 선언 사용.
 interface MinimalUser {
   id: string;
   email?: string;
   user_metadata?: Record<string, string>;
 }
 
-function getPlugin(): Swing2AppPlugin | null {
-  const w = typeof globalThis !== "undefined" ? globalThis : null;
-  return (w as unknown as { swingWebViewPlugin?: Swing2AppPlugin } | null)?.swingWebViewPlugin ?? null;
+function getPlugin(): NonNullable<Window["swingWebViewPlugin"]> | null {
+  if (typeof window === "undefined") return null;
+  return window.swingWebViewPlugin ?? null;
 }
 
 function getUserDisplayName(user: MinimalUser): string {
@@ -58,7 +50,8 @@ export function Swing2AppBridge(): null {
 
     let unsubscribe: (() => void) | null = null;
     const idle = (cb: () => void): void => {
-      const ric = (globalThis as unknown as { requestIdleCallback?: (fn: () => void, opts?: { timeout?: number }) => number }).requestIdleCallback;
+      // requestIdleCallback 은 Safari 등 미지원 환경 있음 → typed window 접근 + setTimeout fallback
+      const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
       if (ric) ric(cb, { timeout: 2000 });
       else globalThis.setTimeout(cb, 1500);
     };

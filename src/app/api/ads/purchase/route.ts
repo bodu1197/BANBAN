@@ -58,6 +58,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = await request.json() as AdPurchaseRequest;
     if (!body.planId) return NextResponse.json({ error: "missing_plan_id" }, { status: 400 });
 
+    if (body.durationMonths !== undefined && (
+        typeof body.durationMonths !== "number" ||
+        body.durationMonths < 1 ||
+        !Number.isInteger(body.durationMonths)
+    )) {
+        return NextResponse.json({ error: "invalid_duration" }, { status: 400 });
+    }
+
+    const requestedUsePoints = body.usePoints ?? 0;
+    if (typeof requestedUsePoints !== "number" || requestedUsePoints < 0 || !Number.isFinite(requestedUsePoints)) {
+        return NextResponse.json({ error: "invalid_use_points" }, { status: 400 });
+    }
+
     const result = await validatePurchase(body);
     if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
 
@@ -66,7 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "plan_type_mismatch" }, { status: 400 });
     }
 
-    const pointsToUse = Math.min(body.usePoints ?? 0, totalPrice);
+    const pointsToUse = Math.max(0, Math.min(requestedUsePoints, totalPrice));
     const pointError = await processPointPayment(user.id, pointsToUse, plan.name, duration.label);
     if (pointError) return NextResponse.json({ error: pointError }, { status: 400 });
 

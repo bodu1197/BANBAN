@@ -106,7 +106,7 @@ export async function renderExhibitionDetailPage(id: string): Promise<React.Reac
   const isActive = exhibition.is_active && !isEnded;
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
-    { name: "홈", path: "" },
+    { name: "홈", path: "/" },
     { name: "기획전", path: "/exhibition" },
     { name: exhibition.title, path: `/exhibition/${id}` },
   ]);

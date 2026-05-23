@@ -18,28 +18,9 @@ interface UseDaumPostcodeReturn {
   close: () => void;
 }
 
-interface DaumPostcode {
-  embed: (container: HTMLElement) => void;
-  open: () => void;
-}
-
-interface DaumPostcodeConstructor {
-  new (options: {
-    oncomplete: (data: DaumPostcodeData) => void;
-    onclose?: () => void;
-    width: string;
-    height: string;
-    maxSuggestItems?: number;
-  }): DaumPostcode;
-}
-
-interface DaumNamespace {
-  Postcode: DaumPostcodeConstructor;
-}
-
-// Typed accessor for the daum global (loaded via external script)
-function getDaum(): DaumNamespace | undefined {
-  return (globalThis as unknown as { daum?: DaumNamespace }).daum;
+// Daum Postcode 타입은 globals.d.ts 의 Window.daum ambient 선언 사용 — `as unknown as` 캐스트 제거.
+function getDaum(): Window["daum"] {
+  return typeof window !== "undefined" ? window.daum : undefined;
 }
 
 export function useDaumPostcode(): UseDaumPostcodeReturn {

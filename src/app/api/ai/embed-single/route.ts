@@ -13,9 +13,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { CLIP_URL } from "@/lib/ai-client";
 import { getUser } from "@/lib/supabase/auth";
+import { SUPABASE_URL } from "@/lib/supabase/config";
 import pg from "pg";
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+export const maxDuration = 30;
+
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const STORAGE_BUCKET = "portfolios";
 const WEBHOOK_SECRET = process.env.EMBED_WEBHOOK_SECRET ?? "";

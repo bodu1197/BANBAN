@@ -5,17 +5,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
+import { secureShuffle } from "@/lib/random";
 
 const DISPLAY_COUNT = 7;
 
 function shuffleAndPick(list: ReadonlyArray<string>, count: number): ReadonlyArray<string> {
-  const arr = [...list];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    // eslint-disable-next-line security/detect-object-injection -- numeric indices in local array
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr.slice(0, count);
+  // SonarCloud S2245 회피 — Math.random 대신 crypto-backed shuffle.
+  return secureShuffle(list).slice(0, count);
 }
 
 /** 홈 검색바 아래 인기 검색어 칩 — 8개 중 7개 랜덤, 클릭 시 /search?q=키워드 로 이동 */

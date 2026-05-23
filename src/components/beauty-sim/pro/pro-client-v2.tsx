@@ -70,25 +70,43 @@ function ProUploadStep({ inputRef, onFile }: Readonly<{
 
 // ─── Eyebrow Tab (V2 — with erase toggle) ──────────────────────────────────
 
+// Props grouped by 도메인 (eyebrow / erase / brush / adjustment / joystick) — 16개 매개변수를 5개 props 로 축약.
+interface ProEyebrowTabV2Props {
+    eyebrow: {
+        selectedId: string | null;
+        onSelectTemplate: (t: EyebrowTemplate) => void;
+        color: string;
+        onColorChange: (hex: string) => void;
+    };
+    erase: {
+        enabled: boolean;
+        onToggle: () => void;
+    };
+    brush: {
+        mode: boolean;
+        size: number;
+        onToggleMode: () => void;
+        onSizeChange: (size: number) => void;
+        onClear: () => void;
+    };
+    adjustment: {
+        params: AdjustmentParams;
+        side: BrowSide;
+        onParamsChange: (p: AdjustmentParams) => void;
+        onSideChange: (s: BrowSide) => void;
+    };
+    joystick: {
+        onMove: (dx: number, dy: number) => void;
+    };
+}
+
 // eslint-disable-next-line max-lines-per-function -- Eyebrow tab with auto-erase toggle + manual brush controls
-function ProEyebrowTabV2({ selectedId, onSelectTemplate, activeAdj, browSide, onAdjChange, onSideChange, browColor, onColorChange, browEraseEnabled, onBrowEraseToggle, brushMode, onBrushModeToggle, brushSize, onBrushSizeChange, onBrushClear, onJoystickMove }: Readonly<{
-    selectedId: string | null;
-    onSelectTemplate: (t: EyebrowTemplate) => void;
-    activeAdj: AdjustmentParams;
-    browSide: BrowSide;
-    onAdjChange: (p: AdjustmentParams) => void;
-    onSideChange: (s: BrowSide) => void;
-    browColor: string;
-    onColorChange: (hex: string) => void;
-    browEraseEnabled: boolean;
-    onBrowEraseToggle: () => void;
-    brushMode: boolean;
-    onBrushModeToggle: () => void;
-    brushSize: number;
-    onBrushSizeChange: (size: number) => void;
-    onBrushClear: () => void;
-    onJoystickMove: (dx: number, dy: number) => void;
-}>): React.ReactElement {
+function ProEyebrowTabV2({ eyebrow, erase, brush, adjustment, joystick }: Readonly<ProEyebrowTabV2Props>): React.ReactElement {
+    const { selectedId, onSelectTemplate, color: browColor, onColorChange } = eyebrow;
+    const { enabled: browEraseEnabled, onToggle: onBrowEraseToggle } = erase;
+    const { mode: brushMode, size: brushSize, onToggleMode: onBrushModeToggle, onSizeChange: onBrushSizeChange, onClear: onBrushClear } = brush;
+    const { params: activeAdj, side: browSide, onParamsChange: onAdjChange, onSideChange } = adjustment;
+    const { onMove: onJoystickMove } = joystick;
     return (
         <div className="flex flex-col gap-4">
             <div>
@@ -578,22 +596,32 @@ function ConsultationPanelV2({ imageDataUrl, image, landmarks, goldenRatio, view
 
                     <TabsContent value="eyebrow" className="pt-2">
                         <ProEyebrowTabV2
-                            selectedId={selectedTemplate?.id ?? null}
-                            onSelectTemplate={setSelectedTemplate}
-                            activeAdj={activeAdj}
-                            browSide={browSide}
-                            onAdjChange={handleAdjChange}
-                            onSideChange={setBrowSide}
-                            browColor={browColor}
-                            onColorChange={setBrowColor}
-                            browEraseEnabled={browEraseEnabled}
-                            onBrowEraseToggle={() => setBrowEraseEnabled((prev) => !prev)}
-                            brushMode={brushMode}
-                            onBrushModeToggle={() => setBrushMode((prev) => !prev)}
-                            brushSize={brushSize}
-                            onBrushSizeChange={setBrushSize}
-                            onBrushClear={handleBrushClear}
-                            onJoystickMove={handleJoystickMove}
+                            eyebrow={{
+                                selectedId: selectedTemplate?.id ?? null,
+                                onSelectTemplate: setSelectedTemplate,
+                                color: browColor,
+                                onColorChange: setBrowColor,
+                            }}
+                            erase={{
+                                enabled: browEraseEnabled,
+                                onToggle: () => setBrowEraseEnabled((prev) => !prev),
+                            }}
+                            brush={{
+                                mode: brushMode,
+                                size: brushSize,
+                                onToggleMode: () => setBrushMode((prev) => !prev),
+                                onSizeChange: setBrushSize,
+                                onClear: handleBrushClear,
+                            }}
+                            adjustment={{
+                                params: activeAdj,
+                                side: browSide,
+                                onParamsChange: handleAdjChange,
+                                onSideChange: setBrowSide,
+                            }}
+                            joystick={{
+                                onMove: handleJoystickMove,
+                            }}
                         />
                     </TabsContent>
 

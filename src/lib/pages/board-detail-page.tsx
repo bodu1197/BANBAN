@@ -186,7 +186,7 @@ function ArticleBody({
 function buildBreadcrumbJsonLd(article: BoardArticle): string {
   return jsonLdSafe(
     getBreadcrumbJsonLd([
-      { name: "홈", path: "" },
+      { name: "홈", path: "/" },
       { name: "반영구 백과사전", path: "/encyclopedia" },
       { name: article.title, path: `/encyclopedia/${article.slug}` },
     ]),

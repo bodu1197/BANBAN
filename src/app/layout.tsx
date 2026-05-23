@@ -119,6 +119,13 @@ export default function RootLayout({
       <body
         className={`${pretendard.variable} font-sans`}
       >
+        {/* Skip to main content — WCAG 2.4.1 Bypass Blocks. 키보드 사용자가 헤더/네비 건너뛰기 */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[200] focus:rounded-md focus:bg-foreground focus:px-4 focus:py-2 focus:text-background focus:outline-none focus:ring-2 focus:ring-brand-primary"
+        >
+          본문으로 건너뛰기
+        </a>
         {children}
         <PageViewTracker />
         <Swing2AppBridge />

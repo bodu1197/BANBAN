@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import sharp from "sharp";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 
+export const maxDuration = 60;
+
 // 이미지 사이즈 규격
 const IMAGE_SIZES = {
   thumb: { width: 150, height: 150 },

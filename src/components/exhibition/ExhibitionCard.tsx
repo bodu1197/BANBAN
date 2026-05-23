@@ -2,8 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { ExhibitionItem } from "@/lib/supabase/exhibition-queries";
-
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+import { SUPABASE_URL } from "@/lib/supabase/config";
 
 function toImageUrl(path: string): string {
     if (path.startsWith("http")) return path;

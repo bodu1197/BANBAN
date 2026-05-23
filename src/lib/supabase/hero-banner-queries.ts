@@ -20,8 +20,7 @@ interface BannerRow {
   order_index: number;
 }
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
-const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
 
 async function fetchHeroBannersInternal(): Promise<HeroBannerData[]> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];

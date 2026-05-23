@@ -24,7 +24,19 @@ function extractSeoDescription(aiRaw: unknown, fallback: string): string {
 
 export async function generateEventMetadata(id: string): Promise<Metadata> {
   const event = await fetchEventById(id);
-  if (!event) return { title: "이벤트를 찾을 수 없습니다 | 반언니" };
+  if (!event) {
+    return {
+      title: "이벤트를 찾을 수 없습니다 | 반언니",
+      description: "요청하신 이벤트를 찾을 수 없습니다. 다른 이벤트를 확인해보세요.",
+      robots: { index: false, follow: false },
+      ...buildPageSeo({
+        title: "이벤트를 찾을 수 없습니다",
+        description: "요청하신 이벤트를 찾을 수 없습니다.",
+        path: `/events/${id}`,
+        image: null,
+      }),
+    };
+  }
 
   const description = extractSeoDescription(event.ai_generated_content, event.procedure_summary);
   const detailHero = event.event_media?.find((m) => m.media_type === "detail_hero");
@@ -115,7 +127,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
   })();
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
-    { name: "홈", path: "" },
+    { name: "홈", path: "/" },
     { name: "이벤트", path: "/events" },
     { name: event.title, path: `/events/${id}` },
   ]);

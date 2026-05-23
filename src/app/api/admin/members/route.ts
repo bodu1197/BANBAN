@@ -28,6 +28,7 @@ interface QueryParams {
 // ─── Helpers ─────────────────────────────────────────────
 
 const PROFILE_COLUMNS = "id, username, email, nickname, contact, is_admin, type_social, language, last_login_at, created_at, deleted_at";
+const UUID_RE_INTERNAL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function parseQueryParams(url: URL): QueryParams {
     return {
@@ -60,11 +61,14 @@ async function findArtistUserIds(supabase: SupabaseClient, search: string): Prom
     return (artists ?? []).map((a) => (a as { user_id: string }).user_id);
 }
 
-/** Build OR filter including artist title matches */
+/** Build OR filter including artist title matches.
+ *  방어적 코딩: artistUserIds 는 UUID 형식인 값만 통과 (PostgREST `in()` 필터에 안전).
+ */
 function buildSearchFilter(search: string, artistUserIds: string[]): string {
     const s = escapeIlike(search);
     const base = `username.ilike.%${s}%,nickname.ilike.%${s}%,email.ilike.%${s}%`;
-    return artistUserIds.length > 0 ? `${base},id.in.(${artistUserIds.join(",")})` : base;
+    const safeIds = artistUserIds.filter((id) => UUID_RE_INTERNAL.test(id));
+    return safeIds.length > 0 ? `${base},id.in.(${safeIds.join(",")})` : base;
 }
 
 const NICKNAME_REGEX = /^[가-힣A-Za-z0-9_]{2,12}$/;
@@ -85,7 +89,7 @@ function buildMemberUpdates(body: MemberPatchBody): Record<string, unknown> {
 }
 
 async function handlePasswordChange(supabase: SupabaseClient, userId: string, password: string): Promise<{ error?: string }> {
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 12);
     const { error: dbError } = await supabase.from("profiles").update({ password: hashed }).eq("id", userId);
     if (dbError) return { error: `DB: ${dbError.message}` };
     const { error: authError } = await supabase.auth.admin.updateUserById(userId, { password });
@@ -225,6 +229,20 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
     if (body.password) {
+        // 다른 admin 의 비밀번호 변경 차단 (권한 인플레이션 방지). 본인 또는 비-admin 만 허용.
+        if (body.id !== auth.userId) {
+            const { data: target } = await supabase
+                .from("profiles")
+                .select("is_admin")
+                .eq("id", body.id)
+                .single();
+            if ((target as { is_admin: boolean } | null)?.is_admin) {
+                return NextResponse.json(
+                    { error: "다른 관리자의 비밀번호는 변경할 수 없습니다." },
+                    { status: 403 },
+                );
+            }
+        }
         const pwResult = await handlePasswordChange(supabase, body.id, body.password);
         if (pwResult.error) return NextResponse.json({ error: pwResult.error }, { status: 500 });
     }

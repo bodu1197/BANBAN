@@ -11,7 +11,8 @@ export function Header(): React.ReactElement {
             <div className="relative mx-auto flex h-16 max-w-[1024px] items-center justify-between px-4 md:px-6">
                 <Link
                     href={"/"}
-                    className="ml-[30px] flex items-center"
+                    aria-label="반언니 홈으로 이동"
+                    className="ml-[30px] flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                     <Image
                         src="/ban_logo.png"

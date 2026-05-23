@@ -21,20 +21,34 @@ const DEBOUNCE_MS = 300;
 const RECENT_KEY = "banunni_recent_searches";
 const MAX_RECENT = 5;
 
-const MAX_CACHE = 100;
+// LRU 캐시 — 같은 키 재사용 시 가장 최근으로 이동, 용량 초과 시 가장 오래된 키 삭제
+const MAX_CACHE = 30;
 const suggestCache = new Map<string, SuggestItem[]>();
 
 function setCacheEntry(key: string, value: SuggestItem[]): void {
-  if (suggestCache.size >= MAX_CACHE) {
+  if (suggestCache.has(key)) suggestCache.delete(key);
+  else if (suggestCache.size >= MAX_CACHE) {
     const firstKey = suggestCache.keys().next().value as string;
     suggestCache.delete(firstKey);
   }
   suggestCache.set(key, value);
 }
 
+function getCacheEntry(key: string): SuggestItem[] | undefined {
+  const value = suggestCache.get(key);
+  if (value !== undefined) {
+    suggestCache.delete(key);
+    suggestCache.set(key, value);
+  }
+  return value;
+}
+
 function getRecentSearches(): string[] {
   try {
-    return JSON.parse(globalThis.localStorage?.getItem(RECENT_KEY) ?? "[]") as string[];
+    const raw = JSON.parse(globalThis.localStorage?.getItem(RECENT_KEY) ?? "[]") as unknown;
+    if (!Array.isArray(raw)) return [];
+    // 런타임 검증 — localStorage 가 변조되어도 string[] 보장
+    return raw.filter((v): v is string => typeof v === "string");
   } catch { return []; }
 }
 
@@ -282,7 +296,7 @@ function useSearchSuggestions(): {
 
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 1) { setItems([]); return; }
-    const cached = suggestCache.get(q);
+    const cached = getCacheEntry(q);
     if (cached) { setItems(cached); return; }
     try {
       const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(q)}`);

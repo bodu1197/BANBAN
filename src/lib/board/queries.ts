@@ -69,6 +69,8 @@ export async function fetchBoardArticleBySlug(
     .single();
 
   if (error) return null;
+  // Supabase 의 Json 타입(inline_images, faq 등)을 우리 도메인 인터페이스로 변환할 때
+  // 이중 cast 가 불가피 — TypeScript 가 sufficient overlap 보장 못함. 변환 책임은 호출처/검증에 위임.
   return data as unknown as BoardArticle;
 }
 

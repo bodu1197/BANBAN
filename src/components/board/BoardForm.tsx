@@ -49,7 +49,8 @@ function buildInitialState(initial: BoardFormInitial | undefined): FormState {
 async function uploadImage(file: File): Promise<string> {
   const form = new globalThis.FormData();
   form.append("file", file);
-  const path = `encyclopedia/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
+  const { secureRandomFloat } = await import("@/lib/random");
+  const path = `encyclopedia/${Date.now()}_${secureRandomFloat().toString(36).slice(2, 8)}.webp`;
   const res = await fetch(
     `/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`,
     { method: "PUT", body: form },
@@ -58,7 +59,7 @@ async function uploadImage(file: File): Promise<string> {
     const err = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(err.error ?? "이미지 업로드 실패");
   }
-  const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  const { SUPABASE_URL } = await import("@/lib/supabase/config");
   return `${SUPABASE_URL}/storage/v1/object/public/portfolios/${path}`;
 }
 

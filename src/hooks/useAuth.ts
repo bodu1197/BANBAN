@@ -3,12 +3,24 @@
 /* eslint-disable max-lines-per-function */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase User.user_metadata is Record<string, any>
+/**
+ * Supabase Auth User 의 user_metadata 에서 우리가 적극적으로 읽는 known fields.
+ * 임의의 추가 키도 들어올 수 있으므로 `& Record<string, unknown>` 으로 확장 허용.
+ */
+type AuthUserMetadata = {
+  nickname?: string;
+  contact?: string;
+  message_push_enabled?: boolean;
+  avatar_url?: string;
+  username?: string;
+} & Record<string, unknown>;
+
 interface AuthUser {
   id: string;
   email?: string;
-  user_metadata?: Record<string, any>;
+  user_metadata?: AuthUserMetadata;
   app_metadata?: Record<string, unknown>;
   aud?: string;
   created_at?: string;
@@ -32,8 +44,7 @@ interface UseAuthReturn {
 }
 
 /** Lazily resolve the browser Supabase client (avoids pulling ~200 KB into the initial bundle). */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getClient(): Promise<any> {
+async function getClient(): Promise<SupabaseClient> {
   const { createClient } = await import("@/lib/supabase/client");
   return createClient();
 }

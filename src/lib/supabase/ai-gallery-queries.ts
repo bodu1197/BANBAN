@@ -18,9 +18,8 @@ export interface SimilarityGalleryItem {
     artistProfileImage: string | null;
 }
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
 // Uses ANON_KEY (respects RLS) — similarity_top_results and portfolios tables must have SELECT policy for anon role
-const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
 
 // Pool size to sample from on each cache regeneration. We over-fetch from the
 // trending pool so the per-request shuffle (see fetchSimilarityGallery) has

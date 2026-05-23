@@ -232,9 +232,12 @@ const RANDOM_POOL_MULTIPLIER = 3;
 const MEDIA_FETCH_MULTIPLIER = 3;
 
 function shuffle<T>(arr: readonly T[]): T[] {
+  // SonarCloud S2245 회피 — Math.random 대신 crypto-backed shuffle. lib/random.ts 의 secureShuffle 와 동일 로직.
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const j = buf[0] % (i + 1);
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;

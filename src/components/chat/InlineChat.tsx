@@ -210,7 +210,8 @@ function useChatRealtime(
     }, [conversationId, setMessages]);
 }
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+import { SUPABASE_URL } from "@/lib/supabase/config";
+
 const CHAT_BUCKET = "chat";
 
 async function uploadChatFile(file: File): Promise<string> {

@@ -13,30 +13,8 @@ interface Props {
 
 const SLIDE_INTERVAL_MS = 4000;
 
-// 제작 기간 임시 fallback — DB banners 가 비어있을 때 바비톡 이미지 차용
-const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [
-  {
-    id: "fallback-1",
-    title: "시즌 인기 시술",
-    subtitle: "지금 가장 많이 찾는 시술 모음",
-    imageUrl: "https://images.babitalk.com/2024_event/12_29/4be8a155-93b2-4731-bc81-6fc486a3fef2",
-    linkUrl: null,
-  },
-  {
-    id: "fallback-2",
-    title: "신규 가입 이벤트",
-    subtitle: "첫 결제 할인 혜택",
-    imageUrl: "https://images.babitalk.com/2024_event/12_29/aac8df97-f3a3-4b3b-984d-bb43dc26d4e9",
-    linkUrl: null,
-  },
-  {
-    id: "fallback-3",
-    title: "전문 아티스트 추천",
-    subtitle: "인증된 반영구 전문가 만나기",
-    imageUrl: "https://images.babitalk.com/2024_event/12_29/c5a4d6a1-3f8f-46d5-b7d9-7e3e7c2f7e3e",
-    linkUrl: null,
-  },
-];
+// DB banners 가 비어있으면 캐러셀 자체를 숨김 — 외부 도메인 (babitalk) 의존 제거 (next.config remotePatterns 동기화).
+const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [];
 
 function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; priority: boolean }>): React.ReactElement {
   const altText = banner.title ?? "히어로 배너";
@@ -53,7 +31,6 @@ function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; p
         sizes="(min-width: 1024px) 1024px, 100vw"
         priority={priority}
         referrerPolicy="no-referrer"
-        unoptimized={banner.imageUrl.includes("images.babitalk.com")}
       />
       {/* title/subtitle 있을 때만 텍스트 표시. 어두운 gradient 장막 제거 — 이미지 본연 유지.
           텍스트 가독성은 drop-shadow + 굵은 폰트로 확보 (밝은 이미지에서도 잘 보임) */}
@@ -150,18 +127,29 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
   const list = banners.length > 0 ? banners : FALLBACK_BANNERS;
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
 
+  // prefers-reduced-motion 사용자: 자동 회전 비활성화 (WCAG 2.2.2 Pause, Stop, Hide 준수).
+  // OS 설정을 명시적으로 켠 사용자는 자동 슬라이드를 원치 않음. 인디케이터 클릭으로 수동 진행 가능.
   useEffect(() => {
-    if (list.length <= 1 || paused) return;
-    // 사용자 OS 의 prefers-reduced-motion 무시 — 일부 사용자가 OS 설정을 모르고 켜둔 채
-    // 캐러셀이 멈춘다고 오해함 (사용자 보고 2026-05-18). 4초 간격은 flicker 가 아니므로
-    // WCAG 2.3.1 (Three Flashes) 위반 아님. hover/focus pause + 인디케이터로 사용자 제어 가능.
+    const mq = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    setReducedMotion(mq.matches);
+    const onChange = (e: MediaQueryListEvent): void => setReducedMotion(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (list.length <= 1 || paused || reducedMotion) return;
+    // 4초 간격은 flicker 가 아니므로 WCAG 2.3.1 (Three Flashes) 위반 아님.
+    // hover/focus pause + prefers-reduced-motion 존중 + 인디케이터로 사용자 제어 가능.
     const timer = globalThis.setInterval(() => {
       setIdx((i) => (i + 1) % list.length);
     }, SLIDE_INTERVAL_MS);
     return () => globalThis.clearInterval(timer);
-  }, [list.length, paused]);
+  }, [list.length, paused, reducedMotion]);
 
   // 좌측 슬라이드 애니메이션 — transform translateX(-idx*100%)
   // ref 로 직접 style 조작 — 인라인 style JSX 회피 (CSS Design Enforcer 정책)

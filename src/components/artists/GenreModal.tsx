@@ -1,7 +1,7 @@
 // @client-reason: Modal state, search input, checkbox selection
 "use client";
 
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useEffect, useRef, useCallback } from "react";
 import { ArrowLeft } from "lucide-react";
 
 interface GenreData {
@@ -72,6 +72,46 @@ export function GenreModal({
 }: Readonly<GenreModalProps>): React.ReactElement | null {
   const [searchQuery, setSearchQuery] = useState("");
   const [localSelected, setLocalSelected] = useState<Set<string>>(new Set(selectedItems));
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
+  // ESC 닫기 + 첫 인터랙티브 요소로 포커스 + 닫힐 때 트리거 요소로 포커스 복귀.
+  useEffect(() => {
+    if (!isOpen) return;
+    previousActiveElementRef.current = (document.activeElement as HTMLElement | null) ?? null;
+    searchInputRef.current?.focus();
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previousActiveElementRef.current?.focus?.();
+    };
+  }, [isOpen, onClose]);
+
+  // 포커스 trap: 모달 내부에서 Tab 으로 순환. Shift+Tab 도 동일 처리.
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key !== "Tab" || !modalRef.current) return;
+    const focusables = modalRef.current.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) return genreData;
@@ -103,8 +143,16 @@ export function GenreModal({
   const hasResults = filteredData.genre.items.length > 0 || filteredData.subject.items.length > 0 || filteredData.part.items.length > 0;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center bg-black/50" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[100] flex justify-center bg-black/50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="genre-modal-title"
+      onKeyDown={handleKeyDown}
+      ref={modalRef}
+    >
       <div className="flex w-full max-w-[767px] flex-col bg-background">
+      <h2 id="genre-modal-title" className="sr-only">{searchLabel}</h2>
       {/* Header with search */}
       <div className="flex items-center gap-2 border-b px-4 py-3">
         <button
@@ -117,10 +165,12 @@ export function GenreModal({
         </button>
         <div className="relative flex-1">
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
             className="w-full rounded-lg border bg-background px-4 py-2 pr-10 text-sm placeholder:text-muted-foreground focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
           />
           {searchQuery && (

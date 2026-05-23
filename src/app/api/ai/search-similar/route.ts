@@ -12,6 +12,8 @@ import { CLIP_URL } from "@/lib/ai-client";
 import { createAdminClient } from "@/lib/supabase/server";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
+export const maxDuration = 30;
+
 function getClientIp(request: NextRequest): string {
     const fwd = request.headers.get("x-forwarded-for");
     if (fwd) return fwd.split(",")[0].trim();

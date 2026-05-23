@@ -120,7 +120,10 @@ export function LoginForm(): React.ReactElement {
       {isEmailLogin ? (
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">{STRINGS.auth.email}</Label>
+            <Label htmlFor="email">
+              {STRINGS.auth.email}
+              <span className="ml-0.5 text-destructive" aria-hidden="true">*</span>
+            </Label>
             <Input
               id="email"
               type="email"
@@ -128,12 +131,18 @@ export function LoginForm(): React.ReactElement {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@example.com"
               required
+              aria-required="true"
+              aria-invalid={!!error}
+              aria-describedby={error ? "login-error" : undefined}
               disabled={isPending}
               autoComplete="email"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">{STRINGS.auth.password}</Label>
+            <Label htmlFor="password">
+              {STRINGS.auth.password}
+              <span className="ml-0.5 text-destructive" aria-hidden="true">*</span>
+            </Label>
             <Input
               id="password"
               type="password"
@@ -141,6 +150,9 @@ export function LoginForm(): React.ReactElement {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="********"
               required
+              aria-required="true"
+              aria-invalid={!!error}
+              aria-describedby={error ? "login-error" : undefined}
               disabled={isPending}
               autoComplete="current-password"
               minLength={PASSWORD_MIN_LENGTH}
@@ -148,7 +160,7 @@ export function LoginForm(): React.ReactElement {
           </div>
 
           {error && (
-            <p className="text-sm text-destructive" role="alert" aria-live="polite">{error}</p>
+            <p id="login-error" className="text-sm text-destructive" role="alert" aria-live="polite">{error}</p>
           )}
 
           <Button type="submit" className="w-full" disabled={isPending}>
