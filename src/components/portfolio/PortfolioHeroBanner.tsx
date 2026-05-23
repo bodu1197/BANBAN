@@ -197,8 +197,9 @@ function TabNav({
     if (next) onTabClick(next.id);
   };
 
+  // 61px = PortfolioHeader height (py-3 24px + size="icon" h-9 36px + border-b 1px)
   return (
-    <div role="tablist" aria-label="페이지 섹션" className="sticky top-[69px] z-30 grid grid-cols-3 border-y border-border bg-background">
+    <div role="tablist" aria-label="페이지 섹션" className="sticky top-[61px] z-30 grid grid-cols-3 border-y border-border bg-background">
       {TABS.map((tab, index) => {
         const isActive = activeTab === tab.id;
         const labelText = tab.id === "reviews"
