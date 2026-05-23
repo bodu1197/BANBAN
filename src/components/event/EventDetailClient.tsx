@@ -363,6 +363,7 @@ function ReviewsSection({
   reviewCount: number;
 }>): React.ReactElement {
   const hasRating = reviewCount > 0 && avgRating > 0;
+  const reviewsHref = `/artists/${artistId}?tab=reviews`;
 
   return (
     <div className="space-y-4">
@@ -372,8 +373,8 @@ function ReviewsSection({
           <h2 className="text-base font-bold">시술후기</h2>
         </div>
         <Link
-          href={`/artists/${artistId}?tab=reviews`}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+          href={reviewsHref}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
           aria-label={`${artistName} 후기 ${reviewCount}개 모두보기`}
         >
           모두보기 ({reviewCount.toLocaleString()})
@@ -392,7 +393,7 @@ function ReviewsSection({
       {isLoggedIn ? (
         <div className="space-y-3">
           <Link
-            href={`/artists/${artistId}?tab=reviews`}
+            href={reviewsHref}
             className="flex items-center gap-2 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Heart className="h-5 w-5 text-brand-primary" aria-hidden />
@@ -404,14 +405,14 @@ function ReviewsSection({
           </Link>
           <Link
             href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Edit2 className="h-3 w-3" aria-hidden />
             후기 작성
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col items-center rounded-xl bg-muted/30 px-6 py-10 text-center" aria-label="로그인 안내">
+        <div role="region" className="flex flex-col items-center rounded-xl bg-muted/30 px-6 py-10 text-center" aria-label="로그인 안내">
           <MessageSquareText className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
           <p className="text-base font-semibold">시술 결과가 궁금하다면</p>
           <p className="mt-1 text-sm text-muted-foreground">
