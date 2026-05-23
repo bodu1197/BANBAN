@@ -160,8 +160,6 @@ export function PortfolioDetailClient({
 
       {heroBanner}
 
-      {shopTabs}
-
       <section
         id={PORTFOLIO_SECTION_IDS.description}
         aria-label="시술 사진 및 설명"
@@ -195,6 +193,8 @@ export function PortfolioDetailClient({
       </section>
 
       {artistSection}
+
+      {shopTabs}
 
       <ContactBottomBar
         kakaoUrl={artist.kakao_url}

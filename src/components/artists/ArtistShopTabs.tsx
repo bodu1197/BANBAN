@@ -21,6 +21,7 @@ interface ArtistShopTabsProps {
   isLoggedIn: boolean;
   stickyTopClass?: string;
   homeContent?: React.ReactNode;
+  defaultTab?: ShopTabId;
 }
 
 export function ArtistShopTabs({
@@ -36,16 +37,19 @@ export function ArtistShopTabs({
   isLoggedIn,
   stickyTopClass,
   homeContent,
+  defaultTab = "home",
 }: Readonly<ArtistShopTabsProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<ShopTabId>("home");
+  const [activeTab, setActiveTab] = useState<ShopTabId>(defaultTab);
 
-  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
-    { id: "home", label: "홈" },
+  const baseTabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
     { id: "events", label: STRINGS.artist.events, count: eventCount },
     { id: "portfolio", label: STRINGS.artist.portfolio, count: portfolioCount },
     { id: "beforeAfter", label: STRINGS.artist.beforeAfter, count: beforeAfterCount },
     { id: "reviews", label: STRINGS.artist.reviews, count: reviewCount },
   ];
+  const tabs = homeContent
+    ? [{ id: "home" as ShopTabId, label: "홈" }, ...baseTabs]
+    : baseTabs;
 
   return (
     <>

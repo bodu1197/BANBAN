@@ -8,16 +8,13 @@ import {
   incrementEventViews,
 } from "@/lib/supabase/event-queries";
 import {
-  fetchArtistById,
   fetchPortfoliosByArtist,
   fetchReviewsByArtist,
   fetchBeforeAfterByArtist,
-  getArtistMediaUrl,
 } from "@/lib/supabase/queries";
 import { fetchArtistReviewStats } from "@/lib/supabase/portfolio-detail-queries";
 import { EventDetailClient } from "@/components/event/EventDetailClient";
 import { ArtistShopTabs } from "@/components/artists/ArtistShopTabs";
-import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
 import type { EventShopData } from "@/components/event/EventShopCard";
 import { EventCard } from "@/components/event/EventCard";
@@ -25,12 +22,6 @@ import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jso
 import { getEventStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { isDetailCopy, isLegacyContent } from "@/lib/event-content-types";
 import { getUser } from "@/lib/supabase/auth";
-import { fetchLikedArtistIds } from "@/lib/actions/likes";
-
-const DEFAULT_SHOP_BANNERS = [
-  "/images/defaults/shop-banner-1.jpg",
-  "/images/defaults/shop-banner-2.jpg",
-];
 
 function extractSeoDescription(aiRaw: unknown, fallback: string): string {
   if (isDetailCopy(aiRaw)) return aiRaw.seoDescription ?? fallback;
@@ -99,7 +90,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
 
   void incrementEventViews(id);
 
-  const [reviewStats, shopStats, user, artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter, artist, likedIds] = await Promise.all([
+  const [reviewStats, shopStats, user, artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter] = await Promise.all([
     fetchArtistReviewStats(event.artist_id),
     fetchArtistShopStats(event.artist_id),
     getUser().catch(() => null),
@@ -107,8 +98,6 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
     fetchPortfoliosByArtist(event.artist_id, { limit: 50 }),
     fetchReviewsByArtist(event.artist_id),
     fetchBeforeAfterByArtist(event.artist_id),
-    fetchArtistById(event.artist_id),
-    fetchLikedArtistIds(),
   ]);
 
   const heroBanner = (
@@ -190,19 +179,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
             artistId={event.artist_id}
             isLoggedIn={!!user}
             stickyTopClass="top-[69px]"
-            homeContent={artist ? (
-              <ShopHeroBanner
-                shop={artist}
-                heroImages={
-                  artist.artist_media?.length
-                    ? [...artist.artist_media].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)).map((m) => getArtistMediaUrl(m.storage_path)).filter((u): u is string => Boolean(u))
-                    : DEFAULT_SHOP_BANNERS
-                }
-                reviewCount={reviewStats.reviewCount}
-                avgRating={reviewStats.avgRating}
-                isLiked={likedIds.includes(event.artist_id)}
-              />
-            ) : null}
+            defaultTab="events"
           />
         }
         recommendedSection={
