@@ -29,7 +29,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         if (!tx) return NextResponse.json({ success: false, error: "daily_limit_reached" });
         return NextResponse.json({ success: true, transaction: tx });
-    } catch (e) {
+    } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "unknown_error";
         return NextResponse.json({ error: msg }, { status: 400 });
     }

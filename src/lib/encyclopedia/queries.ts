@@ -2,22 +2,21 @@ import "server-only";
 import path from "path";
 import sharp from "sharp";
 import { createAdminClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 
 export async function fetchPublishedTopicIds(): Promise<Set<number>> {
   const supabase = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("encyclopedia_articles")
     .select("topic_id");
   return new Set(((data ?? []) as { topic_id: number }[]).map((r) => r.topic_id));
 }
 
 export async function insertEncyclopediaArticle(
-  article: Record<string, unknown>,
+  article: Database["public"]["Tables"]["encyclopedia_articles"]["Insert"],
 ): Promise<{ id: string } | { error: string }> {
   const supabase = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("encyclopedia_articles")
     .insert(article)
     .select("id")
@@ -245,8 +244,7 @@ const FEMALE_ROOT = "여성 뷰티";
 const MALE_ROOT = "남성 뷰티";
 
 async function getGenderCategoryIds(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
-  supabase: any,
+  supabase: ReturnType<typeof createAdminClient>,
   gender: "여성" | "남성",
 ): Promise<Set<string>> {
   const rootName = gender === "남성" ? MALE_ROOT : FEMALE_ROOT;
@@ -274,8 +272,7 @@ async function getGenderCategoryIds(
 }
 
 async function findCategoryPortfolioIds(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
-  supabase: any,
+  supabase: ReturnType<typeof createAdminClient>,
   cleaned: string,
   limit: number,
   gender: "여성" | "남성",
@@ -312,8 +309,7 @@ async function findCategoryPortfolioIds(
 }
 
 async function pickRandomActivePortfolioIds(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
-  supabase: any,
+  supabase: ReturnType<typeof createAdminClient>,
   count: number,
 ): Promise<string[]> {
   const { data } = await supabase
@@ -343,8 +339,7 @@ export async function pickRelatedPortfolioImages(
   }
   if (portfolioIds.length === 0) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data: imgs } = await (supabase as any)
+  const { data: imgs } = await supabase
     .from("portfolio_media")
     .select("portfolio_id, storage_path")
     .in("portfolio_id", portfolioIds)

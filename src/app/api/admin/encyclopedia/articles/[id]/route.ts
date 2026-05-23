@@ -108,8 +108,7 @@ export async function PATCH(
 
   const { data, error } = await auth.supabase
     .from("encyclopedia_articles")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial update with dynamic key set
-    .update(updates as any)
+    .update(updates)
     .eq("id", id)
     .select(ARTICLE_COLUMNS)
     .single();

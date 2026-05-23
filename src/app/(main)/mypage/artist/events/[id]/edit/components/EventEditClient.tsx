@@ -158,7 +158,7 @@ export function EventEditClient({
       await saveEvent(event.id, values, artistTitle);
       router.push(`/events/${event.id}`);
       router.refresh();
-    } catch (e) {
+    } catch (e: unknown) {
       alert(`수정 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
     } finally {
       setIsSaving(false);

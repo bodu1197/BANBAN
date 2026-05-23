@@ -283,7 +283,7 @@ export function InlineChat({ otherUserId, otherName, currentUserId, isOpen, onCl
 
     return (
         <>
-            <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} />
+            <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} role="presentation" />
             <div className="fixed bottom-0 left-1/2 z-[70] flex h-[70dvh] w-full max-w-[767px] -translate-x-1/2 flex-col rounded-t-2xl border border-b-0 border-border bg-background shadow-2xl">
                 <ChatHeader otherName={otherName} onClose={onClose} />
                 <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto p-4">

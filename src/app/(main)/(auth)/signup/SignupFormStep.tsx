@@ -40,7 +40,7 @@ async function signUp(data: {
     const result: SignupResponse = await response.json();
     if (!response.ok) return { error: new Error(result.error ?? "Registration failed") };
     return { error: null, emailVerificationRequired: result.emailVerificationRequired, user: result.user ? { id: result.user.id, username: result.user.username } : undefined };
-  } catch (err) {
+  } catch (err: unknown) {
     return { error: err instanceof Error ? err : new Error("An error occurred during registration") };
   }
 }

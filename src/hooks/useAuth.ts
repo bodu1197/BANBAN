@@ -4,10 +4,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 
-/** Minimal user type to avoid importing @supabase/supabase-js at module level.
- *  Uses index signature so it stays compatible with Supabase User at runtime. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface AuthUser { id: string; email?: string; user_metadata?: Record<string, any>; [key: string]: any }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase User.user_metadata is Record<string, any>
+interface AuthUser {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, any>;
+  app_metadata?: Record<string, unknown>;
+  aud?: string;
+  created_at?: string;
+  role?: string;
+}
 
 interface Artist {
   id: string;

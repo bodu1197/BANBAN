@@ -237,13 +237,13 @@ function BannerCard({ banner, onSave }: Readonly<BannerCardProps>): React.ReactE
         </div>
       </div>
 
-      {!isActive ? (
+      {isActive ? null : (
         <div className="border-t border-white/10 bg-amber-500/10 px-5 py-3">
           <p className="text-center text-sm text-amber-400">
             이 배너는 현재 홈페이지에 표시되지 않습니다
           </p>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

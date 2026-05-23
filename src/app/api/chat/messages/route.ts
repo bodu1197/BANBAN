@@ -2,6 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notifyChatRecipient } from "@/lib/supabase/chat-notification";
+import { parsePagination } from "@/lib/api-helpers";
+
+type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
 
 /** GET /api/chat/messages?conversationId=xxx&limit=50&before=timestamp */
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -12,14 +15,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const conversationId = searchParams.get("conversationId");
     if (!conversationId) return NextResponse.json({ error: "missing_conversation_id" }, { status: 400 });
 
-    const limit = Number(searchParams.get("limit") ?? "50");
+    const { limit } = parsePagination(searchParams, 50);
     const before = searchParams.get("before");
 
     const supabase = await createClient();
 
     // Verify user is participant
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: conv } = await (supabase as any)
+    const { data: conv } = await supabase
         .from("conversations")
         .select("id")
         .eq("id", conversationId)
@@ -28,8 +30,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!conv) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = supabase
         .from("messages")
         .select("id, sender_id, content, media_url, created_at, read_at")
         .eq("conversation_id", conversationId)
@@ -43,8 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const { data: messages } = await query;
 
     // Mark unread messages as read
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
         .eq("conversation_id", conversationId)
@@ -54,8 +54,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ messages: (messages ?? []).reverse() });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function verifyConversationParticipant(supabase: any, conversationId: string, userId: string): Promise<boolean> {
+async function verifyConversationParticipant(supabase: SupabaseInstance, conversationId: string, userId: string): Promise<boolean> {
     const { data } = await supabase
         .from("conversations")
         .select("id")
@@ -69,10 +68,8 @@ function getSenderName(user: { user_metadata?: Record<string, unknown> }): strin
     return (user.user_metadata?.nickname ?? user.user_metadata?.name ?? "사용자") as string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function insertMessageAndUpdate(supabase: any, conversationId: string, senderId: string, content: string, mediaUrl?: string | null): Promise<{ msg: unknown; error: string | null }> {
-    const row: Record<string, unknown> = { conversation_id: conversationId, sender_id: senderId, content };
-    if (mediaUrl) row.media_url = mediaUrl;
+async function insertMessageAndUpdate(supabase: SupabaseInstance, conversationId: string, senderId: string, content: string, mediaUrl?: string | null): Promise<{ msg: unknown; error: string | null }> {
+    const row = { conversation_id: conversationId, sender_id: senderId, content, media_url: mediaUrl ?? null };
     const { data: msg, error } = await supabase
         .from("messages")
         .insert(row)

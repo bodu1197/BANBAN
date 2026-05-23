@@ -40,3 +40,15 @@ export type BodyPart = (typeof BODY_PARTS)[number];
 export const BREAKPOINTS = {
   sm: 640, md: 768, lg: 1024, xl: 1280, "2xl": 1536,
 } as const;
+
+// API search max limit
+export const MAX_LIMIT = 48;
+
+// Report reasons (shared between community posts & portfolios)
+export const REPORT_REASONS = [
+  { value: "SPAM", label: "스팸/광고" },
+  { value: "ABUSE", label: "욕설/비방" },
+  { value: "ADULT", label: "음란/선정성" },
+  { value: "HATE", label: "혐오/차별" },
+  { value: "OTHER", label: "기타" },
+] as const;

@@ -1,7 +1,7 @@
 // @client-reason: Form field components with onChange handlers
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useId, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,12 +153,13 @@ export function TextField({ label, value, onChange, onBlur, placeholder, require
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: () => void; placeholder: string; required?: boolean; type?: string; inputMode?: "numeric";
 }>): React.ReactElement {
+  const id = useId();
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">
+      <Label htmlFor={id} className="text-sm font-medium">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
-      <Input type={type} value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} inputMode={inputMode} />
+      <Input id={id} type={type} value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} inputMode={inputMode} />
     </div>
   );
 }
@@ -167,10 +168,11 @@ export function TextFieldWithHint({ label, value, onChange, placeholder, hint }:
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string; hint: string;
 }>): React.ReactElement {
+  const id = useId();
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}</Label>
-      <Input type="url" value={value} onChange={onChange} placeholder={placeholder} />
+      <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
+      <Input id={id} type="url" value={value} onChange={onChange} placeholder={placeholder} />
       <p className="whitespace-pre-line text-xs text-muted-foreground">{hint}</p>
     </div>
   );
@@ -225,7 +227,7 @@ export function CategoryCheckboxGroup({ label, subtitle, categories, selectedIds
             className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${
               selectedIds.includes(cat.id)
                 ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
-                : "border-border hover:bg-muted focus-visible:bg-muted"
+                : "border-border hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
             }`}
             tabIndex={0}
           >

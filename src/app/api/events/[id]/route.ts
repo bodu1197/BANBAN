@@ -154,7 +154,7 @@ export async function PUT(
     await updateEvent(id, buildUpdatePayload(raw));
 
     return NextResponse.json({ success: true });
-  } catch (e) {
+  } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "이벤트 수정 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

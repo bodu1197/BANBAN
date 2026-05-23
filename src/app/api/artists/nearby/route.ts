@@ -106,13 +106,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const supabase = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data, error } = await (supabase as any).rpc("nearby_artists", {
+  const { data, error } = await supabase.rpc("nearby_artists", {
     user_lat: lat,
     user_lng: lng,
     max_distance_km: Math.min(radius, 100),
     limit_count: Math.min(limit, 50),
-    p_type_artist: typeArtist || null,
+    p_type_artist: typeArtist,
   });
 
   if (error) {

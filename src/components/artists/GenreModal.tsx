@@ -103,7 +103,7 @@ export function GenreModal({
   const hasResults = filteredData.genre.items.length > 0 || filteredData.subject.items.length > 0 || filteredData.part.items.length > 0;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center bg-black/50">
+    <div className="fixed inset-0 z-[100] flex justify-center bg-black/50" role="dialog" aria-modal="true">
       <div className="flex w-full max-w-[767px] flex-col bg-background">
       {/* Header with search */}
       <div className="flex items-center gap-2 border-b px-4 py-3">

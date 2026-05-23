@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { searchPortfolios } from "@/lib/supabase/portfolio-search-queries";
+import { MAX_LIMIT } from "@/lib/constants";
+import { parsePagination } from "@/lib/api-helpers";
 import type { PortfolioSortOption, PortfolioSearchParams } from "@/types/portfolio-search";
 
 const VALID_SORTS = new Set<PortfolioSortOption>(["popular", "price_asc", "price_desc", "newest", "discount", "random"]);
 const VALID_TYPES = new Set(["SEMI_PERMANENT"]);
-const MAX_LIMIT = 48;
 
 function parseSort(raw: string | null): PortfolioSortOption {
   const v = raw ?? "random";
@@ -36,8 +37,7 @@ function parseSearchParams(sp: URLSearchParams): PortfolioSearchParams | null {
     sort: parseSort(sp.get("sort")),
     priceMin: numberOrNull(sp.get("priceMin")),
     priceMax: numberOrNull(sp.get("priceMax")),
-    limit: Math.min(Number(sp.get("limit") ?? "24"), MAX_LIMIT),
-    offset: Number(sp.get("offset") ?? "0"),
+    ...(() => { const p = parsePagination(sp, 24); return { limit: Math.min(p.limit, MAX_LIMIT), offset: p.offset }; })(),
   };
 }
 

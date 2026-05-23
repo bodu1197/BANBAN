@@ -79,7 +79,7 @@ export function EventStepGenerate({
       const copy = data.content as GeneratedDetailCopy;
       onDetailCopyChange(copy);
       return copy;
-    } catch (e) {
+    } catch (e: unknown) {
       alert(`텍스트 카피 생성 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
       return null;
     } finally {
@@ -135,7 +135,7 @@ export function EventStepGenerate({
           altText: copy.altTexts[sectionType] ?? "",
           status: "completed" as const,
         };
-      } catch (e) {
+      } catch (e: unknown) {
         return {
           sectionType,
           storagePath: "",

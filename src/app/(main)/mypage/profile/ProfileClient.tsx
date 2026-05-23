@@ -178,8 +178,7 @@ export function ProfileClient(): React.ReactElement {
 
           // Also update artist profile_image_path if user is an artist
           if (isArtist && artist?.id) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-            await (supabase.from("artists") as any)
+            await supabase.from("artists")
               .update({ profile_image_path: fileName })
               .eq("id", artist.id);
           }
@@ -188,7 +187,7 @@ export function ProfileClient(): React.ReactElement {
 
       globalThis.alert(STRINGS.mypage.saved);
       router.push("/mypage");
-    } catch (error) {
+    } catch (error: unknown) {
       // eslint-disable-next-line no-console -- Log update errors for debugging
       console.error("Update error:", error);
       globalThis.alert(STRINGS.common.error);

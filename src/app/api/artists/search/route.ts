@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { fetchArtistsWithDetails } from "@/lib/supabase/artist-queries";
+import { MAX_LIMIT } from "@/lib/constants";
+import { parsePagination } from "@/lib/api-helpers";
 
 const VALID_TYPES = new Set(["SEMI_PERMANENT"]);
-const MAX_LIMIT = 48;
 
 function parseParams(sp: URLSearchParams): {
   typeArtist: "SEMI_PERMANENT";
@@ -17,14 +18,15 @@ function parseParams(sp: URLSearchParams): {
   if (!typeArtist || !VALID_TYPES.has(typeArtist)) return null;
 
   const genresRaw = sp.get("genres");
+  const pagination = parsePagination(sp);
   return {
     typeArtist: typeArtist as "SEMI_PERMANENT",
     regionId: sp.get("regionId") || null,
     regionPrefix: sp.get("regionSido") || sp.get("regionPrefix") || null,
     genres: genresRaw ? genresRaw.split(",").filter(Boolean) : [],
     searchWord: sp.get("searchWord") || undefined,
-    limit: Math.min(Number(sp.get("limit") ?? "20"), MAX_LIMIT),
-    offset: Number(sp.get("offset") ?? "0"),
+    limit: Math.min(pagination.limit, MAX_LIMIT),
+    offset: pagination.offset,
   };
 }
 

@@ -52,8 +52,7 @@ export const fetchArtistReviewStats = cache(async function fetchArtistReviewStat
   artistId: string,
 ): Promise<ArtistReviewStats> {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data } = await (supabase as any).rpc("get_artist_review_stats", { artist_ids: [artistId] });
+  const { data } = await supabase.rpc("get_artist_review_stats", { artist_ids: [artistId] });
   const row = ((data ?? []) as Array<{ artist_id: string; review_count: number; avg_rating: number }>)
     .find((r) => r.artist_id === artistId);
   return {
@@ -77,8 +76,7 @@ interface RecommendationContext {
  */
 const initRecommendationContext = cache(async function initRecommendationContext(artistType: ArtistType): Promise<RecommendationContext | null> {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data } = await (supabase as any).rpc("get_recommendation_artist_ids", { p_type_artist: artistType });
+  const { data } = await supabase.rpc("get_recommendation_artist_ids", { p_type_artist: artistType });
   const artistIds = ((data ?? []) as Array<{ artist_id: string }>).map((a) => a.artist_id);
   return artistIds.length > 0 ? { supabase, artistIds } : null;
 });

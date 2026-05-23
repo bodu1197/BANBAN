@@ -13,7 +13,7 @@ export default function MainLayout({
   return (
     <QueryProvider>
       {/* 바비톡 패턴 — outer 옅은 회색 바탕, 내부 1024px 흰색 컨테이너 (상단 32px 라운드) */}
-      <div lang="ko" className="flex min-h-screen flex-col bg-[#F7F7F9]">
+      <div lang="ko" className="flex min-h-screen flex-col bg-muted">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdSafe(websiteJsonLd) }}

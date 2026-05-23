@@ -100,7 +100,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (ensureError) return jsonError(ensureError, 500);
 
     return sendResetEmail(adminClient, normalizedEmail);
-  } catch (error) {
+  } catch (error: unknown) {
     // eslint-disable-next-line no-console
     console.error("Reset password error:", error);
     return jsonError("서버 오류가 발생했습니다", 500);
@@ -135,7 +135,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     await adminClient.from("profiles").update({ password: hashedPassword }).eq("id", user.id);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     // eslint-disable-next-line no-console
     console.error("Update password error:", error);
     return jsonError("서버 오류가 발생했습니다", 500);

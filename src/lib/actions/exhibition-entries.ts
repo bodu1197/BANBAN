@@ -106,9 +106,7 @@ export async function submitExhibitionEntry(
 
   if (existing) return fail("already_submitted");
 
-  const { error } = await (supabase.from("exhibition_entries").insert as unknown as (
-    data: Record<string, string>
-  ) => Promise<{ error: { message: string } | null }>)({
+  const { error } = await supabase.from("exhibition_entries").insert({
     exhibition_id: exhibitionId, portfolio_id: portfolioId, artist_id: portfolio.artist_id,
   });
 

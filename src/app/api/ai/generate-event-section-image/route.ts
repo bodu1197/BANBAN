@@ -260,7 +260,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         });
         b64 = result.data?.[0]?.b64_json;
       }
-    } catch (openaiErr) {
+    } catch (openaiErr: unknown) {
       // eslint-disable-next-line no-console
       console.error(`[generate-event-section-image] ${sectionType}:`, openaiErr);
       return NextResponse.json(
@@ -296,7 +296,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       altText: "",
       prompt,
     });
-  } catch (e) {
+  } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "섹션 이미지 생성 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -31,7 +31,7 @@ function RegionModalHeader({ title, showBack, onBack, backLabel, showReset, rese
       </div>
       <div className="flex items-center gap-2">
         {showReset && (
-          <button type="button" onClick={onReset} className="rounded-full px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" onClick={onReset} aria-label="필터 초기화" className="rounded-full px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             {resetLabel}
           </button>
         )}

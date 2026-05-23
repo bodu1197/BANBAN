@@ -34,7 +34,7 @@ export async function fetchWithRetry(
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       return await globalThis.fetch(input, init);
-    } catch (error) {
+    } catch (error: unknown) {
       if (attempt === MAX_RETRIES || !isRetryableError(error)) throw error;
       await wait(RETRY_DELAY_MS * (attempt + 1));
     }

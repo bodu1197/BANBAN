@@ -120,12 +120,14 @@ function BarRow({ label, pv, uv, maxVal }: Readonly<{
             <span className="w-16 shrink-0 text-right text-xs text-zinc-500">{label}</span>
             <div className="flex-1 space-y-0.5">
                 <div className="relative h-4 overflow-hidden rounded bg-white/5">
+                    {/* style unavoidable: dynamic percentage from runtime data */}
                     <div className="absolute inset-y-0 left-0 rounded bg-blue-500/60" style={{ width: `${pvPct}%` }} />
                     <span className="absolute inset-y-0 right-2 flex items-center text-[10px] font-medium text-zinc-300">
                         {pv.toLocaleString()}
                     </span>
                 </div>
                 <div className="relative h-4 overflow-hidden rounded bg-white/5">
+                    {/* style unavoidable: dynamic percentage from runtime data */}
                     <div className="absolute inset-y-0 left-0 rounded bg-emerald-500/60" style={{ width: `${uvPct}%` }} />
                     <span className="absolute inset-y-0 right-2 flex items-center text-[10px] font-medium text-zinc-300">
                         {uv.toLocaleString()}

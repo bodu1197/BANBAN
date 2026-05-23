@@ -6,11 +6,7 @@ import { getUser } from "@/lib/supabase/auth";
 interface PortfolioRow {
   id: string;
   title: string;
-}
-
-interface MediaRow {
-  portfolio_id: string;
-  storage_path: string;
+  portfolio_media: Array<{ storage_path: string; order_index: number }>;
 }
 
 /**
@@ -45,7 +41,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const { data: portfolios } = await supabase
     .from("portfolios")
-    .select("id, title")
+    .select("id, title, portfolio_media(storage_path, order_index)")
     .eq("artist_id", artistId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -54,23 +50,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ portfolios: [] });
   }
 
-  const portfolioIds = (portfolios as PortfolioRow[]).map((p) => p.id);
-
-  const { data: media } = await supabase
-    .from("portfolio_media")
-    .select("portfolio_id, storage_path")
-    .in("portfolio_id", portfolioIds)
-    .eq("order_index", 0);
-
-  const mediaMap = new Map(
-    (media as MediaRow[] | null)?.map((m) => [m.portfolio_id, m.storage_path]) ?? []
-  );
-
-  const result = (portfolios as PortfolioRow[]).map((p) => ({
-    id: p.id,
-    title: p.title,
-    thumbnail_path: mediaMap.get(p.id) ?? null,
-  }));
+  const result = (portfolios as PortfolioRow[]).map((p) => {
+    const thumbnail = p.portfolio_media
+      ?.filter((m) => m.order_index === 0)
+      .map((m) => m.storage_path)[0] ?? null;
+    return {
+      id: p.id,
+      title: p.title,
+      thumbnail_path: thumbnail,
+    };
+  });
 
   return NextResponse.json({ portfolios: result });
 }

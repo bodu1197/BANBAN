@@ -32,7 +32,7 @@ function useGrantForm(onAction: (userId: string, amount: number, desc: string, i
             setMsg(isGrant ? `${num.toLocaleString()}P 지급 완료` : `${num.toLocaleString()}P 회수 완료`);
             setAmount("");
             setDesc("");
-        } catch (e) {
+        } catch (e: unknown) {
             setMsg(e instanceof Error ? e.message : "오류 발생");
         } finally {
             setBusy(false);

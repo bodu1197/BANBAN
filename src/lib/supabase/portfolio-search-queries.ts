@@ -4,13 +4,17 @@ import type { PortfolioSearchParams, PortfolioSearchResult, CategoryItem } from 
 import type { Region } from "@/types/database";
 import { type PortfolioRowWithType, mapPortfolioRow } from "./portfolio-common";
 import { secureShuffle } from "@/lib/random";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+
+type DbClient = SupabaseClient<Database>;
+type QueryBuilder = ReturnType<DbClient["from"]>;
 
 function escapeIlike(input: string): string {
   return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applySortOrder(query: any, sort: string): any {
+function applySortOrder(query: QueryBuilder, sort: string): QueryBuilder {
   switch (sort) {
     case "price_asc":
       return query.order("price", { ascending: true });
@@ -30,25 +34,22 @@ function applySortOrder(query: any, sort: string): any {
 
 const shuffleArray = secureShuffle;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyPriceFilters(query: any, priceMin?: number | null, priceMax?: number | null): any {
+function applyPriceFilters(query: QueryBuilder, priceMin?: number | null, priceMax?: number | null): QueryBuilder {
   if (priceMin !== null && priceMin !== undefined) query = query.gte("price", priceMin);
   if (priceMax !== null && priceMax !== undefined) query = query.lte("price", priceMax);
   return query;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolveRegionIds(supabase: any, regionSido: string | null | undefined, regionId: string[] | string | null | undefined): Promise<string[] | null> {
+async function resolveRegionIds(supabase: DbClient, regionSido: string | null | undefined, regionId: string[] | string | null | undefined): Promise<string[] | null> {
   if (regionSido) {
     const { data: rData } = await supabase.from("regions").select("id").like("name", `${escapeIlike(regionSido)}%`);
-    return rData && rData.length > 0 ? rData.map((r: { id: string }) => r.id) : [];
+    return rData && rData.length > 0 ? rData.map((r) => r.id) : [];
   }
   if (regionId) return Array.isArray(regionId) ? regionId : [regionId];
   return null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolveKeywordCategories(supabase: any, searchWord: string | null | undefined, categoryIds: string[] | undefined): Promise<string[]> {
+async function resolveKeywordCategories(supabase: DbClient, searchWord: string | null | undefined, categoryIds: string[] | undefined): Promise<string[]> {
   const effective = categoryIds ? [...categoryIds] : [];
   if (!searchWord) return effective;
 
@@ -58,7 +59,7 @@ async function resolveKeywordCategories(supabase: any, searchWord: string | null
     .ilike("name", `%${escapeIlike(searchWord)}%`);
 
   if (keywordCatData && keywordCatData.length > 0) {
-    const matchedCatIds = keywordCatData.map((c: { id: string }) => c.id);
+    const matchedCatIds = keywordCatData.map((c) => c.id);
     return [...new Set([...effective, ...matchedCatIds])];
   }
   // searchWord given but no matching category → force empty result by returning
@@ -69,24 +70,22 @@ async function resolveKeywordCategories(supabase: any, searchWord: string | null
 }
 
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function expandWithChildCategories(supabase: any, categoryIds: string[]): Promise<string[]> {
+async function expandWithChildCategories(supabase: DbClient, categoryIds: string[]): Promise<string[]> {
   if (categoryIds.length === 0) return categoryIds;
   const { data: children } = await supabase.from("categories").select("id").in("parent_id", categoryIds);
   if (children && children.length > 0) {
-    return [...new Set([...categoryIds, ...children.map((c: { id: string }) => c.id)])];
+    return [...new Set([...categoryIds, ...children.map((c) => c.id)])];
   }
   return categoryIds;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function resolveGenderCategoryIds(supabase: any, targetGender: "MALE" | "FEMALE"): Promise<string[]> {
+async function resolveGenderCategoryIds(supabase: DbClient, targetGender: "MALE" | "FEMALE"): Promise<string[]> {
   const { data } = await supabase
     .from("categories")
     .select("id")
     .eq("target_gender", targetGender)
     .eq("artist_type", "SEMI_PERMANENT");
-  return (data ?? []).map((c: { id: string }) => c.id);
+  return (data ?? []).map((c) => c.id);
 }
 
 export async function searchPortfolios(
@@ -127,8 +126,7 @@ export async function searchPortfolios(
 }
 
 interface ExecutePortfolioQueryOptions {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any;
+  supabase: DbClient;
   typeArtist: string;
   regionIds: string[] | null;
   categoryIds: string[];
@@ -145,8 +143,7 @@ const SELECT_JOINED = `
   artist:artists!inner(title, address, profile_image_path, type_artist, is_hide, deleted_at, region:regions(name))
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyBaseArtistFilters(query: any, typeArtist: string, regionIds: string[] | null): any {
+function applyBaseArtistFilters(query: QueryBuilder, typeArtist: string, regionIds: string[] | null): QueryBuilder {
   const now = new Date().toISOString();
   let q = query
     .is("deleted_at", null)
@@ -163,8 +160,15 @@ function applyBaseArtistFilters(query: any, typeArtist: string, regionIds: strin
 }
 
 
-function buildCategoryRpcParams(categoryIds: string[], typeArtist: string, regionIds: string[] | null): Record<string, unknown> {
-  const params: Record<string, unknown> = { p_category_ids: categoryIds };
+interface CategoryRpcParams {
+  p_category_ids: string[];
+  p_region_ids?: string[];
+  p_type_artist?: string;
+  p_type_sex?: string;
+}
+
+function buildCategoryRpcParams(categoryIds: string[], typeArtist: string, regionIds: string[] | null): CategoryRpcParams {
+  const params: CategoryRpcParams = { p_category_ids: categoryIds };
   if (typeArtist && typeArtist !== "ALL") params.p_type_artist = typeArtist;
   if (regionIds && regionIds.length > 0) params.p_region_ids = regionIds;
   return params;

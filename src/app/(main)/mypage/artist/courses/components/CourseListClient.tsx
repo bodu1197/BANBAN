@@ -24,10 +24,8 @@ interface CourseItem {
 
 async function fetchOwnedCourses(userId: string): Promise<CourseItem[]> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- courses not in generated types
-  const db = supabase as any;
 
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from("courses")
     .select("id, title, category, price, is_active, created_at")
     .eq("artist_id", userId)
@@ -42,7 +40,7 @@ async function fetchOwnedCourses(userId: string): Promise<CourseItem[]> {
 
   const result: CourseItem[] = [];
   for (const c of courses) {
-    const { data: img } = await db
+    const { data: img } = await supabase
       .from("course_images")
       .select("image_url")
       .eq("course_id", c.id)
@@ -65,16 +63,14 @@ async function fetchOwnedCourses(userId: string): Promise<CourseItem[]> {
 
 async function deleteCourse(courseId: string): Promise<void> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
 
   // Delete related data first
   await Promise.all([
-    db.from("course_images").delete().eq("course_id", courseId),
-    db.from("course_highlights").delete().eq("course_id", courseId),
-    db.from("course_curriculum").delete().eq("course_id", courseId),
+    supabase.from("course_images").delete().eq("course_id", courseId),
+    supabase.from("course_highlights").delete().eq("course_id", courseId),
+    supabase.from("course_curriculum").delete().eq("course_id", courseId),
   ]);
-  const { error } = await db.from("courses").delete().eq("id", courseId);
+  const { error } = await supabase.from("courses").delete().eq("id", courseId);
   if (error) throw error;
 }
 

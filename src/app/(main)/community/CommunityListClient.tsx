@@ -6,6 +6,7 @@ import Link from "next/link";
 import { MessageSquare, Eye, Heart, PenSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
+import { boardLabel } from "@/lib/board/constants";
 import type { CommunityPost } from "@/lib/supabase/community-queries";
 
 const t = STRINGS.community;
@@ -21,20 +22,6 @@ const SORT_OPTIONS = [
   { key: "popular", label: t.popular },
   { key: "recommended", label: t.recommended },
 ] as const;
-
-const BOARD_LABEL_MAP: Record<string, string> = {
-  PROCEDURE_REVIEW: t.procedureReview,
-  COURSE_REVIEW: t.courseReview,
-  QNA: t.qna,
-  FREETALK: t.freeTalk,
-  REVIEW: t.review,
-};
-
-function boardLabel(typeBoard: string): string {
-  const record = BOARD_LABEL_MAP as Record<string, string>;
-  // eslint-disable-next-line security/detect-object-injection -- typed Record lookup
-  return record[typeBoard] ?? typeBoard;
-}
 
 interface CommunityListClientProps {
   posts: readonly CommunityPost[];

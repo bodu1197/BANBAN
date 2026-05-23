@@ -9,11 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { CLIP_URL } from "@/lib/ai-client";
-import { createClient as createSupabaseDirectClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/server";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
-
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 function getClientIp(request: NextRequest): string {
     const fwd = request.headers.get("x-forwarded-for");
@@ -57,7 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     try {
         return await handleSearch(await request.json());
-    } catch (err) {
+    } catch (err: unknown) {
         // eslint-disable-next-line no-console -- Server-side error logging
         console.error("[AI/search-similar] Error:", err);
         return NextResponse.json({ error: "Search failed" }, { status: 500 });
@@ -89,7 +86,7 @@ async function fetchTextEmbedding(text: string): Promise<number[]> {
 interface MatchRow { portfolio_media_id: string; portfolio_id: string; storage_path: string; similarity: number }
 
 async function searchSimilar(embedding: number[], threshold: number, matchCount: number): Promise<MatchRow[]> {
-    const supabase = createSupabaseDirectClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("match_portfolios", {
         query_embedding: JSON.stringify(embedding),
         match_threshold: threshold,
@@ -108,7 +105,7 @@ interface EnrichedResult {
 }
 
 async function saveAllResults(matches: MatchRow[]): Promise<void> {
-    const supabase = createSupabaseDirectClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const supabase = createAdminClient();
     await supabase.rpc("upsert_similarity_top_batch", {
         p_media_ids: matches.map((m) => m.portfolio_media_id),
         p_portfolio_ids: matches.map((m) => m.portfolio_id),
@@ -121,7 +118,7 @@ async function enrichResults(matches: MatchRow[]): Promise<EnrichedResult[]> {
     if (matches.length === 0) return [];
 
     const portfolioIds = [...new Set(matches.map((m) => m.portfolio_id))];
-    const supabase = createSupabaseDirectClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const supabase = createAdminClient();
 
     const { data: portfolios } = await supabase
         .from("portfolios")

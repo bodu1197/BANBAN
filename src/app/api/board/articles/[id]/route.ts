@@ -49,8 +49,7 @@ export async function PATCH(
 
   const { data, error } = await auth.supabase
     .from("encyclopedia_articles")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-    .update(updates as any)
+    .update(updates)
     .eq("id", id)
     .select("id, slug, title")
     .single();

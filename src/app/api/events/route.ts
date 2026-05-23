@@ -47,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({ id });
-  } catch (e) {
+  } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "이벤트 생성 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

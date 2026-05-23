@@ -71,8 +71,7 @@ async function fetchPortfolios(
 
   const fetchLimit = limit * fetchMultiplier;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (modifier(base) as any).limit(fetchLimit);
+  const { data, error } = await modifier(base).limit(fetchLimit);
   if (error) {
     throw new Error(`Failed to fetch ${label}: ${error.message}`);
   }
@@ -146,8 +145,7 @@ export async function fetchTimeSalePortfolios(limit = 10): Promise<HomePortfolio
     .gt("discount_rate", 0)
     .in("artist_id", artistIds);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- .not() not in generated types
-  const { data, error } = await (base as any)
+  const { data, error } = await base
     .not("sale_ended_at", "is", null)
     .gte("sale_ended_at", now)
     .order("sale_ended_at", { ascending: true })

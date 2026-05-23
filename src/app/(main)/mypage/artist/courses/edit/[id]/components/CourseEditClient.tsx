@@ -37,15 +37,13 @@ function mapCourseToForm(
 
 async function fetchCourseForEdit(courseId: string): Promise<CourseFormData | null> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
 
-  const { data: course } = await db.from("courses").select("*").eq("id", courseId).maybeSingle();
+  const { data: course } = await supabase.from("courses").select("*").eq("id", courseId).maybeSingle();
   if (!course) return null;
 
   const [imgRes, curRes] = await Promise.all([
-    db.from("course_images").select("image_url").eq("course_id", courseId).order("order_index"),
-    db.from("course_curriculum").select("title").eq("course_id", courseId).order("chapter_number"),
+    supabase.from("course_images").select("image_url").eq("course_id", courseId).order("order_index"),
+    supabase.from("course_curriculum").select("title").eq("course_id", courseId).order("chapter_number"),
   ]);
 
   return mapCourseToForm(

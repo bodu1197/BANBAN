@@ -7,7 +7,7 @@ const HeaderUserSection = dynamic(() => import("./HeaderUserSection").then((m) =
 
 export function Header(): React.ReactElement {
     return (
-        <header className="sticky top-0 z-50 w-full bg-[#F7F7F9]">
+        <header className="sticky top-0 z-50 w-full bg-muted">
             <div className="relative mx-auto flex h-16 max-w-[1024px] items-center justify-between px-4 md:px-6">
                 <Link
                     href={"/"}

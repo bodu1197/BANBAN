@@ -13,8 +13,7 @@ interface ContentEntry {
 }
 
 async function getContentEntries(): Promise<ContentEntry[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- some tables not in generated types yet
-  const supabase = createAdminClient() as any;
+  const supabase = createAdminClient();
 
   const [artists, portfolios, exhibitions, courses, posts, encyclopedia] =
     await Promise.all([

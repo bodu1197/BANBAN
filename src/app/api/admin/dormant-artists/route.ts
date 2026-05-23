@@ -50,8 +50,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const sort = searchParams.get("sort");
   const offset = (page - 1) * LIMIT;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- portfolio_media_count not in generated types
-  let query = (auth.supabase as any)
+  let query = auth.supabase
     .from("artists")
     .select("id, user_id, title, profile_image_path, portfolio_media_count, created_at, updated_at", { count: "exact" })
     .eq("status", "dormant")
@@ -94,8 +93,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- status not in generated types
-  const { error } = await (auth.supabase as any)
+  const { error } = await auth.supabase
     .from("artists")
     .update({ status: "active", updated_at: new Date().toISOString() })
     .eq("id", body.id)
@@ -114,8 +112,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types
-  const { data, error } = await (auth.supabase as any).rpc("mark_dormant_artists");
+  const { data, error } = await auth.supabase.rpc("mark_dormant_artists");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true, marked: data as number });

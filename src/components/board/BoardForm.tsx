@@ -86,7 +86,7 @@ export function BoardForm({ initial, mode }: Readonly<Props>): React.ReactElemen
     try {
       const url = await uploadImage(file);
       update("coverImageUrl", url);
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "업로드 실패");
     } finally {
       setUploadingCover(false);
@@ -119,7 +119,7 @@ export function BoardForm({ initial, mode }: Readonly<Props>): React.ReactElemen
       } else {
         update("content", `${form.content}${markdown}`);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "업로드 실패");
     } finally {
       setUploadingInline(false);
@@ -161,7 +161,7 @@ export function BoardForm({ initial, mode }: Readonly<Props>): React.ReactElemen
       const targetSlug = body.article?.slug ?? initial?.slug ?? "";
       router.push(`/encyclopedia/${encodeURIComponent(targetSlug)}`);
       router.refresh();
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "저장 실패");
     } finally {
       setSubmitting(false);

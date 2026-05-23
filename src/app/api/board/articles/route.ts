@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { estimateReadingTime, generateExcerpt, generateMetaDescription } from "@/lib/board/utils";
@@ -30,8 +32,7 @@ function slugify(title: string): string {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase admin client
-async function uniqueSlug(supabase: any, base: string): Promise<string> {
+async function uniqueSlug(supabase: SupabaseClient<Database>, base: string): Promise<string> {
   const { data: existing } = await supabase
     .from("encyclopedia_articles")
     .select("slug")
@@ -83,8 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const { data, error } = await auth.supabase
     .from("encyclopedia_articles")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-    .insert(insertRow as any)
+    .insert(insertRow)
     .select("id, slug, title")
     .single();
 

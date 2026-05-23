@@ -12,8 +12,7 @@ function calculateTotalPrice(monthlyPrice: number, months: number, discountPerce
 
 async function getArtist(userId: string): Promise<{ id: string; type_artist: string } | null> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("artists").select("id, type_artist").eq("user_id", userId).single();
     return data as { id: string; type_artist: string } | null;
 }

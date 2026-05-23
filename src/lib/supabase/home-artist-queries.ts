@@ -120,8 +120,7 @@ async function fetchPopularArtistsInternal(options?: {
   const { typeArtist = "SEMI_PERMANENT", limit = 6 } = options ?? {};
   const supabase = createStaticClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data, error } = await (supabase as any).rpc("get_popular_artists_with_portfolio", {
+  const { data, error } = await supabase.rpc("get_popular_artists_with_portfolio", {
     p_type_artist: typeArtist,
     p_limit: limit * 3,
   });
@@ -221,16 +220,17 @@ export async function fetchNewArtists(limit = 5): Promise<HomeArtist[]> {
 async function fetchReviewStatsMap(
   supabase: SupabaseInstance,
 ): Promise<Map<string, { count: number; totalRating: number }>> {
-  const { data: artistIds } = await supabase
+  const { data: artistIdRows } = await supabase
     .from("reviews")
     .select("artist_id")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    // 무제한 조회 방지 — 리뷰 수가 이 임계치를 초과하면 DB 집계 RPC로 전환 필요
+    .limit(10000);
 
-  const uniqueIds = [...new Set((artistIds ?? []).map((r: { artist_id: string }) => r.artist_id))];
+  const uniqueIds = [...new Set((artistIdRows ?? []).map((r: { artist_id: string }) => r.artist_id))];
   if (uniqueIds.length === 0) return new Map();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data } = await (supabase as any).rpc("get_artist_review_stats", { artist_ids: uniqueIds });
+  const { data } = await supabase.rpc("get_artist_review_stats", { artist_ids: uniqueIds });
 
   const statsMap = new Map<string, { count: number; totalRating: number }>();
   for (const row of (data ?? []) as Array<{ artist_id: string; review_count: number; avg_rating: number }>) {

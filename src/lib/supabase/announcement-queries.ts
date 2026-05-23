@@ -11,10 +11,8 @@ export interface AnnouncementRow {
 
 const ANNOUNCEMENT_COLUMNS = "id, title, body, is_active, created_at";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- announcements table not in generated types
-function announcementsTable(): any {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types yet
-  return (createAdminClient() as any).from("announcements");
+function announcementsTable() {
+  return createAdminClient().from("announcements");
 }
 
 export async function fetchActiveAnnouncements(limit = 5): Promise<AnnouncementRow[]> {

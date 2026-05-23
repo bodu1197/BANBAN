@@ -4,7 +4,7 @@ import OpenAI from "openai";
 import { getUser } from "@/lib/supabase/auth";
 import type { GeneratedDetailCopy } from "@/components/event-form/types";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const MODEL = "gpt-4.1";
 
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const content = JSON.parse(text) as GeneratedDetailCopy;
     return NextResponse.json({ content });
-  } catch (e) {
+  } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "AI 카피 생성 실패";
     return NextResponse.json({ error: message }, { status: 500 });
   }

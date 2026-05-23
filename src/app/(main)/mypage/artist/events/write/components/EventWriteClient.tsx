@@ -146,7 +146,7 @@ export function EventWriteClient(): React.ReactElement {
       const { id } = result as { id: string };
 
       router.push(`/events/${id}`);
-    } catch (e) {
+    } catch (e: unknown) {
       alert(`등록 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
     } finally {
       setIsSubmitting(false);

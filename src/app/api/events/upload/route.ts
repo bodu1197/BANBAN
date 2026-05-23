@@ -73,7 +73,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       media_type: mediaType,
       order_index: Number(typeof orderIndex === "string" ? orderIndex : "0"),
     });
-  } catch (e) {
+  } catch (e: unknown) {
+    // eslint-disable-next-line no-console
     console.error("[events/upload]", e);
     return NextResponse.json({ error: "이미지 업로드에 실패했습니다" }, { status: 500 });
   }

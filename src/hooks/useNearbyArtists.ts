@@ -1,3 +1,4 @@
+// @client-reason: useQuery 클라이언트 훅 + 위치 기반 실시간 데이터 페칭
 "use client";
 
 import { useQuery } from "@tanstack/react-query";

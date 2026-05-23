@@ -132,6 +132,7 @@ function ProgressBar({
         </span>
       </div>
       <div className="h-3 overflow-hidden rounded-full bg-white/10">
+        {/* style unavoidable: dynamic percentage from runtime data */}
         <div
           className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 transition-all"
           style={{ width: `${Math.min(100, pct)}%` }}
@@ -369,6 +370,7 @@ function CategoryProgress({
               <span className="w-20 shrink-0 truncate text-xs text-zinc-300">{row.category}</span>
               <div className="flex-1">
                 <div className="h-2 w-full rounded-full bg-white/10">
+                  {/* style unavoidable: dynamic percentage from runtime data */}
                   <div
                     className="h-full rounded-full bg-indigo-500/80 transition-all"
                     style={{ width: `${pct}%` }}
@@ -479,7 +481,7 @@ function useRunGeneration(refetch: () => void): {
         const data = (await res.json()) as RunResponse;
         setResult(data);
         refetch();
-      } catch (e) {
+      } catch (e: unknown) {
         setResult({ ok: false, error: e instanceof Error ? e.message : String(e) });
       } finally {
         setRunning(false);

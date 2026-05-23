@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { CLIP_URL } from "@/lib/ai-client";
 import { getUser } from "@/lib/supabase/auth";
 import pg from "pg";
@@ -21,7 +22,12 @@ const WEBHOOK_SECRET = process.env.EMBED_WEBHOOK_SECRET ?? "";
 
 async function isAuthorized(request: NextRequest): Promise<boolean> {
     const authHeader = request.headers.get("authorization") ?? "";
-    if (WEBHOOK_SECRET && authHeader === `Bearer ${WEBHOOK_SECRET}`) return true;
+    if (WEBHOOK_SECRET && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.slice(7);
+        const a = Buffer.from(token);
+        const b = Buffer.from(WEBHOOK_SECRET);
+        if (a.byteLength === b.byteLength && timingSafeEqual(a, b)) return true;
+    }
     const user = await getUser();
     return !!user;
 }
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         await saveEmbedding(mediaId, embedding);
 
         return NextResponse.json({ success: true, mediaId });
-    } catch (err) {
+    } catch (err: unknown) {
         // eslint-disable-next-line no-console -- Server-side error logging
         console.error("[AI/embed-single] Error:", err);
         return NextResponse.json({ error: "Embedding failed" }, { status: 500 });

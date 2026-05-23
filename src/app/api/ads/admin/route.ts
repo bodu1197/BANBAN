@@ -21,8 +21,10 @@ function computePaymentBreakdown(subs: SubRow[]): { totalCash: number; totalPoin
 
 type ArtistTypeFilter = "SEMI_PERMANENT" | undefined;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase query builder
-function applyFilters(query: any, status: string | null, search: string | null): any {
+type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
+type QBuilder = ReturnType<SupabaseInstance["from"]>;
+
+function applyFilters(query: QBuilder, status: string | null, search: string | null): QBuilder {
     let q = query;
     if (status) q = q.eq("status", status);
     if (search) q = q.ilike("artist.title", `%${escapeIlike(search)}%`);
@@ -33,8 +35,7 @@ function parseArtistType(param: string | null): ArtistTypeFilter {
     return param === "SEMI_PERMANENT" ? param : undefined;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type -- supabase query builder
-function buildQueries(sb: any, params: { page: number; status: string | null; search: string | null; artistType: ArtistTypeFilter }) {
+function buildQueries(sb: SupabaseInstance, params: { page: number; status: string | null; search: string | null; artistType: ArtistTypeFilter }) {
     const { page, status, search, artistType } = params;
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -58,10 +59,9 @@ function buildQueries(sb: any, params: { page: number; status: string | null; se
 
 async function verifyAdmin(userId: string): Promise<boolean> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
         .from("profiles").select("is_admin").eq("id", userId).single();
-    return !!(profile && (profile as { is_admin: boolean }).is_admin);
+    return !!(profile && profile.is_admin);
 }
 
 /** Admin-only endpoint for ad management stats (paginated) */
@@ -75,8 +75,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const artistType = parseArtistType(url.searchParams.get("artistType"));
 
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { pagedQuery, plansQuery, allSubsQuery } = buildQueries(supabase as any, {
+    const { pagedQuery, plansQuery, allSubsQuery } = buildQueries(supabase, {
         page, status: url.searchParams.get("status"), search: url.searchParams.get("search"), artistType,
     });
 

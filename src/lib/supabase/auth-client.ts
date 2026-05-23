@@ -53,7 +53,7 @@ export async function resetPassword(
     }
 
     return { error: null };
-  } catch (err) {
+  } catch (err: unknown) {
     return {
       error: err instanceof Error ? err : new Error("비밀번호 재설정 중 오류가 발생했습니다"),
     };

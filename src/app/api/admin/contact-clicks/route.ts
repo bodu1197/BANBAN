@@ -211,9 +211,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const url = new URL(request.url);
     const period = url.searchParams.get("period") ?? "daily";
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = auth.supabase as any;
-    const { data: rows } = await sb
+    const { data: rows } = await auth.supabase
         .from("contact_clicks")
         .select("id, artist_id, click_type, source_page, created_at, artists!inner(title, user_id)")
         .gte("created_at", buildDateFilter(period))

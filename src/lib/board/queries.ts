@@ -45,8 +45,7 @@ export async function fetchBoardList(options: {
   const limit = options.limit ?? 30;
   const offset = options.offset ?? 0;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data, count, error } = await (supabase as any)
+  const { data, count, error } = await supabase
     .from("encyclopedia_articles")
     .select(LIST_FIELDS, { count: "exact" })
     .eq("published", true)
@@ -62,8 +61,7 @@ export async function fetchBoardArticleBySlug(
 ): Promise<BoardArticle | null> {
   const decoded = decodeURIComponent(slug);
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("encyclopedia_articles")
     .select("*")
     .eq("slug", decoded)
@@ -71,15 +69,14 @@ export async function fetchBoardArticleBySlug(
     .single();
 
   if (error) return null;
-  return data as BoardArticle;
+  return data as unknown as BoardArticle;
 }
 
 export async function fetchBoardSlugs(): Promise<
   { slug: string; published_at: string }[]
 > {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("encyclopedia_articles")
     .select("slug, published_at")
     .eq("published", true)

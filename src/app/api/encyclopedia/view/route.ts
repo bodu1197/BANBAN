@@ -15,8 +15,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const supabase = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types
-  const { error } = await (supabase as any).rpc("increment_encyclopedia_view", {
+  const { error } = await supabase.rpc("increment_encyclopedia_view", {
     p_slug: slug,
   });
 

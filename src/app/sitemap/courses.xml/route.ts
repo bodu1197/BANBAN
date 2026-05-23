@@ -12,8 +12,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? "1"));
     const offset = (page - 1) * ITEMS_PER_PAGE;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- courses not in generated types yet
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
     const { data } = await supabase
       .from("courses")
       .select("id, updated_at")

@@ -27,8 +27,7 @@ export default async function Page({
   }
 
   const supabase = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("encyclopedia_articles")
     .select("id, slug, title, category, content, cover_image_url, cover_image_alt, inline_images, published")
     .eq("slug", slug)

@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/types/database";
 import { useAuth } from "@/hooks/useAuth";
 import { FullPageSpinner } from "@/components/ui/full-page-spinner";
 import { optimizeImage } from "@/lib/utils/image-optimizer";
@@ -78,7 +79,7 @@ function removeArrayItem(arr: string[], index: number): string[] {
 
 // --- Submit logic (extracted for complexity) ---
 
-function buildCoursePayload(form: CourseFormData, userId: string): Record<string, unknown> {
+function buildCoursePayload(form: CourseFormData, userId: string): Database["public"]["Tables"]["courses"]["Insert"] {
   const price = Number(form.price);
   const originalPrice = form.originalPrice ? Number(form.originalPrice) : null;
   const hasDiscount = originalPrice !== null && originalPrice > price;
@@ -109,8 +110,7 @@ async function uploadCourseImages(supabase: ReturnType<typeof createClient>, fil
   return paths;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- courses not in generated types
-async function saveCourse(db: any, supabase: ReturnType<typeof createClient>, form: CourseFormData, newFiles: File[], userId: string, mode: "create" | "edit", courseId?: string): Promise<void> {
+async function saveCourse(db: ReturnType<typeof createClient>, supabase: ReturnType<typeof createClient>, form: CourseFormData, newFiles: File[], userId: string, mode: "create" | "edit", courseId?: string): Promise<void> {
   const payload = buildCoursePayload(form, userId);
   let targetId = courseId;
 
@@ -128,8 +128,9 @@ async function saveCourse(db: any, supabase: ReturnType<typeof createClient>, fo
   const uploadedPaths = newFiles.length > 0 ? await uploadCourseImages(supabase, newFiles, targetId as string) : [];
   const allImageUrls = [...form.existingImageUrls, ...uploadedPaths.map((p) => getStorageUrl(p) as string)];
 
-  const curriculumRows = form.curriculum.filter((t) => t.trim()).map((title, i) => ({ course_id: targetId, chapter_number: i + 1, title: title.trim() }));
-  const imageRows = allImageUrls.map((url, i) => ({ course_id: targetId, image_url: url, order_index: i }));
+  const finalId = targetId as string;
+  const curriculumRows = form.curriculum.filter((t) => t.trim()).map((title, i) => ({ course_id: finalId, chapter_number: i + 1, title: title.trim() }));
+  const imageRows = allImageUrls.map((url, i) => ({ course_id: finalId, image_url: url, order_index: i }));
 
   await Promise.all([
     curriculumRows.length > 0 ? db.from("course_curriculum").insert(curriculumRows) : Promise.resolve(),
@@ -281,8 +282,7 @@ async function submitCourse(
   form: CourseFormData, newFiles: File[], userId: string, mode: "create" | "edit", courseId?: string,
 ): Promise<void> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await saveCourse(supabase as any, supabase, form, newFiles, userId, mode, courseId);
+  await saveCourse(supabase, supabase, form, newFiles, userId, mode, courseId);
 }
 
 // --- Main component ---

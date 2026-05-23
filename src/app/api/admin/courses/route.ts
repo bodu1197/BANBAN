@@ -35,9 +35,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const search = (searchParams.get("search") ?? "").trim();
   const offset = (page - 1) * LIMIT;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- courses not in generated types
-  const db = auth.supabase as any;
-  let query = db.from("courses")
+  let query = auth.supabase.from("courses")
     .select("id, artist_id, title, category, class_type, price, is_active, created_at", { count: "exact" })
     .order("created_at", { ascending: false }).range(offset, offset + LIMIT - 1);
   if (search) query = query.ilike("title", `%${escapeIlike(search)}%`);
@@ -56,13 +54,10 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   const body = await request.json() as { id: string; is_active?: boolean };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = auth.supabase as any;
-
   const updates: Record<string, unknown> = {};
   if (body.is_active !== undefined) updates.is_active = body.is_active;
 
-  const { error } = await db.from("courses").update(updates).eq("id", body.id);
+  const { error } = await auth.supabase.from("courses").update(updates).eq("id", body.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
@@ -73,17 +68,14 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   const body = await request.json() as { id: string };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = auth.supabase as any;
-
   await Promise.all([
-    db.from("course_images").delete().eq("course_id", body.id),
-    db.from("course_highlights").delete().eq("course_id", body.id),
-    db.from("course_curriculum").delete().eq("course_id", body.id),
-    db.from("course_reviews").delete().eq("course_id", body.id),
+    auth.supabase.from("course_images").delete().eq("course_id", body.id),
+    auth.supabase.from("course_highlights").delete().eq("course_id", body.id),
+    auth.supabase.from("course_curriculum").delete().eq("course_id", body.id),
+    auth.supabase.from("course_reviews").delete().eq("course_id", body.id),
   ]);
 
-  const { error } = await db.from("courses").delete().eq("id", body.id);
+  const { error } = await auth.supabase.from("courses").delete().eq("id", body.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });

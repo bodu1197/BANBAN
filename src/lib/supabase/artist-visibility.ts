@@ -11,8 +11,7 @@ export async function fetchAdExemptArtistIds(): Promise<Set<string>> {
   const supabase = createStaticClient();
   const now = new Date().toISOString();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ad_subscriptions not in generated types
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("ad_subscriptions")
     .select("artist_id")
     .eq("status", "ACTIVE")

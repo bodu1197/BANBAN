@@ -187,7 +187,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         if (validationError) return validationError;
 
         return await generateBeautySim(body);
-    } catch (error) {
+    } catch (error: unknown) {
         // eslint-disable-next-line no-console -- Server-side error logging
         console.error("[AI/beauty-sim] Error:", error);
         return NextResponse.json({ error: "Beauty simulation failed" }, { status: 500 });

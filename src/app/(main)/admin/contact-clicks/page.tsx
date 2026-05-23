@@ -163,7 +163,9 @@ function ChartSection({ data, period }: Readonly<{ data: ChartRow[]; period: Per
                             </div>
                             {/* Bars */}
                             <div className="flex h-[160px] w-full flex-col items-center justify-end">
+                                {/* style unavoidable: dynamic percentage from runtime data */}
                                 <div className="w-full max-w-8 rounded-t bg-yellow-500 transition-all" style={{ height: `${kakaoH}%`, minHeight: row.kakao > 0 ? "2px" : "0" }} />
+                                {/* style unavoidable: dynamic percentage from runtime data */}
                                 <div className="w-full max-w-8 rounded-b bg-blue-500 transition-all" style={{ height: `${phoneH}%`, minHeight: row.phone > 0 ? "2px" : "0" }} />
                             </div>
                             {/* Label */}
@@ -200,6 +202,7 @@ function HourlyHeatmap({ data }: Readonly<{ data: HourlyStat[] }>): React.ReactE
                         <div key={h.hour} className="group relative flex flex-col items-center">
                             <div
                                 className="aspect-square w-full rounded transition-colors"
+                                // style unavoidable: dynamic opacity from runtime data
                                 style={{ backgroundColor: total === 0 ? "rgba(255,255,255,0.03)" : `rgba(20, 184, 166, ${intensity})` }}
                             />
                             <span className="mt-0.5 text-xs text-zinc-400">{h.hour}</span>
@@ -238,6 +241,7 @@ function SourceBreakdown({ data }: Readonly<{ data: SourceStat[] }>): React.Reac
                     <div key={row.source} className="flex items-center gap-3">
                         <span className="w-32 shrink-0 truncate text-xs text-zinc-300 md:w-40">{sourceLabel(row.source)}</span>
                         <div className="flex-1">
+                            {/* style unavoidable: dynamic percentage from runtime data */}
                             <div
                                 className="h-5 min-w-1 rounded bg-teal-600/60 transition-all"
                                 style={{ width: `${(row.count / maxCount) * 100}%` }}
@@ -261,6 +265,7 @@ function ArtistSparkline({ trend }: Readonly<{ trend: ChartRow[] }>): React.Reac
     const peak = Math.max(...trend.map(x => x.kakao + x.phone), 1);
     return (
         <>
+            {/* eslint-disable-next-line react/forbid-dom-props -- dynamic height from runtime data */}
             {trend.map(d => (
                 <div
                     key={d.date}
@@ -282,6 +287,7 @@ function ArtistRow({ row, rank, maxTotal }: Readonly<{ row: ArtistStat; rank: nu
             <span className="min-w-0 flex-1 truncate font-medium text-white">{row.artist_name}</span>
             <div className="hidden w-28 items-center gap-1 md:flex">
                 <div className="flex-1">
+                    {/* style unavoidable: dynamic percentage from runtime data */}
                     <div className="h-2 min-w-0.5 rounded-full bg-teal-500/70" style={{ width: `${(row.total / maxTotal) * 100}%` }} />
                 </div>
                 <span className="w-8 text-right text-xs text-zinc-300">{row.percent}%</span>

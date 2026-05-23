@@ -88,8 +88,7 @@ export function ArtistRegisterClient({ categories,
     const regionKey = addressToRegionKey(result.address);
     if (regionKey) {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      const { data } = await (supabase.from("regions") as any).select("id, name").eq("name", regionKey).single();
+      const { data } = await supabase.from("regions").select("id, name").eq("name", regionKey).single();
       if (data) {
         setFormData((prev) => ({ ...prev, region_id: data.id as string }));
       }
@@ -191,7 +190,7 @@ export function ArtistRegisterClient({ categories,
 
       globalThis.alert(t.submitSuccess);
       router.push("/");
-    } catch (error) {
+    } catch (error: unknown) {
       // eslint-disable-next-line no-console
       console.error("Registration error:", error);
       globalThis.alert(STRINGS.common.error);

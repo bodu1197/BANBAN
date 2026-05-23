@@ -107,23 +107,28 @@ async function uploadAllSizes(
   const paths: Record<string, string> = {};
   const sizes = Object.keys(IMAGE_SIZES) as ImageSize[];
 
-  for (const size of sizes) {
-    const processedBuffer = await processImage(buffer, size);
-    const filePath = `${basePath}/${size}.webp`;
+  const results = await Promise.all(
+    sizes.map(async (size) => {
+      const processedBuffer = await processImage(buffer, size);
+      const filePath = `${basePath}/${size}.webp`;
 
-    const { error: uploadError } = await adminClient.storage
-      .from(bucket)
-      .upload(filePath, processedBuffer, {
-        contentType: "image/webp",
-        cacheControl: "31536000",
-        upsert: true,
-      });
+      const { error: uploadError } = await adminClient.storage
+        .from(bucket)
+        .upload(filePath, processedBuffer, {
+          contentType: "image/webp",
+          cacheControl: "31536000",
+          upsert: true,
+        });
 
-    if (uploadError) {
-      return { paths: null, error: `Failed to upload ${size}: ${uploadError.message}` };
+      return { size, filePath, error: uploadError };
+    }),
+  );
+
+  for (const result of results) {
+    if (result.error) {
+      return { paths: null, error: `Failed to upload ${result.size}: ${result.error.message}` };
     }
-
-    paths[size] = filePath;
+    paths[result.size] = result.filePath;
   }
 
   return { paths };
@@ -203,7 +208,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({ success: true, path });
-  } catch (err) {
+  } catch (err: unknown) {
     // eslint-disable-next-line no-console
     console.error("Upload error:", err);
     return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });

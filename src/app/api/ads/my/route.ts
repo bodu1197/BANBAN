@@ -8,8 +8,7 @@ export async function GET(): Promise<NextResponse> {
     if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: artist } = await (supabase as any)
+    const { data: artist } = await supabase
         .from("artists").select("id, type_artist").eq("user_id", user.id).single();
 
     if (!artist) return NextResponse.json({ error: "not_artist" }, { status: 403 });

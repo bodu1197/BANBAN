@@ -44,7 +44,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         return NextResponse.json(await res.json());
-    } catch (error) {
+    } catch (error: unknown) {
         // eslint-disable-next-line no-console -- Server-side error logging
         console.error("[AI/mask] Error:", error);
         return NextResponse.json({ error: "Mask generation failed" }, { status: 500 });

@@ -2,6 +2,7 @@
 "use client";
 
 import { STRINGS } from "@/lib/strings";
+import { REPORT_REASONS } from "@/lib/constants";
 import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { Heart, Edit2, Pencil } from "lucide-react";
@@ -93,14 +94,6 @@ function YouTubeEmbed({ url }: Readonly<{ url: string | null }>): React.ReactEle
     </section>
   );
 }
-
-const REPORT_REASONS = [
-  { value: "SPAM", label: "스팸/광고" },
-  { value: "ABUSE", label: "욕설/비방" },
-  { value: "ADULT", label: "음란/선정성" },
-  { value: "HATE", label: "혐오/차별" },
-  { value: "OTHER", label: "기타" },
-] as const;
 
 // eslint-disable-next-line max-lines-per-function
 export function PortfolioDetailClient({
@@ -251,7 +244,7 @@ function ReportReasonFieldset({ reason, onChange }: Readonly<{
       {REPORT_REASONS.map((r) => (
         <label
           key={r.value}
-          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/5"
+          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/5"
         >
           <input type="radio" name="report-reason" value={r.value} checked={reason === r.value} onChange={() => onChange(r.value)} className="accent-brand-primary" />
           <span>{r.label}</span>

@@ -30,8 +30,7 @@ interface AdInfo { artistIds: Set<string>; artistIdsNoSlots: Set<string>; portfo
 
 async function fetchActiveAdInfo(supabase: ReturnType<typeof createStaticClient>): Promise<AdInfo> {
   const now = new Date().toISOString();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("ad_subscriptions")
     .select("artist_id, slots:ad_portfolio_slots(portfolio_id)")
     .eq("status", "ACTIVE")
@@ -50,8 +49,7 @@ async function searchPortfoliosByKeyword(
   limit: number,
 ): Promise<HomePortfolio[]> {
   const now = new Date().toISOString();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("portfolios")
     .select(SELECT_PORTFOLIO)
     .is("deleted_at", null)
@@ -71,8 +69,7 @@ async function searchArtistsByKeyword(
   keyword: string,
   limit: number,
 ): Promise<ArtistResult[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("artists")
     .select("id, title, profile_image_path, region:regions(name), portfolios(id)")
     .is("deleted_at", null)

@@ -140,8 +140,7 @@ const SELECT = [
   "portfolios!inner(id, portfolio_media!inner(storage_path, order_index))",
 ].join(", ");
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder typing
-function applyFilters(q: any, opts: FetchArtistsOptions, regionIds: string[] | null): any {
+function applyFilters(q: ReturnType<SupabaseInstance["from"]>, opts: FetchArtistsOptions, regionIds: string[] | null): ReturnType<SupabaseInstance["from"]> {
   const { typeArtist, regionId, searchWord } = opts;
   if (typeArtist) q = q.eq("type_artist", typeArtist);
   if (regionId) q = q.eq("region_id", regionId);
@@ -190,12 +189,10 @@ function buildBaseQuery(supabase: SupabaseInstance, options: FetchArtistsOptions
 
 async function applyGenreFilter(
   supabase: SupabaseInstance,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder typing
-  query: any,
+  query: ReturnType<SupabaseInstance["from"]>,
   genres: string[],
   searchWord?: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder typing
-): Promise<{ query: any; empty: boolean }> {
+): Promise<{ query: ReturnType<SupabaseInstance["from"]>; empty: boolean }> {
   if (genres.length === 0) return { query, empty: false };
   const genreIds = await fetchGenreIds(supabase, genres, searchWord);
   if (!genreIds?.length) return { query, empty: true };

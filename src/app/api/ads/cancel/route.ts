@@ -19,8 +19,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const supabase = await createClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase query
-    const { data: sub } = await (supabase as any)
+    const { data: sub } = await supabase
         .from("ad_subscriptions")
         .select("id, status, paid_by_points, artist:artists!inner(user_id)")
         .eq("id", body.subscriptionId)

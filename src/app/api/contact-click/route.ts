@@ -17,8 +17,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         const supabase = createAdminClient();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any).from("contact_clicks").insert({
+        const { error } = await supabase.from("contact_clicks").insert({
             artist_id: body.artistId,
             click_type: body.clickType,
             source_page: body.sourcePage,

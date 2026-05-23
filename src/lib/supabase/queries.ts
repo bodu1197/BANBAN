@@ -39,8 +39,7 @@ type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
 export async function getArtistIdsWithPortfolio(
   supabase: SupabaseInstance,
 ): Promise<Set<string>> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types yet
-  const { data } = await (supabase as any).rpc("get_artist_ids_with_portfolio");
+  const { data } = await supabase.rpc("get_artist_ids_with_portfolio");
   const ids = new Set<string>();
   for (const row of (data ?? []) as Array<{ artist_id: string }>) {
     ids.add(row.artist_id);

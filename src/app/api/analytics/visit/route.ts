@@ -20,8 +20,7 @@ function extractIp(request: Request): string {
 
 async function insertVisit(request: Request, body: Readonly<VisitBody>): Promise<{ ok: boolean }> {
     const supabase = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- page_visits 테이블이 generated types 에 미포함
-    const { error } = await (supabase as any).from("page_visits").insert({
+    const { error } = await supabase.from("page_visits").insert({
         path: body.path,
         country: request.headers.get("x-vercel-ip-country") ?? "",
         user_agent: body.user_agent || null,
@@ -64,7 +63,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             return NextResponse.json({ error: "failed to record visit" }, { status: 500 });
         }
         return NextResponse.json({ ok: true });
-    } catch (e) {
+    } catch (e: unknown) {
         // eslint-disable-next-line no-console
         console.error("[analytics/visit] handler error:", e instanceof Error ? e.message : e);
         return NextResponse.json({ error: "failed to record visit" }, { status: 500 });

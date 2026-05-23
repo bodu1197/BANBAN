@@ -1,5 +1,5 @@
-"use client";
 // @client-reason: Camera/file input, MediaPipe face analysis, canvas mask generation, interactive AI simulation UI
+"use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";

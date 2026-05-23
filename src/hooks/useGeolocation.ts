@@ -1,3 +1,4 @@
+// @client-reason: navigator.geolocation 브라우저 전용 API 사용
 "use client";
 
 import { useState, useCallback } from "react";

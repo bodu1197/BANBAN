@@ -5,8 +5,5 @@ import { createAdminClient } from "./server";
  */
 export async function incrementPortfolioViews(portfolioId: string): Promise<void> {
   const supabase = createAdminClient();
-  await (supabase.rpc as unknown as (fn: string, params: Record<string, string>) => Promise<unknown>)(
-    "increment_portfolio_views",
-    { portfolio_id_param: portfolioId },
-  );
+  await supabase.rpc("increment_portfolio_views", { portfolio_id_param: portfolioId });
 }

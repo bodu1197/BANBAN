@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { CLIP_URL } from "@/lib/ai-client";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 import pg from "pg";
 
 /** Allow up to 300s for batch embedding processing */
@@ -18,6 +19,9 @@ const STORAGE_BUCKET = "portfolios";
 const BATCH_SIZE = 10;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     if (!CLIP_URL) return NextResponse.json({ error: "CLIP server not configured" }, { status: 503 });
 
     try {
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         const result = await processBatches(toProcess);
         return NextResponse.json(result);
-    } catch (err) {
+    } catch (err: unknown) {
         // eslint-disable-next-line no-console -- Server-side error logging
         console.error("[AI/embed-batch] Error:", err);
         return NextResponse.json({ error: "Batch embedding failed" }, { status: 500 });

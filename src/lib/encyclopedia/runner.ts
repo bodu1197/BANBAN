@@ -77,7 +77,7 @@ export async function runEncyclopediaGeneration(
       title: result.title,
       remaining: ENCYCLOPEDIA_TOPICS.length - publishedSize - (overrideId !== null ? 0 : 1),
     };
-  } catch (e) {
+  } catch (e: unknown) {
     return { ok: false, topic_id: topic.id, error: e instanceof Error ? e.message : String(e) };
   }
 }

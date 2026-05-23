@@ -2,7 +2,7 @@
 "use client";
 
 import { STRINGS } from "@/lib/strings";
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X, Check, Clock, XCircle, Loader2 } from "lucide-react";
@@ -128,13 +128,13 @@ function SubmitModal({ exhibitionId, artistId, artistEntries, onClose, onSubmitt
   const [toast, setToast] = useState<string | null>(null);
   const submittedIds = new Set(artistEntries.map((e) => e.portfolio_id));
 
-  useState(() => {
-    fetch(`/api/artist-portfolios?artistId=${artistId}`)
+  useEffect(() => {
+    fetch(`/api/artist-portfolios?artistId=${encodeURIComponent(artistId)}`)
       .then((r) => (r.ok ? r.json() : { portfolios: [] }))
       .then((d: { portfolios: PortfolioOption[] }) => setPortfolios(d.portfolios ?? []))
       .catch(() => { /* ignore */ })
       .finally(() => setLoadingPortfolios(false));
-  });
+  }, [artistId]);
 
   function handleSubmit(portfolioId: string): void {
     startTransition(async () => {

@@ -45,7 +45,7 @@ export const ArtistCard = memo(function ArtistCard({
 
   return (
     <Link href={`/artists/${id}`} className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <Card className="overflow-hidden transition-shadow hover:shadow-lg">
+      <Card className="overflow-hidden transition-shadow hover:shadow-lg group-focus-visible:shadow-lg">
         <ArtistCardImage
           imageUrl={imageUrl}
           name={name}

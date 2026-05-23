@@ -7,10 +7,9 @@ import { todayStartKST } from "@/lib/utils/format";
 /** Get artist type for a user (null if not an artist) */
 export async function getArtistType(userId: string): Promise<string | null> {
     const supabase = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("artists").select("type_artist").eq("user_id", userId).single();
-    return (data as { type_artist: string } | null)?.type_artist ?? null;
+    return data?.type_artist ?? null;
 }
 
 // ─── Policy-based Point Amount ─────────────────────────
@@ -18,17 +17,15 @@ export async function getArtistType(userId: string): Promise<string | null> {
 /** Get point amount from DB policy, considering artist type */
 export async function getPolicyAmount(reason: string, artistType: string | null): Promise<number | null> {
     const supabase = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("point_policies")
         .select("amount, semi_amount, is_active")
         .eq("reason", reason)
         .single();
 
     if (!data) return null;
-    const policy = data as { amount: number; semi_amount: number | null; is_active: boolean };
-    if (!policy.is_active) return null;
-    return artistType === "SEMI_PERMANENT" ? (policy.semi_amount ?? policy.amount) : policy.amount;
+    if (!data.is_active) return null;
+    return artistType === "SEMI_PERMANENT" ? (data.semi_amount ?? data.amount) : data.amount;
 }
 
 // ─── Wallet ──────────────────────────────────────────────
@@ -38,8 +35,7 @@ export async function getOrCreateWallet(userId: string): Promise<PointWallet> {
     const supabase = createAdminClient();
 
     // Try to get existing wallet
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("point_wallets")
         .select("*")
         .eq("user_id", userId)
@@ -48,8 +44,7 @@ export async function getOrCreateWallet(userId: string): Promise<PointWallet> {
     if (data) return data as PointWallet;
 
     // Create new wallet
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: newWallet, error } = await (supabase as any)
+    const { data: newWallet, error } = await supabase
         .from("point_wallets")
         .insert({ user_id: userId })
         .select()
@@ -83,8 +78,7 @@ export async function earnPoints(params: EarnPointsParams): Promise<PointTransac
     const supabase = createAdminClient();
 
     // Create transaction
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: tx, error: txError } = await (supabase as any)
+    const { data: tx, error: txError } = await supabase
         .from("point_transactions")
         .insert({
             wallet_id: wallet.id,
@@ -101,8 +95,7 @@ export async function earnPoints(params: EarnPointsParams): Promise<PointTransac
     if (txError) throw new Error(`Failed to create transaction: ${txError.message}`);
 
     // Update wallet balance
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
         .from("point_wallets")
         .update({
             balance: wallet.balance + amount,
@@ -134,8 +127,7 @@ export async function spendPoints(params: SpendPointsParams): Promise<PointTrans
     const supabase = createAdminClient();
 
     // Create transaction (negative amount)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: tx, error: txError } = await (supabase as any)
+    const { data: tx, error: txError } = await supabase
         .from("point_transactions")
         .insert({
             wallet_id: wallet.id,
@@ -151,8 +143,7 @@ export async function spendPoints(params: SpendPointsParams): Promise<PointTrans
     if (txError) throw new Error(`Failed to create transaction: ${txError.message}`);
 
     // Update wallet balance
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
         .from("point_wallets")
         .update({
             balance: wallet.balance - amount,
@@ -173,8 +164,7 @@ export async function getPointHistory(
     const wallet = await getOrCreateWallet(userId);
     const supabase = createAdminClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, count } = await (supabase as any)
+    const { data, count } = await supabase
         .from("point_transactions")
         .select("*", { count: "exact" })
         .eq("wallet_id", wallet.id)
@@ -205,8 +195,7 @@ export async function checkDailyLimit(userId: string, reason: PointReason): Prom
     const wallet = await getOrCreateWallet(userId);
     const supabase = createAdminClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count } = await (supabase as any)
+    const { count } = await supabase
         .from("point_transactions")
         .select("id", { count: "exact", head: true })
         .eq("wallet_id", wallet.id)
@@ -232,8 +221,7 @@ export async function grantWelcomeBonus(userId: string): Promise<PointTransactio
     const supabase = createAdminClient();
 
     // Check if already granted
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
         .from("point_transactions")
         .select("id")
         .eq("wallet_id", wallet.id)
@@ -270,8 +258,7 @@ export async function expireOldPoints(): Promise<number> {
     const now = new Date().toISOString();
 
     // Find unexpired transactions past their expiry
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: expiring } = await (supabase as any)
+    const { data: expiring } = await supabase
         .from("point_transactions")
         .select("id, wallet_id, amount")
         .eq("expired", false)
@@ -282,17 +269,15 @@ export async function expireOldPoints(): Promise<number> {
     if (!expiring || expiring.length === 0) return 0;
 
     let expiredCount = 0;
-    for (const tx of expiring as { id: string; wallet_id: string; amount: number }[]) {
+    for (const tx of expiring) {
         // Mark as expired
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        await supabase
             .from("point_transactions")
             .update({ expired: true })
             .eq("id", tx.id);
 
         // Create expiry transaction
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        await supabase
             .from("point_transactions")
             .insert({
                 wallet_id: tx.wallet_id,
@@ -303,17 +288,15 @@ export async function expireOldPoints(): Promise<number> {
             });
 
         // Deduct from wallet
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: wallet } = await (supabase as any)
+        const { data: wallet } = await supabase
             .from("point_wallets")
             .select("balance")
             .eq("id", tx.wallet_id)
             .single();
 
         if (wallet) {
-            const newBalance = Math.max(0, (wallet as { balance: number }).balance - tx.amount);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any)
+            const newBalance = Math.max(0, wallet.balance - tx.amount);
+            await supabase
                 .from("point_wallets")
                 .update({ balance: newBalance, updated_at: now })
                 .eq("id", tx.wallet_id);

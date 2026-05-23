@@ -9,6 +9,9 @@ import { ArrowLeft, Eye, Flag, Heart, MessageSquare, Pencil, Trash2, Send } from
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
+import { REPORT_REASONS } from "@/lib/constants";
+import { boardLabel } from "@/lib/board/constants";
+import { extractYouTubeId } from "@/components/portfolio-form/media-upload";
 import { Button } from "@/components/ui/button";
 import {
   createComment,
@@ -20,34 +23,7 @@ import {
 } from "@/lib/actions/community";
 import type { CommunityPostDetail, PostComment } from "@/lib/supabase/community-queries";
 
-const REPORT_REASONS = [
-  { value: "SPAM", labelKey: "reportReasonSpam" },
-  { value: "ABUSE", labelKey: "reportReasonAbuse" },
-  { value: "ADULT", labelKey: "reportReasonAdult" },
-  { value: "HATE", labelKey: "reportReasonHate" },
-  { value: "OTHER", labelKey: "reportReasonOther" },
-] as const;
-
 const t = STRINGS.community;
-
-const BOARD_LABEL_MAP: Record<string, string> = {
-  PROCEDURE_REVIEW: t.procedureReview,
-  COURSE_REVIEW: t.courseReview,
-  QNA: t.qna,
-  FREETALK: t.freeTalk,
-  REVIEW: t.review,
-};
-
-function boardLabel(typeBoard: string): string {
-  const record = BOARD_LABEL_MAP as Record<string, string>;
-  // eslint-disable-next-line security/detect-object-injection -- typed Record lookup
-  return record[typeBoard] ?? typeBoard;
-}
-
-function extractYoutubeId(url: string): string | null {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
-  return match?.[1] ?? null;
-}
 
 interface PostDetailClientProps {
   post: CommunityPostDetail;
@@ -92,7 +68,7 @@ function PostArticleContent({ post }: Readonly<{ post: CommunityPostDetail }>): 
       ) : null}
 
       {post.youtubeUrl ? (() => {
-        const videoId = extractYoutubeId(post.youtubeUrl);
+        const videoId = extractYouTubeId(post.youtubeUrl);
         if (!videoId) return null;
         return (
           <div className="mt-4 aspect-video w-full overflow-hidden rounded-lg">
@@ -357,7 +333,7 @@ function ReportReasonFieldset({ reason, onReasonChange }: Readonly<{
             onChange={() => onReasonChange(r.value)}
             className="accent-brand-primary"
           />
-          <span>{t[r.labelKey]}</span>
+          <span>{r.label}</span>
         </label>
       ))}
     </fieldset>

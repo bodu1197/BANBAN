@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/server";
 import { fetchAllCategories } from "@/lib/supabase/queries";
-import { ArtistEditClient } from "@/app/(main)/mypage/artist/edit/ArtistEditClient";
+import { ArtistEditClient, type ArtistEditClientProps } from "@/app/(main)/mypage/artist/edit/ArtistEditClient";
 
 export const metadata: Metadata = {
   title: "아티스트 샵 수정 (관리자)",
@@ -15,8 +15,7 @@ export const metadata: Metadata = {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function fetchArtistById(supabase: SupabaseClient, artistId: string): Promise<unknown> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase relation join not in generated types
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("artists")
     .select(`
       *,
@@ -30,8 +29,7 @@ async function fetchArtistById(supabase: SupabaseClient, artistId: string): Prom
 }
 
 async function fetchArtistCategoryIds(supabase: SupabaseClient, artistId: string): Promise<string[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("categorizables")
     .select("category_id")
     .eq("categorizable_type", "artist")
@@ -58,8 +56,7 @@ export default async function AdminArtistEditPage({
 
   return (
     <ArtistEditClient
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ArtistData shape matches Supabase select
-      artist={artist as any}
+      artist={artist as ArtistEditClientProps["artist"]}
       categoryIds={categoryIds}
       categories={categories}
       isAdmin

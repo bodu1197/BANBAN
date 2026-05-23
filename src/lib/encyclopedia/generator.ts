@@ -244,7 +244,7 @@ async function callOpenAiText(
 
   try {
     return JSON.parse(text) as RawAiOutput;
-  } catch (e) {
+  } catch (e: unknown) {
     throw new Error(`OpenAI returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
 }

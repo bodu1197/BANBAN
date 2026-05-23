@@ -6,13 +6,12 @@ import { DEFAULT_POINT_RULES, getPointAmount } from "@/types/ads";
 
 const STREAK_THRESHOLD = 7;
 
-function getYesterdayStreak(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<number> {
+async function getYesterdayStreak(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<number> {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
     now.setDate(now.getDate() - 1);
     const yesterdayKST = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (admin as any).from("attendance_logs").select("streak").eq("user_id", userId).eq("checked_date", yesterdayKST).single()
-        .then((r: { data: { streak: number } | null }) => r.data?.streak ?? 0);
+    const r = await admin.from("attendance_logs").select("streak").eq("user_id", userId).eq("checked_date", yesterdayKST).single();
+    return (r.data as { streak: number } | null)?.streak ?? 0;
 }
 
 async function getAttendanceAmounts(artistType: string | null): Promise<{ attendance: number; streak: number }> {
@@ -46,10 +45,7 @@ export async function POST(): Promise<NextResponse> {
 
     const admin = createAdminClient();
     const today = todayKST();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = admin as any;
-
-    const { data: existing } = await sb.from("attendance_logs").select("id").eq("user_id", user.id).eq("checked_date", today).single();
+    const { data: existing } = await admin.from("attendance_logs").select("id").eq("user_id", user.id).eq("checked_date", today).single();
     if (existing) {
         return NextResponse.json({ error: "이미 출석 체크를 완료했습니다", alreadyChecked: true }, { status: 400 });
     }
@@ -57,7 +53,7 @@ export async function POST(): Promise<NextResponse> {
     const newStreak = (await getYesterdayStreak(admin, user.id)) + 1;
     const artistType = await getArtistType(user.id);
     const amounts = await getAttendanceAmounts(artistType);
-    await sb.from("attendance_logs").insert({ user_id: user.id, checked_date: today, streak: newStreak });
+    await admin.from("attendance_logs").insert({ user_id: user.id, checked_date: today, streak: newStreak });
     await earnPoints({ userId: user.id, amount: amounts.attendance, reason: "ATTENDANCE", description: `출석 체크 (${newStreak}일 연속)` });
     const { totalEarned, streakBonus } = await grantStreakBonus(user.id, newStreak, amounts.streak, amounts.attendance);
 
@@ -73,12 +69,9 @@ export async function GET(): Promise<NextResponse> {
 
     const admin = createAdminClient();
     const today = todayKST();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = admin as any;
-
-    const { data: todayLog } = await sb.from("attendance_logs").select("streak").eq("user_id", user.id).eq("checked_date", today).single();
+    const { data: todayLog } = await admin.from("attendance_logs").select("streak").eq("user_id", user.id).eq("checked_date", today).single();
     const monthStart = `${today.slice(0, 7)}-01`;
-    const { count } = await sb.from("attendance_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("checked_date", monthStart);
+    const { count } = await admin.from("attendance_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("checked_date", monthStart);
 
     return NextResponse.json({
         checkedToday: !!todayLog,

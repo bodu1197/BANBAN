@@ -19,8 +19,7 @@ export async function GET(): Promise<NextResponse> {
     if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("conversations")
         .select("*")
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
@@ -34,21 +33,19 @@ export async function GET(): Promise<NextResponse> {
     const otherIds = rows
         .map(c => c.participant_1 === user.id ? c.participant_2 : c.participant_1);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profiles } = await (supabase as any)
-        .from("profiles")
-        .select("id, nickname, avatar_url")
-        .in("id", otherIds);
+    const [{ data: profiles }, { data: artists }] = await Promise.all([
+        supabase
+            .from("profiles")
+            .select("id, nickname, profile_image_path")
+            .in("id", otherIds),
+        supabase
+            .from("artists")
+            .select("user_id, title, profile_image_path")
+            .in("user_id", otherIds),
+    ]);
 
-    // Also check artists table for artist names
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: artists } = await (supabase as any)
-        .from("artists")
-        .select("user_id, title, profile_image_path")
-        .in("user_id", otherIds);
-
-    const profileMap = new Map<string, { nickname: string | null; avatar_url: string | null }>();
-    for (const p of (profiles ?? []) as { id: string; nickname: string | null; avatar_url: string | null }[]) {
+    const profileMap = new Map<string, { nickname: string | null; profile_image_path: string | null }>();
+    for (const p of (profiles ?? []) as { id: string; nickname: string | null; profile_image_path: string | null }[]) {
         profileMap.set(p.id, p);
     }
     const artistMap = new Map<string, { title: string; profile_image_path: string | null }>();
@@ -66,7 +63,7 @@ export async function GET(): Promise<NextResponse> {
             otherName: artist?.title ?? profile?.nickname ?? "사용자",
             // artist.profile_image_path 는 Storage 내부 경로 → avatars 버킷 public URL 로 변환.
             // profile.avatar_url 은 이미 full URL (소셜 가입 OAuth) — getAvatarUrl 이 http(s) prefix 감지하면 그대로 통과.
-            otherAvatar: getAvatarUrl(artist?.profile_image_path ?? null) ?? profile?.avatar_url ?? null,
+            otherAvatar: getAvatarUrl(artist?.profile_image_path ?? null) ?? getAvatarUrl(profile?.profile_image_path ?? null) ?? null,
             lastMessage: c.last_message,
             lastMessageAt: c.last_message_at,
             createdAt: c.created_at,
@@ -88,8 +85,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const supabase = await createClient();
 
     // Check if conversation already exists (either direction)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
         .from("conversations")
         .select("id")
         .or(`and(participant_1.eq.${user.id},participant_2.eq.${body.otherUserId}),and(participant_1.eq.${body.otherUserId},participant_2.eq.${user.id})`)
@@ -99,8 +95,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (existing) return NextResponse.json({ conversationId: (existing as { id: string }).id });
 
     // Create new
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: newConv, error } = await (supabase as any)
+    const { data: newConv, error } = await supabase
         .from("conversations")
         .insert({ participant_1: user.id, participant_2: body.otherUserId })
         .select("id")

@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase/auth";
 import { createAdminClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 
 type ProfileRow = { id: string; username: string; nickname: string | null };
 type ConversationRow = { id: string; participant_1: string; participant_2: string; last_message: string | null; last_message_at: string | null; created_at: string };
-
-async function requireAdmin(): Promise<string | null> {
-  const user = await getUser();
-  if (!user) return null;
-  const supabase = createAdminClient();
-  const { data } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
-  return (data as { is_admin: boolean } | null)?.is_admin ? user.id : null;
-}
 
 async function buildProfileMap(ids: string[]): Promise<Map<string, ProfileRow>> {
   if (ids.length === 0) return new Map();
@@ -120,8 +112,8 @@ async function fetchConversations(page: number, search: string): Promise<NextRes
 
 /** GET — 채팅 목록 + 메시지 조회 */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const adminId = await requireAdmin();
-  if (!adminId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const url = new URL(request.url);
   const conversationId = url.searchParams.get("conversationId");
@@ -134,8 +126,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /** DELETE — 관리자 뷰에서 숨김 처리 */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const adminId = await requireAdmin();
-  if (!adminId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const body = await request.json() as { id: string };
   if (!body.id) return NextResponse.json({ error: "ID 누락" }, { status: 400 });

@@ -46,8 +46,7 @@ function parseSortColumn(sort: string): { column: string; ascending: boolean } {
 }
 
 async function fetchLoginStats(supabase: SupabaseClient): Promise<Record<string, number>> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in generated types
-    const { data } = await (supabase as any).rpc("get_login_stats");
+    const { data } = await supabase.rpc("get_login_stats");
     return (data ?? { artist_login_count: 0, general_login_count: 0, total_count: 0 }) as Record<string, number>;
 }
 
@@ -56,7 +55,8 @@ async function findArtistUserIds(supabase: SupabaseClient, search: string): Prom
     const { data: artists } = await supabase
         .from("artists")
         .select("user_id")
-        .ilike("title", `%${escapeIlike(search)}%`);
+        .ilike("title", `%${escapeIlike(search)}%`)
+        .limit(100);
     return (artists ?? []).map((a) => (a as { user_id: string }).user_id);
 }
 

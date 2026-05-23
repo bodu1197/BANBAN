@@ -60,6 +60,7 @@ function ProgressBar({ current, target }: Readonly<{ current: number; target: nu
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
+        {/* style unavoidable: dynamic percentage from runtime data */}
         <div
           className={`h-full rounded-full transition-all duration-300 ${done ? "bg-green-500" : "bg-brand-primary"}`}
           style={{ width: `${percent}%` }}
@@ -218,7 +219,7 @@ export function GuidedIntroduce({ value, onChange }: Readonly<GuidedIntroducePro
 
       <ProgressBar current={charCount} target={MIN_LENGTH} />
 
-      {charCount > 0 && !isEditing ? <IntroducePreview text={combined} /> : null}
+      {charCount > 0 && !isEditing && <IntroducePreview text={combined} />}
     </div>
   );
 }

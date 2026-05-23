@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchAllCategories } from "@/lib/supabase/queries";
 import { ArtistEditClient } from "@/app/(main)/mypage/artist/edit/ArtistEditClient";
+import type { ArtistEditClientProps } from "@/app/(main)/mypage/artist/edit/ArtistEditClient";
 
 export const artistEditMetadata: Metadata = {
   title: "아티스트 정보 수정",
@@ -20,8 +21,7 @@ export async function renderArtistEditPage(): Promise<React.ReactElement> {
   }
 
   // Fetch artist data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  const { data: artist } = await (supabase as any)
+  const { data: artist } = await supabase
     .from("artists")
     .select(`
       *,
@@ -37,8 +37,7 @@ export async function renderArtistEditPage(): Promise<React.ReactElement> {
   }
 
   // Fetch artist's categories
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  const { data: categorizables } = await (supabase as any)
+  const { data: categorizables } = await supabase
     .from("categorizables")
     .select("category_id")
     .eq("categorizable_type", "artist")
@@ -50,7 +49,7 @@ export async function renderArtistEditPage(): Promise<React.ReactElement> {
 
   return (
     <ArtistEditClient
-      artist={artist}
+      artist={artist as unknown as ArtistEditClientProps["artist"]}
       categoryIds={categoryIds}
       categories={categories}
     />

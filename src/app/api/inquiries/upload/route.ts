@@ -16,7 +16,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: "이미지 파일만 업로드 가능합니다" }, { status: 400 });
     if (file.size > MAX_FILE_SIZE) return NextResponse.json({ error: "파일 크기는 5MB 이하여야 합니다" }, { status: 400 });
 
-    const ext = file.name.split(".").pop() ?? "jpg";
+    const SAFE_EXTENSIONS: Record<string, string> = {
+        "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+    };
+    const ext = SAFE_EXTENSIONS[file.type] ?? "jpg";
     const path = `${user.id}/${uuidv4()}.${ext}`;
     const supabase = createAdminClient();
 

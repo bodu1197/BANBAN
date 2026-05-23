@@ -8,16 +8,16 @@ async function getArtistId(): Promise<{ artistId: string; supabase: ReturnType<t
     const user = await getUser();
     if (!user) return null;
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: artist } = await (supabase as any)
+    const { data: artist } = await supabase
         .from("artists").select("id").eq("user_id", user.id).single();
     if (!artist) return null;
-    return { artistId: (artist as { id: string }).id, supabase };
+    return { artistId: artist.id, supabase };
 }
 
+type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
+
 async function validatePortfolioOwnership(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    supabase: any,
+    supabase: SupabaseInstance,
     artistId: string,
     portfolioIds: string[],
 ): Promise<string[]> {
@@ -27,7 +27,7 @@ async function validatePortfolioOwnership(
         .select("id")
         .eq("artist_id", artistId)
         .in("id", portfolioIds);
-    const validIds = new Set((valid as { id: string }[] ?? []).map(v => v.id));
+    const validIds = new Set((valid ?? []).map(v => v.id));
     return portfolioIds.filter(id => !validIds.has(id));
 }
 
@@ -44,8 +44,7 @@ export async function GET(): Promise<NextResponse> {
             subscriptionId: sub.id,
             slots: (await getAdPortfolioSlots(sub.id)).map(s => s.portfolio_id),
         }))),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (ctx.supabase as any)
+        ctx.supabase
             .from("portfolios")
             .select("id, title, portfolio_media(storage_path, order_index)")
             .eq("artist_id", ctx.artistId)

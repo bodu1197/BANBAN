@@ -182,7 +182,7 @@ function CuratedExhibitions({ hp, activeArtists }: Readonly<{
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await fn();
-  } catch (e) {
+  } catch (e: unknown) {
     // eslint-disable-next-line no-console
     console.error("[Home] Section fetch failed:", e instanceof Error ? e.message : e);
     return fallback;

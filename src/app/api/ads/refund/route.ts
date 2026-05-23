@@ -3,6 +3,7 @@ import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cancelSubscription } from "@/lib/supabase/ad-queries";
 import { earnPoints } from "@/lib/supabase/point-queries";
+import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const IMP_KEY = process.env.PORTONE_IMP_KEY ?? "";
 const IMP_SECRET = process.env.PORTONE_IMP_SECRET ?? "";
@@ -50,8 +51,7 @@ async function cancelPortOnePayment(sub: SubData, reason: string): Promise<void>
 /** Verify the requesting user is an admin */
 async function verifyAdmin(userId: string): Promise<boolean> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
         .from("profiles").select("is_admin").eq("id", userId).single();
     return !!(profile && (profile as { is_admin: boolean }).is_admin);
 }
@@ -59,8 +59,7 @@ async function verifyAdmin(userId: string): Promise<boolean> {
 /** Fetch the subscription by ID */
 async function fetchSubscription(subscriptionId: string): Promise<SubData | null> {
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
         .from("ad_subscriptions")
         .select("id, status, imp_uid, merchant_uid, paid_by_cash, paid_by_points, artist:artists!inner(user_id)")
         .eq("id", subscriptionId)
@@ -95,6 +94,10 @@ async function processRefund(sub: SubData): Promise<{ success: boolean; portoneS
  * - Sets subscription status to CANCELLED
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+    const ip = getClientIp(request);
+    const { success: rateLimitOk } = rateLimit({ key: `refund:${ip}`, limit: 5, windowMs: 60_000 });
+    if (!rateLimitOk) return rateLimitResponse();
+
     const user = await getUser();
     if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     if (!(await verifyAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });

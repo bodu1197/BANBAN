@@ -51,8 +51,7 @@ type ArticleRow = EncyclopediaCronStatus["recentArticles"][number];
 
 async function fetchAllArticleRows(): Promise<ArticleRow[]> {
   const supabase = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- table not in generated types
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from("encyclopedia_articles")
     .select("topic_id, slug, title, category, published_at, view_count, reading_time_minutes")
     .order("published_at", { ascending: false })

@@ -58,7 +58,7 @@ interface ArtistData {
   region: { id: string; name: string } | null;
 }
 
-interface ArtistEditClientProps {
+export interface ArtistEditClientProps {
   artist: ArtistData;
   categoryIds: string[];
   categories: ArtistFormCategory[];
@@ -86,8 +86,7 @@ async function patchArtistProfileImage(artistId: string, path: string, isAdmin: 
     return;
   }
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  const { error } = await (supabase.from("artists") as any).update({ profile_image_path: path }).eq("id", artistId);
+  const { error } = await supabase.from("artists").update({ profile_image_path: path }).eq("id", artistId);
   if (error) throw error;
 }
 
@@ -185,13 +184,11 @@ function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; 
 
 async function updateArtistCategoriesSelf(artistId: string, categoryIds: string[]): Promise<void> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  await (supabase.from("categorizables") as any).delete().eq("categorizable_type", "artist").eq("categorizable_id", artistId);
+  await supabase.from("categorizables").delete().eq("categorizable_type", "artist").eq("categorizable_id", artistId);
   const categorizables = categoryIds.map((catId) => ({
     category_id: catId, categorizable_type: "artist" as const, categorizable_id: artistId,
   }));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  if (categorizables.length > 0) await (supabase.from("categorizables") as any).insert(categorizables);
+  if (categorizables.length > 0) await supabase.from("categorizables").insert(categorizables);
 }
 
 /** admin 모드: artists update + categorizables 동기화를 한 admin route 호출로 묶음 (원자성 ↑) */
@@ -217,8 +214,7 @@ async function saveArtistUpdatesSelf(
   shopCategoryIds: string[],
 ): Promise<void> {
   const supabase = createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-  const { error: artistError } = await (supabase.from("artists") as any).update(updateData).eq("id", artistId);
+  const { error: artistError } = await supabase.from("artists").update(updateData).eq("id", artistId);
   if (artistError) throw artistError;
   await updateArtistCategoriesSelf(artistId, shopCategoryIds);
 }
@@ -301,8 +297,7 @@ export function ArtistEditClient({ artist,
     const regionKey = addressToRegionKey(artist.address);
     if (!regionKey) return;
     const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-    (supabase.from("regions") as any).select("id, name").eq("name", regionKey).single().then(({ data }: { data: { id: string; name: string } | null }) => {
+    supabase.from("regions").select("id, name").eq("name", regionKey).single().then(({ data }: { data: { id: string; name: string } | null }) => {
       if (data && data.id !== artist.region_id) {
         setFormData((prev) => ({ ...prev, region_id: data.id }));
       }
@@ -321,8 +316,7 @@ export function ArtistEditClient({ artist,
     const regionKey = addressToRegionKey(result.address);
     if (regionKey) {
       const supabase = createClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase type inference issue
-      const { data } = await (supabase.from("regions") as any).select("id, name").eq("name", regionKey).single();
+      const { data } = await supabase.from("regions").select("id, name").eq("name", regionKey).single();
       if (data) {
         setFormData((prev) => ({ ...prev, region_id: data.id as string }));
       }
@@ -363,7 +357,7 @@ export function ArtistEditClient({ artist,
       await saveArtistEdits(artist, formData, newProfileImage, deletedMediaIds, newShopImages, existingShopImages.length, isAdmin);
       globalThis.alert(STRINGS.mypage.saved);
       router.push(backHref);
-    } catch (error) {
+    } catch (error: unknown) {
       // eslint-disable-next-line no-console
       console.error("Update error:", error);
       globalThis.alert(STRINGS.common.error);
