@@ -17,7 +17,8 @@ const SLIDE_INTERVAL_MS = 4000;
 const FALLBACK_BANNERS: ReadonlyArray<HeroBannerData> = [];
 
 function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; priority: boolean }>): React.ReactElement {
-  const altText = banner.title ?? "히어로 배너";
+  // alt 우선순위: title > subtitle > 기본값. 빈 alt 회피 + SEO 이미지 인덱싱 강화.
+  const altText = banner.title ?? banner.subtitle ?? "반언니 시즌 배너";
   return (
     <div className="relative h-full w-full">
       {/* next/image — Vercel Image Optimizer 가 AVIF/WebP 변환 + 글로벌 CDN 캐시 (인도네시아 등 해외 latency 개선)

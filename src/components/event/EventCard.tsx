@@ -1,8 +1,10 @@
+import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { EventCardData } from "@/lib/supabase/event-queries";
 
-export function EventCard({ event }: Readonly<{ event: EventCardData }>): React.ReactElement {
+// memo — 부모 (이벤트 목록) 리렌더 시 같은 event 객체면 skip
+export const EventCard = memo(function EventCard({ event }: Readonly<{ event: EventCardData }>): React.ReactElement {
   const artistName = typeof event.artist === "object" ? event.artist.title : "";
   const regionName =
     typeof event.artist === "object" && event.artist.region
@@ -64,4 +66,4 @@ export function EventCard({ event }: Readonly<{ event: EventCardData }>): React.
       </div>
     </Link>
   );
-}
+});

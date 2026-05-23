@@ -25,8 +25,10 @@ type ProStep = "upload" | "analyzing" | "consultation";
 type BrowSide = "left" | "right" | "both";
 type ViewMode = "preview" | "compare" | "ruler";
 
+// 눈썹 템플릿 초기값 — scaleX/Y 1.0 (원본 크기), opacity 0.5 (반투명 자연스러운 합성)
 const DEFAULT_ADJ: AdjustmentParams = { scaleX: 1.0, scaleY: 1.0, angleOffset: 0, opacity: 0.5, offsetX: 0, offsetY: 0 };
 const TOGGLE_OFF_CLASS = "bg-muted text-muted-foreground hover:bg-muted/80 focus-visible:bg-muted/80";
+// 입술 기본값 — #c45c6a (자연스러운 코랄핑크), saturation 55 (선명도 중간 — 시술 후 색감 시뮬레이션)
 const DEFAULT_LIP: LipParams = { color: "#c45c6a", saturation: 55 };
 
 function getActiveAdj(side: BrowSide, left: AdjustmentParams, right: AdjustmentParams): AdjustmentParams {

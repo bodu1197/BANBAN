@@ -72,30 +72,31 @@ function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedId
   return (
     <>
       {artists.length === 0 && (
-        <div className="flex min-h-[200px] items-center justify-center">
+        <div role="status" aria-live="polite" className="flex min-h-[200px] items-center justify-center">
           <p className="text-muted-foreground">{noDataLabel}</p>
         </div>
       )}
       {artists.length > 0 && (
-        <div>
+        <ul role="list" aria-label="아티스트 검색 결과">
           {artists.map((artist) => (
-            <ArtistListCard
-              key={artist.id}
-              id={artist.id}
-              name={artist.name}
-              profileImage={artist.profileImage}
-              portfolioImages={artist.portfolioImages}
-              region={artist.region}
-              address={artist.address}
-              rating={artist.rating}
-              reviewCount={artist.reviewCount}
-              likesCount={artist.likesCount}
-              distance={artist.distanceKm}
-              isLiked={likedIds.has(artist.id)}
-              onLikeToggle={onLikeToggle}
-            />
+            <li key={artist.id}>
+              <ArtistListCard
+                id={artist.id}
+                name={artist.name}
+                profileImage={artist.profileImage}
+                portfolioImages={artist.portfolioImages}
+                region={artist.region}
+                address={artist.address}
+                rating={artist.rating}
+                reviewCount={artist.reviewCount}
+                likesCount={artist.likesCount}
+                distance={artist.distanceKm}
+                isLiked={likedIds.has(artist.id)}
+                onLikeToggle={onLikeToggle}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
       {isLoadingMore && (
         <div className="flex items-center justify-center py-6">
