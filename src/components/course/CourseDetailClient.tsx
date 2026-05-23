@@ -5,8 +5,8 @@ import { STRINGS } from "@/lib/strings";
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Clock, Users, Tag, Star, Instagram, ChevronLeft, ChevronRight, Phone, ArrowLeft } from "lucide-react";
-import { KakaoIcon } from "@/components/ui/KakaoIcon";
+import { MapPin, Clock, Users, Tag, Star, Instagram, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import type { CourseDetail } from "@/lib/supabase/course-queries";
 type TabKey = "highlights" | "curriculum" | "reviews" | "artistInfo";
 
@@ -30,7 +30,13 @@ export function CourseDetailClient({ course }: Readonly<{
                     </>
                 )}
             </StickyTabs>
-            <CourseBottomBar kakaoUrl={course.artistKakaoUrl} contact={course.artistContact} />
+            <ContactBottomBar
+                kakaoUrl={course.artistKakaoUrl}
+                contact={course.artistContact}
+                artistId={course.artistId}
+                sourceType="course"
+                sourceId={course.id}
+            />
         </div>
     );
 }
@@ -390,29 +396,3 @@ function BackButton(): React.ReactElement {
     );
 }
 
-const CONTACT_BTN = "flex h-9 flex-1 items-center justify-center rounded-lg border border-border transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring";
-
-function CourseBottomBar({ kakaoUrl, contact }: Readonly<{
-    kakaoUrl?: string | null; contact?: string | null;
-}>): React.ReactElement {
-    const hasKakao = !!kakaoUrl;
-    const hasContact = !!contact;
-    if (!hasKakao && !hasContact) return <></>;
-
-    return (
-        <div className="fixed bottom-0 left-1/2 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
-            <div className="flex items-center gap-1.5">
-                {hasKakao ? (
-                    <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className={CONTACT_BTN} aria-label="카카오톡">
-                        <KakaoIcon />
-                    </a>
-                ) : null}
-                {hasContact ? (
-                    <a href={`tel:${contact}`} className={`${CONTACT_BTN} text-foreground`} aria-label="전화">
-                        <Phone className="h-4 w-4" />
-                    </a>
-                ) : null}
-            </div>
-        </div>
-    );
-}

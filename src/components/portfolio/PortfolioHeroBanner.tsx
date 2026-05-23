@@ -29,7 +29,6 @@ interface PortfolioHeroBannerProps {
 const TABS = [
   { id: "desc", label: "이벤트 설명", sectionId: PORTFOLIO_SECTION_IDS.description },
   { id: "reviews", label: "후기", sectionId: PORTFOLIO_SECTION_IDS.reviews },
-  { id: "artist", label: "샵 정보", sectionId: PORTFOLIO_SECTION_IDS.artist },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -201,7 +200,7 @@ function TabNav({
 
   // 61px = PortfolioHeader height (py-3 24px + size="icon" h-9 36px + border-b 1px)
   return (
-    <div role="tablist" aria-label="페이지 섹션" className="sticky top-[61px] z-30 grid grid-cols-3 border-y border-border bg-background">
+    <div role="tablist" aria-label="페이지 섹션" className="sticky top-[61px] z-30 grid grid-cols-2 border-y border-border bg-background">
       {TABS.map((tab, index) => {
         const isActive = activeTab === tab.id;
         const labelText = tab.id === "reviews"

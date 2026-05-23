@@ -4,13 +4,11 @@
 import { STRINGS } from "@/lib/strings";
 import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import Link from "next/link";
-import { Heart, Edit2, Pencil, Phone } from "lucide-react";
+import { Heart, Edit2, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { THEME_BTN, KAKAO_BTN, PRIMARY_BTN } from "@/components/ui/cta-button-styles";
-import { KakaoIcon } from "@/components/ui/KakaoIcon";
 import { toast } from "sonner";
-import { isSafeUrl, isSafePhone, trackContactClick } from "@/lib/contact-utils";
+import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { PortfolioMediaViewer } from "./PortfolioMediaViewer";
 import { PortfolioHeader } from "./PortfolioHeader";
 import { PortfolioInfoSection } from "./PortfolioInfoSection";
@@ -194,11 +192,13 @@ export function PortfolioDetailClient({
 
       {artistSection}
 
-      <PortfolioBottomBar
+      <ContactBottomBar
         kakaoUrl={artist.kakao_url}
         contact={artist.contact}
         artistId={portfolio.artist_id}
-        portfolioId={portfolio.id}
+        sourceType="portfolio"
+        sourceId={portfolio.id}
+        onShopInfoClick={scrollToShopSection}
       />
 
       {showReportModal ? (
@@ -246,52 +246,6 @@ function scrollToShopSection(): void {
   el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
-function BottomBarIcons({ kakaoUrl, contact, artistId, portfolioId }: Readonly<{
-  kakaoUrl?: string | null; contact?: string | null;
-  artistId: string; portfolioId: string;
-}>): React.ReactElement {
-  return (
-    <div className="flex flex-1 items-center gap-1.5">
-      <button
-        type="button"
-        onClick={scrollToShopSection}
-        className={THEME_BTN}
-        aria-label="샵 정보 보기"
-      >
-        샵 정보
-      </button>
-      {kakaoUrl && isSafeUrl(kakaoUrl) ? (
-        <a href={kakaoUrl} target="_blank" rel="noopener noreferrer" className={KAKAO_BTN} aria-label="카톡상담" onClick={() => trackContactClick(artistId, "kakao", "portfolio", portfolioId)}>
-          <KakaoIcon />
-          카톡상담
-        </a>
-      ) : null}
-      {contact && isSafePhone(contact) ? (
-        <a href={`tel:${contact}`} className={PRIMARY_BTN} aria-label="상담 신청" onClick={() => trackContactClick(artistId, "phone", "portfolio", portfolioId)}>
-          <Phone className="h-4 w-4" />
-          상담 신청
-        </a>
-      ) : (
-        <Link href={`/artists/${artistId}`} className={PRIMARY_BTN}>
-          상담 신청
-        </Link>
-      )}
-    </div>
-  );
-}
-
-function PortfolioBottomBar({ kakaoUrl, contact, artistId, portfolioId }: Readonly<{
-  kakaoUrl?: string | null; contact?: string | null;
-  artistId: string; portfolioId: string;
-}>): React.ReactElement {
-  return (
-    <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
-      <div className="flex items-center gap-1.5">
-        <BottomBarIcons kakaoUrl={kakaoUrl} contact={contact} artistId={artistId} portfolioId={portfolioId} />
-      </div>
-    </div>
-  );
-}
 
 function ReportReasonFieldset({ reason, onChange }: Readonly<{
   reason: string; onChange: (v: string) => void;

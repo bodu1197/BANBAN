@@ -5,15 +5,13 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Phone, ChevronDown, Heart, Edit2, Star, MessageSquareText } from "lucide-react";
+import { ArrowLeft, Share2, ChevronDown, Heart, Edit2, Star, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { THEME_BTN, KAKAO_BTN, PRIMARY_BTN } from "@/components/ui/cta-button-styles";
-import { KakaoIcon } from "@/components/ui/KakaoIcon";
 import { toast } from "sonner";
 import type { EventWithDetails } from "@/lib/supabase/event-queries";
 import type { GeneratedEventContent, GeneratedDetailCopy } from "@/components/event-form/types";
 import { isLegacyContent, isDetailCopy } from "@/lib/event-content-types";
-import { isSafeUrl, isSafePhone, trackContactClick } from "@/lib/contact-utils";
+import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { EventDetailImageStack } from "./EventDetailImageStack";
 import { EventShopCard, type EventShopData } from "./EventShopCard";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
@@ -75,11 +73,13 @@ export function EventDetailClient({
 
       {recommendedSection}
 
-      <EventBottomBar
+      <ContactBottomBar
         kakaoUrl={event.artist.kakao_url}
         contact={event.artist.contact}
         artistId={event.artist_id}
-        eventId={event.id}
+        sourceType="event"
+        sourceId={event.id}
+        onShopInfoClick={scrollToShop}
       />
     </div>
   );
@@ -473,47 +473,3 @@ function scrollToShop(): void {
   el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
-function BottomBarButtons({ safeKakao, safeContact, artistId, eventId }: Readonly<{
-  safeKakao: string | null;
-  safeContact: string | null;
-  artistId: string;
-  eventId: string;
-}>): React.ReactElement {
-  return (
-    <div className="flex items-center gap-1.5">
-      <button type="button" onClick={scrollToShop} className={THEME_BTN} aria-label="샵 정보 보기">
-        샵 정보
-      </button>
-      {safeKakao ? (
-        <a href={safeKakao} target="_blank" rel="noopener noreferrer" className={KAKAO_BTN} aria-label="카카오톡 상담" onClick={() => trackContactClick(artistId, "kakao", "event", eventId)}>
-          <KakaoIcon />
-          카톡상담
-        </a>
-      ) : null}
-      {safeContact ? (
-        <a href={`tel:${safeContact}`} className={PRIMARY_BTN} aria-label="전화 상담" onClick={() => trackContactClick(artistId, "phone", "event", eventId)}>
-          <Phone className="h-4 w-4" />
-          상담 신청
-        </a>
-      ) : (
-        <Link href={`/artists/${artistId}`} className={PRIMARY_BTN}>상담 신청</Link>
-      )}
-    </div>
-  );
-}
-
-function EventBottomBar({ kakaoUrl, contact, artistId, eventId }: Readonly<{
-  kakaoUrl?: string | null;
-  contact?: string | null;
-  artistId: string;
-  eventId: string;
-}>): React.ReactElement {
-  const safeKakao = kakaoUrl && isSafeUrl(kakaoUrl) ? kakaoUrl : null;
-  const safeContact = contact && isSafePhone(contact) ? contact : null;
-
-  return (
-    <div className="fixed bottom-0 left-1/2 z-40 w-full max-w-[1024px] -translate-x-1/2 border-t bg-background p-2">
-      <BottomBarButtons safeKakao={safeKakao} safeContact={safeContact} artistId={artistId} eventId={eventId} />
-    </div>
-  );
-}

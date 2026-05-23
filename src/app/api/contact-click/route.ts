@@ -6,7 +6,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const body = await request.json() as {
             artistId: string;
             clickType: "kakao" | "phone";
-            sourcePage: "portfolio" | "artist";
+            sourcePage: "portfolio" | "artist" | "event" | "course";
             sourceId?: string;
             visitorId?: string;
         };

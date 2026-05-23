@@ -15,7 +15,7 @@ import { fetchEventsByArtist } from "@/lib/supabase/event-queries";
 import { ArtistTopBar } from "@/components/artists/ArtistTopBar";
 import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
 import { ShopBlogClient } from "@/components/artists/ShopBlogClient";
-import { FloatingCTA } from "@/components/artists/FloatingCTA";
+import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getUser } from "@/lib/supabase/auth";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
@@ -218,10 +218,12 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
         isLoggedIn={!!user}
       />
 
-      <FloatingCTA
+      <ContactBottomBar
         kakaoUrl={artist.kakao_url}
         contact={artist.contact ?? null}
         artistId={id}
+        sourceType="artist"
+        sourceId={id}
       />
     </main>
   );
