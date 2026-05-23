@@ -26,6 +26,10 @@ function formatHours(dayHours: DayHours | null | undefined): string {
   return dayHours ? `${dayHours.open} - ${dayHours.close}` : "휴무";
 }
 
+const TODAY_BADGE = (
+  <span className="rounded bg-brand-primary px-1 py-px text-[10px] font-bold text-white">오늘</span>
+);
+
 export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.ReactElement {
   const todayKey = useMemo(() => JS_DAY_TO_KEY[new Date().getDay()], []);
   const [expanded, setExpanded] = useState(false);
@@ -45,9 +49,7 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
       <div className="flex items-center justify-between">
         <span className="font-semibold text-foreground">영업시간</span>
         <div className="flex items-center gap-1.5">
-          <span className="rounded bg-brand-primary px-1 py-px text-[10px] font-bold text-white">
-            오늘
-          </span>
+          {TODAY_BADGE}
           <span className="font-semibold text-brand-primary">
             {todayEntry?.label ?? ""} {formatHours(todayHours)}
           </span>
@@ -68,18 +70,14 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
               <div
                 key={key}
                 className={cn(
-                  "flex items-center gap-2 rounded px-2 py-0.5",
+                  "flex items-center gap-2 rounded px-2 py-0.5 text-xs",
                   isToday
                     ? "bg-brand-primary/10 font-semibold text-brand-primary"
                     : "text-muted-foreground",
                 )}
               >
                 <span className="w-4 text-center">{label}</span>
-                {isToday ? (
-                  <span className="rounded bg-brand-primary px-1 py-px text-[10px] font-bold text-white">
-                    오늘
-                  </span>
-                ) : null}
+                {isToday ? TODAY_BADGE : null}
                 <span className="ml-auto">{formatHours(dayHours)}</span>
               </div>
             );
