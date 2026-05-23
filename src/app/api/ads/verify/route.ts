@@ -71,7 +71,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     const artist = (sub as unknown as { artist: { user_id: string } | { user_id: string }[] | null }).artist;
     const subOwnerId = Array.isArray(artist) ? artist[0]?.user_id : artist?.user_id;
-    if (subOwnerId !== user.id) {
+    // null/undefined 명시 체크 — 데이터 무결성 이슈 시 fail-closed 동작 보장.
+    if (!subOwnerId || subOwnerId !== user.id) {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
