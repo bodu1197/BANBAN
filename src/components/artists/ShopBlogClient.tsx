@@ -2,10 +2,13 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import type { EventCardData } from "@/lib/supabase/event-queries";
 import { ShopTabsNav, type ShopTabId } from "./ShopTabsNav";
 import { ArtistDetailTabs } from "./ArtistDetailTabs";
+
+const VALID_TABS: ReadonlySet<string> = new Set<ShopTabId>(["home", "events", "portfolio", "beforeAfter", "reviews"]);
 
 interface ShopBlogClientProps {
   hero: React.ReactNode;
@@ -64,7 +67,11 @@ export function ShopBlogClient({
   artistId,
   isLoggedIn,
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<ShopTabId>("home");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") ?? "home";
+  const [activeTab, setActiveTab] = useState<ShopTabId>(
+    VALID_TABS.has(initialTab) ? (initialTab as ShopTabId) : "home",
+  );
 
   const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
     { id: "home", label: "홈" },
