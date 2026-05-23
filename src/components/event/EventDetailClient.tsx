@@ -419,7 +419,7 @@ function ReviewsSection({
             로그인하면 시술 받은 유저들의 실제 후기와 변화를 볼 수 있어요
           </p>
           <Link
-            href="/signup"
+            href="/login"
             className="mt-5 flex h-12 w-full max-w-xs items-center justify-center rounded-lg bg-foreground text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             로그인 및 회원가입 하기
