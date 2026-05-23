@@ -198,7 +198,7 @@ function TabNav({
   };
 
   return (
-    <div role="tablist" aria-label="페이지 섹션" className="grid grid-cols-3 border-y border-border bg-background">
+    <div role="tablist" aria-label="페이지 섹션" className="sticky top-[69px] z-30 grid grid-cols-3 border-y border-border bg-background">
       {TABS.map((tab, index) => {
         const isActive = activeTab === tab.id;
         const labelText = tab.id === "reviews"
