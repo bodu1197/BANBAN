@@ -9,6 +9,7 @@ const STORAGE_BUCKET = "portfolios";
 const AVATARS_BUCKET = "avatars";
 const BANNERS_BUCKET = "banners";
 const EVENTS_BUCKET = "events";
+const CHAT_BUCKET = "chat";
 
 /**
  * Get the public URL for a storage path (portfolios bucket)
@@ -47,6 +48,15 @@ export function getEventStorageUrl(path: string | null): string | null {
   if (!path) return null;
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
   return `${SUPABASE_URL}/storage/v1/object/public/${EVENTS_BUCKET}/${path}`;
+}
+
+/**
+ * Get the public URL for a chat attachment (chat bucket — InlineChat, mypage/messages).
+ */
+export function getChatStorageUrl(path: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${SUPABASE_URL}/storage/v1/object/public/${CHAT_BUCKET}/${path}`;
 }
 
 /**

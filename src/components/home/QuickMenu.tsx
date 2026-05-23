@@ -1,11 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { QuickMenuItem as QuickMenuItemData } from "@/lib/supabase/banner-queries";
-import { SUPABASE_URL } from "@/lib/supabase/config";
+import { getBannerStorageUrl } from "@/lib/supabase/storage-utils";
 
 function getIconUrl(iconPath: string): string {
-  if (iconPath.startsWith("http")) return iconPath;
-  return `${SUPABASE_URL}/storage/v1/object/public/banners/${iconPath}`;
+  return getBannerStorageUrl(iconPath);
 }
 
 function QuickMenuLink({ item }: Readonly<{ item: QuickMenuItemData }>): React.ReactElement {

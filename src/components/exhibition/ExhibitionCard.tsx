@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { ExhibitionItem } from "@/lib/supabase/exhibition-queries";
-import { SUPABASE_URL } from "@/lib/supabase/config";
+import { getStorageUrl } from "@/lib/supabase/storage-utils";
 
 function toImageUrl(path: string): string {
-    if (path.startsWith("http")) return path;
-    return `${SUPABASE_URL}/storage/v1/object/public/portfolios/${path}`;
+    // portfolios bucket — getStorageUrl 헬퍼 통일 사용 (이전: SUPABASE_URL 직접 조합)
+    return getStorageUrl(path) ?? "";
 }
 
 const CATEGORY_LABELS: Record<string, Record<string, string>> = {

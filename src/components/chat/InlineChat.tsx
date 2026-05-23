@@ -210,7 +210,7 @@ function useChatRealtime(
     }, [conversationId, setMessages]);
 }
 
-import { SUPABASE_URL } from "@/lib/supabase/config";
+import { getChatStorageUrl } from "@/lib/supabase/storage-utils";
 
 const CHAT_BUCKET = "chat";
 
@@ -221,7 +221,7 @@ async function uploadChatFile(file: File): Promise<string> {
     if (!res.ok) throw new Error("upload_failed");
     const data = await res.json() as { paths: Record<string, string> };
     const relativePath = data.paths.medium ?? data.paths.large ?? Object.values(data.paths)[0];
-    return `${SUPABASE_URL}/storage/v1/object/public/${CHAT_BUCKET}/${relativePath}`;
+    return getChatStorageUrl(relativePath) ?? "";
 }
 
 function useChat(otherUserId: string, currentUserId: string, isOpen: boolean): UseChatReturn {

@@ -59,8 +59,8 @@ async function uploadImage(file: File): Promise<string> {
     const err = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(err.error ?? "이미지 업로드 실패");
   }
-  const { SUPABASE_URL } = await import("@/lib/supabase/config");
-  return `${SUPABASE_URL}/storage/v1/object/public/portfolios/${path}`;
+  const { getStorageUrl } = await import("@/lib/supabase/storage-utils");
+  return getStorageUrl(path) ?? "";
 }
 
 export function BoardForm({ initial, mode }: Readonly<Props>): React.ReactElement {
