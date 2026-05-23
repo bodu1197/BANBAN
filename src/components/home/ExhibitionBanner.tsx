@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { SUPABASE_URL } from "@/lib/supabase/config";
+import { getBannerStorageUrl } from "@/lib/supabase/storage-utils";
 
 interface ExhibitionBannerProps {
   imageUrl: string;
@@ -9,7 +9,7 @@ interface ExhibitionBannerProps {
 }
 
 export function ExhibitionBanner({ imageUrl, linkUrl, altText }: Readonly<ExhibitionBannerProps>): React.ReactElement {
-  const src = imageUrl.startsWith("http") ? imageUrl : `${SUPABASE_URL}/storage/v1/object/public/banners/${imageUrl}`;
+  const src = getBannerStorageUrl(imageUrl);
 
   return (
     <Link
