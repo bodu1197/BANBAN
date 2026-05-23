@@ -64,9 +64,10 @@ export function ShopBlogClient({
   artistId,
   isLoggedIn,
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<ShopTabId>("events");
+  const [activeTab, setActiveTab] = useState<ShopTabId>("home");
 
-  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count: number }> = [
+  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
+    { id: "home", label: "홈" },
     { id: "events", label: eventsLabel, count: eventCount },
     { id: "portfolio", label: portfolioLabel, count: portfolioCount },
     { id: "beforeAfter", label: beforeAfterLabel, count: beforeAfterCount },
@@ -76,7 +77,7 @@ export function ShopBlogClient({
   return (
     <>
       <ShopTabsNav activeTab={activeTab} onTabClick={setActiveTab} tabs={tabs} />
-      {hero}
+      {activeTab === "home" ? hero : null}
       <ArtistDetailTabs
         activeTab={activeTab}
         events={events}

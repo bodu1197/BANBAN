@@ -20,6 +20,7 @@ interface ArtistShopTabsProps {
   artistId: string;
   isLoggedIn: boolean;
   stickyTopClass?: string;
+  homeContent?: React.ReactNode;
 }
 
 export function ArtistShopTabs({
@@ -34,10 +35,12 @@ export function ArtistShopTabs({
   artistId,
   isLoggedIn,
   stickyTopClass,
+  homeContent,
 }: Readonly<ArtistShopTabsProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<ShopTabId>("events");
+  const [activeTab, setActiveTab] = useState<ShopTabId>("home");
 
-  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count: number }> = [
+  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
+    { id: "home", label: "홈" },
     { id: "events", label: STRINGS.artist.events, count: eventCount },
     { id: "portfolio", label: STRINGS.artist.portfolio, count: portfolioCount },
     { id: "beforeAfter", label: STRINGS.artist.beforeAfter, count: beforeAfterCount },
@@ -66,6 +69,7 @@ export function ArtistShopTabs({
         artistId={artistId}
         writeReviewLabel={STRINGS.review.writeReview}
         isLoggedIn={isLoggedIn}
+        homeContent={homeContent}
       />
     </>
   );

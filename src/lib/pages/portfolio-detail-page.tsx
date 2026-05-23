@@ -14,10 +14,13 @@ import {
     fetchArtistReviewStats,
     fetchReviewsByArtist,
     fetchBeforeAfterByArtist,
+    fetchArtistById,
+    getArtistMediaUrl,
     type ArtistReviewStats,
 } from "@/lib/supabase/queries";
 import { fetchArtistShopStats, fetchEventsByArtist } from "@/lib/supabase/event-queries";
 import { ArtistShopTabs } from "@/components/artists/ArtistShopTabs";
+import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
 import type { ArtistShopCardData } from "@/components/shared/ArtistShopCard";
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
@@ -28,7 +31,13 @@ import { PORTFOLIO_SECTION_IDS } from "@/components/portfolio/portfolio-section-
 import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
+import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import type { ArtistType } from "@/types/database";
+
+const DEFAULT_SHOP_BANNERS = [
+    "/images/defaults/shop-banner-1.jpg",
+    "/images/defaults/shop-banner-2.jpg",
+];
 
 function buildHeroMedia(url: string | null, title: string): React.ReactElement | null {
     if (!url) return null;
@@ -239,11 +248,13 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     if (!portfolio) notFound();
 
-    const [artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter] = await Promise.all([
+    const [artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter, artist, likedArtistIds] = await Promise.all([
         fetchEventsByArtist(portfolio.artist_id),
         fetchPortfoliosByArtist(portfolio.artist_id, { limit: 50 }),
         fetchReviewsByArtist(portfolio.artist_id),
         fetchBeforeAfterByArtist(portfolio.artist_id),
+        fetchArtistById(portfolio.artist_id),
+        fetchLikedArtistIds(),
     ]);
 
     incrementPortfolioViews(id).catch(() => { /* non-fatal */ });
@@ -296,6 +307,19 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                         artistId={portfolio.artist_id}
                         isLoggedIn={isLiked !== undefined}
                         stickyTopClass="top-[61px]"
+                        homeContent={artist ? (
+                            <ShopHeroBanner
+                                shop={artist}
+                                heroImages={
+                                    artist.artist_media?.length
+                                        ? [...artist.artist_media].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)).map((m) => getArtistMediaUrl(m.storage_path)).filter((u): u is string => Boolean(u))
+                                        : DEFAULT_SHOP_BANNERS
+                                }
+                                reviewCount={reviewStats.reviewCount}
+                                avgRating={reviewStats.avgRating}
+                                isLiked={likedArtistIds.includes(portfolio.artist_id)}
+                            />
+                        ) : null}
                     />
                 }
             />

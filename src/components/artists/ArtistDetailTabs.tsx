@@ -48,6 +48,7 @@ interface ArtistDetailTabsProps {
   beforeLabel?: string;
   afterLabel?: string;
   beforeAfterCountLabel?: string;
+  homeContent?: React.ReactNode;
 }
 
 function WriteReviewLink({ artistId, label }: Readonly<{ artistId: string; label: string }>): React.ReactElement {
@@ -83,6 +84,9 @@ function renderTabPanel(
   activeTab: ShopTabId,
   props: Readonly<ArtistDetailTabsProps>,
 ): React.ReactNode {
+  if (activeTab === "home") {
+    return props.homeContent ?? null;
+  }
   if (activeTab === "events") {
     return <EventsTabContent events={props.events} emptyMessage={props.noEventsMessage} />;
   }

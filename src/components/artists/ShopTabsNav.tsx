@@ -3,7 +3,7 @@
 
 import { cn } from "@/lib/utils";
 
-export type ShopTabId = "events" | "portfolio" | "beforeAfter" | "reviews";
+export type ShopTabId = "home" | "events" | "portfolio" | "beforeAfter" | "reviews";
 
 interface ShopTab {
   id: ShopTabId;
