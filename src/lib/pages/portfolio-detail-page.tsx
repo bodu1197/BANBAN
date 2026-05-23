@@ -12,12 +12,10 @@ import {
     fetchRandomPortfolios,
     fetchSameCategoryPortfolios,
     fetchArtistReviewStats,
-    fetchReviewsByArtist,
-    fetchBeforeAfterByArtist,
     type ArtistReviewStats,
 } from "@/lib/supabase/queries";
-import { fetchArtistShopStats, fetchEventsByArtist } from "@/lib/supabase/event-queries";
-import { ArtistShopTabs } from "@/components/artists/ArtistShopTabs";
+import { fetchArtistShopStats } from "@/lib/supabase/event-queries";
+import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import type { ArtistShopCardData } from "@/components/shared/ArtistShopCard";
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
@@ -239,11 +237,8 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     if (!portfolio) notFound();
 
-    const [artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter] = await Promise.all([
-        fetchEventsByArtist(portfolio.artist_id),
-        fetchPortfoliosByArtist(portfolio.artist_id, { limit: 50 }),
-        fetchReviewsByArtist(portfolio.artist_id),
-        fetchBeforeAfterByArtist(portfolio.artist_id),
+    const [shopStats] = await Promise.all([
+        fetchArtistShopStats(portfolio.artist_id),
     ]);
 
     incrementPortfolioViews(id).catch(() => { /* non-fatal */ });
@@ -284,20 +279,13 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                     </section>
                 }
                 shopTabs={
-                    <ArtistShopTabs
-                        events={artistEvents}
-                        portfolios={artistPortfolios}
-                        reviews={artistReviews}
-                        beforeAfterPhotos={artistBeforeAfter}
-                        eventCount={artistEvents.length}
-                        portfolioCount={artistPortfolios.length}
-                        beforeAfterCount={artistBeforeAfter.length}
-                        reviewCount={artistReviews.length}
+                    <ShopNavTabs
                         artistId={portfolio.artist_id}
-                        isLoggedIn={isLiked !== undefined}
+                        eventCount={shopStats.eventCount}
+                        portfolioCount={shopStats.portfolioCount}
+                        beforeAfterCount={0}
+                        reviewCount={reviewStats.reviewCount}
                         stickyTopClass="top-[61px]"
-                        defaultTab="events"
-                        homeHref={`/artists/${portfolio.artist_id}`}
                     />
                 }
             />

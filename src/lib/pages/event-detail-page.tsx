@@ -4,17 +4,11 @@ import {
   fetchEventById,
   fetchRecommendedEvents,
   fetchArtistShopStats,
-  fetchEventsByArtist,
   incrementEventViews,
 } from "@/lib/supabase/event-queries";
-import {
-  fetchPortfoliosByArtist,
-  fetchReviewsByArtist,
-  fetchBeforeAfterByArtist,
-} from "@/lib/supabase/queries";
 import { fetchArtistReviewStats } from "@/lib/supabase/portfolio-detail-queries";
 import { EventDetailClient } from "@/components/event/EventDetailClient";
-import { ArtistShopTabs } from "@/components/artists/ArtistShopTabs";
+import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
 import type { EventShopData } from "@/components/event/EventShopCard";
 import { EventCard } from "@/components/event/EventCard";
@@ -90,14 +84,10 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
 
   void incrementEventViews(id);
 
-  const [reviewStats, shopStats, user, artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter] = await Promise.all([
+  const [reviewStats, shopStats, user] = await Promise.all([
     fetchArtistReviewStats(event.artist_id),
     fetchArtistShopStats(event.artist_id),
     getUser().catch(() => null),
-    fetchEventsByArtist(event.artist_id),
-    fetchPortfoliosByArtist(event.artist_id, { limit: 50 }),
-    fetchReviewsByArtist(event.artist_id),
-    fetchBeforeAfterByArtist(event.artist_id),
   ]);
 
   const heroBanner = (
@@ -167,20 +157,13 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
         heroBanner={heroBanner}
         isLoggedIn={!!user}
         shopTabs={
-          <ArtistShopTabs
-            events={artistEvents}
-            portfolios={artistPortfolios}
-            reviews={artistReviews}
-            beforeAfterPhotos={artistBeforeAfter}
-            eventCount={artistEvents.length}
-            portfolioCount={artistPortfolios.length}
-            beforeAfterCount={artistBeforeAfter.length}
-            reviewCount={artistReviews.length}
+          <ShopNavTabs
             artistId={event.artist_id}
-            isLoggedIn={!!user}
+            eventCount={shopStats.eventCount}
+            portfolioCount={shopStats.portfolioCount}
+            beforeAfterCount={0}
+            reviewCount={reviewStats.reviewCount}
             stickyTopClass="top-[69px]"
-            defaultTab="events"
-            homeHref={`/artists/${event.artist_id}`}
           />
         }
         recommendedSection={
