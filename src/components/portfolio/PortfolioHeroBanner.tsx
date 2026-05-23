@@ -64,20 +64,22 @@ export function PortfolioHeroBanner({
   }, []);
 
   return (
-    <section aria-label="시술 정보" className="bg-background">
-      <HeroHeader
-        artist={artist}
-        title={title}
-        avgRating={avgRating}
-        reviewCount={reviewCount}
-        onReviewsClick={() => handleTabClick("reviews")}
-      />
-      <PriceBlock price={price} priceOrigin={priceOrigin} discountRate={discountRate} />
-      <div className="px-4 pb-3">
-        <PromoBanner />
-      </div>
+    <>
+      <section aria-label="시술 정보" className="bg-background">
+        <HeroHeader
+          artist={artist}
+          title={title}
+          avgRating={avgRating}
+          reviewCount={reviewCount}
+          onReviewsClick={() => handleTabClick("reviews")}
+        />
+        <PriceBlock price={price} priceOrigin={priceOrigin} discountRate={discountRate} />
+        <div className="px-4 pb-3">
+          <PromoBanner />
+        </div>
+      </section>
       <TabNav activeTab={activeTab} onTabClick={handleTabClick} reviewCount={reviewCount} />
-    </section>
+    </>
   );
 }
 
