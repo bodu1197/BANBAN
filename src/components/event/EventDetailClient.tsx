@@ -13,7 +13,6 @@ import type { GeneratedEventContent, GeneratedDetailCopy } from "@/components/ev
 import { isLegacyContent, isDetailCopy } from "@/lib/event-content-types";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { EventDetailImageStack } from "./EventDetailImageStack";
-import { EventShopCard, type EventShopData } from "./EventShopCard";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
 
 const RETOUCH_LABELS: Record<string, string> = {
@@ -26,7 +25,6 @@ function hasDetailImages(media: EventWithDetails["event_media"]): boolean {
 
 interface EventDetailClientProps {
   event: EventWithDetails;
-  shopData: EventShopData;
   heroBanner: React.ReactNode;
   shopTabs?: React.ReactNode;
   recommendedSection?: React.ReactNode;
@@ -35,7 +33,6 @@ interface EventDetailClientProps {
 
 export function EventDetailClient({
   event,
-  shopData,
   heroBanner,
   shopTabs,
   recommendedSection,
@@ -58,11 +55,6 @@ export function EventDetailClient({
         ) : (
           <LegacyTextContent event={event} />
         )}
-      </section>
-
-      <section id={EVENT_SECTION_IDS.shop} aria-label="샵 정보" className="px-4 pb-6">
-        <h2 className="mb-3 text-base font-bold">샵 정보</h2>
-        <EventShopCard shop={shopData} />
       </section>
 
       {recommendedSection}

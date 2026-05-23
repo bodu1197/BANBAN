@@ -10,7 +10,6 @@ import { fetchArtistReviewStats } from "@/lib/supabase/portfolio-detail-queries"
 import { EventDetailClient } from "@/components/event/EventDetailClient";
 import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
-import type { EventShopData } from "@/components/event/EventShopCard";
 import { EventCard } from "@/components/event/EventCard";
 import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getEventStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
@@ -109,22 +108,6 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
     />
   );
 
-  const shopData: EventShopData = {
-    artistId: event.artist_id,
-    artistName: event.artist.title,
-    artistAvatar: getAvatarUrl(event.artist.profile_image_path),
-    address: event.artist.region?.name ?? event.shop_region ?? "",
-    shopName: event.shop_name,
-    shopRegion: event.shop_region,
-    shopBusinessHours: event.shop_business_hours,
-    shopParking: event.shop_parking,
-    shopBookingMethod: event.shop_booking_method,
-    avgRating: reviewStats.avgRating,
-    reviewCount: reviewStats.reviewCount,
-    eventCount: shopStats.eventCount,
-    portfolioCount: shopStats.portfolioCount,
-  };
-
   const heroImage = (() => {
     const detailHero = event.event_media?.find((m) => m.media_type === "detail_hero");
     const media = detailHero ?? event.event_media?.[0];
@@ -153,7 +136,6 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(eventJsonLd) }} />
       <EventDetailClient
         event={event}
-        shopData={shopData}
         heroBanner={heroBanner}
         isLoggedIn={!!user}
         shopTabs={
