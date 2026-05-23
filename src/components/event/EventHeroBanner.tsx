@@ -1,11 +1,9 @@
-// @client-reason: useState(activeTab) + document.getElementById/scrollIntoView for tab anchor navigation
+// @client-reason: document.getElementById/scrollIntoView for review anchor click
 "use client";
 
-import { useCallback, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { UNAVAILABLE_PLACEHOLDER, UNAVAILABLE_RATING_LABEL } from "@/lib/ui-placeholders";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
 
@@ -28,17 +26,12 @@ interface EventHeroBannerProps {
   eventPeriodText: string | null;
 }
 
-const TABS = [
-  { id: "desc", label: "이벤트 설명", sectionId: EVENT_SECTION_IDS.description },
-  { id: "reviews", label: "후기", sectionId: EVENT_SECTION_IDS.reviews },
-  { id: "shop", label: "샵 정보", sectionId: EVENT_SECTION_IDS.shop },
-] as const;
-
-type TabId = (typeof TABS)[number]["id"];
-
-function prefersReducedMotion(): boolean {
-  return typeof globalThis.matchMedia === "function"
+function scrollToReviews(): void {
+  const el = document.getElementById(EVENT_SECTION_IDS.reviews);
+  if (!el) return;
+  const reduced = typeof globalThis.matchMedia === "function"
     && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 export function EventHeroBanner({
@@ -52,41 +45,23 @@ export function EventHeroBanner({
   discountRate,
   eventPeriodText,
 }: Readonly<EventHeroBannerProps>): React.ReactElement {
-  const [activeTab, setActiveTab] = useState<TabId>("desc");
-
-  const handleTabClick = useCallback((tabId: TabId) => {
-    setActiveTab(tabId);
-    const tab = TABS.find((t) => t.id === tabId);
-    if (!tab) return;
-    const el = document.getElementById(tab.sectionId);
-    if (el) {
-      el.scrollIntoView({
-        behavior: prefersReducedMotion() ? "auto" : "smooth",
-        block: "start",
-      });
-    }
-  }, []);
-
   return (
-    <>
-      <section aria-label="이벤트 정보" className="bg-background">
-        <HeroHeader
-          artist={artist}
-          title={title}
-          procedureName={procedureName}
-          avgRating={avgRating}
-          reviewCount={reviewCount}
-          onReviewsClick={() => handleTabClick("reviews")}
-        />
-        <PriceBlock
-          price={price}
-          priceOrigin={priceOrigin}
-          discountRate={discountRate}
-          eventPeriodText={eventPeriodText}
-        />
-      </section>
-      <TabNav activeTab={activeTab} onTabClick={handleTabClick} reviewCount={reviewCount} />
-    </>
+    <section aria-label="이벤트 정보" className="bg-background">
+      <HeroHeader
+        artist={artist}
+        title={title}
+        procedureName={procedureName}
+        avgRating={avgRating}
+        reviewCount={reviewCount}
+        onReviewsClick={scrollToReviews}
+      />
+      <PriceBlock
+        price={price}
+        priceOrigin={priceOrigin}
+        discountRate={discountRate}
+        eventPeriodText={eventPeriodText}
+      />
+    </section>
   );
 }
 
@@ -192,58 +167,6 @@ function PriceBlock({
       {eventPeriodText ? (
         <p className="mt-2 text-xs text-muted-foreground">{eventPeriodText}</p>
       ) : null}
-    </div>
-  );
-}
-
-function TabNav({
-  activeTab, onTabClick, reviewCount,
-}: Readonly<{
-  activeTab: TabId;
-  onTabClick: (id: TabId) => void;
-  reviewCount: number;
-}>): React.ReactElement {
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number): void => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-    e.preventDefault();
-    const delta = e.key === "ArrowRight" ? 1 : -1;
-    const nextIndex = (index + delta + TABS.length) % TABS.length;
-    const next = TABS.at(nextIndex);
-    if (next) onTabClick(next.id);
-  };
-
-  // 69px = EventHeader height (py-3 24px + min-h-[44px] button + border-b 1px)
-  return (
-    <div role="tablist" aria-label="이벤트 섹션" className="sticky top-[69px] z-30 grid grid-cols-3 border-y border-border bg-background">
-      {TABS.map((tab, index) => {
-        const isActive = activeTab === tab.id;
-        const labelText = tab.id === "reviews"
-          ? `${tab.label}(${reviewCount.toLocaleString()})`
-          : tab.label;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            aria-controls={tab.sectionId}
-            tabIndex={isActive ? 0 : -1}
-            onClick={() => onTabClick(tab.id)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
-            className={cn(
-              "relative min-h-11 w-full py-3 text-sm transition-colors focus-visible:bg-muted focus-visible:outline-none",
-              isActive
-                ? "font-semibold text-foreground"
-                : "text-muted-foreground hover:text-foreground focus-visible:text-foreground",
-            )}
-          >
-            {labelText}
-            {isActive ? (
-              <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground" />
-            ) : null}
-          </button>
-        );
-      })}
     </div>
   );
 }

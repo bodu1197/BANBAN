@@ -198,7 +198,6 @@ export function PortfolioDetailClient({
         artistId={portfolio.artist_id}
         sourceType="portfolio"
         sourceId={portfolio.id}
-        onShopInfoClick={scrollToShopSection}
       />
 
       {showReportModal ? (
@@ -236,14 +235,6 @@ function PortfolioActionButtons({ isLiked, likesCount, onLikeToggle, reviewHref,
       )}
     </div>
   );
-}
-
-function scrollToShopSection(): void {
-  const el = document.getElementById(PORTFOLIO_SECTION_IDS.artist);
-  if (!el) return;
-  const reduced = typeof globalThis.matchMedia === "function"
-    && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 

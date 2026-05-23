@@ -79,7 +79,6 @@ export function EventDetailClient({
         artistId={event.artist_id}
         sourceType="event"
         sourceId={event.id}
-        onShopInfoClick={scrollToShop}
       />
     </div>
   );
@@ -465,11 +464,4 @@ function EventHeader(): React.ReactElement {
   );
 }
 
-function scrollToShop(): void {
-  const el = document.getElementById(EVENT_SECTION_IDS.shop);
-  if (!el) return;
-  const reduced = typeof globalThis.matchMedia === "function"
-    && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
-}
 
