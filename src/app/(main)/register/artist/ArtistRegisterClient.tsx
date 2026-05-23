@@ -62,7 +62,7 @@ export function ArtistRegisterClient({ categories,
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const t = STRINGS.artistRegister;
-  const { handleInputChange, handleCheckboxChange } = useArtistFormHandlers(setFormData);
+  const { handleInputChange, handleBlurNormalize, handleCheckboxChange } = useArtistFormHandlers(setFormData);
   const { shopCategories } = useArtistCategories(categories);
 
   useEffect(() => {
@@ -217,7 +217,7 @@ export function ArtistRegisterClient({ categories,
 
       <form onSubmit={handleSubmit} className="pb-28">
         <div className="space-y-6 p-4">
-          <TextField label={t.artistName} value={formData.title} onChange={handleInputChange("title")} placeholder={t.artistNamePlaceholder} required />
+          <TextField label={t.artistName} value={formData.title} onChange={handleInputChange("title")} onBlur={handleBlurNormalize("title")} placeholder={t.artistNamePlaceholder} required />
           <TextField label={t.phone} value={formData.contact} onChange={handleInputChange("contact")} placeholder={t.phonePlaceholder} required type="tel" />
           <TextField label={t.instagramUrl} value={formData.instagram_url} onChange={handleInputChange("instagram_url")} placeholder={t.instagramUrlPlaceholder} type="url" />
           <TextFieldWithHint label={t.kakaoUrl} value={formData.kakao_url} onChange={handleInputChange("kakao_url")} placeholder={t.kakaoUrlPlaceholder} hint={t.kakaoUrlHint} />

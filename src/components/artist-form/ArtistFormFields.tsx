@@ -71,20 +71,33 @@ function toggleInList(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((id) => id !== value) : [...list, value];
 }
 
-const NORMALIZE_FIELDS = new Set<keyof ArtistFormData>(["title", "introduce", "description"]);
+type NormalizableField = "title" | "introduce" | "description";
+const NORMALIZE_FIELDS = new Set<NormalizableField>(["title", "introduce", "description"]);
 
 export function useArtistFormHandlers(
   setFormData: React.Dispatch<React.SetStateAction<ArtistFormData>>,
 ): {
   handleInputChange: (field: keyof ArtistFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  handleBlurNormalize: (field: NormalizableField) => () => void;
   handleCheckboxChange: (field: "shop_category_ids", value: string) => () => void;
 } {
   const handleInputChange = useCallback(
     (field: keyof ArtistFormData) =>
       (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const value = NORMALIZE_FIELDS.has(field) ? normalizeFancyText(e.target.value) : e.target.value;
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
       },
+    [setFormData],
+  );
+
+  const handleBlurNormalize = useCallback(
+    (field: NormalizableField) => () => {
+      setFormData((prev) => {
+        const raw = prev[field];
+        if (typeof raw !== "string") return prev;
+        const normalized = normalizeFancyText(raw);
+        return normalized === raw ? prev : { ...prev, [field]: normalized };
+      });
+    },
     [setFormData],
   );
 
@@ -96,7 +109,7 @@ export function useArtistFormHandlers(
     [setFormData],
   );
 
-  return { handleInputChange, handleCheckboxChange };
+  return { handleInputChange, handleBlurNormalize, handleCheckboxChange };
 }
 
 export function useArtistCategories(
@@ -136,16 +149,16 @@ export function TypeField({ formData, setFormData, t }: Readonly<{
   );
 }
 
-export function TextField({ label, value, onChange, placeholder, required, type = "text", inputMode }: Readonly<{
+export function TextField({ label, value, onChange, onBlur, placeholder, required, type = "text", inputMode }: Readonly<{
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string; required?: boolean; type?: string; inputMode?: "numeric";
+  onBlur?: () => void; placeholder: string; required?: boolean; type?: string; inputMode?: "numeric";
 }>): React.ReactElement {
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
-      <Input type={type} value={value} onChange={onChange} placeholder={placeholder} inputMode={inputMode} />
+      <Input type={type} value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} inputMode={inputMode} />
     </div>
   );
 }
@@ -182,13 +195,14 @@ export function AddressField({ formData, onSearch, onChange, t }: Readonly<{
   );
 }
 
-export function DescriptionField({ value, onChange, t }: Readonly<{
-  value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; t: ArtistFormLabels;
+export function DescriptionField({ value, onChange, onBlur, t }: Readonly<{
+  value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onBlur?: () => void; t: ArtistFormLabels;
 }>): React.ReactElement {
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium">{t.description}</Label>
-      <Textarea value={value} onChange={onChange} placeholder={t.descriptionPlaceholder} rows={5} />
+      <Textarea value={value} onChange={onChange} onBlur={onBlur} placeholder={t.descriptionPlaceholder} rows={5} />
     </div>
   );
 }
