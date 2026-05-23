@@ -259,19 +259,21 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                 heroMedia={heroMedia}
                 descriptionHtml={descriptionHtml}
                 heroBanner={buildHeroBanner(portfolio, reviewStats)}
+                artistSection={
+                    <section id={PORTFOLIO_SECTION_IDS.artist} aria-label="작가 정보 및 추천">
+                        <Suspense fallback={<RecommendationsSkeleton />}>
+                            <StreamedSecondaryData
+                                id={id}
+                                artistId={portfolio.artist_id}
+                                artistType={artistType}
+                                price={portfolio.price ?? 0}
+                                artist={portfolio.artist}
+                                reviewStats={reviewStats}
+                            />
+                        </Suspense>
+                    </section>
+                }
             />
-            <section id={PORTFOLIO_SECTION_IDS.artist} aria-label="작가 정보 및 추천">
-                <Suspense fallback={<RecommendationsSkeleton />}>
-                    <StreamedSecondaryData
-                        id={id}
-                        artistId={portfolio.artist_id}
-                        artistType={artistType}
-                        price={portfolio.price ?? 0}
-                        artist={portfolio.artist}
-                        reviewStats={reviewStats}
-                    />
-                </Suspense>
-            </section>
         </main>
     );
 }

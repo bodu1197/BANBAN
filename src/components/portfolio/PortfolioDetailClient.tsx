@@ -49,6 +49,7 @@ interface PortfolioDetailClientProps {
   heroMedia?: React.ReactNode;
   heroBanner?: React.ReactNode;
   descriptionHtml: string;
+  artistSection?: React.ReactNode;
 }
 
 async function handleToggleLike(
@@ -109,6 +110,7 @@ export function PortfolioDetailClient({
   heroMedia,
   heroBanner,
   descriptionHtml,
+  artistSection,
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
   const [isLiked, setIsLiked] = useState(Boolean(portfolio.is_liked));
   const [likesCount, setLikesCount] = useState(portfolio.likes_count ?? 0);
@@ -189,6 +191,8 @@ export function PortfolioDetailClient({
           reviewLabel={STRINGS.portfolio.writeReview}
         />
       </section>
+
+      {artistSection}
 
       <PortfolioBottomBar
         kakaoUrl={artist.kakao_url}
