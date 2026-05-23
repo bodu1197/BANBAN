@@ -35,16 +35,19 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
   const todayHours = hours[todayKey] as DayHours | null | undefined;
 
   return (
-    <div className="mt-3 rounded-lg border bg-muted/30 px-3 py-2.5">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={expanded}
-        aria-label="영업시간 펼치기"
-        className="flex min-h-[44px] w-full items-center justify-between text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded-lg"
-      >
+    <button
+      type="button"
+      onClick={toggle}
+      aria-expanded={expanded}
+      aria-label="영업시간 펼치기"
+      className="mt-3 w-full cursor-pointer rounded-lg border bg-muted/30 px-3 py-3 text-left text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="flex items-center justify-between">
         <span className="font-semibold text-foreground">영업시간</span>
         <div className="flex items-center gap-1.5">
+          <span className="rounded bg-brand-primary px-1 py-px text-[10px] font-bold text-white">
+            오늘
+          </span>
           <span className="font-semibold text-brand-primary">
             {todayEntry?.label ?? ""} {formatHours(todayHours)}
           </span>
@@ -53,7 +56,7 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
             aria-hidden
           />
         </div>
-      </button>
+      </div>
 
       {expanded ? (
         <div className="mt-2 space-y-1">
@@ -65,7 +68,7 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
               <div
                 key={key}
                 className={cn(
-                  "flex items-center gap-2 rounded px-2 py-0.5 text-xs",
+                  "flex items-center gap-2 rounded px-2 py-0.5",
                   isToday
                     ? "bg-brand-primary/10 font-semibold text-brand-primary"
                     : "text-muted-foreground",
@@ -83,6 +86,6 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
           })}
         </div>
       ) : null}
-    </div>
+    </button>
   );
 }
