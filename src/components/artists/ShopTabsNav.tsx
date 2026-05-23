@@ -16,6 +16,7 @@ interface ShopTabsNavProps {
   onTabClick: (tab: ShopTabId) => void;
   tabs: ReadonlyArray<ShopTab>;
   ariaLabel?: string;
+  className?: string;
 }
 
 export function ShopTabsNav({
@@ -23,6 +24,7 @@ export function ShopTabsNav({
   onTabClick,
   tabs,
   ariaLabel = "샵 메뉴",
+  className,
 }: Readonly<ShopTabsNavProps>): React.ReactElement {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number): void => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -37,7 +39,10 @@ export function ShopTabsNav({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="sticky top-12 z-40 flex items-center gap-6 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur scrollbar-hide supports-[backdrop-filter]:bg-background/85"
+      className={cn(
+        "sticky top-12 z-40 flex items-center gap-6 overflow-x-auto border-b bg-background/95 px-4 backdrop-blur scrollbar-hide supports-[backdrop-filter]:bg-background/85",
+        className,
+      )}
     >
       {tabs.map((tab, index) => {
         const isActive = activeTab === tab.id;

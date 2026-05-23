@@ -28,6 +28,7 @@ interface EventDetailClientProps {
   event: EventWithDetails;
   shopData: EventShopData;
   heroBanner: React.ReactNode;
+  shopTabs?: React.ReactNode;
   recommendedSection?: React.ReactNode;
   isLoggedIn: boolean;
 }
@@ -36,6 +37,7 @@ export function EventDetailClient({
   event,
   shopData,
   heroBanner,
+  shopTabs,
   recommendedSection,
   isLoggedIn,
 }: Readonly<EventDetailClientProps>): React.ReactElement {
@@ -56,20 +58,12 @@ export function EventDetailClient({
         )}
       </section>
 
-      <section id={EVENT_SECTION_IDS.reviews} aria-label="후기" className="px-4 py-6">
-        <ReviewsSection
-          artistId={event.artist_id}
-          artistName={event.artist.title}
-          isLoggedIn={isLoggedIn}
-          avgRating={shopData.avgRating}
-          reviewCount={shopData.reviewCount}
-        />
-      </section>
-
       <section id={EVENT_SECTION_IDS.shop} aria-label="샵 정보" className="px-4 pb-6">
         <h2 className="mb-3 text-base font-bold">샵 정보</h2>
         <EventShopCard shop={shopData} />
       </section>
+
+      {shopTabs}
 
       {recommendedSection}
 

@@ -12,9 +12,12 @@ import {
     fetchRandomPortfolios,
     fetchSameCategoryPortfolios,
     fetchArtistReviewStats,
+    fetchReviewsByArtist,
+    fetchBeforeAfterByArtist,
     type ArtistReviewStats,
 } from "@/lib/supabase/queries";
-import { fetchArtistShopStats } from "@/lib/supabase/event-queries";
+import { fetchArtistShopStats, fetchEventsByArtist } from "@/lib/supabase/event-queries";
+import { ArtistShopTabs } from "@/components/artists/ArtistShopTabs";
 import type { ArtistShopCardData } from "@/components/shared/ArtistShopCard";
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
@@ -236,6 +239,13 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     if (!portfolio) notFound();
 
+    const [artistEvents, { data: artistPortfolios }, { data: artistReviews }, artistBeforeAfter] = await Promise.all([
+        fetchEventsByArtist(portfolio.artist_id),
+        fetchPortfoliosByArtist(portfolio.artist_id, { limit: 50 }),
+        fetchReviewsByArtist(portfolio.artist_id),
+        fetchBeforeAfterByArtist(portfolio.artist_id),
+    ]);
+
     incrementPortfolioViews(id).catch(() => { /* non-fatal */ });
     portfolio.is_liked = isLiked;
 
@@ -272,6 +282,21 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                             />
                         </Suspense>
                     </section>
+                }
+                shopTabs={
+                    <ArtistShopTabs
+                        events={artistEvents}
+                        portfolios={artistPortfolios}
+                        reviews={artistReviews}
+                        beforeAfterPhotos={artistBeforeAfter}
+                        eventCount={artistEvents.length}
+                        portfolioCount={artistPortfolios.length}
+                        beforeAfterCount={artistBeforeAfter.length}
+                        reviewCount={artistReviews.length}
+                        artistId={portfolio.artist_id}
+                        isLoggedIn={isLiked !== undefined}
+                        stickyTopClass="top-[61px]"
+                    />
                 }
             />
         </main>
