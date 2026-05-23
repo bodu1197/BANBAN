@@ -297,6 +297,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                         isLoggedIn={isLiked !== undefined}
                         stickyTopClass="top-[61px]"
                         defaultTab="events"
+                        homeHref={`/artists/${portfolio.artist_id}`}
                     />
                 }
             />

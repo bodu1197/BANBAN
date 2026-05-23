@@ -180,6 +180,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
             isLoggedIn={!!user}
             stickyTopClass="top-[69px]"
             defaultTab="events"
+            homeHref={`/artists/${event.artist_id}`}
           />
         }
         recommendedSection={

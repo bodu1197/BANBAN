@@ -1,7 +1,8 @@
 // @client-reason: useState for activeTab in shop tabs navigation
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { STRINGS } from "@/lib/strings";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import type { EventCardData } from "@/lib/supabase/event-queries";
@@ -21,6 +22,7 @@ interface ArtistShopTabsProps {
   isLoggedIn: boolean;
   stickyTopClass?: string;
   homeContent?: React.ReactNode;
+  homeHref?: string;
   defaultTab?: ShopTabId;
 }
 
@@ -37,23 +39,31 @@ export function ArtistShopTabs({
   isLoggedIn,
   stickyTopClass,
   homeContent,
+  homeHref,
   defaultTab = "home",
 }: Readonly<ArtistShopTabsProps>): React.ReactElement {
   const [activeTab, setActiveTab] = useState<ShopTabId>(defaultTab);
+  const router = useRouter();
 
-  const baseTabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
+  const handleTabClick = useCallback((tab: ShopTabId) => {
+    if (tab === "home" && homeHref) {
+      router.push(homeHref);
+      return;
+    }
+    setActiveTab(tab);
+  }, [homeHref, router]);
+
+  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
+    { id: "home", label: "홈" },
     { id: "events", label: STRINGS.artist.events, count: eventCount },
     { id: "portfolio", label: STRINGS.artist.portfolio, count: portfolioCount },
     { id: "beforeAfter", label: STRINGS.artist.beforeAfter, count: beforeAfterCount },
     { id: "reviews", label: STRINGS.artist.reviews, count: reviewCount },
   ];
-  const tabs = homeContent
-    ? [{ id: "home" as ShopTabId, label: "홈" }, ...baseTabs]
-    : baseTabs;
 
   return (
     <>
-      <ShopTabsNav activeTab={activeTab} onTabClick={setActiveTab} tabs={tabs} className={stickyTopClass} />
+      <ShopTabsNav activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} className={stickyTopClass} />
       <ArtistDetailTabs
         activeTab={activeTab}
         events={events}
