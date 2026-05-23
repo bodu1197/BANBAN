@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { activateSubscription } from "@/lib/supabase/ad-queries";
 
 const IMP_KEY = process.env.PORTONE_IMP_KEY ?? "";
@@ -54,6 +55,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     if (typeof expectedAmount !== "number" || expectedAmount < 0 || !Number.isFinite(expectedAmount)) {
         return NextResponse.json({ error: "invalid_expected_amount" }, { status: 400 });
+    }
+
+    // 소유권 검증 — 임의 subscriptionId 로 다른 사용자 결제 활성화 차단 (CRITICAL).
+    // subscription.artist_id → artist.user_id 가 현재 user.id 와 일치해야 함.
+    // PostgREST 가 artists!inner 관계를 1:1 인식 시 object, 1:N 인식 시 array 로 반환 — 둘 다 안전 처리.
+    const supabase = await createClient();
+    const { data: sub } = await supabase
+        .from("ad_subscriptions")
+        .select("id, artist:artists!inner(user_id)")
+        .eq("id", subscriptionId)
+        .maybeSingle();
+    if (!sub) {
+        return NextResponse.json({ error: "subscription_not_found" }, { status: 404 });
+    }
+    const artist = (sub as unknown as { artist: { user_id: string } | { user_id: string }[] | null }).artist;
+    const subOwnerId = Array.isArray(artist) ? artist[0]?.user_id : artist?.user_id;
+    if (subOwnerId !== user.id) {
+        return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
     const payment = await verifyPayment(impUid);

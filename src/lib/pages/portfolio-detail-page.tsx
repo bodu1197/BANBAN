@@ -64,7 +64,19 @@ export async function generatePortfolioDetailMetadata(id: string): Promise<Metad
     }
 
     const portfolio = await fetchPortfolioById(id);
-    if (!portfolio) return { title: "Portfolio Not Found" };
+    if (!portfolio) {
+        return {
+            title: "포트폴리오를 찾을 수 없습니다 | 반언니",
+            description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+            robots: { index: false, follow: false },
+            ...buildPageSeo({
+                title: "포트폴리오를 찾을 수 없습니다",
+                description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+                path: `/portfolios/${id}`,
+                image: null,
+            }),
+        };
+    }
 
     const title = portfolio.title;
     const description = portfolio.description?.slice(0, 160) || `${portfolio.artist.title} 반영구 작품 — 가격, 시술 정보, 후기를 확인하세요.`;
