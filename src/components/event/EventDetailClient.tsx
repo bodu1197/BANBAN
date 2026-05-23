@@ -5,7 +5,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, Phone, ChevronDown, Heart, Edit2 } from "lucide-react";
+import { ArrowLeft, Share2, Phone, ChevronDown, Heart, Edit2, Star, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { THEME_BTN, KAKAO_BTN, PRIMARY_BTN } from "@/components/ui/cta-button-styles";
 import { KakaoIcon } from "@/components/ui/KakaoIcon";
@@ -31,6 +31,7 @@ interface EventDetailClientProps {
   shopData: EventShopData;
   heroBanner: React.ReactNode;
   recommendedSection?: React.ReactNode;
+  isLoggedIn: boolean;
 }
 
 export function EventDetailClient({
@@ -38,6 +39,7 @@ export function EventDetailClient({
   shopData,
   heroBanner,
   recommendedSection,
+  isLoggedIn,
 }: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
   const isImageBased = hasDetailImages(event.event_media);
@@ -57,7 +59,13 @@ export function EventDetailClient({
       </section>
 
       <section id={EVENT_SECTION_IDS.reviews} aria-label="후기" className="px-4 py-6">
-        <ReviewsSection artistId={event.artist_id} artistName={event.artist.title} />
+        <ReviewsSection
+          artistId={event.artist_id}
+          artistName={event.artist.title}
+          isLoggedIn={isLoggedIn}
+          avgRating={shopData.avgRating}
+          reviewCount={shopData.reviewCount}
+        />
       </section>
 
       <section id={EVENT_SECTION_IDS.shop} aria-label="샵 정보" className="px-4 pb-6">
@@ -344,30 +352,79 @@ function DetailRow({ label, value }: Readonly<{ label: string; value: string }>)
 function ReviewsSection({
   artistId,
   artistName,
-}: Readonly<{ artistId: string; artistName: string }>): React.ReactElement {
+  isLoggedIn,
+  avgRating,
+  reviewCount,
+}: Readonly<{
+  artistId: string;
+  artistName: string;
+  isLoggedIn: boolean;
+  avgRating: number;
+  reviewCount: number;
+}>): React.ReactElement {
+  const hasRating = reviewCount > 0 && avgRating > 0;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold">후기</h2>
+        <div>
+          <p className="text-xs text-muted-foreground">직접 시술받고 작성한</p>
+          <h2 className="text-base font-bold">시술후기</h2>
+        </div>
         <Link
-          href={`/reviews/write?id=${artistId}`}
-          className="inline-flex items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          href={`/artists/${artistId}?tab=reviews`}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+          aria-label={`${artistName} 후기 ${reviewCount}개 모두보기`}
         >
-          <Edit2 className="h-3 w-3" aria-hidden />
-          후기 작성
+          모두보기 ({reviewCount.toLocaleString()})
+          <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
         </Link>
       </div>
-      <Link
-        href={`/artists/${artistId}`}
-        className="flex items-center gap-2 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Heart className="h-5 w-5 text-brand-primary" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{artistName}의 전체 후기 보기</p>
-          <p className="text-xs text-muted-foreground">샵 페이지에서 실제 후기를 확인하세요</p>
+
+      {hasRating ? (
+        <div className="flex items-center gap-1.5" aria-label={`평점 ${avgRating.toFixed(1)}점, 후기 ${reviewCount.toLocaleString()}개`}>
+          <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-hidden />
+          <span className="text-xl font-bold">{avgRating.toFixed(1)}</span>
+          <span className="text-sm text-muted-foreground">({reviewCount.toLocaleString()})</span>
         </div>
-        <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground" aria-hidden />
-      </Link>
+      ) : null}
+
+      {isLoggedIn ? (
+        <div className="space-y-3">
+          <Link
+            href={`/artists/${artistId}?tab=reviews`}
+            className="flex items-center gap-2 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Heart className="h-5 w-5 text-brand-primary" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">{artistName}의 전체 후기 보기</p>
+              <p className="text-xs text-muted-foreground">샵 페이지에서 실제 후기를 확인하세요</p>
+            </div>
+            <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground" aria-hidden />
+          </Link>
+          <Link
+            href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Edit2 className="h-3 w-3" aria-hidden />
+            후기 작성
+          </Link>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center rounded-xl bg-muted/30 px-6 py-10 text-center" aria-label="로그인 안내">
+          <MessageSquareText className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
+          <p className="text-base font-semibold">시술 결과가 궁금하다면</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            로그인하면 시술 받은 유저들의 실제 후기와 변화를 볼 수 있어요
+          </p>
+          <Link
+            href="/signup"
+            className="mt-5 flex h-12 w-full max-w-xs items-center justify-center rounded-lg bg-foreground text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            로그인 및 회원가입 하기
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

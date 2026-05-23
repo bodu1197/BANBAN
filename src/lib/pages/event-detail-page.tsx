@@ -14,6 +14,7 @@ import { EventCard } from "@/components/event/EventCard";
 import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getEventStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { isDetailCopy, isLegacyContent } from "@/lib/event-content-types";
+import { getUser } from "@/lib/supabase/auth";
 
 function extractSeoDescription(aiRaw: unknown, fallback: string): string {
   if (isDetailCopy(aiRaw)) return aiRaw.seoDescription ?? fallback;
@@ -82,9 +83,10 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
 
   void incrementEventViews(id);
 
-  const [reviewStats, shopStats] = await Promise.all([
+  const [reviewStats, shopStats, user] = await Promise.all([
     fetchArtistReviewStats(event.artist_id),
     fetchArtistShopStats(event.artist_id),
+    getUser().catch(() => null),
   ]);
 
   const heroBanner = (
@@ -152,6 +154,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
         event={event}
         shopData={shopData}
         heroBanner={heroBanner}
+        isLoggedIn={!!user}
         recommendedSection={
           <Suspense fallback={<RecommendedSkeleton />}>
             <RecommendedEvents eventId={event.id} artistId={event.artist_id} />
