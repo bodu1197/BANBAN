@@ -50,6 +50,8 @@ export function EventDetailClient({
 
       {heroBanner}
 
+      {shopTabs}
+
       <section id={EVENT_SECTION_IDS.description} aria-label="이벤트 설명">
         {isImageBased ? (
           <ImageBasedContent event={event} detailMedia={detailMedia} />
@@ -62,8 +64,6 @@ export function EventDetailClient({
         <h2 className="mb-3 text-base font-bold">샵 정보</h2>
         <EventShopCard shop={shopData} />
       </section>
-
-      {shopTabs}
 
       {recommendedSection}
 
