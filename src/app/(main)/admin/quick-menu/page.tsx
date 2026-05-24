@@ -1,9 +1,10 @@
 // @client-reason: 관리자가 메뉴를 즉시 정렬·수정·업로드할 때 광범위한 인터랙션(드래그 순서, 파일 업로드, 토글)이 필요해 SSR 으로는 흐름을 깔끔하게 표현할 수 없다.
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
-import { Plus, Trash2, ArrowUp, ArrowDown, Save, Check, GripVertical } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Save, Check, GripVertical, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminLoadingSpinner, AdminPageHeader } from "@/components/admin/admin-shared";
 import { getBannerStorageUrl } from "@/lib/supabase/storage-utils";
@@ -27,7 +28,7 @@ interface MenuItemCardProps {
   item: MenuItem;
   onUpdate: (id: string, updates: Partial<MenuItem>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onMove: (id: string, direction: "up" | "down") => Promise<void>;
+  onMove: (id: string, direction: "up" | "down") => void;
   isFirst: boolean;
   isLast: boolean;
 }
@@ -104,12 +105,12 @@ function MenuItemCard({ item, onUpdate, onDelete, onMove, isFirst, isLast }: Rea
   return (
     <div className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${isActive ? "border-white/10 bg-white/5" : "border-amber-500/30 bg-amber-500/5"}`}>
       <div className="flex shrink-0 flex-col gap-1">
-        <button type="button" disabled={isFirst} onClick={() => { void onMove(item.id, "up"); }} aria-label="위로 이동"
+        <button type="button" disabled={isFirst} onClick={() => { onMove(item.id, "up"); }} aria-label="위로 이동"
           className="flex h-11 w-11 items-center justify-center rounded text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
           <ArrowUp className="h-4 w-4" />
         </button>
         <GripVertical className="mx-auto h-3.5 w-3.5 text-zinc-600" aria-hidden="true" />
-        <button type="button" disabled={isLast} onClick={() => { void onMove(item.id, "down"); }} aria-label="아래로 이동"
+        <button type="button" disabled={isLast} onClick={() => { onMove(item.id, "down"); }} aria-label="아래로 이동"
           className="flex h-11 w-11 items-center justify-center rounded text-zinc-500 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
           <ArrowDown className="h-4 w-4" />
         </button>
@@ -162,21 +163,27 @@ function MenuItemCard({ item, onUpdate, onDelete, onMove, isFirst, isLast }: Rea
 export default function AdminQuickMenuPage(): React.ReactElement {
   const { isLoading: authLoading } = useAuth();
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [savedItems, setSavedItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const movingRef = useRef(false);
-  // handleAdd 가 항상 latest items 의 max(order_index) + 1 을 읽어야 하지만 callback
-  // 자체는 props 로 내려 button 에 묶이므로 deps 폭발을 피해야 한다 → useRef + 동기 effect.
+  const [savingOrder, setSavingOrder] = useState(false);
   const itemsRef = useRef<MenuItem[]>([]);
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
+  const hasOrderChanges = useMemo(() => {
+    if (items.length !== savedItems.length) return false;
+    return items.some((item, idx) => item.id !== savedItems[idx]?.id);
+  }, [items, savedItems]);
+
   const fetchItems = useCallback(async () => {
     const res = await fetch(API_PATH, { cache: "no-store" });
     if (!res.ok) { setLoading(false); return; }
     const json = (await res.json()) as { items?: MenuItem[] };
-    setItems(json.items ?? []);
+    const loaded = json.items ?? [];
+    setItems(loaded);
+    setSavedItems(loaded);
     setLoading(false);
   }, []);
 
@@ -186,56 +193,64 @@ export default function AdminQuickMenuPage(): React.ReactElement {
 
   const handleUpdate = useCallback(async (id: string, updates: Partial<MenuItem>) => {
     const res = await fetch(API_PATH, { method: "PATCH", headers: JSON_HEADERS, body: JSON.stringify({ id, ...updates }) });
-    if (!res.ok) return;
+    if (!res.ok) { toast.error("저장에 실패했습니다"); return; }
     const json = (await res.json()) as { item?: MenuItem };
     const updated = json.item;
-    if (updated) setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    if (updated) {
+      setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+      setSavedItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    }
   }, []);
 
   const handleDelete = useCallback(async (id: string) => {
     const res = await fetch(API_PATH, { method: "DELETE", headers: JSON_HEADERS, body: JSON.stringify({ id }) });
-    if (res.ok) setItems((prev) => prev.filter((i) => i.id !== id));
+    if (res.ok) {
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      setSavedItems((prev) => prev.filter((i) => i.id !== id));
+    } else {
+      toast.error("삭제에 실패했습니다");
+    }
   }, []);
 
-  const handleMove = useCallback(async (id: string, direction: "up" | "down") => {
-    if (movingRef.current) return;
-    movingRef.current = true;
-
-    let snapshot: MenuItem[] = [];
-    let next: MenuItem[] = [];
+  const handleMove = useCallback((id: string, direction: "up" | "down"): void => {
     setItems((prev) => {
-      snapshot = prev;
       const idx = prev.findIndex((i) => i.id === id);
       if (idx < 0) return prev;
       const swapIdx = direction === "up" ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= prev.length) return prev;
-      next = [...prev];
-      // eslint-disable-next-line security/detect-object-injection -- idx/swapIdx 는 위에서 length 범위 안임을 검증함.
+      const next = [...prev];
+      // eslint-disable-next-line security/detect-object-injection -- idx/swapIdx 는 length 범위 안임을 검증함.
       [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
       return next;
     });
+  }, []);
 
-    if (next.length === 0) {
-      movingRef.current = false;
-      return;
-    }
-
-    const reorder = next.map((item, i) => ({ id: item.id, order_index: i + 1 }));
-
+  const handleSaveOrder = useCallback(async (): Promise<void> => {
+    if (!hasOrderChanges || savingOrder) return;
+    setSavingOrder(true);
+    const reorder = items.map((item, i) => ({ id: item.id, order_index: i + 1 }));
     try {
       const res = await fetch(API_PATH, { method: "PATCH", headers: JSON_HEADERS, body: JSON.stringify({ reorder }) });
       if (!res.ok) {
-        setItems(snapshot);
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(json.error ? `순서 저장 실패: ${json.error}` : "순서 저장에 실패했습니다");
         return;
       }
       const json = (await res.json()) as { items?: MenuItem[] };
-      if (json.items) setItems(json.items);
-    } catch {
-      setItems(snapshot);
+      const saved = json.items ?? [];
+      setItems(saved);
+      setSavedItems(saved);
+      toast.success("순서가 저장되었습니다");
+    } catch (e) {
+      toast.error(e instanceof Error ? `순서 저장 실패: ${e.message}` : "순서 저장에 실패했습니다");
     } finally {
-      movingRef.current = false;
+      setSavingOrder(false);
     }
-  }, []);
+  }, [hasOrderChanges, items, savingOrder]);
+
+  const handleRevertOrder = useCallback((): void => {
+    setItems(savedItems);
+  }, [savedItems]);
 
   const handleAdd = useCallback(async () => {
     setAdding(true);
@@ -248,10 +263,13 @@ export default function AdminQuickMenuPage(): React.ReactElement {
         method: "POST", headers: JSON_HEADERS,
         body: JSON.stringify({ label: "새 메뉴", icon_path: "quick-menu/exhibition.png", link_url: "/", order_index: nextOrder }),
       });
-      if (!res.ok) return;
+      if (!res.ok) { toast.error("메뉴 추가에 실패했습니다"); return; }
       const json = (await res.json()) as { item?: MenuItem };
       const created = json.item;
-      if (created) setItems((prev) => [...prev, created]);
+      if (created) {
+        setItems((prev) => [...prev, created]);
+        setSavedItems((prev) => [...prev, created]);
+      }
     } finally {
       setAdding(false);
     }
@@ -267,9 +285,45 @@ export default function AdminQuickMenuPage(): React.ReactElement {
         <p className="text-sm text-zinc-400">
           홈 상단에 표시되는 카테고리 메뉴입니다. 아이콘 클릭으로 이미지를 변경하고, 순서 버튼으로 정렬합니다.
           <br />
-          <span className="text-zinc-500">권장 아이콘: 정사각형 PNG, 배경 투명, 200x200px 이상</span>
+          <span className="text-zinc-500">화살표로 순서를 바꾼 뒤 <strong className="text-amber-400">아래의 &quot;순서 저장&quot; 버튼</strong>을 눌러 확정하세요.</span>
         </p>
       </div>
+
+      {hasOrderChanges && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="sticky top-2 z-10 flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 shadow-md backdrop-blur"
+        >
+          <p className="text-sm font-medium text-amber-200">
+            순서가 변경되었습니다. 저장하지 않으면 새로고침 시 사라집니다.
+          </p>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRevertOrder}
+              disabled={savingOrder}
+              className="flex h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+              되돌리기
+            </button>
+            <button
+              type="button"
+              onClick={() => { void handleSaveOrder(); }}
+              disabled={savingOrder}
+              className="flex h-10 items-center gap-1.5 rounded-lg bg-amber-500 px-4 text-xs font-bold text-zinc-900 transition-colors hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {savingOrder ? (
+                <Spinner size="xs" tone="onDark" label="저장 중" />
+              ) : (
+                <Save className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              순서 저장
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         {items.map((item, idx) => (
