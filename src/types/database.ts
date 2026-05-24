@@ -3237,6 +3237,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      reorder_quick_menu_items: {
+        Args: {
+          p_items: Json
+        }
+        Returns: Database["public"]["Tables"]["quick_menu_items"]["Row"][]
+      }
     }
     Enums: {
       [_ in never]: never

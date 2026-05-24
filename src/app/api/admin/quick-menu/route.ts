@@ -60,46 +60,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 type AdminClient = Awaited<ReturnType<typeof requireAdmin>> & { ok: true };
 
-const REORDER_TEMP_OFFSET = 1_000_000;
-
 async function handleReorder(
   supabase: AdminClient["supabase"],
   reorder: Array<{ id: string; order_index: number }>,
 ): Promise<NextResponse> {
-  // 2-phase update: order_index 에 UNIQUE 제약이 있으면 1→2, 2→1 같은 swap 이
-  // 동시 UPDATE 시 충돌한다. Phase 1 에서 모든 row 의 order_index 를 음수 임시값으로
-  // 옮긴 후 Phase 2 에서 최종 값으로 설정해 충돌을 회피한다.
-  const phase1 = await Promise.all(
-    reorder.map((item, idx) =>
-      supabase
-        .from(TABLE)
-        .update({ order_index: -(REORDER_TEMP_OFFSET + idx) })
-        .eq("id", item.id),
-    ),
-  );
-  const phase1Failure = phase1.find((r) => r.error);
-  if (phase1Failure?.error) {
-    const { data } = await supabase.from(TABLE).select(COLUMNS).order("order_index", { ascending: true });
+  // RPC 함수가 단일 트랜잭션 내에서 2-phase update 를 수행해 UNIQUE(order_index)
+  // 충돌을 원자적으로 회피한다. 마이그레이션: 20260524000000_reorder_quick_menu_items_rpc.sql
+  const { data, error } = await supabase.rpc("reorder_quick_menu_items", {
+    p_items: reorder,
+  });
+
+  if (error) {
+    const { data: current } = await supabase
+      .from(TABLE)
+      .select(COLUMNS)
+      .order("order_index", { ascending: true });
     return NextResponse.json(
-      { error: `reorder phase1 실패: ${phase1Failure.error.message}`, items: data ?? [] },
+      { error: `순서 저장 실패: ${error.message}`, items: current ?? [] },
       { status: 500 },
     );
   }
 
-  const phase2 = await Promise.all(
-    reorder.map((item) =>
-      supabase.from(TABLE).update({ order_index: item.order_index }).eq("id", item.id),
-    ),
-  );
-  const phase2Failure = phase2.find((r) => r.error);
-  const { data } = await supabase.from(TABLE).select(COLUMNS).order("order_index", { ascending: true });
-
-  if (phase2Failure?.error) {
-    return NextResponse.json(
-      { error: `reorder phase2 실패: ${phase2Failure.error.message}`, items: data ?? [] },
-      { status: 500 },
-    );
-  }
   return NextResponse.json({ items: data ?? [] });
 }
 
