@@ -80,6 +80,7 @@ export interface DetailSectionResult {
     altText: string;
     status: "pending" | "generating" | "completed" | "failed";
     error?: string;
+    thumbnailPath?: string;
 }
 
 export const INITIAL_FORM_VALUES: EventFormValues = {

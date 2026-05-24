@@ -134,6 +134,7 @@ export function EventStepGenerate({
           b64Preview: data.b64Preview,
           altText: copy.altTexts[sectionType] ?? "",
           status: "completed" as const,
+          ...(typeof data.thumbnailPath === "string" ? { thumbnailPath: data.thumbnailPath } : {}),
         };
       } catch (e: unknown) {
         return {
@@ -267,10 +268,10 @@ export function EventStepGenerate({
                     <button
                       type="button"
                       onClick={() => regenerateSection(section.sectionType)}
-                      className="rounded p-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label={`${DETAIL_SECTION_LABELS[section.sectionType]} 다시 생성`}
                     >
-                      <RefreshCw className="h-4 w-4" />
+                      <RefreshCw className="h-5 w-5" />
                     </button>
                   )}
                 </div>

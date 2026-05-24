@@ -19,7 +19,7 @@ export const EventCard = memo(function EventCard({ event }: Readonly<{ event: Ev
       className="group block overflow-hidden rounded-lg border border-input transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* Thumbnail */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-muted">
         {event.hero_image ? (
           <Image
             src={event.hero_image}

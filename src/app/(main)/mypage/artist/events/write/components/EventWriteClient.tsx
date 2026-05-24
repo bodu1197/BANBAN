@@ -18,6 +18,7 @@ import { EventStepPhotos } from "./EventStepPhotos";
 import { EventStepGenerate } from "./EventStepGenerate";
 
 const STEPS = ["기본 정보", "상세 정보", "사진 업로드", "AI 생성 & 등록"] as const;
+const THUMBNAIL_ORDER_INDEX = 0;
 const DETAIL_SECTION_ORDER_OFFSET = 100;
 
 export function EventWriteClient(): React.ReactElement {
@@ -83,7 +84,7 @@ export function EventWriteClient(): React.ReactElement {
         }),
       ).then((results) => results.filter((r): r is NonNullable<typeof r> => r !== null));
 
-      const detailMedia = detailSections
+      const detailMedia: Array<{ storage_path: string; media_type: string; order_index: number; alt_text: string | null }> = detailSections
         .filter((s) => s.status === "completed" && s.storagePath)
         .map((s, i) => ({
           storage_path: s.storagePath,
@@ -91,6 +92,17 @@ export function EventWriteClient(): React.ReactElement {
           order_index: DETAIL_SECTION_ORDER_OFFSET + i,
           alt_text: s.altText || null,
         }));
+
+      const heroSection = detailSections.find((s) => s.sectionType === "detail_hero" && s.status === "completed");
+      const thumbnailStorage = heroSection?.thumbnailPath ?? heroSection?.storagePath;
+      if (thumbnailStorage) {
+        detailMedia.push({
+          storage_path: thumbnailStorage,
+          media_type: "thumbnail",
+          order_index: THUMBNAIL_ORDER_INDEX,
+          alt_text: formValues.title || null,
+        });
+      }
 
       const allTargets = [
         ...formValues.targetAudience,

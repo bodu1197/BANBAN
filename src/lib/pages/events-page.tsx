@@ -30,7 +30,7 @@ export function renderEventsPage(): React.ReactElement {
         fallback={
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-[3/4] animate-pulse rounded-lg bg-muted" />
+              <div key={i} className="aspect-square animate-pulse rounded-lg bg-muted" />
             ))}
           </div>
         }

@@ -19,13 +19,76 @@ const IMAGE_MODEL = "gpt-image-2";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
+const DEFAULT_COLOR_THEME = "soft pink and ivory";
+
+function buildThumbnailPrompt(
+  form: EventFormValues,
+  copy: DetailSectionCopy,
+  discountRate: number,
+): string {
+  const colorTheme = copy.detail_hero?.colorTheme || DEFAULT_COLOR_THEME;
+  return [
+    "정사각형(1:1) 이벤트 카드 썸네일 이미지를 만들어주세요.",
+    `컬러 테마: ${colorTheme}`,
+    "스타일: 사실적이고 고급스러운 K-뷰티 마케팅 썸네일.",
+    "만화, 일러스트, 카툰 스타일 절대 금지. 사실적 사진 기반.",
+    "작은 카드 크기에서도 눈에 띄도록 시각적 임팩트에 집중.",
+    "텍스트는 최소화 — 시술명과 할인율만 크고 굵게.",
+    "워터마크, 로고 없음.",
+    "",
+    `시술명: "${form.procedureName}"`,
+    discountRate > 0 ? `할인 배지: "${discountRate}% OFF" (눈에 잘 띄게)` : "",
+    `가격: "${Number(form.price).toLocaleString()}원"`,
+    "",
+    "중앙에 시술 결과 이미지, 부드러운 그라데이션 배경.",
+    "카드 썸네일용이므로 여백 충분히, 복잡한 장식 최소화.",
+  ].filter(Boolean).join("\n");
+}
+
+async function generateThumbnail(
+  client: OpenAI,
+  supabase: ReturnType<typeof createAdminClient>,
+  artistId: string,
+  timestamp: number,
+  form: EventFormValues,
+  copy: DetailSectionCopy,
+  discountRate: number,
+): Promise<string | undefined> {
+  try {
+    const prompt = buildThumbnailPrompt(form, copy, discountRate);
+    const result = await client.images.generate({
+      model: IMAGE_MODEL,
+      prompt,
+      n: 1,
+      size: "512x512",
+      quality: "medium",
+    });
+    const b64 = result.data?.[0]?.b64_json;
+    if (!b64) return undefined;
+
+    const storagePath = `${artistId}/${timestamp}_thumbnail.webp`;
+    const { error } = await supabase.storage
+      .from("events")
+      .upload(storagePath, Buffer.from(b64, "base64"), {
+        cacheControl: "31536000",
+        upsert: false,
+        contentType: "image/webp",
+      });
+    return error ? undefined : storagePath;
+  } catch (thumbErr: unknown) {
+    // eslint-disable-next-line no-console
+    console.error("[generate-event-section-image] thumbnail failed (non-fatal):", thumbErr instanceof Error ? thumbErr.message : thumbErr);
+    return undefined;
+  }
+}
+
 function buildSectionPrompt(
   sectionType: DetailSectionType,
   form: EventFormValues,
   copy: DetailSectionCopy,
   discountRate: number,
 ): string {
-  const colorTheme = copy.detail_hero?.colorTheme || "soft pink and ivory";
+  const colorTheme = copy.detail_hero?.colorTheme || DEFAULT_COLOR_THEME;
   const baseStyle = [
     "한국 뷰티 앱 스타일의 세로형 상세 이미지를 만들어주세요.",
     `컬러 테마: ${colorTheme}`,
@@ -276,7 +339,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const buffer = Buffer.from(b64, "base64");
-    const path = `${artistRow.id}/${Date.now()}_${sectionType}.webp`;
+    const uploadTimestamp = Date.now();
+    const path = `${artistRow.id}/${uploadTimestamp}_${sectionType}.webp`;
     const supabase = createAdminClient();
 
     const { error: uploadError } = await supabase.storage
@@ -291,12 +355,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: `업로드 실패: ${uploadError.message}` }, { status: 500 });
     }
 
+    const thumbnailPath = sectionType === "detail_hero"
+      ? await generateThumbnail(client, supabase, artistRow.id, uploadTimestamp, form, copy, discountRate)
+      : undefined;
+
     return NextResponse.json({
       sectionType,
       storagePath: path,
       b64Preview: `data:image/webp;base64,${b64}`,
       altText: "",
       prompt,
+      ...(thumbnailPath ? { thumbnailPath } : {}),
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "섹션 이미지 생성 실패";
