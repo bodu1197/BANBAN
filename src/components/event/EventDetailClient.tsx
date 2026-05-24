@@ -124,7 +124,7 @@ function ExpandableContentArea({ children }: Readonly<{ children: React.ReactNod
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 py-4 text-base font-semibold text-white shadow-md transition-colors hover:bg-purple-700 focus-visible:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-accent-purple py-4 text-base font-semibold text-white shadow-md transition-colors hover:bg-brand-accent-purple-hover focus-visible:bg-brand-accent-purple-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent-purple-ring focus-visible:ring-offset-2"
           >
             이벤트 정보 더보기
             <ChevronDown className="h-5 w-5" aria-hidden />

@@ -13,6 +13,9 @@
   --color-brand-primary-hover: var(--brand-primary-hover);
   --color-brand-secondary: var(--brand-secondary);
   --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-purple: var(--brand-accent-purple);
+  --color-brand-accent-purple-hover: var(--brand-accent-purple-hover);
+  --color-brand-accent-purple-ring: var(--brand-accent-purple-ring);
   --color-brand-kakao: var(--brand-kakao);
   --color-brand-kakao-foreground: var(--brand-kakao-foreground);
 
@@ -67,6 +70,9 @@
   --brand-primary-hover: #a33100;
   --brand-secondary: #97b1cd;
   --brand-accent: #ecc980;
+  --brand-accent-purple: #9333ea;
+  --brand-accent-purple-hover: #7e22ce;
+  --brand-accent-purple-ring: #c084fc;
   --brand-kakao: #f8e18a;
   --brand-kakao-foreground: #2b1311;
 
