@@ -1,6 +1,7 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
+import sharp from "sharp";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
@@ -18,6 +19,7 @@ export const maxDuration = 180;
 const IMAGE_MODEL = "gpt-image-2";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const THUMBNAIL_RESIZE = 480;
 
 const DEFAULT_COLOR_THEME = "soft pink and ivory";
 
@@ -60,16 +62,21 @@ async function generateThumbnail(
       model: IMAGE_MODEL,
       prompt,
       n: 1,
-      size: "512x512",
+      size: "1024x1024",
       quality: "medium",
     });
     const b64 = result.data?.[0]?.b64_json;
     if (!b64) return undefined;
 
+    const resized = await sharp(Buffer.from(b64, "base64"))
+      .resize(THUMBNAIL_RESIZE, THUMBNAIL_RESIZE)
+      .webp({ quality: 80 })
+      .toBuffer();
+
     const storagePath = `${artistId}/${timestamp}_thumbnail.webp`;
     const { error } = await supabase.storage
       .from("events")
-      .upload(storagePath, Buffer.from(b64, "base64"), {
+      .upload(storagePath, resized, {
         cacheControl: "31536000",
         upsert: false,
         contentType: "image/webp",
