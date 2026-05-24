@@ -29,6 +29,8 @@ interface EventDetailClientProps {
   shopTabs?: React.ReactNode;
   recommendedSection?: React.ReactNode;
   isLoggedIn: boolean;
+  avgRating: number;
+  reviewCount: number;
 }
 
 export function EventDetailClient({
@@ -37,6 +39,8 @@ export function EventDetailClient({
   shopTabs,
   recommendedSection,
   isLoggedIn,
+  avgRating,
+  reviewCount,
 }: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
   const isImageBased = hasDetailImages(event.event_media);
@@ -55,6 +59,16 @@ export function EventDetailClient({
         ) : (
           <LegacyTextContent event={event} />
         )}
+      </section>
+
+      <section className="mx-auto w-full max-w-3xl px-4 py-6" aria-label="시술 후기">
+        <ReviewsSection
+          artistId={event.artist_id}
+          artistName={event.artist.title}
+          isLoggedIn={isLoggedIn}
+          avgRating={avgRating}
+          reviewCount={reviewCount}
+        />
       </section>
 
       {recommendedSection}
@@ -106,14 +120,14 @@ function ExpandableContentArea({ children }: Readonly<{ children: React.ReactNod
         {children}
       </div>
       {expanded ? null : (
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center bg-gradient-to-t from-background via-background/95 to-transparent pb-4 pt-24">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pb-4 pt-24">
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="rounded-full border border-border bg-background px-6 py-2.5 text-sm font-semibold shadow-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 py-4 text-base font-semibold text-white shadow-md transition-colors hover:bg-purple-700 focus-visible:bg-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
           >
             이벤트 정보 더보기
-            <ChevronDown className="ml-1 inline-block h-4 w-4" aria-hidden />
+            <ChevronDown className="h-5 w-5" aria-hidden />
           </button>
         </div>
       )}
