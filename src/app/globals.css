@@ -19,6 +19,10 @@
   --color-brand-kakao: var(--brand-kakao);
   --color-brand-kakao-foreground: var(--brand-kakao-foreground);
 
+  /* Neutral surfaces */
+  --color-neutral-warm: var(--neutral-warm);
+  --color-neutral-soft: var(--neutral-soft);
+
   /* Sidebar colors */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -78,11 +82,15 @@
 
   /* Base colors */
   --background: #ffffff;
-  --foreground: #0a0a0a;
+  --foreground: #212529;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #212529;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
+  --popover-foreground: #212529;
+
+  /* Neutral surface tokens (Phase 1: 보조색 추가) */
+  --neutral-warm: #f8f9fa;
+  --neutral-soft: #f1f3f5;
   --primary: #171717;
   --primary-foreground: #fafafa;
   --secondary: #f5f5f5;
