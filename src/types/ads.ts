@@ -111,7 +111,7 @@ export const DEFAULT_POINT_RULES: PointRule[] = [
     { reason: "ATTENDANCE", amount: 1_000, semiAmount: 300, label: "출석 체크", target: "ALL" },
     { reason: "ATTENDANCE_STREAK", amount: 5_000, semiAmount: 1_500, label: "7일 연속 출석 보너스", target: "ALL" },
     { reason: "SIGNUP_BONUS", amount: 30_000, semiAmount: 9_000, label: "회원가입 축하", target: "ALL" },
-    { reason: "REVIEW", amount: 20_000, semiAmount: 6_000, label: "리뷰 작성", target: "USER" },
+    { reason: "REVIEW", amount: 20_000, semiAmount: 6_000, label: "후기 작성", target: "USER" },
     { reason: "LIKE", amount: 500, semiAmount: 150, label: "좋아요", target: "ALL" },
     { reason: "PORTFOLIO_UPLOAD", amount: 1_000, semiAmount: 300, label: "포트폴리오 등록", target: "ARTIST" },
     { reason: "WELCOME_BONUS", amount: 100_000, semiAmount: 30_000, label: "신규 아티스트 웰컴", target: "ARTIST" },

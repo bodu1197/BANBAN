@@ -120,7 +120,7 @@ function renderTabPanel(
 }
 
 export function ArtistDetailTabs(props: Readonly<ArtistDetailTabsProps>): React.ReactElement {
-  const { activeTab, artistId, writeReviewLabel = "리뷰 작성", isLoggedIn = false } = props;
+  const { activeTab, artistId, writeReviewLabel = "후기 작성", isLoggedIn = false } = props;
   return (
     <div
       role="tabpanel"

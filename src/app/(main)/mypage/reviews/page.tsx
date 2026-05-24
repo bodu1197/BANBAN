@@ -86,7 +86,7 @@ function ReviewsHeader({ total, onBack }: Readonly<{ total: number; onBack: () =
             <button onClick={onBack} className="rounded-lg p-2 transition-colors hover:bg-muted focus-visible:bg-muted" aria-label="뒤로 가기">
                 <ChevronLeft className="h-5 w-5" />
             </button>
-            <h1 className="ml-2 text-lg font-bold text-foreground">나의 리뷰</h1>
+            <h1 className="ml-2 text-lg font-bold text-foreground">나의 후기</h1>
             <span className="ml-auto text-sm text-muted-foreground">{total}건</span>
         </header>
     );
@@ -98,7 +98,7 @@ function EmptyReviews(): React.ReactElement {
     return (
         <div className="rounded-xl border border-border bg-card py-16 text-center">
             <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground/30" />
-            <p className="mt-3 text-sm text-muted-foreground">작성한 리뷰가 없습니다.</p>
+            <p className="mt-3 text-sm text-muted-foreground">작성한 후기가 없습니다.</p>
         </div>
     );
 }

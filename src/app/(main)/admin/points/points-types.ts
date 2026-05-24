@@ -51,7 +51,7 @@ export function getTargetLabel(target: string): string {
 const REASON_LABELS: Record<string, string> = {
     ATTENDANCE: "출석",
     PORTFOLIO_UPLOAD: "포트폴리오",
-    REVIEW: "리뷰",
+    REVIEW: "후기",
     WELCOME_BONUS: "웰컴보너스",
     AD_PAYMENT: "광고결제",
     AD_REFUND: "광고환불",

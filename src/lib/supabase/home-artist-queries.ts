@@ -224,7 +224,7 @@ async function fetchReviewStatsMap(
     .from("reviews")
     .select("artist_id")
     .is("deleted_at", null)
-    // 무제한 조회 방지 — 리뷰 수가 이 임계치를 초과하면 DB 집계 RPC로 전환 필요
+    // 무제한 조회 방지 — 후기 수가 이 임계치를 초과하면 DB 집계 RPC로 전환 필요
     .limit(10000);
 
   const uniqueIds = [...new Set((artistIdRows ?? []).map((r: { artist_id: string }) => r.artist_id))];
