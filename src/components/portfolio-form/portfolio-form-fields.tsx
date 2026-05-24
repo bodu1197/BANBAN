@@ -39,11 +39,11 @@ export function EventToggleField({ isEvent, onChange }: Readonly<{
             <div className="flex gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="isEvent" checked={!isEvent} onChange={(): void => onChange(false)} className="accent-brand-primary" />
-                    <span className="text-sm">일반 작품 (OFF)</span>
+                    <span className="text-sm">일반 작품</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="isEvent" checked={isEvent} onChange={(): void => onChange(true)} className="accent-brand-primary" />
-                    <span className="text-sm">이벤트 진행 (ON)</span>
+                    <span className="text-sm">이벤트 진행</span>
                 </label>
             </div>
         </div>
