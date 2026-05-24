@@ -102,20 +102,63 @@ export const fetchEventById = cache(async function fetchEventById(
   } as EventWithDetails;
 });
 
+export interface EventSearchResult {
+  events: EventCardData[];
+  totalCount: number;
+}
+
+function escapeLikePattern(input: string): string {
+  return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
+}
+
+async function resolveArtistIdsByRegion(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  regionId: string | null,
+  regionSido: string | null,
+): Promise<string[] | null> {
+  if (!regionId && !regionSido) return null;
+  let regionIds: string[] = [];
+  if (regionSido) {
+    const { data: rData } = await supabase
+      .from("regions")
+      .select("id")
+      .like("name", `${escapeLikePattern(regionSido)}%`);
+    regionIds = (rData ?? []).map((r) => r.id);
+    if (regionIds.length === 0) return [];
+  } else if (regionId) {
+    regionIds = [regionId];
+  }
+  const { data: artists } = await supabase
+    .from("artists")
+    .select("id")
+    .in("region_id", regionIds)
+    .is("deleted_at", null);
+  return (artists ?? []).map((a) => a.id);
+}
+
 export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
-  opts: { limit?: number; offset?: number; categoryId?: string } = {},
-): Promise<EventCardData[]> {
+  opts: { limit?: number; offset?: number; categoryId?: string; regionId?: string | null; regionSido?: string | null } = {},
+): Promise<EventSearchResult> {
   const supabase = await createClient();
   const limit = opts.limit ?? 20;
   const offset = opts.offset ?? 0;
 
+  const artistIds = await resolveArtistIdsByRegion(supabase, opts.regionId ?? null, opts.regionSido ?? null);
+  if (artistIds !== null && artistIds.length === 0) {
+    return { events: [], totalCount: 0 };
+  }
+
   let query = supabase
     .from("events")
-    .select(EVENT_CARD_SELECT_INNER)
+    .select(EVENT_CARD_SELECT_INNER, { count: "exact" })
     .eq("status", "published")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (artistIds !== null) {
+    query = query.in("artist_id", artistIds);
+  }
 
   if (opts.categoryId) {
     const { data: catLinks } = await supabase
@@ -124,14 +167,17 @@ export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
       .eq("categorizable_type", "event")
       .eq("category_id", opts.categoryId);
     const ids = (catLinks ?? []).map((c) => c.categorizable_id);
-    if (ids.length === 0) return [];
+    if (ids.length === 0) return { events: [], totalCount: 0 };
     query = query.in("id", ids);
   }
 
-  const { data } = await query;
-  if (!data) return [];
+  const { data, count } = await query;
+  if (!data) return { events: [], totalCount: 0 };
 
-  return data.map(mapRowToEventCard);
+  return {
+    events: data.map(mapRowToEventCard),
+    totalCount: count ?? data.length,
+  };
 });
 
 export const fetchEventsByArtist = cache(async function fetchEventsByArtist(

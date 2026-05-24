@@ -1,42 +1,20 @@
-import { Suspense } from "react";
 import { fetchPublishedEvents } from "@/lib/supabase/event-queries";
-import { EventCard } from "@/components/event/EventCard";
+import { fetchActiveRegions } from "@/lib/supabase/portfolio-search-queries";
+import { EventsSearchClient } from "@/components/event/EventsSearchClient";
 
-async function EventGrid(): Promise<React.ReactElement> {
-  const events = await fetchPublishedEvents({ limit: 30 });
-
-  if (events.length === 0) {
-    return (
-      <div className="py-20 text-center text-muted-foreground">
-        아직 등록된 이벤트가 없습니다.
-      </div>
-    );
-  }
+export async function renderEventsPage(): Promise<React.ReactElement> {
+  const [result, regions] = await Promise.all([
+    fetchPublishedEvents({ limit: 30 }),
+    fetchActiveRegions("SEMI_PERMANENT"),
+  ]);
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-      {events.map((event) => (
-        <EventCard key={event.id} event={event} />
-      ))}
-    </div>
-  );
-}
-
-export function renderEventsPage(): React.ReactElement {
-  return (
-    <main className="mx-auto min-h-screen max-w-[1200px] bg-background px-4 py-6">
-      <h1 className="mb-6 text-xl font-bold">이벤트</h1>
-      <Suspense
-        fallback={
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-square animate-pulse rounded-lg bg-muted" />
-            ))}
-          </div>
-        }
-      >
-        <EventGrid />
-      </Suspense>
+    <main className="min-h-screen bg-background">
+      <EventsSearchClient
+        initialEvents={result.events}
+        initialTotalCount={result.totalCount}
+        regions={regions}
+      />
     </main>
   );
 }

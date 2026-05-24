@@ -13,6 +13,6 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-export default function Page(): React.ReactElement {
+export default async function Page(): Promise<React.ReactElement> {
   return renderEventsPage();
 }
