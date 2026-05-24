@@ -13,7 +13,7 @@ const SESSION_REFRESH_SKIP_PREFIXES = [
 
 const PROD_CSP = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://*.vercel-insights.com https://*.vercel-scripts.com https://t1.daumcdn.net https://pcdn2.swing2app.co.kr",
+    "script-src 'self' 'unsafe-inline' https://*.vercel-insights.com https://*.vercel-scripts.com https://t1.daumcdn.net https://pcdn2.swing2app.co.kr https://*.iamport.kr https://*.portone.io",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com",
     "font-src 'self' data:",
