@@ -3,9 +3,7 @@ import { Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
-import Link from "next/link";
-import { fetchPopularEvents, type EventCardData } from "@/lib/supabase/event-queries";
-import { SquareImage } from "@/components/home/SquareImage";
+import { fetchPopularEvents } from "@/lib/supabase/event-queries";
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
@@ -24,6 +22,7 @@ import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
 import { RecentEventsSection } from "@/components/home/RecentEventsSection";
 import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
+import { PopularEventsList } from "@/components/home/PopularEventsList";
 
 
 
@@ -110,42 +109,6 @@ function CategorySections({ hp, lipPortfolios, mensEyebrowPortfolios }: Readonly
   );
 }
 
-function PopularEventCard({ event, priority = false }: Readonly<{
-  event: EventCardData;
-  priority?: boolean;
-}>): React.ReactElement {
-  return (
-    <Link
-      href={`/events/${event.id}`}
-      className="group inline-block w-60 shrink-0 snap-start whitespace-normal mr-[15px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <SquareImage
-        src={event.hero_image}
-        alt={event.title}
-        sizes="240px"
-        priority={priority}
-      />
-      <div className="mt-2.5">
-        <p className="truncate text-base font-semibold transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
-          {event.title}
-        </p>
-        <p className="truncate text-sm text-muted-foreground">{event.procedure_name}</p>
-        <div className="mt-1 flex items-baseline gap-1.5">
-          {(event.discount_rate ?? 0) > 0 && (
-            <span className="text-xs text-muted-foreground line-through">
-              {event.price_origin.toLocaleString()}원
-            </span>
-          )}
-          <span className="text-sm font-bold">{event.price.toLocaleString()}원</span>
-          {(event.discount_rate ?? 0) > 0 && (
-            <span className="text-xs font-bold text-red-500">{event.discount_rate}%</span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 function ActiveArtistSection({ artists, title, moreText }: Readonly<{
   artists: HomeArtist[];
   title: string;
@@ -198,7 +161,7 @@ async function fetchTopHomeData() {
     safe(() => fetchPromoBanners(), []),
     safe(() => fetchHomeBanners(), []),
     safe(() => fetchQuickMenuItems(), []),
-    safe(() => fetchPopularEvents(10), []),
+    safe(() => fetchPopularEvents(30), []),
   ]);
   return { promoBanners, homeBanners, quickMenuItems, popularEvents };
 }
@@ -329,9 +292,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
               moreText={STRINGS.homepage.seeMore}
             />
             <HorizontalScrollList>
-              {popularEvents.map((event, i) => (
-                <PopularEventCard key={event.id} event={event} priority={i === 0} />
-              ))}
+              <PopularEventsList events={popularEvents} />
             </HorizontalScrollList>
           </section>
         )}
