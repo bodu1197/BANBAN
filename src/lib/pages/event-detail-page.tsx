@@ -63,7 +63,7 @@ async function RecommendedEvents({
   if (recommended.length === 0) return <></>;
 
   return (
-    <section className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+    <section className="max-w-3xl space-y-4 px-4 py-6">
       <h2 className="text-base font-bold">회원님을 위한 추천 이벤트</h2>
       <div className="divide-y divide-input">
         {recommended.map((e) => (
@@ -76,10 +76,10 @@ async function RecommendedEvents({
 
 function RecommendedSkeleton(): React.ReactElement {
   return (
-    <div className="mx-auto max-w-3xl space-y-3 px-4 py-6">
+    <div className="max-w-3xl space-y-3 px-4 py-6">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex gap-3">
-          <div className="h-24 w-24 flex-shrink-0 animate-pulse rounded-lg bg-muted" />
+          <div className="h-[106px] w-[106px] flex-shrink-0 animate-pulse rounded-lg bg-muted" />
           <div className="flex flex-1 flex-col justify-center gap-2">
             <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
             <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />

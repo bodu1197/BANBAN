@@ -14,14 +14,14 @@ export const RecommendedEventCard = memo(function RecommendedEventCard({
       href={`/events/${event.id}`}
       className="flex gap-3 py-3 transition-colors hover:bg-muted/30 focus-visible:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className="relative h-[106px] w-[106px] flex-shrink-0 overflow-hidden rounded-lg bg-muted">
         {event.hero_image ? (
           <Image
             src={event.hero_image}
             alt={event.title}
             fill
             className="object-cover"
-            sizes="(max-width: 640px) 96px, 120px"
+            sizes="(max-width: 640px) 106px, 132px"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
