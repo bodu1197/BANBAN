@@ -133,7 +133,7 @@ function PriceSlider({ value, onCommit, labels }: Readonly<{
     ? labels.priceUnlimited
     : `${formatSliderPrice(local)} ${labels.priceUnder}`;
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1 md:gap-1.5">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">{labels.price}</span>
         <span className="text-xs text-muted-foreground">{label}</span>
@@ -279,14 +279,14 @@ export function PortfolioFilterControls({ categories, regions, d, filters, setRe
         ? <BeautyFilterSection categories={categories} filters={filters} setCategoryIds={setCategoryIds} />
         : <StandardFilterSection categories={categories} filters={filters} setCategoryIds={setCategoryIds} labels={d.categoryTabs} />
       }
-      <div className="flex items-center gap-3 px-4 py-3 md:gap-4">
-        <RegionSelector
-          regions={regions}
-          selectedId={filters.regionId}
-          selectedSido={filters.regionSido}
-          labels={d}
-          onSelectRegions={setRegions}
-        />
+      <RegionSelector
+        regions={regions}
+        selectedId={filters.regionId}
+        selectedSido={filters.regionSido}
+        labels={d}
+        onSelectRegions={setRegions}
+      />
+      <div className="px-4 pb-3">
         <PriceSlider value={filters.priceMax} onCommit={setPriceMax} labels={priceLabels} />
       </div>
       <SelectedTags categories={categories} selectedIds={filters.categoryIds} onRemove={removeCategory} />
