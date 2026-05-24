@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
+import { getActiveEventFilter } from "@/lib/supabase/event-queries";
 import { MAX_LIMIT } from "@/lib/constants";
 
 const MAX_NEARBY_RADIUS_KM = 100;
@@ -96,6 +97,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     )
     .eq("status", "published")
     .is("deleted_at", null)
+    .or(getActiveEventFilter())
     .in("artist_id", artistIds)
     .limit(Math.min(limit, MAX_LIMIT));
 

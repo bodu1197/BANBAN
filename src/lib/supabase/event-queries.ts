@@ -111,6 +111,15 @@ function escapeLikePattern(input: string): string {
   return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
 }
 
+/**
+ * 오늘 날짜 (YYYY-MM-DD). event_end_at 비교용.
+ * 만료 정책: event_end_at IS NULL (만료 없음) 또는 event_end_at >= 오늘 → 노출.
+ */
+export function getActiveEventFilter(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `event_end_at.is.null,event_end_at.gte.${today}`;
+}
+
 async function resolveArtistIdsByRegion(
   supabase: Awaited<ReturnType<typeof createClient>>,
   regionId: string | null,
@@ -153,6 +162,7 @@ export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
     .select(EVENT_CARD_SELECT_INNER, { count: "exact" })
     .eq("status", "published")
     .is("deleted_at", null)
+    .or(getActiveEventFilter())
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -190,6 +200,7 @@ export const fetchEventsByArtist = cache(async function fetchEventsByArtist(
     .eq("artist_id", artistId)
     .eq("status", "published")
     .is("deleted_at", null)
+    .or(getActiveEventFilter())
     .order("created_at", { ascending: false });
 
   if (!data) return [];
@@ -307,6 +318,7 @@ export const fetchPopularEvents = cache(async function fetchPopularEvents(
     .select(EVENT_CARD_SELECT)
     .eq("status", "published")
     .is("deleted_at", null)
+    .or(getActiveEventFilter())
     .order("views_count", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -329,6 +341,7 @@ export const fetchRelatedEvents = cache(async function fetchRelatedEvents(
     .eq("artist_id", artistId)
     .neq("id", excludeId)
     .is("deleted_at", null)
+    .or(getActiveEventFilter())
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -352,7 +365,8 @@ export const fetchArtistShopStats = cache(async function fetchArtistShopStats(
       .select("id", { count: "exact", head: true })
       .eq("artist_id", artistId)
       .eq("status", "published")
-      .is("deleted_at", null),
+      .is("deleted_at", null)
+      .or(getActiveEventFilter()),
     supabase
       .from("portfolios")
       .select("id", { count: "exact", head: true })
@@ -380,6 +394,7 @@ export const fetchRecommendedEvents = cache(async function fetchRecommendedEvent
       .eq("artist_id", artistId)
       .neq("id", excludeId)
       .is("deleted_at", null)
+      .or(getActiveEventFilter())
       .order("created_at", { ascending: false })
       .limit(5),
     supabase
@@ -389,6 +404,7 @@ export const fetchRecommendedEvents = cache(async function fetchRecommendedEvent
       .neq("id", excludeId)
       .neq("artist_id", artistId)
       .is("deleted_at", null)
+      .or(getActiveEventFilter())
       .order("views_count", { ascending: false, nullsFirst: false })
       .limit(limit),
   ]);

@@ -18,6 +18,7 @@ interface EventRow {
   status: string;
   created_at: string | null;
   views_count: number | null;
+  event_end_at: string | null;
   event_media: Array<{ storage_path: string; media_type: string }>;
 }
 
@@ -25,7 +26,14 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   draft: { label: "임시저장", className: "bg-muted text-muted-foreground" },
   published: { label: "게시중", className: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" },
   ended: { label: "종료", className: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400" },
+  expired: { label: "이벤트 종료(기간만료)", className: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
 };
+
+function isExpiredByDate(endAt: string | null): boolean {
+  if (!endAt) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return endAt < today;
+}
 
 export function EventListClient(): React.ReactElement {
   const { artist, isLoading: authLoading } = useAuth();
@@ -36,7 +44,7 @@ export function EventListClient(): React.ReactElement {
     const supabase = createClient();
     const { data } = await supabase
       .from("events")
-      .select("id, title, procedure_name, price, price_origin, discount_rate, status, created_at, views_count, event_media(storage_path, media_type)")
+      .select("id, title, procedure_name, price, price_origin, discount_rate, status, created_at, views_count, event_end_at, event_media(storage_path, media_type)")
       .eq("artist_id", artistId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -111,7 +119,10 @@ export function EventListClient(): React.ReactElement {
             const media = event.event_media ?? [];
             const hero = media.find((m) => m.media_type === "hero");
             const heroUrl = hero ? getEventStorageUrl(hero.storage_path) : null;
-            const statusInfo = STATUS_LABELS[event.status] ?? STATUS_LABELS.draft;
+            const dateExpired = isExpiredByDate(event.event_end_at);
+            const effectiveStatus = dateExpired && event.status === "published" ? "expired" : event.status;
+            const statusInfo = STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.draft;
+            const reopenLocked = dateExpired; // 기간 만료된 이벤트는 재게시 불가 (새로 생성 유도)
 
             return (
               <div
@@ -169,7 +180,9 @@ export function EventListClient(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handleStatusToggle(event.id, event.status)}
-                    className="min-h-[44px] rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted"
+                    disabled={reopenLocked && event.status !== "published"}
+                    title={reopenLocked && event.status !== "published" ? "기간 만료된 이벤트는 재게시할 수 없습니다. 새로 등록해주세요." : undefined}
+                    className="min-h-[44px] rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={event.status === "published" ? "이벤트 종료" : "이벤트 게시"}
                   >
                     {event.status === "published" ? "종료" : "게시"}
