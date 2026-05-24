@@ -12,7 +12,7 @@ export function BottomNav(): React.ReactElement | null {
   const homePath = "/";
   const navItems = useMemo(() => [
     { href: homePath, label: STRINGS.nav.home, icon: Home },
-    { href: "/exhibition", label: "이벤트", icon: CalendarDays },
+    { href: "/events", label: "이벤트", icon: CalendarDays },
     { href: "/artists", label: "내주변 샵", icon: MapPin },
     { href: "/beauty-sim/ai-test", label: "시뮬레이션", icon: Sparkles },
     { href: "/mypage", label: STRINGS.nav.mypage, icon: User },
