@@ -124,14 +124,14 @@ export function EventStepGenerate({
           throw new Error(`이미지 생성 서버 오류 (${res.status})`);
         }
         if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "이미지 생성 실패");
-        if (typeof data.storagePath !== "string" || typeof data.b64Preview !== "string") {
+        if (typeof data.storagePath !== "string" || typeof data.previewUrl !== "string") {
           throw new Error("이미지 데이터가 올바르지 않습니다");
         }
 
         return {
           sectionType,
           storagePath: data.storagePath,
-          b64Preview: data.b64Preview,
+          previewUrl: data.previewUrl,
           altText: copy.altTexts[sectionType] ?? "",
           status: "completed" as const,
           ...(typeof data.thumbnailPath === "string" ? { thumbnailPath: data.thumbnailPath } : {}),
@@ -140,7 +140,7 @@ export function EventStepGenerate({
         return {
           sectionType,
           storagePath: "",
-          b64Preview: "",
+          previewUrl: "",
           altText: "",
           status: "failed" as const,
           error: e instanceof Error ? e.message : "생성 실패",
@@ -163,7 +163,7 @@ export function EventStepGenerate({
     const initial: DetailSectionResult[] = DETAIL_SECTION_TYPES.map((type) => ({
       sectionType: type,
       storagePath: "",
-      b64Preview: "",
+      previewUrl: "",
       altText: "",
       status: "generating" as const,
     }));
@@ -178,7 +178,7 @@ export function EventStepGenerate({
       return {
         sectionType: DETAIL_SECTION_TYPES[i],
         storagePath: "",
-        b64Preview: "",
+        previewUrl: "",
         altText: "",
         status: "failed" as const,
         error: r.status === "rejected" ? String(r.reason) : "생성 실패",
@@ -222,6 +222,12 @@ export function EventStepGenerate({
           "AI 상세 이미지 자동 생성"
         )}
       </button>
+      <p className="text-center text-sm text-foreground/80">
+        <span aria-hidden="true">⏱️</span>
+        <span className="sr-only">소요 시간 안내:</span>
+        {" "}
+        7개 섹션을 동시에 생성합니다. 최대 3분까지 소요될 수 있어요. 페이지를 닫지 말고 잠시 기다려주세요.
+      </p>
 
       {/* Progress */}
       {detailSections.length > 0 && (
@@ -283,10 +289,10 @@ export function EventStepGenerate({
                   <div className="h-6 w-6 motion-safe:animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
                 </div>
               )}
-              {section.status === "completed" && section.b64Preview && (
+              {section.status === "completed" && section.previewUrl && (
                 <div className="relative aspect-[2/3]">
                   <Image
-                    src={section.b64Preview}
+                    src={section.previewUrl}
                     alt={section.altText || DETAIL_SECTION_LABELS[section.sectionType]}
                     fill
                     className="object-cover"

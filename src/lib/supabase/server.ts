@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import { Database } from '@/types/database'
 import { fetchWithRetry } from './fetch-with-retry'
 
+export type AdminSupabaseClient = SupabaseClient<Database>
+
 export async function createClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies()
 

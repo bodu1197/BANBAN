@@ -76,7 +76,7 @@ export interface GeneratedDetailCopy {
 export interface DetailSectionResult {
     sectionType: DetailSectionType;
     storagePath: string;
-    b64Preview: string;
+    previewUrl: string;
     altText: string;
     status: "pending" | "generating" | "completed" | "failed";
     error?: string;

@@ -1,9 +1,9 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
-import sharp from "sharp";
 import { getUser } from "@/lib/supabase/auth";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient, type AdminSupabaseClient } from "@/lib/supabase/server";
+import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
 import {
   DETAIL_SECTION_TYPES,
   EDIT_SECTIONS,
@@ -13,13 +13,23 @@ import type {
   DetailSectionCopy,
   EventFormValues,
 } from "@/lib/event/types";
+import {
+  EVENT_CACHE_CONTROL,
+  EVENT_IMAGE_BUCKET,
+  EVENT_SECTION_SIZE,
+  EVENT_THUMBNAIL_RESIZE_PX,
+  EVENT_THUMBNAIL_SIZE,
+  ImageDecodeError,
+  buildEventImagePath,
+  processBase64ToWebp,
+  sanitizePromptValue,
+} from "@/lib/event/image-service";
 
 export const maxDuration = 180;
 
 const IMAGE_MODEL = "gpt-image-2";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
-const THUMBNAIL_RESIZE = 480;
 
 const DEFAULT_COLOR_THEME = "soft pink and ivory";
 
@@ -28,7 +38,9 @@ function buildThumbnailPrompt(
   copy: DetailSectionCopy,
   discountRate: number,
 ): string {
-  const colorTheme = copy.detail_hero?.colorTheme || DEFAULT_COLOR_THEME;
+  const colorTheme = sanitizePromptValue(copy.detail_hero?.colorTheme, 80) || DEFAULT_COLOR_THEME;
+  const procedureName = sanitizePromptValue(form.procedureName, 100);
+  const price = Number(form.price).toLocaleString();
   return [
     "정사각형(1:1) 이벤트 카드 썸네일 이미지를 만들어주세요.",
     `컬러 테마: ${colorTheme}`,
@@ -38,55 +50,91 @@ function buildThumbnailPrompt(
     "텍스트는 최소화 — 시술명과 할인율만 크고 굵게.",
     "워터마크, 로고 없음.",
     "",
-    `시술명: "${form.procedureName}"`,
+    `시술명: "${procedureName}"`,
     discountRate > 0 ? `할인 배지: "${discountRate}% OFF" (눈에 잘 띄게)` : "",
-    `가격: "${Number(form.price).toLocaleString()}원"`,
+    `가격: "${price}원"`,
     "",
     "중앙에 시술 결과 이미지, 부드러운 그라데이션 배경.",
     "카드 썸네일용이므로 여백 충분히, 복잡한 장식 최소화.",
   ].filter(Boolean).join("\n");
 }
 
+async function uploadEventImage(
+  supabase: AdminSupabaseClient,
+  path: string,
+  body: Buffer,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.storage
+    .from(EVENT_IMAGE_BUCKET)
+    .upload(path, body, {
+      cacheControl: EVENT_CACHE_CONTROL,
+      upsert: false,
+      contentType: "image/webp",
+    });
+  return { error: error?.message ?? null };
+}
+
+async function generateThumbnailB64(
+  client: OpenAI,
+  prompt: string,
+): Promise<string | undefined> {
+  const result = await client.images.generate({
+    model: IMAGE_MODEL,
+    prompt,
+    n: 1,
+    size: EVENT_THUMBNAIL_SIZE,
+    quality: "medium",
+  });
+  return result.data?.[0]?.b64_json;
+}
+
 async function generateThumbnail(
   client: OpenAI,
-  supabase: ReturnType<typeof createAdminClient>,
+  supabase: AdminSupabaseClient,
   artistId: string,
   timestamp: number,
   form: EventFormValues,
   copy: DetailSectionCopy,
   discountRate: number,
 ): Promise<string | undefined> {
+  const prompt = buildThumbnailPrompt(form, copy, discountRate);
+
+  let b64: string | undefined;
   try {
-    const prompt = buildThumbnailPrompt(form, copy, discountRate);
-    const result = await client.images.generate({
-      model: IMAGE_MODEL,
-      prompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "medium",
-    });
-    const b64 = result.data?.[0]?.b64_json;
-    if (!b64) return undefined;
-
-    const resized = await sharp(Buffer.from(b64, "base64"))
-      .resize(THUMBNAIL_RESIZE, THUMBNAIL_RESIZE)
-      .webp({ quality: 80 })
-      .toBuffer();
-
-    const storagePath = `${artistId}/${timestamp}_thumbnail.webp`;
-    const { error } = await supabase.storage
-      .from("events")
-      .upload(storagePath, resized, {
-        cacheControl: "31536000",
-        upsert: false,
-        contentType: "image/webp",
-      });
-    return error ? undefined : storagePath;
-  } catch (thumbErr: unknown) {
+    b64 = await generateThumbnailB64(client, prompt);
+  } catch (err: unknown) {
     // eslint-disable-next-line no-console
-    console.error("[generate-event-section-image] thumbnail failed (non-fatal):", thumbErr instanceof Error ? thumbErr.message : thumbErr);
+    console.error(
+      "[generate-event-section-image] thumbnail OpenAI failed:",
+      err instanceof Error ? err.message : err,
+    );
     return undefined;
   }
+  if (!b64) return undefined;
+
+  let resized: Buffer;
+  try {
+    resized = await processBase64ToWebp(b64, {
+      width: EVENT_THUMBNAIL_RESIZE_PX,
+      height: EVENT_THUMBNAIL_RESIZE_PX,
+    });
+  } catch (err: unknown) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[generate-event-section-image] thumbnail Sharp failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return undefined;
+  }
+
+  const storagePath = buildEventImagePath(artistId, timestamp, "thumbnail");
+  const { error } = await uploadEventImage(supabase, storagePath, resized);
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error("[generate-event-section-image] thumbnail upload failed:", error);
+    return undefined;
+  }
+  return storagePath;
 }
 
 function buildSectionPrompt(
@@ -95,7 +143,14 @@ function buildSectionPrompt(
   copy: DetailSectionCopy,
   discountRate: number,
 ): string {
-  const colorTheme = copy.detail_hero?.colorTheme || DEFAULT_COLOR_THEME;
+  const colorTheme = sanitizePromptValue(copy.detail_hero?.colorTheme, 80) || DEFAULT_COLOR_THEME;
+  const shopName = sanitizePromptValue(form.shopName, 100);
+  const procedureDuration = sanitizePromptValue(form.procedureDuration, 50);
+  const maintenancePeriod = sanitizePromptValue(form.maintenancePeriod, 50);
+  const eventPeriodText = sanitizePromptValue(form.eventPeriodText, 200);
+  const price = Number(form.price).toLocaleString();
+  const priceOrigin = Number(form.priceOrigin).toLocaleString();
+
   const baseStyle = [
     "한국 뷰티 앱 스타일의 세로형 상세 이미지를 만들어주세요.",
     `컬러 테마: ${colorTheme}`,
@@ -114,12 +169,12 @@ function buildSectionPrompt(
         "이 사진을 활용해서 전문적인 마케팅 배너를 디자인해주세요.",
         "사진 속 인물/시술 결과를 자연스럽게 유지하면서 디자인 요소를 추가합니다.",
         "",
-        `상단에 큰 한국어 텍스트: "${s.headline}"`,
-        `서브 텍스트: "${s.subtext}"`,
+        `상단에 큰 한국어 텍스트: "${sanitizePromptValue(s.headline, 100)}"`,
+        `서브 텍스트: "${sanitizePromptValue(s.subtext, 200)}"`,
         `할인율 배지: "${discountRate}% OFF"`,
-        `이벤트가: "${Number(form.price).toLocaleString()}원"`,
-        `원가: "${Number(form.priceOrigin).toLocaleString()}원" (취소선)`,
-        `하단에 샵명: "${form.shopName}"`,
+        `이벤트가: "${price}원"`,
+        `원가: "${priceOrigin}원" (취소선)`,
+        `하단에 샵명: "${shopName}"`,
         "",
         "부드러운 그라데이션 배경, 별/하트 반짝이 장식, 프리미엄 느낌.",
       ].join("\n");
@@ -130,14 +185,14 @@ function buildSectionPrompt(
         baseStyle,
         "반영구 시술 소개 섹션 이미지를 생성해주세요.",
         "",
-        `제목: "${s.heading}"`,
-        `본문: "${s.bodyText}"`,
+        `제목: "${sanitizePromptValue(s.heading, 100)}"`,
+        `본문: "${sanitizePromptValue(s.bodyText, 500)}"`,
         "",
         "장점 3개 (아이콘 + 텍스트):",
-        ...s.benefits.map((b, i) => `  ${i + 1}. "${b}"`),
+        ...s.benefits.map((b, i) => `  ${i + 1}. "${sanitizePromptValue(b, 200)}"`),
         "",
-        form.procedureDuration ? `시술 시간: ${form.procedureDuration}` : "",
-        form.maintenancePeriod ? `유지 기간: ${form.maintenancePeriod}` : "",
+        procedureDuration ? `시술 시간: ${procedureDuration}` : "",
+        maintenancePeriod ? `유지 기간: ${maintenancePeriod}` : "",
         "",
         "깔끔한 카드 레이아웃. 아이콘은 심플한 라인 아이콘.",
         "배경은 밝고 깨끗한 톤. 전문적 정보 전달 느낌.",
@@ -150,8 +205,8 @@ function buildSectionPrompt(
         "이 시술 전후 사진을 활용해서 Before/After 비교 이미지를 만들어주세요.",
         "사진을 자연스럽게 유지하면서 디자인 프레임을 추가합니다.",
         "",
-        `제목: "${s.heading}"`,
-        `캡션: "${s.caption}"`,
+        `제목: "${sanitizePromptValue(s.heading, 100)}"`,
+        `캡션: "${sanitizePromptValue(s.caption, 200)}"`,
         "",
         "좌우 또는 상하 분할 레이아웃.",
         '"Before" / "After" 라벨 표시.',
@@ -165,10 +220,10 @@ function buildSectionPrompt(
         baseStyle,
         "시술 추천 대상 섹션 이미지를 생성해주세요.",
         "",
-        `제목: "${s.heading}"`,
+        `제목: "${sanitizePromptValue(s.heading, 100)}"`,
         "",
         "추천 대상 목록:",
-        ...s.items.map((item) => `  ${item.emoji} "${item.text}"`),
+        ...s.items.map((item) => `  ${sanitizePromptValue(item.emoji, 10)} "${sanitizePromptValue(item.text, 100)}"`),
         "",
         "체크마크 또는 이모지 아이콘과 함께 리스트 형태.",
         "따뜻하고 공감가는 톤. 부드러운 배경색.",
@@ -183,13 +238,13 @@ function buildSectionPrompt(
         baseStyle,
         "뷰티 시술 안내 인포그래픽 이미지를 생성해주세요.",
         "",
-        `제목: "${s.heading}"`,
+        `제목: "${sanitizePromptValue(s.heading, 100)}"`,
         "",
         steps.length > 0 ? "진행 순서:" : "",
-        ...steps.map((step, i) => `  ${i + 1}. "${step}"`),
+        ...steps.map((step, i) => `  ${i + 1}. "${sanitizePromptValue(step, 200)}"`),
         "",
         precautions.length > 0 ? "참고사항:" : "",
-        ...precautions.map((p) => `  "${p}"`),
+        ...precautions.map((p) => `  "${sanitizePromptValue(p, 200)}"`),
         "",
         "깔끔한 인포그래픽 스타일. 번호와 아이콘 활용.",
         "스텝 바이 스텝 시각적 플로우.",
@@ -202,10 +257,10 @@ function buildSectionPrompt(
         "이 샵 사진을 활용해서 샵 정보 안내 이미지를 만들어주세요.",
         "사진을 자연스럽게 유지하면서 정보 오버레이를 추가합니다.",
         "",
-        `제목: "${s.heading}"`,
+        `제목: "${sanitizePromptValue(s.heading, 100)}"`,
         "",
         "정보:",
-        ...s.details.map((d) => `  📍 "${d}"`),
+        ...s.details.map((d) => `  📍 "${sanitizePromptValue(d, 200)}"`),
         "",
         "지도 핀 아이콘, 시계 아이콘 등 정보성 아이콘 활용.",
         "반투명 정보 카드 오버레이. 깔끔하고 읽기 쉽게.",
@@ -217,12 +272,12 @@ function buildSectionPrompt(
         baseStyle,
         "예약 유도 CTA 섹션 이미지를 생성해주세요.",
         "",
-        `제목: "${s.heading}"`,
-        `긴급 문구: "${s.urgencyText}"`,
-        `버튼 텍스트: "${s.ctaButton}"`,
+        `제목: "${sanitizePromptValue(s.heading, 100)}"`,
+        `긴급 문구: "${sanitizePromptValue(s.urgencyText, 200)}"`,
+        `버튼 텍스트: "${sanitizePromptValue(s.ctaButton, 50)}"`,
         "",
-        `이벤트가: "${Number(form.price).toLocaleString()}원"`,
-        form.eventPeriodText ? `기간: "${form.eventPeriodText}"` : "",
+        `이벤트가: "${price}원"`,
+        eventPeriodText ? `기간: "${eventPeriodText}"` : "",
         "",
         "큰 CTA 버튼 디자인. 그라데이션 또는 강조색.",
         "긴급감과 혜택을 동시에 전달.",
@@ -319,7 +374,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           model: IMAGE_MODEL,
           image: await toFile(imageBuffer, "input.png", { type: "image/png" }),
           prompt,
-          size: "1024x1536",
+          size: EVENT_SECTION_SIZE,
         });
         b64 = result.data?.[0]?.b64_json;
       } else {
@@ -327,7 +382,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           model: IMAGE_MODEL,
           prompt,
           n: 1,
-          size: "1024x1536",
+          size: EVENT_SECTION_SIZE,
           quality: "medium",
         });
         b64 = result.data?.[0]?.b64_json;
@@ -345,31 +400,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "이미지 데이터가 비어있습니다" }, { status: 500 });
     }
 
-    const buffer = Buffer.from(b64, "base64");
+    let processed: Buffer;
+    try {
+      processed = await processBase64ToWebp(b64);
+    } catch (err: unknown) {
+      // eslint-disable-next-line no-console
+      console.error(`[generate-event-section-image] ${sectionType} Sharp:`, err);
+      const status = err instanceof ImageDecodeError ? 400 : 500;
+      return NextResponse.json({ error: "이미지 변환 실패" }, { status });
+    }
+
     const uploadTimestamp = Date.now();
-    const path = `${artistRow.id}/${uploadTimestamp}_${sectionType}.webp`;
+    const path = buildEventImagePath(artistRow.id, uploadTimestamp, sectionType);
     const supabase = createAdminClient();
 
-    const { error: uploadError } = await supabase.storage
-      .from("events")
-      .upload(path, buffer, {
-        cacheControl: "31536000",
-        upsert: false,
-        contentType: "image/webp",
-      });
+    const { error: uploadError } = await uploadEventImage(supabase, path, processed);
 
     if (uploadError) {
-      return NextResponse.json({ error: `업로드 실패: ${uploadError.message}` }, { status: 500 });
+      return NextResponse.json({ error: `업로드 실패: ${uploadError}` }, { status: 500 });
     }
 
     const thumbnailPath = sectionType === "detail_hero"
       ? await generateThumbnail(client, supabase, artistRow.id, uploadTimestamp, form, copy, discountRate)
       : undefined;
 
+    const previewUrl = getEventStorageUrl(path);
+
     return NextResponse.json({
       sectionType,
       storagePath: path,
-      b64Preview: `data:image/webp;base64,${b64}`,
+      previewUrl,
       altText: "",
       prompt,
       ...(thumbnailPath ? { thumbnailPath } : {}),
