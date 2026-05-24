@@ -1,7 +1,7 @@
 // @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA, tab scroll, collapsible panels
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,8 @@ import { isLegacyContent, isDetailCopy } from "@/lib/event-content-types";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { EventDetailImageStack } from "./EventDetailImageStack";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
+import { saveRecentEvent } from "@/lib/recent-events";
+import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
 
 const RETOUCH_LABELS: Record<string, string> = {
   included: "포함", separate: "별도", none: "없음", extra: "추가비",
@@ -43,6 +45,21 @@ export function EventDetailClient({
   reviewCount,
 }: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
+
+  useEffect(() => {
+    const thumb = event.event_media.find((m) => m.media_type === "thumbnail")
+      ?? event.event_media.find((m) => m.media_type === "detail_hero")
+      ?? event.event_media.find((m) => m.media_type === "hero");
+    saveRecentEvent({
+      id: event.id,
+      title: event.title,
+      procedureName: event.procedure_name,
+      heroImage: thumb ? getEventStorageUrl(thumb.storage_path) : null,
+      price: event.price,
+      priceOrigin: event.price_origin,
+      discountRate: event.discount_rate,
+    });
+  }, [event.id, event.title, event.procedure_name, event.event_media, event.price, event.price_origin, event.discount_rate]);
   const isImageBased = hasDetailImages(event.event_media);
 
   return (

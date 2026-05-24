@@ -332,6 +332,7 @@ export const STRINGS ={
     "mensEyebrowSection": "남자의 변신은 무죄",
     "timeSaleSection": "타임세일",
     "popularEventsSection": "지금 많이 찾는 인기 이벤트",
+    "recentEventsSection": "최근 본 이벤트",
     "tattooGenres": "반영구 장르별 인기 작품",
     "allGenre": "전체"
   },

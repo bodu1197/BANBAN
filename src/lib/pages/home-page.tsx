@@ -22,6 +22,7 @@ import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
 import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
+import { RecentEventsSection } from "@/components/home/RecentEventsSection";
 
 
 
@@ -317,6 +318,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         <div className="pt-4">
           <QuickMenu items={quickMenuItems} />
         </div>
+        <RecentEventsSection />
         {popularEvents.length > 0 && (
           <section className="py-4">
             <SectionHeader
