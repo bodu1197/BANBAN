@@ -23,6 +23,7 @@ import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
 import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
 import { RecentEventsSection } from "@/components/home/RecentEventsSection";
+import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
 
 
 
@@ -169,6 +170,7 @@ function CuratedExhibitions({ hp, activeArtists }: Readonly<{
 }>): React.ReactElement {
   return (
     <>
+      <AiTestPromoBanner />
       <ActiveArtistSection
         artists={activeArtists}
         title={hp.todayActiveArtists ?? "오늘의 인기 아티스트"}
