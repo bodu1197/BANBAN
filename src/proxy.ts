@@ -15,7 +15,7 @@ const PROD_CSP = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://*.vercel-insights.com https://*.vercel-scripts.com https://t1.daumcdn.net https://pcdn2.swing2app.co.kr https://*.iamport.kr https://*.portone.io",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com",
+    "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com https://*.googleusercontent.com https://k.kakaocdn.net https://*.pstatic.net",
     "font-src 'self' data:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://*.iamport.kr https://*.portone.io https://vitals.vercel-insights.com",
     "frame-src 'self' https://*.iamport.kr https://*.portone.io",
