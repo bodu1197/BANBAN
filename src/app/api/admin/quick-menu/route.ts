@@ -60,25 +60,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 type AdminClient = Awaited<ReturnType<typeof requireAdmin>> & { ok: true };
 
+const REORDER_TEMP_OFFSET = 1_000_000;
+
 async function handleReorder(
   supabase: AdminClient["supabase"],
   reorder: Array<{ id: string; order_index: number }>,
 ): Promise<NextResponse> {
-  // Note: 진정한 트랜잭션은 Supabase RPC 가 필요하다. 여기서는 Promise.all 로
-  // 모든 UPDATE 를 발행하고, 하나라도 실패하면 500 + 현재 server 상태를 반환한다.
-  // partial update 가 발생할 수 있지만, 응답의 items 로 클라이언트가 자신의
-  // optimistic state 를 server state 와 동기화할 수 있다.
-  const results = await Promise.all(
+  // 2-phase update: order_index 에 UNIQUE 제약이 있으면 1→2, 2→1 같은 swap 이
+  // 동시 UPDATE 시 충돌한다. Phase 1 에서 모든 row 의 order_index 를 음수 임시값으로
+  // 옮긴 후 Phase 2 에서 최종 값으로 설정해 충돌을 회피한다.
+  const phase1 = await Promise.all(
+    reorder.map((item, idx) =>
+      supabase
+        .from(TABLE)
+        .update({ order_index: -(REORDER_TEMP_OFFSET + idx) })
+        .eq("id", item.id),
+    ),
+  );
+  const phase1Failure = phase1.find((r) => r.error);
+  if (phase1Failure?.error) {
+    const { data } = await supabase.from(TABLE).select(COLUMNS).order("order_index", { ascending: true });
+    return NextResponse.json(
+      { error: `reorder phase1 실패: ${phase1Failure.error.message}`, items: data ?? [] },
+      { status: 500 },
+    );
+  }
+
+  const phase2 = await Promise.all(
     reorder.map((item) =>
       supabase.from(TABLE).update({ order_index: item.order_index }).eq("id", item.id),
     ),
   );
-  const failure = results.find((r) => r.error);
+  const phase2Failure = phase2.find((r) => r.error);
   const { data } = await supabase.from(TABLE).select(COLUMNS).order("order_index", { ascending: true });
 
-  if (failure?.error) {
+  if (phase2Failure?.error) {
     return NextResponse.json(
-      { error: failure.error.message, items: data ?? [] },
+      { error: `reorder phase2 실패: ${phase2Failure.error.message}`, items: data ?? [] },
       { status: 500 },
     );
   }
