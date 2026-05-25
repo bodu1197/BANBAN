@@ -147,7 +147,6 @@ export function ShopBlogClient({
   const initialTab: ShopTabId = isShopTabId(tabParam) ? tabParam : "events";
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
   const tablistRef = useRef<HTMLDivElement>(null);
-  // 탭 클릭 시점에 명시적 scroll 요청 플래그. 사용자 스크롤 위치는 건드리지 않고 클릭 시에만 보정.
   const scrollToTopOnNextRenderRef = useRef(false);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
@@ -155,8 +154,8 @@ export function ShopBlogClient({
     setActiveTab(tab);
   }, []);
 
-  // 탭 클릭 → 새 패널의 첫 부분이 sticky 영역(헤더 + 탭) 바로 아래에 오도록 scroll.
-  // useLayoutEffect 로 paint 전에 처리 → flicker 없음.
+  // 탭 클릭 시 panel 첫 부분을 sticky 영역 바로 아래로 scroll.
+  // tabpanel section 의 min-h-[calc(100vh-7rem)] 이 페이지를 충분히 길게 만들어 scrollBy 가 clamp 되지 않음.
   useLayoutEffect(() => {
     if (!scrollToTopOnNextRenderRef.current) return;
     scrollToTopOnNextRenderRef.current = false;
@@ -188,7 +187,7 @@ export function ShopBlogClient({
         role="tabpanel"
         aria-labelledby={`tab-${activeTab}`}
         tabIndex={0}
-        className="px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {renderActivePanel({ activeTab, data, labels, artistId, isLoggedIn })}
       </section>
