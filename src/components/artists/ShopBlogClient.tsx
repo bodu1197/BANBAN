@@ -1,16 +1,22 @@
-// @client-reason: activeTab useState 관리 — sticky tabs nav + hero (서버 렌더 children) + tab content 통합
+// @client-reason: 모든 섹션을 한 페이지에 렌더 + sticky 탭 nav(anchor scroll) + IntersectionObserver로 activeTab 자동 갱신
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import type { EventCardData } from "@/lib/supabase/event-queries";
+import { EventCard } from "@/components/event/EventCard";
 import { ShopTabsNav, type ShopTabId } from "./ShopTabsNav";
-import { ArtistDetailTabs } from "./ArtistDetailTabs";
+import { PortfolioTabContent } from "./PortfolioTabContent";
+import { BeforeAfterTabContent } from "./BeforeAfterTabContent";
+import { ReviewList } from "@/components/reviews/ReviewList";
 
-const VALID_TABS: ReadonlySet<string> = new Set<ShopTabId>(["home", "events", "portfolio", "beforeAfter", "reviews"]);
+const SECTION_IDS: ReadonlyArray<ShopTabId> = ["home", "events", "portfolio", "beforeAfter", "reviews"];
+const VALID_TABS: ReadonlySet<string> = new Set<ShopTabId>(SECTION_IDS);
+// smooth scroll 애니메이션이 끝날 때까지 observer가 setActiveTab을 덮어쓰지 않도록 대기
+const SCROLL_SETTLE_MS = 800;
 
-/** 30개 individual props 를 3개 도메인 객체 (data / counts / labels) + 단일 값으로 그룹화 */
 export interface ShopBlogData {
   events: EventCardData[];
   portfolios: PortfolioWithMedia[];
@@ -52,6 +58,23 @@ interface ShopBlogClientProps {
   isLoggedIn: boolean;
 }
 
+function EventsSection({
+  events,
+  emptyMessage,
+}: Readonly<{ events: EventCardData[]; emptyMessage: string }>): React.ReactElement {
+  if (events.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>;
+  }
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {events.map((e) => (
+        <EventCard key={e.id} event={e} />
+      ))}
+    </div>
+  );
+}
+
+// eslint-disable-next-line max-lines-per-function -- 5개 섹션 + tab nav + observer 통합 렌더
 export function ShopBlogClient({
   hero,
   data,
@@ -79,11 +102,60 @@ export function ShopBlogClient({
     reviews: reviewsLabel,
     writeReview: writeReviewLabel,
   } = labels;
+
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") ?? "home";
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabParam ?? "home";
   const [activeTab, setActiveTab] = useState<ShopTabId>(
     VALID_TABS.has(initialTab) ? (initialTab as ShopTabId) : "home",
   );
+  const programmaticScrollRef = useRef(false);
+
+  const scrollToSection = useCallback((tab: ShopTabId, smooth: boolean): void => {
+    const el = document.getElementById(`tabpanel-${tab}`);
+    if (!el) return;
+    programmaticScrollRef.current = true;
+    // prefers-reduced-motion 사용자는 즉시 점프 (스크롤 애니메이션 비활성화)
+    const reduceMotion = globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: smooth && !reduceMotion ? "smooth" : "auto", block: "start" });
+    globalThis.setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, SCROLL_SETTLE_MS);
+  }, []);
+
+  const handleTabClick = useCallback((tab: ShopTabId): void => {
+    setActiveTab(tab);
+    scrollToSection(tab, true);
+  }, [scrollToSection]);
+
+  // ?tab=... 진입 시 해당 섹션으로 즉시 점프 (home은 스크롤 불필요)
+  useEffect(() => {
+    if (!tabParam || tabParam === "home" || !VALID_TABS.has(tabParam)) return;
+    scrollToSection(tabParam as ShopTabId, false);
+  }, [tabParam, scrollToSection]);
+
+  // 스크롤 위치에 따라 activeTab 자동 갱신
+  // rootMargin top -100px: sticky 헤더(48px)+탭(~50px) 아래에서 트리거
+  // rootMargin bottom -55%: viewport 상단 ~45% 영역만 활성 판정 → 다음 섹션 미리 활성화 방지
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (programmaticScrollRef.current) return;
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        const rawId = visible.target.id.replace("tabpanel-", "");
+        if (VALID_TABS.has(rawId)) setActiveTab(rawId as ShopTabId);
+      },
+      { rootMargin: "-100px 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    SECTION_IDS.forEach((id) => {
+      const el = document.getElementById(`tabpanel-${id}`);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
 
   const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
     { id: "home", label: "홈" },
@@ -95,28 +167,90 @@ export function ShopBlogClient({
 
   return (
     <>
-      <ShopTabsNav activeTab={activeTab} onTabClick={setActiveTab} tabs={tabs} />
-      {activeTab === "home" ? hero : null}
-      <ArtistDetailTabs
-        activeTab={activeTab}
-        events={events}
-        portfolios={portfolios}
-        reviews={reviews}
-        beforeAfterPhotos={beforeAfterPhotos}
-        totalCountLabel={totalCountLabel}
-        noPortfolioMessage={noPortfolioMessage}
-        noReviewsMessage={noReviewsMessage}
-        noBeforeAfterMessage={noBeforeAfterMessage}
-        noEventsMessage={noEventsMessage}
-        beforeAfterCountLabel={beforeAfterCountLabel}
-        gridViewLabel={gridViewLabel}
-        listViewLabel={listViewLabel}
-        beforeLabel={beforeLabel}
-        afterLabel={afterLabel}
-        artistId={artistId}
-        writeReviewLabel={writeReviewLabel}
-        isLoggedIn={isLoggedIn}
-      />
+      <section
+        id="tabpanel-home"
+        role="tabpanel"
+        aria-labelledby="tab-home"
+        aria-label="홈"
+        className="scroll-mt-28"
+      >
+        {hero}
+      </section>
+      <ShopTabsNav activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} />
+
+      <section
+        id="tabpanel-events"
+        role="tabpanel"
+        aria-labelledby="tab-events"
+        aria-label={eventsLabel}
+        className="scroll-mt-28 space-y-3 px-4 py-6"
+      >
+        <h2 className="text-base font-bold">
+          {eventsLabel} <span className="text-muted-foreground">({eventCount.toLocaleString()})</span>
+        </h2>
+        <EventsSection events={events} emptyMessage={noEventsMessage} />
+      </section>
+
+      <section
+        id="tabpanel-portfolio"
+        role="tabpanel"
+        aria-labelledby="tab-portfolio"
+        aria-label={portfolioLabel}
+        className="scroll-mt-28 space-y-3 border-t border-border px-4 py-6"
+      >
+        <h2 className="text-base font-bold">
+          {portfolioLabel} <span className="text-muted-foreground">({portfolioCount.toLocaleString()})</span>
+        </h2>
+        <PortfolioTabContent
+          portfolios={portfolios}
+          totalCountLabel={totalCountLabel}
+          emptyMessage={noPortfolioMessage}
+          gridViewLabel={gridViewLabel}
+          listViewLabel={listViewLabel}
+        />
+      </section>
+
+      <section
+        id="tabpanel-beforeAfter"
+        role="tabpanel"
+        aria-labelledby="tab-beforeAfter"
+        aria-label={beforeAfterLabel}
+        className="scroll-mt-28 space-y-3 border-t border-border px-4 py-6"
+      >
+        <h2 className="text-base font-bold">
+          {beforeAfterLabel} <span className="text-muted-foreground">({beforeAfterCount.toLocaleString()})</span>
+        </h2>
+        <BeforeAfterTabContent
+          photos={beforeAfterPhotos}
+          totalCountLabel={beforeAfterCountLabel}
+          emptyMessage={noBeforeAfterMessage}
+          beforeLabel={beforeLabel}
+          afterLabel={afterLabel}
+        />
+      </section>
+
+      <section
+        id="tabpanel-reviews"
+        role="tabpanel"
+        aria-labelledby="tab-reviews"
+        aria-label={reviewsLabel}
+        className="scroll-mt-28 space-y-3 border-t border-border px-4 py-6"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold">
+            {reviewsLabel} <span className="text-muted-foreground">({reviewCount.toLocaleString()})</span>
+          </h2>
+          {isLoggedIn ? (
+            <Link
+              href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
+              className="text-sm font-medium text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:rounded focus-visible:text-brand-primary-hover focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              {writeReviewLabel}
+            </Link>
+          ) : null}
+        </div>
+        <ReviewList reviews={reviews} emptyMessage={noReviewsMessage} />
+      </section>
     </>
   );
 }

@@ -1,4 +1,4 @@
-// @client-reason: Rendered inside client-parent ArtistDetailTabs (tab state management)
+// @client-reason: Image lazy-loaded via next/image inside client island (ShopBlogClient)
 "use client";
 
 import Image from "next/image";
