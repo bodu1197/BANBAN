@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { escapeIlike } from "@/lib/supabase/queries";
 
@@ -266,6 +267,12 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
         .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // profiles 수정도 artist 페이지에 영향 가능 (nickname → artists.title 트리거 동기화 등)
+    // → 해당 user 의 artist 페이지 캐시 무효화
+    const { data: artistRow } = await supabase.from("artists").select("id").eq("user_id", body.id).maybeSingle();
+    const artistId = (artistRow as { id?: string } | null)?.id;
+    if (artistId) revalidatePath(`/artists/${artistId}`);
 
     return NextResponse.json({ member: data });
 }
