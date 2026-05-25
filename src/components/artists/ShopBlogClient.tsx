@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import type { EventCardData } from "@/lib/supabase/event-queries";
 import { EventCard } from "@/components/event/EventCard";
-import { ShopTabsNav, type ShopTabId } from "./ShopTabsNav";
+import { ShopTabsNav, SHOP_TABS_NAV_STICKY_TOP_PX, type ShopTabId } from "./ShopTabsNav";
 import { PortfolioTabContent } from "./PortfolioTabContent";
 import { BeforeAfterTabContent } from "./BeforeAfterTabContent";
 import { ReviewList } from "@/components/reviews/ReviewList";
@@ -19,9 +19,6 @@ const VALID_TABS: ReadonlySet<ShopTabId> = new Set<ShopTabId>([
   "beforeAfter",
   "reviews",
 ]);
-
-// sticky 탭 nav가 멈추는 top 위치 (헤더 h-12 = 48px). ShopTabsNav 의 `sticky top-12` 와 일치해야 함.
-const STICKY_TOP_PX = 48;
 
 function isShopTabId(value: string | null): value is ShopTabId {
   return value !== null && VALID_TABS.has(value as ShopTabId);
@@ -153,24 +150,26 @@ export function ShopBlogClient({
   const tabParam = searchParams.get("tab");
   const initialTab: ShopTabId = isShopTabId(tabParam) ? tabParam : "events";
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
+  // ShopTabsNav 의 sticky 위치 추적 — querySelector 없이 ref 로 직접 접근
+  const tablistRef = useRef<HTMLDivElement>(null);
   // 탭 클릭 직전 메뉴탭이 sticky 상태였는지 기록 → 클릭 후에도 sticky 위치를 유지하도록 scroll 보정
   const wasStickyBeforeSwitchRef = useRef(false);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
-    const tablist = document.querySelector<HTMLElement>('[role="tablist"]');
-    wasStickyBeforeSwitchRef.current = tablist !== null && tablist.getBoundingClientRect().top <= STICKY_TOP_PX;
+    const tablist = tablistRef.current;
+    wasStickyBeforeSwitchRef.current = tablist !== null && tablist.getBoundingClientRect().top <= SHOP_TABS_NAV_STICKY_TOP_PX;
     setActiveTab(tab);
   }, []);
 
-  // 새 탭 패널 렌더 직후 (paint 전) scroll 위치 보정 — 짧은 콘텐츠로 인한 페이지 점프 방지
+  // 새 탭 패널 렌더 직후 (paint 전, flicker 방지) scroll 위치 보정 — 짧은 콘텐츠로 인한 페이지 점프 방지
   useLayoutEffect(() => {
     if (!wasStickyBeforeSwitchRef.current) return;
     wasStickyBeforeSwitchRef.current = false;
-    const tablist = document.querySelector<HTMLElement>('[role="tablist"]');
+    const tablist = tablistRef.current;
     if (!tablist) return;
     const rect = tablist.getBoundingClientRect();
-    if (rect.top > STICKY_TOP_PX) {
-      globalThis.scrollBy({ top: rect.top - STICKY_TOP_PX, behavior: "auto" });
+    if (rect.top > SHOP_TABS_NAV_STICKY_TOP_PX) {
+      globalThis.scrollBy({ top: rect.top - SHOP_TABS_NAV_STICKY_TOP_PX, behavior: "auto" });
     }
   }, [activeTab]);
 
@@ -185,7 +184,7 @@ export function ShopBlogClient({
   return (
     <>
       {hero}
-      <ShopTabsNav activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} />
+      <ShopTabsNav ref={tablistRef} activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} />
       <section
         id={`tabpanel-${activeTab}`}
         role="tabpanel"

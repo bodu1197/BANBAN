@@ -1,9 +1,13 @@
 // @client-reason: activeTab 상태와 onTabClick 콜백 — 부모 클라이언트가 관리하지만 이 컴포넌트도 클라이언트
 "use client";
 
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export type ShopTabId = "home" | "events" | "portfolio" | "beforeAfter" | "reviews";
+
+// sticky top 값(px). Tailwind 클래스 `sticky top-12` 와 동기화 — 변경 시 두 곳을 동시에 수정해야 함.
+export const SHOP_TABS_NAV_STICKY_TOP_PX = 48;
 
 interface ShopTab {
   id: ShopTabId;
@@ -19,13 +23,13 @@ interface ShopTabsNavProps {
   className?: string;
 }
 
-export function ShopTabsNav({
+export const ShopTabsNav = forwardRef<HTMLDivElement, ShopTabsNavProps>(function ShopTabsNav({
   activeTab,
   onTabClick,
   tabs,
   ariaLabel = "샵 메뉴",
   className,
-}: Readonly<ShopTabsNavProps>): React.ReactElement {
+}, ref): React.ReactElement {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number): void => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     e.preventDefault();
@@ -37,6 +41,7 @@ export function ShopTabsNav({
 
   return (
     <div
+      ref={ref}
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
@@ -76,4 +81,4 @@ export function ShopTabsNav({
       })}
     </div>
   );
-}
+});
