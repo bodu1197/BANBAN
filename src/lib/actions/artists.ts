@@ -28,12 +28,13 @@ export async function revalidateArtistPage(artistId: string): Promise<void> {
   const user = await getUser();
   if (!user) throw new Error("Unauthorized");
 
-  // 3. 본인 아티스트이거나 admin 이어야 함
+  // 3. 본인 아티스트이거나 admin 이어야 함. 존재하지 않는 artistId 는 throw — 임의 ID 로 revalidate 호출 방지.
   const supabase = await createClient();
   const [{ data: profile }, { data: artist }] = await Promise.all([
     supabase.from("profiles").select("is_admin").eq("id", user.id).single(),
     supabase.from("artists").select("user_id").eq("id", artistId).single(),
   ]);
+  if (!artist) throw new Error("Artist not found");
   const isAdmin = (profile as { is_admin?: boolean } | null)?.is_admin === true;
   const isOwner = (artist as { user_id?: string } | null)?.user_id === user.id;
   if (!isAdmin && !isOwner) throw new Error("Forbidden");

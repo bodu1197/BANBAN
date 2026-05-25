@@ -28,6 +28,7 @@ export async function revalidatePortfolioPages(artistId: string): Promise<void> 
     .select("user_id")
     .eq("id", artistId)
     .single();
+  if (!artist) throw new Error("Artist not found");
   const isOwner = (artist as { user_id?: string } | null)?.user_id === user.id;
   if (!isOwner) {
     const { data: profile } = await supabase
