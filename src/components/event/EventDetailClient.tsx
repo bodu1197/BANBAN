@@ -16,6 +16,7 @@ import { EventDetailImageStack } from "./EventDetailImageStack";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
 import { saveRecentEvent } from "@/lib/recent-events";
 import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
+import { ReviewCard } from "@/components/reviews/ReviewCard";
 
 const RETOUCH_LABELS: Record<string, string> = {
   included: "포함", separate: "별도", none: "없음", extra: "추가비",
@@ -23,6 +24,14 @@ const RETOUCH_LABELS: Record<string, string> = {
 
 function hasDetailImages(media: EventWithDetails["event_media"]): boolean {
   return media.some((m) => m.media_type.startsWith("detail_"));
+}
+
+interface RecentReview {
+  id: string;
+  rating: number;
+  content: string;
+  authorName: string;
+  createdAt: string;
 }
 
 interface EventDetailClientProps {
@@ -34,6 +43,7 @@ interface EventDetailClientProps {
   isLoggedIn: boolean;
   avgRating: number;
   reviewCount: number;
+  recentReviews?: RecentReview[];
 }
 
 export function EventDetailClient({
@@ -45,6 +55,7 @@ export function EventDetailClient({
   isLoggedIn,
   avgRating,
   reviewCount,
+  recentReviews = [],
 }: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
 
@@ -87,6 +98,7 @@ export function EventDetailClient({
           isLoggedIn={isLoggedIn}
           avgRating={avgRating}
           reviewCount={reviewCount}
+          recentReviews={recentReviews}
         />
       </section>
 
@@ -375,15 +387,18 @@ function ReviewsSection({
   isLoggedIn,
   avgRating,
   reviewCount,
+  recentReviews,
 }: Readonly<{
   artistId: string;
   artistName: string;
   isLoggedIn: boolean;
   avgRating: number;
   reviewCount: number;
+  recentReviews: RecentReview[];
 }>): React.ReactElement {
   const hasRating = reviewCount > 0 && avgRating > 0;
   const reviewsHref = `/artists/${artistId}?tab=reviews`;
+  const hasReviewsToShow = isLoggedIn && recentReviews.length > 0;
 
   return (
     <div className="space-y-4">
@@ -392,14 +407,16 @@ function ReviewsSection({
           <p className="text-xs text-muted-foreground">직접 시술받고 작성한</p>
           <h2 className="text-base font-bold">시술후기</h2>
         </div>
-        <Link
-          href={reviewsHref}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
-          aria-label={`${artistName} 후기 ${reviewCount}개 모두보기`}
-        >
-          모두보기 ({reviewCount.toLocaleString()})
-          <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
-        </Link>
+        {reviewCount > recentReviews.length && (
+          <Link
+            href={reviewsHref}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+            aria-label={`${artistName} 후기 ${reviewCount}개 모두보기`}
+          >
+            모두보기 ({reviewCount.toLocaleString()})
+            <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
+          </Link>
+        )}
       </div>
 
       {hasRating ? (
@@ -410,19 +427,32 @@ function ReviewsSection({
         </div>
       ) : null}
 
-      {isLoggedIn ? (
+      {hasReviewsToShow ? (
         <div className="space-y-3">
+          {recentReviews.map((r) => (
+            <ReviewCard
+              key={r.id}
+              rating={r.rating}
+              content={r.content}
+              authorName={r.authorName}
+              createdAt={r.createdAt}
+            />
+          ))}
           <Link
-            href={reviewsHref}
-            className="flex items-center gap-2 rounded-lg border border-input p-4 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+            href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
+            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Heart className="h-5 w-5 text-brand-primary" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{artistName}의 전체 후기 보기</p>
-              <p className="text-xs text-muted-foreground">샵 페이지에서 실제 후기를 확인하세요</p>
-            </div>
-            <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground" aria-hidden />
+            <Edit2 className="h-3 w-3" aria-hidden />
+            후기 작성
           </Link>
+        </div>
+      ) : isLoggedIn ? (
+        <div className="space-y-3">
+          <div className="rounded-lg border border-dashed border-input p-6 text-center">
+            <MessageSquareText className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" aria-hidden />
+            <p className="text-sm font-medium">아직 등록된 후기가 없어요</p>
+            <p className="mt-1 text-xs text-muted-foreground">첫 후기를 남겨주세요</p>
+          </div>
           <Link
             href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
             className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"

@@ -7,6 +7,7 @@ import {
   incrementEventViews,
 } from "@/lib/supabase/event-queries";
 import { fetchArtistReviewStats } from "@/lib/supabase/portfolio-detail-queries";
+import { fetchReviewsByArtist } from "@/lib/supabase/queries";
 import { EventDetailClient } from "@/components/event/EventDetailClient";
 import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
@@ -99,10 +100,11 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
 
   void incrementEventViews(id);
 
-  const [reviewStats, shopStats, user] = await Promise.all([
+  const [reviewStats, shopStats, user, reviewsList] = await Promise.all([
     fetchArtistReviewStats(event.artist_id),
     fetchArtistShopStats(event.artist_id),
     getUser().catch(() => null),
+    fetchReviewsByArtist(event.artist_id, { limit: 3 }),
   ]);
 
   const heroBanner = (
@@ -156,6 +158,13 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
         isLoggedIn={!!user}
         avgRating={reviewStats.avgRating}
         reviewCount={reviewStats.reviewCount}
+        recentReviews={reviewsList.data.map((r) => ({
+          id: r.id,
+          rating: r.rating,
+          content: r.content,
+          authorName: r.profile?.nickname ?? "익명",
+          createdAt: r.created_at ?? new Date().toISOString(),
+        }))}
         shopTabs={
           <ShopNavTabs
             artistId={event.artist_id}
