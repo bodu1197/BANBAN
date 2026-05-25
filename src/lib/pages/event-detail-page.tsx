@@ -10,6 +10,7 @@ import { fetchArtistReviewStats } from "@/lib/supabase/portfolio-detail-queries"
 import { EventDetailClient } from "@/components/event/EventDetailClient";
 import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
+import { EventShopCard } from "@/components/event/EventShopCard";
 import { RecommendedEventCard } from "@/components/event/RecommendedEventCard";
 import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getEventStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
@@ -165,14 +166,24 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
             stickyTopClass="top-[69px]"
           />
         }
-        shopTabsBottom={
-          <section className="mx-auto w-full max-w-3xl px-4 pt-2" aria-label="샵 정보">
-            <ShopNavTabs
-              artistId={event.artist_id}
-              eventCount={shopStats.eventCount}
-              portfolioCount={shopStats.portfolioCount}
-              beforeAfterCount={0}
-              reviewCount={reviewStats.reviewCount}
+        shopInfoCard={
+          <section className="mx-auto w-full max-w-3xl px-4 py-4" aria-label="샵 정보">
+            <EventShopCard
+              shop={{
+                artistId: event.artist_id,
+                artistName: event.artist.title,
+                artistAvatar: getAvatarUrl(event.artist.profile_image_path),
+                address: event.artist.address ?? "",
+                avgRating: reviewStats.avgRating,
+                reviewCount: reviewStats.reviewCount,
+                eventCount: shopStats.eventCount,
+                portfolioCount: shopStats.portfolioCount,
+                shopName: event.shop_name,
+                shopRegion: event.shop_region,
+                shopBusinessHours: event.shop_business_hours,
+                shopParking: event.shop_parking,
+                shopBookingMethod: event.shop_booking_method,
+              }}
             />
           </section>
         }

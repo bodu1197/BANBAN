@@ -29,7 +29,7 @@ interface EventDetailClientProps {
   event: EventWithDetails;
   heroBanner: React.ReactNode;
   shopTabs?: React.ReactNode;
-  shopTabsBottom?: React.ReactNode;
+  shopInfoCard?: React.ReactNode;
   recommendedSection?: React.ReactNode;
   isLoggedIn: boolean;
   avgRating: number;
@@ -40,7 +40,7 @@ export function EventDetailClient({
   event,
   heroBanner,
   shopTabs,
-  shopTabsBottom,
+  shopInfoCard,
   recommendedSection,
   isLoggedIn,
   avgRating,
@@ -90,7 +90,7 @@ export function EventDetailClient({
         />
       </section>
 
-      {shopTabsBottom}
+      {shopInfoCard}
 
       {recommendedSection}
 
