@@ -165,6 +165,17 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
             stickyTopClass="top-[69px]"
           />
         }
+        shopTabsBottom={
+          <section className="mx-auto w-full max-w-3xl px-4 pt-2" aria-label="샵 정보">
+            <ShopNavTabs
+              artistId={event.artist_id}
+              eventCount={shopStats.eventCount}
+              portfolioCount={shopStats.portfolioCount}
+              beforeAfterCount={0}
+              reviewCount={reviewStats.reviewCount}
+            />
+          </section>
+        }
         recommendedSection={
           <Suspense fallback={<RecommendedSkeleton />}>
             <RecommendedEvents eventId={event.id} artistId={event.artist_id} />
