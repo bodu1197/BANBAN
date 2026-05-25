@@ -5,6 +5,7 @@ import { STRINGS } from "@/lib/strings";
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { FullPageSpinner } from "@/components/ui/full-page-spinner";
@@ -148,6 +149,7 @@ export default function PortfolioEditClient({
 
 }: Readonly<PortfolioEditClientProps>): React.ReactElement {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { user, artist, isLoading: authLoading } = useAuth();
 
     const [loading, setLoading] = useState(true);
@@ -267,6 +269,7 @@ export default function PortfolioEditClient({
                 // eslint-disable-next-line no-console
                 console.error("Portfolio cache invalidation failed:", err);
             });
+            await queryClient.invalidateQueries({ queryKey: ["portfolios", "owned"] });
             alert("수정되었습니다.");
             router.push(portfolioListPath);
             router.refresh();
