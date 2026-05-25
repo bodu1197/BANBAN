@@ -217,6 +217,13 @@ async function saveArtistUpdatesSelf(
   const { error: artistError } = await supabase.from("artists").update(updateData).eq("id", artistId);
   if (artistError) throw artistError;
   await updateArtistCategoriesSelf(artistId, shopCategoryIds);
+
+  // DB 트리거가 profiles.nickname 을 artists.title 로 자동 동기화하지만,
+  // Supabase Auth user_metadata 는 별도 저장소이므로 같이 갱신 (다음 로그인 시 일관성).
+  const title = typeof updateData.title === "string" ? updateData.title : null;
+  if (title && title.trim()) {
+    await supabase.auth.updateUser({ data: { nickname: title } }).catch(() => { /* non-fatal */ });
+  }
 }
 
 async function saveArtistEdits(

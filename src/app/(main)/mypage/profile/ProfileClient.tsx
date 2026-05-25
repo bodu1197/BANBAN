@@ -36,7 +36,9 @@ export function ProfileClient(): React.ReactElement {
 
   useEffect(() => {
     if (user) {
-      setNickname(user.user_metadata?.nickname || "");
+      // 아티스트명 우선: artist.title 이 있으면 닉네임도 그 값으로 강제 (DB 트리거가 양방향 동기화)
+      const initialNickname = (artist?.title && artist.title.trim()) || user.user_metadata?.nickname || "";
+      setNickname(initialNickname);
       setEmail(user.email || "");
       setContact(user.user_metadata?.contact || "");
       setChatNotification(user.user_metadata?.message_push_enabled !== false);
@@ -135,6 +137,18 @@ export function ProfileClient(): React.ReactElement {
 
       if (updateError) {
         throw updateError;
+      }
+
+      // profiles.nickname 도 동시 업데이트 → DB 트리거가 artists.title 자동 동기화
+      if (user?.id) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ nickname })
+          .eq("id", user.id);
+        if (profileError) {
+          // eslint-disable-next-line no-console
+          console.error("[profile] nickname sync 실패:", profileError.message);
+        }
       }
 
       // Update password if provided
