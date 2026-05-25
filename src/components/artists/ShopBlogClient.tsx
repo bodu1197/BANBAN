@@ -1,7 +1,7 @@
 // @client-reason: activeTab 기반 단일 탭 렌더 + sticky 탭 nav. 한 번에 한 탭의 콘텐츠만 노출.
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
@@ -19,6 +19,9 @@ const VALID_TABS: ReadonlySet<ShopTabId> = new Set<ShopTabId>([
   "beforeAfter",
   "reviews",
 ]);
+
+// sticky 탭 nav가 멈추는 top 위치 (헤더 h-12 = 48px). ShopTabsNav 의 `sticky top-12` 와 일치해야 함.
+const STICKY_TOP_PX = 48;
 
 function isShopTabId(value: string | null): value is ShopTabId {
   return value !== null && VALID_TABS.has(value as ShopTabId);
@@ -150,10 +153,26 @@ export function ShopBlogClient({
   const tabParam = searchParams.get("tab");
   const initialTab: ShopTabId = isShopTabId(tabParam) ? tabParam : "events";
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
+  // 탭 클릭 직전 메뉴탭이 sticky 상태였는지 기록 → 클릭 후에도 sticky 위치를 유지하도록 scroll 보정
+  const wasStickyBeforeSwitchRef = useRef(false);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
+    const tablist = document.querySelector<HTMLElement>('[role="tablist"]');
+    wasStickyBeforeSwitchRef.current = tablist !== null && tablist.getBoundingClientRect().top <= STICKY_TOP_PX;
     setActiveTab(tab);
   }, []);
+
+  // 새 탭 패널 렌더 직후 (paint 전) scroll 위치 보정 — 짧은 콘텐츠로 인한 페이지 점프 방지
+  useLayoutEffect(() => {
+    if (!wasStickyBeforeSwitchRef.current) return;
+    wasStickyBeforeSwitchRef.current = false;
+    const tablist = document.querySelector<HTMLElement>('[role="tablist"]');
+    if (!tablist) return;
+    const rect = tablist.getBoundingClientRect();
+    if (rect.top > STICKY_TOP_PX) {
+      globalThis.scrollBy({ top: rect.top - STICKY_TOP_PX, behavior: "auto" });
+    }
+  }, [activeTab]);
 
   const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
     { id: "home", label: "홈" },
@@ -172,7 +191,7 @@ export function ShopBlogClient({
         role="tabpanel"
         aria-labelledby={`tab-${activeTab}`}
         tabIndex={0}
-        className="px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {renderActivePanel({ activeTab, data, labels, artistId, isLoggedIn })}
       </section>
