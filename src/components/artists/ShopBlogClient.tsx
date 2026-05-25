@@ -110,6 +110,7 @@ export function ShopBlogClient({
     VALID_TABS.has(initialTab) ? (initialTab as ShopTabId) : "home",
   );
   const programmaticScrollRef = useRef(false);
+  const settleTimerRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
 
   const scrollToSection = useCallback((tab: ShopTabId, smooth: boolean): void => {
     const el = document.getElementById(`tabpanel-${tab}`);
@@ -118,9 +119,21 @@ export function ShopBlogClient({
     // prefers-reduced-motion 사용자는 즉시 점프 (스크롤 애니메이션 비활성화)
     const reduceMotion = globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el.scrollIntoView({ behavior: smooth && !reduceMotion ? "smooth" : "auto", block: "start" });
-    globalThis.setTimeout(() => {
+    if (settleTimerRef.current !== null) globalThis.clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = globalThis.setTimeout(() => {
       programmaticScrollRef.current = false;
+      settleTimerRef.current = null;
     }, SCROLL_SETTLE_MS);
+  }, []);
+
+  // unmount 시 pending timer 정리
+  useEffect(() => {
+    return () => {
+      if (settleTimerRef.current !== null) {
+        globalThis.clearTimeout(settleTimerRef.current);
+        settleTimerRef.current = null;
+      }
+    };
   }, []);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
@@ -137,6 +150,8 @@ export function ShopBlogClient({
   // 스크롤 위치에 따라 activeTab 자동 갱신
   // rootMargin top -100px: sticky 헤더(48px)+탭(~50px) 아래에서 트리거
   // rootMargin bottom -55%: viewport 상단 ~45% 영역만 활성 판정 → 다음 섹션 미리 활성화 방지
+  // threshold [0, 0.5]: 진입/중심 두 지점만 → 콜백 빈도 최소화
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- observer는 마운트 시 1회만 설정; SECTION_IDS/VALID_TABS는 모듈 상수
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -148,7 +163,7 @@ export function ShopBlogClient({
         const rawId = visible.target.id.replace("tabpanel-", "");
         if (VALID_TABS.has(rawId)) setActiveTab(rawId as ShopTabId);
       },
-      { rootMargin: "-100px 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+      { rootMargin: "-100px 0px -55% 0px", threshold: [0, 0.5] },
     );
     SECTION_IDS.forEach((id) => {
       const el = document.getElementById(`tabpanel-${id}`);
