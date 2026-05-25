@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 
 import type { BusinessHoursMap } from "@/types/artist-form";
@@ -97,6 +98,9 @@ export async function PATCH(
     const result = await syncCategorizables(auth.supabase, id, body.shop_category_ids);
     if (result.error) return NextResponse.json({ error: result.error }, { status: 500 });
   }
+
+  // ISR/CDN 캐시 즉시 무효화 — 인기 100명 prerender + revalidate=120 만으로는 한참 반영 안 됨
+  revalidatePath(`/artists/${id}`);
 
   return NextResponse.json({ success: true });
 }

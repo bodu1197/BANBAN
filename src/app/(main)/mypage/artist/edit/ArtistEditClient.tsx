@@ -16,6 +16,7 @@ import type { ArtistType } from "@/types/database";
 import { addressToRegionKey } from "@/lib/regions";
 import { geocodeAddress } from "@/types/artist-form";
 import { normalizeFancyText } from "@/lib/normalize-text";
+import { revalidateArtistPage } from "@/lib/actions/artists";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import {
   useArtistFormHandlers,
@@ -362,6 +363,12 @@ export function ArtistEditClient({ artist,
     setIsSubmitting(true);
     try {
       await saveArtistEdits(artist, formData, newProfileImage, deletedMediaIds, newShopImages, existingShopImages.length, isAdmin);
+      // ISR/CDN 캐시 즉시 무효화 — 인기 아티스트는 정적 prerender + revalidate 만으로는 한참 반영 안 됨
+      // 실패해도 저장은 이미 성공이므로 silent 처리 (다음 revalidate 시점에 자연스레 갱신)
+      await revalidateArtistPage(artist.id).catch((err: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error("Artist page cache invalidation failed:", err);
+      });
       globalThis.alert(STRINGS.mypage.saved);
       router.push(backHref);
     } catch (error: unknown) {
