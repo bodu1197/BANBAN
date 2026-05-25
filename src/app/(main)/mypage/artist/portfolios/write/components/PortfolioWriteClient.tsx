@@ -109,6 +109,10 @@ export default function PortfolioWriteClient(): React.ReactElement {
 
     async function handleSubmit(e: FormEvent): Promise<void> {
         e.preventDefault();
+        if (selectedCategories.size === 0) {
+            alert("대표 분류를 1개 이상 선택해주세요.");
+            return;
+        }
         setSubmitting(true);
         try {
             await createPortfolio();

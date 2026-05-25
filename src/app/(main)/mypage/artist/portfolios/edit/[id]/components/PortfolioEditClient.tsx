@@ -255,6 +255,10 @@ export default function PortfolioEditClient({
     async function handleSubmit(e: FormEvent): Promise<void> {
         e.preventDefault();
         if (!user) return;
+        if (selectedCategories.size === 0) {
+            alert("대표 분류를 1개 이상 선택해주세요.");
+            return;
+        }
         setSubmitting(true);
         try {
             const payload = buildPayload();
