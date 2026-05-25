@@ -30,7 +30,11 @@ export function ShopHeroBanner({
   const fullAddress = [shop.address, shop.address_detail].filter(Boolean).join(" ");
   const displayAddress = fullAddress || regionName;
 
-  const description = shop.description;
+  // introduce(현재 수정 폼이 쓰는 필드)가 있으면 그것만 표시.
+  // 비어있을 때만 레거시 description(HTML) 을 fallback 으로 사용 — 기존 회원이 introduce 로
+  // 갱신하면 옛 description HTML 이 새 introduce 를 덮어쓰던 버그 차단.
+  const hasIntroduce = shop.introduce !== null && shop.introduce !== undefined && shop.introduce.trim().length > 0;
+  const description = hasIntroduce ? null : shop.description;
   const sanitizedDescription = description && description.includes("<")
     ? sanitizeHtmlServerSide(description)
     : null;
@@ -46,7 +50,7 @@ export function ShopHeroBanner({
         reviewCount={reviewCount}
         isLiked={isLiked}
       />
-      {(shop.introduce || description) ? (
+      {(hasIntroduce || description) ? (
         <CollapsibleIntro
           text={shop.introduce || ""}
           sanitizedHtml={sanitizedDescription}
