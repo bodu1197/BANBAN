@@ -150,26 +150,29 @@ export function ShopBlogClient({
   const tabParam = searchParams.get("tab");
   const initialTab: ShopTabId = isShopTabId(tabParam) ? tabParam : "events";
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
-  // ShopTabsNav 의 sticky 위치 추적 — querySelector 없이 ref 로 직접 접근
   const tablistRef = useRef<HTMLDivElement>(null);
-  // 탭 클릭 직전 메뉴탭이 sticky 상태였는지 기록 → 클릭 후에도 sticky 위치를 유지하도록 scroll 보정
-  const wasStickyBeforeSwitchRef = useRef(false);
+  // 탭 클릭 시점에 명시적 scroll 요청 플래그. 사용자 스크롤 위치는 건드리지 않고 클릭 시에만 보정.
+  const scrollToTopOnNextRenderRef = useRef(false);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
-    const tablist = tablistRef.current;
-    wasStickyBeforeSwitchRef.current = tablist !== null && tablist.getBoundingClientRect().top <= SHOP_TABS_NAV_STICKY_TOP_PX;
+    scrollToTopOnNextRenderRef.current = true;
     setActiveTab(tab);
   }, []);
 
-  // 새 탭 패널 렌더 직후 (paint 전, flicker 방지) scroll 위치 보정 — 짧은 콘텐츠로 인한 페이지 점프 방지
+  // 탭 클릭 → 새 패널의 첫 부분이 sticky 영역(헤더 + 탭) 바로 아래에 오도록 scroll.
+  // useLayoutEffect 로 paint 전에 처리 → flicker 없음.
   useLayoutEffect(() => {
-    if (!wasStickyBeforeSwitchRef.current) return;
-    wasStickyBeforeSwitchRef.current = false;
+    if (!scrollToTopOnNextRenderRef.current) return;
+    scrollToTopOnNextRenderRef.current = false;
     const tablist = tablistRef.current;
-    if (!tablist) return;
-    const rect = tablist.getBoundingClientRect();
-    if (rect.top > SHOP_TABS_NAV_STICKY_TOP_PX) {
-      globalThis.scrollBy({ top: rect.top - SHOP_TABS_NAV_STICKY_TOP_PX, behavior: "auto" });
+    const panel = document.getElementById(`tabpanel-${activeTab}`);
+    if (!tablist || !panel) return;
+    const tablistHeight = tablist.getBoundingClientRect().height;
+    const panelTop = panel.getBoundingClientRect().top;
+    const targetTop = SHOP_TABS_NAV_STICKY_TOP_PX + tablistHeight;
+    const delta = panelTop - targetTop;
+    if (Math.abs(delta) > 1) {
+      globalThis.scrollBy({ top: delta, behavior: "auto" });
     }
   }, [activeTab]);
 
