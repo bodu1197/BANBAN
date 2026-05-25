@@ -18,7 +18,7 @@ const PROD_CSP = [
     "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com https://*.googleusercontent.com https://k.kakaocdn.net https://*.pstatic.net",
     "font-src 'self' data:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://*.iamport.kr https://*.portone.io https://vitals.vercel-insights.com",
-    "frame-src 'self' https://*.iamport.kr https://*.portone.io",
+    "frame-src 'self' https://*.iamport.kr https://*.portone.io https://postcode.map.kakao.com https://t1.daumcdn.net",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -21,7 +21,7 @@ const VALID_TABS: ReadonlySet<ShopTabId> = new Set<ShopTabId>([
 ]);
 
 function isShopTabId(value: string | null): value is ShopTabId {
-  return value !== null && (VALID_TABS as ReadonlySet<string>).has(value);
+  return value !== null && VALID_TABS.has(value as ShopTabId);
 }
 
 export interface ShopBlogData {
