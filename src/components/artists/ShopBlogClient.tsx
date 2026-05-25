@@ -13,7 +13,6 @@ import { BeforeAfterTabContent } from "./BeforeAfterTabContent";
 import { ReviewList } from "@/components/reviews/ReviewList";
 
 const VALID_TABS: ReadonlySet<ShopTabId> = new Set<ShopTabId>([
-  "home",
   "events",
   "portfolio",
   "beforeAfter",
@@ -93,9 +92,6 @@ interface PanelProps {
 
 function renderActivePanel(props: Readonly<PanelProps>): React.ReactNode {
   const { activeTab, data, labels, artistId, isLoggedIn } = props;
-  if (activeTab === "home") {
-    return <EmptyMessage message="샵 정보를 확인하세요" />;
-  }
   if (activeTab === "events") {
     return <EventsPanel events={data.events} emptyMessage={labels.noEvents} />;
   }
@@ -177,7 +173,6 @@ export function ShopBlogClient({
   }, [activeTab]);
 
   const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
-    { id: "home", label: "홈" },
     { id: "events", label: labels.events, count: counts.events },
     { id: "portfolio", label: labels.portfolio, count: counts.portfolios },
     { id: "beforeAfter", label: labels.beforeAfter, count: counts.beforeAfter },
@@ -193,7 +188,7 @@ export function ShopBlogClient({
         role="tabpanel"
         aria-labelledby={`tab-${activeTab}`}
         tabIndex={0}
-        className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {renderActivePanel({ activeTab, data, labels, artistId, isLoggedIn })}
       </section>
