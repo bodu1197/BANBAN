@@ -88,6 +88,7 @@ export default function PortfolioWriteClient(): React.ReactElement {
 
     async function createPortfolio(): Promise<void> {
         if (!artist) { router.push("/login"); return; }
+        if (selectedCategories.size === 0) throw new Error("CATEGORY_REQUIRED");
         const supabase = createClient();
         const imagePaths = await uploadFiles(supabase, artist.id, images);
         const { priceNum, priceOriginNum, discountRate, saleEnd } = parsePrices();
@@ -132,8 +133,11 @@ export default function PortfolioWriteClient(): React.ReactElement {
             alert(hasExhibitions ? "등록 및 기획전 출품이 완료되었습니다." : "등록되었습니다.");
             router.push("/mypage/artist/portfolios");
             router.refresh();
-        } catch {
-            alert("등록에 실패했습니다. 다시 시도해주세요.");
+        } catch (err: unknown) {
+            const msg = err instanceof Error && err.message === "CATEGORY_REQUIRED"
+                ? "대표 분류를 1개 이상 선택해주세요."
+                : "등록에 실패했습니다. 다시 시도해주세요.";
+            alert(msg);
         } finally {
             setSubmitting(false);
         }
@@ -168,14 +172,18 @@ export default function PortfolioWriteClient(): React.ReactElement {
                     onSelectCategory={selectCategory}
                 />
 
-                {/* 등록하기 */}
+                {/* 등록하기 — 대표 분류 미선택 시 비활성화 (UX + 검증 다중 방어) */}
                 <button
                     type="submit"
-                    disabled={submitting}
-                    className="w-full py-3.5 rounded-md bg-brand-primary text-white font-bold text-base hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-opacity disabled:opacity-50"
+                    disabled={submitting || selectedCategories.size === 0}
+                    aria-disabled={submitting || selectedCategories.size === 0}
+                    className="w-full py-3.5 rounded-md bg-brand-primary text-white font-bold text-base hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {submitting ? STRINGS.common.saving : "등록하기"}
                 </button>
+                {selectedCategories.size === 0 ? (
+                    <p className="text-xs text-brand-primary text-center -mt-3">대표 분류를 1개 이상 선택해야 등록할 수 있습니다.</p>
+                ) : null}
             </form>
         </div>
     );

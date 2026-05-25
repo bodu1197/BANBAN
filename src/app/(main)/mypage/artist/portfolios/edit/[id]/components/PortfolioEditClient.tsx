@@ -172,15 +172,17 @@ export default function PortfolioEditClient({
         if (authLoading || !user) return;
         loadPortfolioData(user, artist, portfolioId, router).then((result) => {
             if (!result) return;
-            const hasDiscount = result.portfolio.discount_rate > 0;
+            // 이벤트 판정은 sale_ended_at (명시적 이벤트 종료일) 유무로만.
+            // discount_rate > 0 은 일반 작품에서도 가격 < 정가 일 때 자동 계산되므로
+            // discount 기준으로 isEvent 를 추론하면 일반 작품을 이벤트로 잘못 분류하는 버그 발생.
             const hasSaleDate = !!result.portfolio.sale_ended_at;
             setFormValues({
                 title: result.portfolio.title,
                 description: result.portfolio.description ?? "",
                 price: String(result.portfolio.price),
                 priceOrigin: String(result.portfolio.price_origin),
-                isEvent: hasSaleDate || hasDiscount,
-                isPermanentDiscount: hasDiscount && !hasSaleDate,
+                isEvent: hasSaleDate,
+                isPermanentDiscount: false,
                 saleEndedAt: result.portfolio.sale_ended_at?.slice(0, 10) ?? "",
                 youtubeUrl: result.portfolio.youtube_url ?? "",
             });
