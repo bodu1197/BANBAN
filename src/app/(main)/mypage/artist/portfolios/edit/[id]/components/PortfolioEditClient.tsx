@@ -269,6 +269,7 @@ export default function PortfolioEditClient({
             });
             alert("수정되었습니다.");
             router.push(portfolioListPath);
+            router.refresh();
         } catch {
             alert("수정에 실패했습니다. 다시 시도해주세요.");
         } finally {
@@ -289,6 +290,7 @@ export default function PortfolioEditClient({
             });
             alert("삭제되었습니다.");
             router.push(portfolioListPath);
+            router.refresh();
         } catch {
             alert("삭제에 실패했습니다.");
         } finally {

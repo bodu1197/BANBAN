@@ -371,6 +371,7 @@ export function ArtistEditClient({ artist,
       });
       globalThis.alert(STRINGS.mypage.saved);
       router.push(backHref);
+      router.refresh();
     } catch (error: unknown) {
       // eslint-disable-next-line no-console
       console.error("Update error:", error);

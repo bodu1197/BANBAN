@@ -121,7 +121,10 @@ export default function PortfolioWriteClient(): React.ReactElement {
             }
             const hasExhibitions = formValues.isEvent && selectedExhibitions.size > 0;
             alert(hasExhibitions ? "등록 및 기획전 출품이 완료되었습니다." : "등록되었습니다.");
+            // router.push 만으로는 client-side router cache 가 stale 목록을 그대로 노출.
+            // revalidatePath(server cache) 와 별개로 router.refresh() 호출 필요.
             router.push("/mypage/artist/portfolios");
+            router.refresh();
         } catch {
             alert("등록에 실패했습니다. 다시 시도해주세요.");
         } finally {
