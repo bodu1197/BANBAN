@@ -12,13 +12,17 @@ import { PortfolioTabContent } from "./PortfolioTabContent";
 import { BeforeAfterTabContent } from "./BeforeAfterTabContent";
 import { ReviewList } from "@/components/reviews/ReviewList";
 
-const VALID_TABS: ReadonlySet<string> = new Set<ShopTabId>([
+const VALID_TABS: ReadonlySet<ShopTabId> = new Set<ShopTabId>([
   "home",
   "events",
   "portfolio",
   "beforeAfter",
   "reviews",
 ]);
+
+function isShopTabId(value: string | null): value is ShopTabId {
+  return value !== null && (VALID_TABS as ReadonlySet<string>).has(value);
+}
 
 export interface ShopBlogData {
   events: EventCardData[];
@@ -144,8 +148,7 @@ export function ShopBlogClient({
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: ShopTabId =
-    tabParam !== null && VALID_TABS.has(tabParam) ? (tabParam as ShopTabId) : "events";
+  const initialTab: ShopTabId = isShopTabId(tabParam) ? tabParam : "events";
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
