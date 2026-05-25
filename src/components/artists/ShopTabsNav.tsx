@@ -23,7 +23,7 @@ interface ShopTabsNavProps {
   className?: string;
 }
 
-export const ShopTabsNav = forwardRef<HTMLDivElement, ShopTabsNavProps>(function ShopTabsNav({
+export const ShopTabsNav = forwardRef<HTMLDivElement, Readonly<ShopTabsNavProps>>(function ShopTabsNav({
   activeTab,
   onTabClick,
   tabs,
