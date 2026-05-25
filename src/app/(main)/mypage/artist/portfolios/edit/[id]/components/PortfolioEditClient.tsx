@@ -23,6 +23,7 @@ import {
 } from "@/components/portfolio-form";
 import type { MediaItem, PortfolioFormValues, SavePayload } from "@/components/portfolio-form";
 import { submitExhibitionEntry, withdrawExhibitionEntry } from "@/lib/actions/exhibition-entries";
+import { revalidatePortfolioPages } from "@/lib/actions/portfolios";
 
 // --- Types ---
 
@@ -261,6 +262,11 @@ export default function PortfolioEditClient({
             const activeCount = existingMedia.filter((m) => !deletedMediaIds.has(m.id)).length;
             await uploadNewMedia(supabase, portfolioId, effectiveArtistId, newImages, activeCount);
             if (formValues.isEvent) await syncExhibitions();
+            // 목록/공개샵 페이지 캐시 즉시 무효화
+            await revalidatePortfolioPages(effectiveArtistId).catch((err: unknown) => {
+                // eslint-disable-next-line no-console
+                console.error("Portfolio cache invalidation failed:", err);
+            });
             alert("수정되었습니다.");
             router.push(portfolioListPath);
         } catch {
@@ -276,6 +282,11 @@ export default function PortfolioEditClient({
         try {
             const ok = await deletePortfolioById(createClient(), portfolioId);
             if (!ok) throw new Error("삭제 실패");
+            const effectiveArtistId = artist?.id ?? portfolioArtistId;
+            await revalidatePortfolioPages(effectiveArtistId).catch((err: unknown) => {
+                // eslint-disable-next-line no-console
+                console.error("Portfolio cache invalidation failed:", err);
+            });
             alert("삭제되었습니다.");
             router.push(portfolioListPath);
         } catch {

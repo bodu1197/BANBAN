@@ -22,6 +22,7 @@ import {
 } from "@/components/portfolio-form";
 import type { PortfolioFormValues } from "@/components/portfolio-form";
 import { submitExhibitionEntry } from "@/lib/actions/exhibition-entries";
+import { revalidatePortfolioPages } from "@/lib/actions/portfolios";
 export default function PortfolioWriteClient(): React.ReactElement {
     const router = useRouter();
     const { artist, isLoading: authLoading } = useAuth();
@@ -111,6 +112,13 @@ export default function PortfolioWriteClient(): React.ReactElement {
             await createPortfolio();
             // 포트폴리오 등록 포인트
             void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "PORTFOLIO_UPLOAD" }) });
+            // 목록 페이지 + 공개 샵 페이지 캐시 즉시 무효화 — 등록 직후 새 작품이 목록에 보이도록
+            if (artist) {
+                await revalidatePortfolioPages(artist.id).catch((err: unknown) => {
+                    // eslint-disable-next-line no-console
+                    console.error("Portfolio cache invalidation failed:", err);
+                });
+            }
             const hasExhibitions = formValues.isEvent && selectedExhibitions.size > 0;
             alert(hasExhibitions ? "등록 및 기획전 출품이 완료되었습니다." : "등록되었습니다.");
             router.push("/mypage/artist/portfolios");
