@@ -371,7 +371,6 @@ export const fetchArtistShopStats = cache(async function fetchArtistShopStats(
       .from("portfolios")
       .select("id", { count: "exact", head: true })
       .eq("artist_id", artistId)
-      .eq("status", "published")
       .is("deleted_at", null),
   ]);
   return {
