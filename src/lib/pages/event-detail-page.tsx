@@ -167,7 +167,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
           />
         }
         shopInfoCard={
-          <section className="mx-auto w-full max-w-3xl px-4 py-4" aria-label="샵 정보">
+          <section className="w-full max-w-3xl px-4 py-4" aria-label="샵 정보">
             <EventShopCard
               shop={{
                 artistId: event.artist_id,

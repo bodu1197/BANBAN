@@ -80,7 +80,7 @@ export function EventDetailClient({
         )}
       </section>
 
-      <section className="mx-auto w-full max-w-3xl px-4 py-6" aria-label="시술 후기">
+      <section className="w-full max-w-3xl px-4 py-6" aria-label="시술 후기">
         <ReviewsSection
           artistId={event.artist_id}
           artistName={event.artist.title}

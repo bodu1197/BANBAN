@@ -13,7 +13,7 @@ export function EventShopCard({
 }: Readonly<{ shop: EventShopData }>): React.ReactElement {
   const cardData: ArtistShopCardData = {
     artistId: shop.artistId,
-    artistName: shop.shopName || shop.artistName,
+    artistName: shop.artistName,
     artistAvatar: shop.artistAvatar,
     address: shop.shopRegion || shop.address,
     avgRating: shop.avgRating,
