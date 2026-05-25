@@ -9,7 +9,6 @@ import {
 import { fetchArtistReviewStats } from "@/lib/supabase/portfolio-detail-queries";
 import { fetchReviewsByArtist } from "@/lib/supabase/queries";
 import { EventDetailClient } from "@/components/event/EventDetailClient";
-import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
 import { EventShopCard } from "@/components/event/EventShopCard";
 import { RecommendedEventCard } from "@/components/event/RecommendedEventCard";
@@ -165,16 +164,6 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
           authorName: r.profile?.nickname ?? "익명",
           createdAt: r.created_at ?? new Date().toISOString(),
         }))}
-        shopTabs={
-          <ShopNavTabs
-            artistId={event.artist_id}
-            eventCount={shopStats.eventCount}
-            portfolioCount={shopStats.portfolioCount}
-            beforeAfterCount={0}
-            reviewCount={reviewStats.reviewCount}
-            stickyTopClass="top-[69px]"
-          />
-        }
         shopInfoCard={
           <section className="w-full max-w-3xl px-4 py-4" aria-label="샵 정보">
             <EventShopCard

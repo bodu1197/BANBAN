@@ -15,7 +15,6 @@ import {
     type ArtistReviewStats,
 } from "@/lib/supabase/queries";
 import { fetchArtistShopStats } from "@/lib/supabase/event-queries";
-import { ShopNavTabs } from "@/components/artists/ShopNavTabs";
 import type { ArtistShopCardData } from "@/components/shared/ArtistShopCard";
 import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
 import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
@@ -299,16 +298,6 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                             />
                         </Suspense>
                     </section>
-                }
-                shopTabs={
-                    <ShopNavTabs
-                        artistId={portfolio.artist_id}
-                        eventCount={shopStats.eventCount}
-                        portfolioCount={shopStats.portfolioCount}
-                        beforeAfterCount={0}
-                        reviewCount={reviewStats.reviewCount}
-                        stickyTopClass="top-[61px]"
-                    />
                 }
             />
         </main>
