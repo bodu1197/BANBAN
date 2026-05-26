@@ -62,8 +62,11 @@ async function fetchExhibitionsInternal(category?: string): Promise<ExhibitionIt
     }));
 }
 
-export const fetchExhibitions = unstable_cache(
-    fetchExhibitionsInternal,
-    ["exhibitions"],
-    { revalidate: 300, tags: ["exhibitions"] },
-);
+export function fetchExhibitions(category?: string): Promise<ExhibitionItem[]> {
+    // category 인자 별 분리 cache key — 다중 카테고리 호출 시 collision 회피
+    return unstable_cache(
+        () => fetchExhibitionsInternal(category),
+        [`exhibitions-${category ?? "all"}`],
+        { revalidate: 300, tags: ["exhibitions"] },
+    )();
+}
