@@ -8,7 +8,9 @@ import { fetchExhibitions, type ExhibitionItem } from "@/lib/supabase/exhibition
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard } from "@/components/home/cards";
-import { ExhibitionCard } from "@/components/exhibition/ExhibitionCard";
+import { SUPABASE_URL } from "@/lib/supabase/config";
+import Image from "next/image";
+import Link from "next/link";
 import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
@@ -110,6 +112,52 @@ function CategorySections({ hp, lipPortfolios, mensEyebrowPortfolios }: Readonly
   );
 }
 
+const CATEGORY_KO: Record<string, string> = {
+  WOMENS_BEAUTY: "여자뷰티",
+  MENS_BEAUTY: "남자뷰티",
+  SEMI_PERMANENT: "반영구",
+};
+
+const CATEGORY_BG: Record<string, string> = {
+  SEMI_PERMANENT: "bg-purple-500/80",
+  WOMENS_BEAUTY: "bg-pink-500/80",
+  MENS_BEAUTY: "bg-blue-500/80",
+};
+
+function HomeExhibitionCard({ item }: Readonly<{ item: ExhibitionItem }>): React.ReactElement {
+  const src = item.image_path.startsWith("http")
+    ? item.image_path
+    : `${SUPABASE_URL}/storage/v1/object/public/portfolios/${item.image_path}`;
+  // eslint-disable-next-line security/detect-object-injection -- 알려진 상수 키 (DB enum)
+  const catLabel = CATEGORY_KO[item.category] ?? item.category;
+  // eslint-disable-next-line security/detect-object-injection -- 알려진 상수 키 (DB enum)
+  const catBg = CATEGORY_BG[item.category] ?? "bg-zinc-500/80";
+  return (
+    <Link
+      href={`/exhibition/${item.id}`}
+      className="group relative block overflow-hidden rounded-xl shadow-md transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="relative aspect-[4/3]">
+        <Image
+          src={src}
+          alt={item.title}
+          fill
+          sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, 250px"
+          className="object-cover"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm ${catBg}`}>
+          {catLabel}
+        </span>
+        <div className="absolute inset-x-2 bottom-2">
+          <h3 className="line-clamp-2 text-sm font-bold leading-tight text-white drop-shadow">{item.title}</h3>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function HomeExhibitionSection({ items, title, moreText }: Readonly<{
   items: ExhibitionItem[];
   title: string;
@@ -119,13 +167,11 @@ function HomeExhibitionSection({ items, title, moreText }: Readonly<{
   return (
     <section className="py-4">
       <SectionHeader title={title} moreLink="/exhibition" moreText={moreText} />
-      <HorizontalScrollList>
-        {items.map((item) => (
-          <div key={item.id} className="w-[320px] shrink-0 md:w-[420px]">
-            <ExhibitionCard item={item} />
-          </div>
+      <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-3 lg:grid-cols-4">
+        {items.slice(0, 8).map((item) => (
+          <HomeExhibitionCard key={item.id} item={item} />
         ))}
-      </HorizontalScrollList>
+      </div>
     </section>
   );
 }
