@@ -11,19 +11,78 @@ const SESSION_REFRESH_SKIP_PREFIXES = [
     "/sitemap",
 ];
 
-const PROD_CSP = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.vercel-insights.com https://*.vercel-scripts.com https://t1.daumcdn.net https://pcdn2.swing2app.co.kr https://*.iamport.kr https://*.portone.io https://www.googletagmanager.com https://*.doubleclick.net https://googleads.g.doubleclick.net https://cdn.jsdelivr.net",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com https://*.googleusercontent.com https://k.kakaocdn.net https://*.pstatic.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://*.doubleclick.net",
-    "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://*.iamport.kr https://*.portone.io https://vitals.vercel-insights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.googleadservices.com https://*.doubleclick.net https://www.google.com https://cdn.jsdelivr.net",
-    "frame-src 'self' https://*.iamport.kr https://*.portone.io https://postcode.map.kakao.com https://t1.daumcdn.net",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self'",
-].join("; ");
+/**
+ * Content Security Policy 정의 — 디렉티브별 도메인을 카테고리 코멘트와 함께 관리.
+ * 새 외부 의존성 추가 시 해당 카테고리 아래에 도메인 추가.
+ *
+ * 카테고리:
+ * - SELF: 우리 origin
+ * - SUPABASE: DB / Storage / Realtime
+ * - VERCEL: Analytics / Insights
+ * - PAYMENT: 결제 (iamport, portone)
+ * - ADS: Google Ads conversion tracking + remarketing
+ *   - Google ads pixel 은 사용자 지역에 따라 여러 TLD 로 분기되므로 흔한 TLD 명시 (google.com, google.co.kr/jp/id/hk/sg/tw)
+ * - MEDIA_VENDOR: 외부 미디어/모델 호스팅 (kakao, daum, jsdelivr, googleapis)
+ * - KAKAO_POSTCODE: 다음 우편번호 팝업
+ */
+const CSP_DIRECTIVES: Record<string, string[]> = {
+    "default-src": ["'self'"],
+    "script-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "'wasm-unsafe-eval'", // MediaPipe wasm
+        // Vercel
+        "https://*.vercel-insights.com", "https://*.vercel-scripts.com",
+        // Payment
+        "https://*.iamport.kr", "https://*.portone.io",
+        // Media vendor (postcode, swing2app, MediaPipe CDN)
+        "https://t1.daumcdn.net", "https://pcdn2.swing2app.co.kr", "https://cdn.jsdelivr.net",
+        // Ads
+        "https://www.googletagmanager.com", "https://*.doubleclick.net", "https://googleads.g.doubleclick.net",
+    ],
+    "style-src": ["'self'", "'unsafe-inline'"],
+    "img-src": [
+        "'self'", "data:", "blob:",
+        // Supabase Storage
+        "https://*.supabase.co",
+        // External media
+        "https://flagcdn.com", "https://*.googleusercontent.com", "https://k.kakaocdn.net", "https://*.pstatic.net",
+        // Ads (conversion / remarketing pixel — Google 의 지역 TLD 분기 대응)
+        "https://www.googletagmanager.com", "https://*.google-analytics.com", "https://*.doubleclick.net",
+        "https://www.google.com", "https://www.google.co.kr", "https://www.google.co.jp",
+        "https://www.google.co.id", "https://www.google.com.hk", "https://www.google.com.sg", "https://www.google.com.tw",
+    ],
+    "font-src": ["'self'", "data:"],
+    "connect-src": [
+        "'self'",
+        // Supabase
+        "https://*.supabase.co", "wss://*.supabase.co",
+        // AI
+        "https://api.openai.com",
+        // Payment
+        "https://*.iamport.kr", "https://*.portone.io",
+        // Vercel
+        "https://vitals.vercel-insights.com",
+        // Ads
+        "https://www.googletagmanager.com", "https://*.google-analytics.com", "https://*.analytics.google.com",
+        "https://*.googleadservices.com", "https://*.doubleclick.net", "https://www.google.com",
+        // Media vendor (MediaPipe wasm + model)
+        "https://cdn.jsdelivr.net", "https://storage.googleapis.com",
+    ],
+    "frame-src": [
+        "'self'",
+        "https://*.iamport.kr", "https://*.portone.io",
+        "https://postcode.map.kakao.com", "https://t1.daumcdn.net",
+    ],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    "frame-ancestors": ["'self'"],
+};
+
+const PROD_CSP = Object.entries(CSP_DIRECTIVES)
+    .map(([directive, sources]) => `${directive} ${sources.join(" ")}`)
+    .join("; ");
 
 function applySecurityHeaders(response: NextResponse): NextResponse {
     if (process.env.NODE_ENV === "production") {
