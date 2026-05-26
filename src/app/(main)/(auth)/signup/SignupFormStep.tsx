@@ -10,12 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, XCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
-import type { SignupFormData, CreatedUser, SignupRole } from "./types";
+import type { SignupFormData, CreatedUser } from "./types";
+import type { Role } from "@/lib/onboarding/constants";
 
 interface SignupFormStepProps {
   formData: SignupFormData;
   setFormData: React.Dispatch<React.SetStateAction<SignupFormData>>;
-  role: SignupRole;
+  role: Role;
   onBack: () => void;
   onComplete: (user: CreatedUser) => void;
 }
@@ -31,7 +32,7 @@ async function signUp(data: {
   username: string;
   password: string;
   email: string;
-  role: SignupRole;
+  role: Role;
 }): Promise<{ error: Error | null; emailVerificationRequired?: boolean; user?: { id: string; username: string } }> {
   try {
     const response = await fetch("/api/auth/signup", {
@@ -289,9 +290,11 @@ export function SignupFormStep({ formData, setFormData, role, onBack, onComplete
       <FormField id="password" label={STRINGS.auth.password} type="password" value={formData.password} onChange={updateField("password")} placeholder={STRINGS.auth.passwordRule} disabled={isPending} autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} />
       <FormField id="confirmPassword" label={STRINGS.auth.confirmPassword} type="password" value={confirmPassword} onChange={setConfirmPassword} disabled={isPending} autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH} />
       <PasswordChecklist password={formData.password} confirmPassword={confirmPassword} />
-      {error && (
-        <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
-      )}
+      <div aria-live="polite" aria-atomic="true">
+        {error && (
+          <p className="text-sm text-destructive" role="alert">{error}</p>
+        )}
+      </div>
       <div className="flex gap-3 pt-2">
         <Button type="button" variant="outline" onClick={onBack} className="flex-1" disabled={isPending}>{STRINGS.common.back}</Button>
         <Button type="submit" className="flex-1" disabled={isPending}>{isPending ? "..." : STRINGS.common.complete}</Button>

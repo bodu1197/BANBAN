@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { safeUpdateRole } from "@/lib/onboarding/role-update";
 
 /**
  * 일반 회원 → 시술사 역할 승격.
@@ -25,19 +26,9 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ error: "샵 등록이 완료되어야 합니다" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
-  // update + select 로 실제 적용 여부 검증 (RLS 트리거 실패 시 silent fail 방지)
-  const { data, error } = await admin
-    .from("profiles")
-    .update({ role: "artist" })
-    .eq("id", user.id)
-    .select("role")
-    .maybeSingle();
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  if (data?.role !== "artist") {
-    return NextResponse.json({ error: "역할 변경에 실패했습니다" }, { status: 500 });
+  const result = await safeUpdateRole(createAdminClient(), user.id, "artist");
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

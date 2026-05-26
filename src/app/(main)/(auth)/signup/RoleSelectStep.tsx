@@ -2,71 +2,17 @@
 "use client";
 
 import React, { useState, useTransition } from "react";
-import { Palette, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { RoleSelector } from "@/components/auth/RoleSelector";
 import { signupWithProvider } from "./actions";
 import { OAUTH_PROVIDERS, type OAuthProvider, type OAuthProviderConfig } from "@/lib/auth/oauth-providers";
-import type { SignupRole } from "./types";
+import type { Role } from "@/lib/onboarding/constants";
 
 interface RoleSelectStepProps {
-  selectedRole: SignupRole | null;
-  onSelect: (role: SignupRole) => void;
+  selectedRole: Role | null;
+  onSelect: (role: Role) => void;
   onNext: () => void;
-}
-
-interface RoleOption {
-  role: SignupRole;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-// 반언니 도메인: "타투 아티스트" → "반영구 시술사" (UI 카피만 조정, 식별자는 role="artist" 유지)
-const ROLE_OPTIONS: RoleOption[] = [
-  {
-    role: "artist",
-    icon: <Palette className="h-6 w-6" />,
-    title: "반영구 시술사",
-    description: "포트폴리오 등록 및 고객 관리",
-  },
-  {
-    role: "user",
-    icon: <User className="h-6 w-6" />,
-    title: "일반 회원",
-    description: "작품 구경 및 시술사 검색",
-  },
-];
-
-function RoleCard({ option, isSelected, onSelect }: Readonly<{
-  option: RoleOption;
-  isSelected: boolean;
-  onSelect: () => void;
-}>): React.ReactElement {
-  const isArtist = option.role === "artist";
-  const iconBg = isArtist || isSelected
-    ? "bg-brand-primary/10 text-brand-primary"
-    : "bg-muted text-muted-foreground";
-  const cardBorder = isSelected
-    ? "border-brand-primary bg-brand-primary/10"
-    : "border-border hover:bg-muted focus-visible:bg-muted";
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      role="radio"
-      aria-checked={isSelected}
-      className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${cardBorder}`}
-    >
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
-        {option.icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">{option.title}</p>
-        <p className="text-sm text-muted-foreground">{option.description}</p>
-      </div>
-    </button>
-  );
 }
 
 function OAuthButton({ config, disabled, isPending, onClick }: Readonly<{
@@ -92,7 +38,7 @@ function OAuthButton({ config, disabled, isPending, onClick }: Readonly<{
   );
 }
 
-function useOAuthSignup(selectedRole: SignupRole | null): {
+function useOAuthSignup(selectedRole: Role | null): {
   isPending: boolean;
   pendingProvider: OAuthProvider | null;
   error: string | null;
@@ -133,18 +79,11 @@ export function RoleSelectStep({
   const oauthDisabled = !selectedRole || isPending;
   return (
     <div className="space-y-6">
-      <div role="radiogroup" aria-label="회원 유형" className="space-y-3">
-        {ROLE_OPTIONS.map((option) => (
-          <RoleCard
-            key={option.role}
-            option={option}
-            isSelected={selectedRole === option.role}
-            onSelect={() => onSelect(option.role)}
-          />
-        ))}
+      <RoleSelector selectedRole={selectedRole} onSelect={onSelect} />
+      <div aria-live="polite" aria-atomic="true">
+        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       </div>
-      {error && <p className="text-sm text-destructive" role="alert" aria-live="polite">{error}</p>}
-      <div className="space-y-3" aria-disabled={!selectedRole}>
+      <div className="space-y-3">
         {!selectedRole && (
           <p className="text-center text-xs text-muted-foreground">
             회원 유형을 먼저 선택해주세요

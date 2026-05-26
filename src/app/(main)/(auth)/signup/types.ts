@@ -1,4 +1,4 @@
-export type SignupRole = "user" | "artist";
+import type { Role } from "@/lib/onboarding/constants";
 
 export interface SignupFormData {
   username: string;
@@ -9,5 +9,5 @@ export interface SignupFormData {
 export interface CreatedUser {
   id: string;
   username: string;
-  role: SignupRole;
+  role: Role;
 }

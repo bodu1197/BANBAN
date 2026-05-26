@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ALLOWED_ROLES, isWithinOnboardingWindow, type Role } from "@/lib/onboarding/constants";
+import { safeUpdateRole } from "@/lib/onboarding/role-update";
 
 const ROLE_SET = new Set<string>(ALLOWED_ROLES);
 
@@ -16,20 +17,6 @@ async function parseRole(request: NextRequest): Promise<Role | null> {
   } catch {
     return null;
   }
-}
-
-async function promoteToArtist(userId: string): Promise<NextResponse> {
-  const admin = createAdminClient();
-  // update + select 로 실제 적용 여부 검증 (RLS 트리거 실패 시 silent fail 방지)
-  const { data, error } = await admin
-    .from("profiles")
-    .update({ role: "artist" })
-    .eq("id", userId)
-    .select("role")
-    .maybeSingle();
-  if (error) return jsonError(error.message, 500);
-  if (data?.role !== "artist") return jsonError("역할 변경에 실패했습니다", 500);
-  return NextResponse.json({ success: true, role: "artist" });
 }
 
 /**
@@ -58,6 +45,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return jsonError("온보딩 시간이 만료되었습니다", 403);
   }
 
+  // role="user" 는 default 라 update 불필요
   if (role === "user") return NextResponse.json({ success: true, role: "user" });
-  return promoteToArtist(user.id);
+
+  const result = await safeUpdateRole(createAdminClient(), user.id, role);
+  if (!result.ok) return jsonError(result.error, 500);
+  return NextResponse.json({ success: true, role });
 }

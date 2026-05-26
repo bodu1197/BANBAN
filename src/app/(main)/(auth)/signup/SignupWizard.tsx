@@ -7,7 +7,8 @@ import { RoleSelectStep } from "./RoleSelectStep";
 import { TermsAgreementStep } from "./TermsAgreementStep";
 import { SignupFormStep } from "./SignupFormStep";
 import { SignupCompleteStep } from "./SignupCompleteStep";
-import type { SignupFormData, CreatedUser, SignupRole } from "./types";
+import type { SignupFormData, CreatedUser } from "./types";
+import type { Role } from "@/lib/onboarding/constants";
 
 type StepNumber = 1 | 2 | 3 | 4;
 
@@ -15,7 +16,7 @@ type StepNumber = 1 | 2 | 3 | 4;
 export function SignupWizard(): React.ReactElement {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<StepNumber>(1);
-  const [role, setRole] = useState<SignupRole | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [termsAgreed, setTermsAgreed] = useState({ privacy: false, terms: false });
   const [formData, setFormData] = useState<SignupFormData>({
     username: "",

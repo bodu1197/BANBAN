@@ -23,9 +23,15 @@ export default async function Page(): Promise<React.ReactElement> {
     .eq("id", user.id)
     .maybeSingle();
 
-  // 이미 다른 role 이면 해당 home 으로
-  if (!profile || profile.role !== "user") {
-    redirect(profile?.role === "artist" ? ROLE_ROUTES.artist : ROLE_ROUTES.user);
+  // profile 미존재는 가입 미완료 — callback ensureProfile 후엔 정상 진입 불가능.
+  // 안전망: /login 으로 보내고 재가입 유도.
+  if (!profile) {
+    redirect("/login");
+  }
+
+  // 이미 role 정해진 사용자는 자기 home 으로
+  if (profile.role !== "user") {
+    redirect(profile.role === "artist" ? ROLE_ROUTES.artist : ROLE_ROUTES.user);
   }
 
   // 5분 윈도우 초과 시 자동 진입 차단 → 메인으로

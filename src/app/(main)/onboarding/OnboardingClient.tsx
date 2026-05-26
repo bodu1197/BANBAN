@@ -3,61 +3,9 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Palette, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RoleSelector } from "@/components/auth/RoleSelector";
 import { ROLE_ROUTES, type Role } from "@/lib/onboarding/constants";
-
-interface RoleOption {
-  role: Role;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-const ROLE_OPTIONS: RoleOption[] = [
-  {
-    role: "artist",
-    icon: <Palette className="h-6 w-6" />,
-    title: "반영구 시술사",
-    description: "포트폴리오 등록 및 고객 관리",
-  },
-  {
-    role: "user",
-    icon: <User className="h-6 w-6" />,
-    title: "일반 회원",
-    description: "작품 구경 및 시술사 검색",
-  },
-];
-
-function RoleCard({ option, isSelected, onSelect }: Readonly<{
-  option: RoleOption;
-  isSelected: boolean;
-  onSelect: () => void;
-}>): React.ReactElement {
-  const cardBorder = isSelected
-    ? "border-brand-primary bg-brand-primary/10"
-    : "border-border hover:bg-muted focus-visible:bg-muted";
-  const iconBg = isSelected
-    ? "bg-brand-primary/10 text-brand-primary"
-    : "bg-muted text-muted-foreground";
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      role="radio"
-      aria-checked={isSelected}
-      className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${cardBorder}`}
-    >
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
-        {option.icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">{option.title}</p>
-        <p className="text-sm text-muted-foreground">{option.description}</p>
-      </div>
-    </button>
-  );
-}
 
 function useRoleSubmit(): { isPending: boolean; error: string | null; submit: (role: Role) => void } {
   const router = useRouter();
@@ -105,16 +53,7 @@ export function OnboardingClient(): React.ReactElement {
         <h1 className="text-2xl font-bold">환영합니다!</h1>
         <p className="text-sm text-muted-foreground">가입 유형을 선택해주세요</p>
       </div>
-      <div role="radiogroup" aria-label="회원 유형" className="space-y-3">
-        {ROLE_OPTIONS.map((option) => (
-          <RoleCard
-            key={option.role}
-            option={option}
-            isSelected={selected === option.role}
-            onSelect={() => setSelected(option.role)}
-          />
-        ))}
-      </div>
+      <RoleSelector selectedRole={selected} onSelect={setSelected} />
       <div aria-live="polite" aria-atomic="true">
         {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       </div>
