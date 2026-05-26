@@ -358,8 +358,21 @@ export async function renderHomePage(): Promise<React.ReactElement> {
 
   const organizationJsonLd = getOrganizationJsonLd();
 
+  const firstHeroImageUrl = heroBanners[0]?.imageUrl;
+
   return (
     <main className="mx-auto w-full max-w-[1024px] overflow-hidden">
+      {/* React 19 metadata-tag hoisting — head 로 자동 이동.
+          LCP 후보(첫 hero 이미지) 명시적 preload → 브라우저가 HTML 파싱 중 즉시 fetch 시작.
+          next/image priority 자동 preload 가 working tree 일부 케이스에서 누락되는 보완책. */}
+      {firstHeroImageUrl ? (
+        <link
+          rel="preload"
+          as="image"
+          href={firstHeroImageUrl}
+          fetchPriority="high"
+        />
+      ) : null}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
