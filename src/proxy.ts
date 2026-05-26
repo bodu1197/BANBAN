@@ -13,11 +13,11 @@ const SESSION_REFRESH_SKIP_PREFIXES = [
 
 const PROD_CSP = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://*.vercel-insights.com https://*.vercel-scripts.com https://t1.daumcdn.net https://pcdn2.swing2app.co.kr https://*.iamport.kr https://*.portone.io https://www.googletagmanager.com",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.vercel-insights.com https://*.vercel-scripts.com https://t1.daumcdn.net https://pcdn2.swing2app.co.kr https://*.iamport.kr https://*.portone.io https://www.googletagmanager.com https://*.doubleclick.net https://googleads.g.doubleclick.net https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com https://*.googleusercontent.com https://k.kakaocdn.net https://*.pstatic.net https://www.googletagmanager.com https://*.google-analytics.com",
+    "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com https://*.googleusercontent.com https://k.kakaocdn.net https://*.pstatic.net https://www.googletagmanager.com https://*.google-analytics.com https://www.google.com https://*.doubleclick.net",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://*.iamport.kr https://*.portone.io https://vitals.vercel-insights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.googleadservices.com https://*.doubleclick.net",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://*.iamport.kr https://*.portone.io https://vitals.vercel-insights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.googleadservices.com https://*.doubleclick.net https://www.google.com https://cdn.jsdelivr.net",
     "frame-src 'self' https://*.iamport.kr https://*.portone.io https://postcode.map.kakao.com https://t1.daumcdn.net",
     "object-src 'none'",
     "base-uri 'self'",
