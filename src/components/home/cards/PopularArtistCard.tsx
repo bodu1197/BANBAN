@@ -24,7 +24,7 @@ export function PopularArtistCard({
         priority={priority}
       />
       <div className="mt-2.5">
-        <p className="truncate text-base font-semibold transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
+        <p className="truncate text-base font-semibold motion-safe:transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
           {artist.title}
         </p>
         {artist.introduce && (

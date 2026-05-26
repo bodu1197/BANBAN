@@ -14,7 +14,7 @@ function QuickMenuLink({ item }: Readonly<{ item: QuickMenuItemData }>): React.R
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-1.5 rounded-lg p-1 text-center transition-colors hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:text-brand-primary"
+      className="flex flex-col items-center gap-1.5 rounded-lg p-1 text-center motion-safe:transition-colors hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:text-brand-primary"
     >
       <div className="flex h-12 w-12 items-center justify-center">
         <Image

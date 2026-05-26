@@ -24,7 +24,7 @@ function ExhibitionEntryCard({ entry, priority }: Readonly<{
       <SquareImage src={imageUrl} alt={portfolio.title} sizes="140px" priority={priority} />
       <div className="mt-1.5 space-y-1">
         <UserAvatar name={artist.title} imageSrc={avatarUrl} />
-        <p className="truncate text-xs font-medium transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
+        <p className="truncate text-xs font-medium motion-safe:transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
           {portfolio.title}
         </p>
         <PriceDisplay

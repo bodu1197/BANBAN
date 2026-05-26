@@ -17,7 +17,7 @@ function RecentEventCard({ event }: Readonly<{ event: RecentEventEntry }>): Reac
     >
       <SquareImage src={event.heroImage} alt={event.title} sizes="240px" />
       <div className="mt-2.5">
-        <p className="truncate text-base font-semibold transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
+        <p className="truncate text-base font-semibold motion-safe:transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
           {event.title}
         </p>
         <p className="truncate text-sm text-muted-foreground">{event.procedureName}</p>

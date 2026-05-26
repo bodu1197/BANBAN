@@ -26,7 +26,7 @@ function TimeSaleCard({ portfolio, priority }: Readonly<{
       </div>
       <div className="mt-1.5 space-y-1">
         <UserAvatar name={portfolio.artistName} imageSrc={portfolio.artistProfileImage} />
-        <p className="truncate text-xs font-medium transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
+        <p className="truncate text-xs font-medium motion-safe:transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
           {portfolio.title}
         </p>
         <PriceDisplay

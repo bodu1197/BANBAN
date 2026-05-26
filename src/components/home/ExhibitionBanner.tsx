@@ -14,7 +14,7 @@ export function ExhibitionBanner({ imageUrl, linkUrl, altText }: Readonly<Exhibi
   return (
     <Link
       href={linkUrl}
-      className="block overflow-hidden rounded-2xl shadow-lg transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="block overflow-hidden rounded-2xl shadow-lg motion-safe:transition-shadow hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Image
         src={src}

@@ -8,7 +8,7 @@ export function AiTestPromoBanner(): React.ReactElement {
       <Link
         href="/beauty-sim/ai-test"
         aria-label="AI 반영구 시뮬레이션 체험하기"
-        className="group flex w-full items-center gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-brand-accent-purple to-brand-accent-purple-hover px-4 py-3 text-white shadow-md transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent-purple-ring focus-visible:ring-offset-2"
+        className="group flex w-full items-center gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-brand-accent-purple to-brand-accent-purple-hover px-4 py-3 text-white shadow-md motion-safe:transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent-purple-ring focus-visible:ring-offset-2"
       >
         <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/20">
           <Image
@@ -28,7 +28,7 @@ export function AiTestPromoBanner(): React.ReactElement {
             내 얼굴에 어울리는 반영구 스타일 미리보기
           </p>
         </div>
-        <ChevronRight className="h-5 w-5 flex-shrink-0 transition-transform motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+        <ChevronRight className="h-5 w-5 flex-shrink-0 motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
       </Link>
     </div>
   );

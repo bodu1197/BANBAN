@@ -46,12 +46,12 @@ export function ReviewArtistCard({
   return (
     <Link
       href={`/artists/${artist.id}`}
-      className="group inline-block w-[280px] align-top whitespace-normal mr-2.5 snap-start rounded-[20px] border border-muted p-[25px] transition-colors hover:border-brand-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group inline-block w-[280px] align-top whitespace-normal mr-2.5 snap-start rounded-[20px] border border-muted p-[25px] motion-safe:transition-colors hover:border-brand-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* Top: name+reviews+region LEFT, avatar RIGHT */}
       <div className="flex items-center justify-between">
         <div className="min-w-0 flex-1 pr-5">
-          <p className="truncate text-xl font-semibold transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
+          <p className="truncate text-xl font-semibold motion-safe:transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
             {artist.title}
           </p>
           <ArtistMetaInfo countLabel={String(artist.reviewCount)} regionName={artist.regionName} className="mt-1.5" />

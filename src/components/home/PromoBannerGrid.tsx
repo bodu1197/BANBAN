@@ -63,7 +63,7 @@ function CardContent({ banner, imageUrl, priority }: Readonly<{ banner: PromoBan
 
 function PromoBannerCard({ banner, priority }: Readonly<{ banner: PromoBanner; priority: boolean }>): React.ReactElement {
   const imageUrl = getStorageUrl(banner.image_path);
-  const cls = "block overflow-hidden rounded-xl transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const cls = "block overflow-hidden rounded-xl motion-safe:transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   if (banner.link_url) {
     return (

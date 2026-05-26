@@ -46,7 +46,7 @@ export function GridPortfolioCard({
           label={String(portfolio.likesCount)}
           alt="Likes"
         />
-        <p className="truncate text-sm font-medium transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
+        <p className="truncate text-sm font-medium motion-safe:transition-colors group-hover:text-brand-primary group-focus-visible:text-brand-primary">
           {portfolio.title}
         </p>
         <div className="flex items-center justify-between">
