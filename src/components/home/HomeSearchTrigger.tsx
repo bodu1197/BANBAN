@@ -13,7 +13,7 @@ export function HomeSearchTrigger(): React.ReactElement {
       <Link
         href="/search"
         aria-label={STRINGS.globalSearch.triggerLabel}
-        className="flex w-full max-w-[680px] items-center gap-[10px] rounded-[30px] border border-brand-primary bg-background px-4 h-[52px] text-left transition-colors hover:bg-brand-primary/5 focus-visible:bg-brand-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+        className="flex w-full max-w-[680px] items-center gap-[10px] rounded-[30px] border border-brand-primary bg-background px-4 h-[52px] text-left motion-safe:transition-colors hover:bg-brand-primary/5 focus-visible:bg-brand-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
       >
         <span aria-hidden="true" className="flex-1 truncate text-sm text-muted-foreground">{placeholder}</span>
         <Search className="h-5 w-5 shrink-0 text-brand-primary" aria-hidden="true" />

@@ -181,8 +181,9 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={() => setPaused(false)}
       >
-        {/* will-change-transform 으로 트랙을 GPU 합성 레이어로 승격 — Lighthouse "합성 안 거친 애니메이션" 해결 */}
-        <div ref={trackRef} className="flex h-full w-full transition-transform duration-500 ease-out will-change-transform">
+        {/* will-change-transform: 트랙을 GPU 합성 레이어로 승격 — Lighthouse "합성 안 거친 애니메이션" 해결.
+            motion-safe: prefers-reduced-motion 사용자는 500ms 슬라이드 transition 생략 — WCAG 2.2.2 준수. */}
+        <div ref={trackRef} className="flex h-full w-full motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-out will-change-transform">
           {list.map((banner, i) => (
             <Slide key={banner.id} banner={banner} active={i === idx} isFirst={i === 0} />
           ))}

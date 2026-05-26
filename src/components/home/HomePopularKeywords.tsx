@@ -16,7 +16,7 @@ export function HomePopularKeywords(): React.ReactElement {
           <li key={kw} className="shrink-0">
             <Link
               href={`/search?q=${encodeURIComponent(kw)}`}
-              className="inline-flex min-h-11 items-center gap-1 rounded-full border border-border bg-background px-3 py-2 text-xs text-foreground transition-colors hover:border-brand-primary hover:text-brand-primary focus-visible:border-brand-primary focus-visible:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border border-border bg-background px-4 py-2 text-xs text-foreground motion-safe:transition-colors hover:border-brand-primary hover:text-brand-primary focus-visible:border-brand-primary focus-visible:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
             >
               <Sparkles className="h-3 w-3 text-brand-primary" aria-hidden="true" />
               {kw}
