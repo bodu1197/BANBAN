@@ -52,7 +52,7 @@ function NavArrow({ direction, onClick }: Readonly<{ direction: "prev" | "next";
       type="button"
       onClick={onClick}
       aria-label={isPrev ? "이전 배너" : "다음 배너"}
-      className={`pointer-events-none absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-md transition-opacity duration-200 hover:bg-black/80 focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:flex md:group-hover:pointer-events-auto md:group-hover:opacity-100 ${isPrev ? "left-3" : "right-3"}`}
+      className={`pointer-events-none absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-md motion-safe:transition-opacity motion-safe:duration-200 hover:bg-black/80 focus-visible:pointer-events-auto focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:flex md:group-hover:pointer-events-auto md:group-hover:opacity-100 ${isPrev ? "left-3" : "right-3"}`}
     >
       <Icon className="h-5 w-5" aria-hidden="true" />
     </button>
@@ -77,9 +77,9 @@ function Indicators({ count, currentIdx, onSelect }: Readonly<{
             aria-label={`슬라이드 ${i + 1}`}
             tabIndex={i === currentIdx ? 0 : -1}
             onClick={() => onSelect(i)}
-            className="flex h-6 w-6 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="flex h-6 w-6 items-center justify-center rounded-full motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
-            <span className={`block h-2 w-2 rounded-full transition-colors ${i === currentIdx ? "bg-white" : "bg-white/40"}`} aria-hidden="true" />
+            <span className={`block h-2 w-2 rounded-full motion-safe:transition-colors ${i === currentIdx ? "bg-white" : "bg-white/40"}`} aria-hidden="true" />
           </button>
         ))}
       </div>
