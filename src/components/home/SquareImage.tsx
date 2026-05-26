@@ -32,7 +32,6 @@ export function SquareImage({
           className="object-cover"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
         />
       ) : (
         <Image
@@ -44,7 +43,6 @@ export function SquareImage({
           className="object-cover"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
         />
       )}
     </div>

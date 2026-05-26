@@ -39,7 +39,6 @@ function buildHeroMedia(url: string | null, title: string): React.ReactElement |
                 quality={65}
                 className="object-cover"
                 priority
-                fetchPriority="high"
             />
         </div>
     );
@@ -220,17 +219,13 @@ function buildHeroBanner(
 }
 
 interface PageJsonLdProps {
-    preloadUrl: string | null;
     breadcrumbJsonLd: ReturnType<typeof getBreadcrumbJsonLd>;
     productJsonLd: ReturnType<typeof getProductJsonLd>;
 }
 
-function PageJsonLd({ preloadUrl, breadcrumbJsonLd, productJsonLd }: Readonly<PageJsonLdProps>): React.ReactElement {
+function PageJsonLd({ breadcrumbJsonLd, productJsonLd }: Readonly<PageJsonLdProps>): React.ReactElement {
     return (
         <>
-            {preloadUrl ? (
-                <link rel="preload" as="image" href={preloadUrl} fetchPriority="high" />
-            ) : null}
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
@@ -267,9 +262,6 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     const firstImageUrl = getStorageUrl(portfolio.portfolio_media?.[0]?.storage_path ?? null);
     const heroMedia = buildHeroMedia(firstImageUrl, portfolio.title);
-    const preloadUrl = firstImageUrl
-        ? `/_next/image?url=${encodeURIComponent(firstImageUrl)}&w=828&q=65`
-        : null;
 
     const { breadcrumb: breadcrumbJsonLd, product: productJsonLd } = buildJsonLd(id, portfolio);
     const parsedDescription = parseDescriptionText(portfolio.description);
@@ -278,7 +270,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     return (
         <main className="mx-auto min-h-screen max-w-[1024px] bg-background">
-            <PageJsonLd preloadUrl={preloadUrl} breadcrumbJsonLd={breadcrumbJsonLd} productJsonLd={productJsonLd} />
+            <PageJsonLd breadcrumbJsonLd={breadcrumbJsonLd} productJsonLd={productJsonLd} />
             <PortfolioDetailClient
                 portfolio={portfolio}
                 firstImageUrl={firstImageUrl}
