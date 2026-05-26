@@ -34,13 +34,23 @@ interface Artist {
   type_artist: string;
 }
 
+type Role = "user" | "artist";
+
 interface UseAuthReturn {
   user: AuthUser | null;
   artist: Artist | null;
+  role: Role | null;
   isLoading: boolean;
+  /** profiles.role === 'artist' — 시술사로 가입했는지 */
   isArtist: boolean;
+  /** artists 행 존재 여부 — 샵 정보를 등록했는지 */
+  hasShop: boolean;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+}
+
+function normalizeRole(raw: unknown): Role {
+  return raw === "artist" ? "artist" : "user";
 }
 
 /** Lazily resolve the browser Supabase client (avoids pulling ~200 KB into the initial bundle). */
@@ -52,6 +62,7 @@ async function getClient(): Promise<SupabaseClient> {
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [artist, setArtist] = useState<Artist | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const initialFetchDone = useRef(false);
 
@@ -62,22 +73,33 @@ export function useAuth(): UseAuthReturn {
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
       if (authUser) {
-        // 아티스트 정보 조회 (아티스트가 아닐 수 있으므로 maybeSingle 사용)
-        const { data: artistData } = await supabase
-          .from("artists")
-          .select("id, title, profile_image_path, type_artist")
-          .eq("user_id", authUser.id)
-          .maybeSingle();
+        // 아티스트 행 + profiles.role 병렬 조회
+        // 아티스트가 아닌 회원도 조회 시도 — maybeSingle 로 안전.
+        const [{ data: artistData }, { data: profileData }] = await Promise.all([
+          supabase
+            .from("artists")
+            .select("id, title, profile_image_path, type_artist")
+            .eq("user_id", authUser.id)
+            .maybeSingle(),
+          supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", authUser.id)
+            .maybeSingle(),
+        ]);
 
         setUser(authUser);
         setArtist(artistData);
+        setRole(normalizeRole(profileData?.role));
       } else {
         setUser(null);
         setArtist(null);
+        setRole(null);
       }
     } catch {
       setUser(null);
       setArtist(null);
+      setRole(null);
     } finally {
       setIsLoading(false);
     }
@@ -112,6 +134,7 @@ export function useAuth(): UseAuthReturn {
     await signOut();
     setUser(null);
     setArtist(null);
+    setRole(null);
     globalThis.location.href = "/";
   }, []);
 
@@ -122,8 +145,10 @@ export function useAuth(): UseAuthReturn {
   return {
     user,
     artist,
+    role,
     isLoading,
-    isArtist: artist !== null,
+    isArtist: role === "artist",
+    hasShop: artist !== null,
     logout,
     refresh,
   };

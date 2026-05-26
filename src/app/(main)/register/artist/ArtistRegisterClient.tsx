@@ -185,6 +185,15 @@ export function ArtistRegisterClient({ categories,
         });
       }
 
+      // 일반 회원이 시술사로 전환된 경우 profiles.role='artist' 동기화.
+      // RLS 트리거가 클라이언트 직접 변경을 차단하므로 server API 경유.
+      // 실패해도 artists 행은 유지 — 다음 로그인 시 promote 재호출 (idempotent).
+      const promoteRes = await fetch("/api/profiles/promote-to-artist", { method: "POST" });
+      if (!promoteRes.ok) {
+        // eslint-disable-next-line no-console
+        console.warn("[ArtistRegister] role promote failed:", await promoteRes.text());
+      }
+
       // 신규 아티스트 웰컴 포인트
       void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "WELCOME_BONUS" }) });
 

@@ -2334,6 +2334,7 @@ export type Database = {
           nickname: string
           password: string | null
           profile_image_path: string | null
+          role: string
           social_id: string | null
           type_social: string | null
           updated_at: string | null
@@ -2353,6 +2354,7 @@ export type Database = {
           nickname: string
           password?: string | null
           profile_image_path?: string | null
+          role?: string
           social_id?: string | null
           type_social?: string | null
           updated_at?: string | null
@@ -2372,6 +2374,7 @@ export type Database = {
           nickname?: string
           password?: string | null
           profile_image_path?: string | null
+          role?: string
           social_id?: string | null
           type_social?: string | null
           updated_at?: string | null

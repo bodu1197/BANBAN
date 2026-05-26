@@ -27,7 +27,7 @@ import { revalidatePortfolioPages } from "@/lib/actions/portfolios";
 export default function PortfolioWriteClient(): React.ReactElement {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { artist, isLoading: authLoading } = useAuth();
+    const { artist, isArtist, isLoading: authLoading } = useAuth();
 
     const [submitting, setSubmitting] = useState(false);
     const [formValues, setFormValues] = useState<PortfolioFormValues>({
@@ -46,6 +46,8 @@ export default function PortfolioWriteClient(): React.ReactElement {
     }, [artist]);
 
     if (authLoading) return <FullPageSpinner />;
+    if (!isArtist) { router.push("/login"); return <FullPageSpinner />; }
+    if (!artist) { router.push("/register/artist"); return <FullPageSpinner />; }
 
     function handleImageFiles(files: File[]): void {
         setImages(files);

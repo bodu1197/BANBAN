@@ -8,13 +8,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, XCircle, Loader2, Mail } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
-import type { SignupFormData, CreatedUser } from "./types";
+import type { SignupFormData, CreatedUser, SignupRole } from "./types";
 
 interface SignupFormStepProps {
   formData: SignupFormData;
   setFormData: React.Dispatch<React.SetStateAction<SignupFormData>>;
+  role: SignupRole;
   onBack: () => void;
   onComplete: (user: CreatedUser) => void;
 }
@@ -30,6 +31,7 @@ async function signUp(data: {
   username: string;
   password: string;
   email: string;
+  role: SignupRole;
 }): Promise<{ error: Error | null; emailVerificationRequired?: boolean; user?: { id: string; username: string } }> {
   try {
     const response = await fetch("/api/auth/signup", {
@@ -39,7 +41,11 @@ async function signUp(data: {
     });
     const result: SignupResponse = await response.json();
     if (!response.ok) return { error: new Error(result.error ?? "Registration failed") };
-    return { error: null, emailVerificationRequired: result.emailVerificationRequired, user: result.user ? { id: result.user.id, username: result.user.username } : undefined };
+    return {
+      error: null,
+      emailVerificationRequired: result.emailVerificationRequired,
+      user: result.user ? { id: result.user.id, username: result.user.username } : undefined,
+    };
   } catch (err: unknown) {
     return { error: err instanceof Error ? err : new Error("An error occurred during registration") };
   }
@@ -113,8 +119,116 @@ function FormField({ id, label, type, value, onChange, placeholder, disabled, au
   );
 }
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
+type ResendStatus = "idle" | "sending" | "sent" | "error";
+
+interface ResendVerificationResult {
+  status: ResendStatus;
+  message: string | null;
+  cooldownLeft: number;
+}
+
+function useResendVerification(email: string): ResendVerificationResult & { trigger: () => void } {
+  const [status, setStatus] = useState<ResendStatus>("idle");
+  const [message, setMessage] = useState<string | null>(null);
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+
+  const startCooldown = useCallback(() => {
+    setCooldownLeft(RESEND_COOLDOWN_SECONDS);
+    const interval = setInterval(() => {
+      setCooldownLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const trigger = useCallback(async () => {
+    if (status === "sending" || cooldownLeft > 0) return;
+    setStatus("sending");
+    setMessage(null);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || !data.success) {
+        setStatus("error");
+        setMessage(data.error ?? "재발송에 실패했습니다");
+        return;
+      }
+      setStatus("sent");
+      setMessage("이메일을 다시 보냈습니다. 메일함을 확인해주세요");
+      startCooldown();
+    } catch {
+      setStatus("error");
+      setMessage("네트워크 오류로 재발송에 실패했습니다");
+    }
+  }, [email, status, cooldownLeft, startCooldown]);
+
+  return { status, message, cooldownLeft, trigger };
+}
+
+function ResendButton({ email }: Readonly<{ email: string }>): React.ReactElement {
+  const { status, message, cooldownLeft, trigger } = useResendVerification(email);
+  const isCoolingDown = cooldownLeft > 0;
+  const isSending = status === "sending";
+  let buttonLabel = "이메일 다시 보내기";
+  if (isCoolingDown) buttonLabel = `${cooldownLeft}초 후 다시 보내기`;
+  else if (isSending) buttonLabel = "전송 중...";
+
+  return (
+    <div className="space-y-2">
+      <Button
+        type="button"
+        onClick={trigger}
+        disabled={isCoolingDown || isSending}
+        variant="outline"
+        className="w-full gap-2"
+      >
+        <RefreshCw className={`h-4 w-4 ${isSending ? "animate-spin" : ""}`} aria-hidden="true" />
+        {buttonLabel}
+      </Button>
+      <div aria-live="polite" aria-atomic="true">
+        {message && (
+          <p className={`text-xs ${status === "error" ? "text-destructive" : "text-emerald-600"}`}>
+            {message}
+          </p>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">메일이 오지 않으면 스팸함을 확인해주세요</p>
+    </div>
+  );
+}
+
+function EmailSentView({ email, onBack }: Readonly<{ email: string; onBack: () => void }>): React.ReactElement {
+  return (
+    <div className="space-y-4 text-center">
+      <div className="flex justify-center">
+        <Mail className="h-12 w-12 text-brand-primary" aria-hidden="true" />
+      </div>
+      <h3 className="text-lg font-semibold">{STRINGS.auth.signupEmailSent}</h3>
+      <p className="text-sm text-muted-foreground">{STRINGS.auth.checkEmailToComplete}</p>
+      <p className="text-xs text-muted-foreground">({email})</p>
+      <ResendButton email={email} />
+      <div className="flex gap-2">
+        <Button type="button" variant="ghost" onClick={onBack} className="flex-1">이전으로</Button>
+        <Button asChild variant="outline" className="flex-1">
+          <Link href="/login">{STRINGS.auth.backToLogin}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // eslint-disable-next-line max-lines-per-function
-export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Readonly<SignupFormStepProps>): React.ReactElement {
+export function SignupFormStep({ formData, setFormData, role, onBack, onComplete }: Readonly<SignupFormStepProps>): React.ReactElement {
   const [isPending, startTransition] = useTransition();
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -151,31 +265,21 @@ export function SignupFormStep({ formData, setFormData, onBack, onComplete }: Re
 
     startTransition(async () => {
       const { error: signupError, emailVerificationRequired, user } = await signUp({
-        username: formData.username, password: formData.password,
+        username: formData.username,
+        password: formData.password,
         email: formData.email,
+        role,
       });
       if (signupError || !user) { setError(signupError?.message ?? "Registration failed"); return; }
       if (emailVerificationRequired) { setEmailSent(true); return; }
-      onComplete(user);
+      onComplete({ ...user, role });
     });
   };
 
   const updateField = (field: keyof SignupFormData) => (v: string) => setFormData((prev) => ({ ...prev, [field]: v }));
 
   if (emailSent) {
-    return (
-      <div className="space-y-4 text-center">
-        <div className="flex justify-center">
-          <Mail className="h-12 w-12 text-brand-primary" aria-hidden="true" />
-        </div>
-        <h3 className="text-lg font-semibold">{STRINGS.auth.signupEmailSent}</h3>
-        <p className="text-sm text-muted-foreground">{STRINGS.auth.checkEmailToComplete}</p>
-        <p className="text-xs text-muted-foreground">({formData.email})</p>
-        <Button asChild variant="outline" className="w-full">
-          <Link href="/login">{STRINGS.auth.backToLogin}</Link>
-        </Button>
-      </div>
-    );
+    return <EmailSentView email={formData.email} onBack={onBack} />;
   }
 
   return (

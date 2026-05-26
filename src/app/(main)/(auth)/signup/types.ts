@@ -1,3 +1,5 @@
+export type SignupRole = "user" | "artist";
+
 export interface SignupFormData {
   username: string;
   email: string;
@@ -7,4 +9,5 @@ export interface SignupFormData {
 export interface CreatedUser {
   id: string;
   username: string;
+  role: SignupRole;
 }

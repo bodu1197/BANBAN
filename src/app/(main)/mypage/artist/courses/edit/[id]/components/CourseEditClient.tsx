@@ -59,7 +59,7 @@ interface CourseEditClientProps {
 
 export default function CourseEditClient({ courseId }: Readonly<CourseEditClientProps>): React.ReactElement {
   const router = useRouter();
-  const { user, isArtist, isLoading: authLoading } = useAuth();
+  const { user, artist, isArtist, isLoading: authLoading } = useAuth();
 
   const { data: courseData, isLoading } = useQuery({
     queryKey: ["course", "edit", courseId],
@@ -70,6 +70,10 @@ export default function CourseEditClient({ courseId }: Readonly<CourseEditClient
   if (authLoading || isLoading) return <FullPageSpinner />;
   if (!isArtist) {
     router.push("/login");
+    return <FullPageSpinner />;
+  }
+  if (!artist) {
+    router.push("/register/artist");
     return <FullPageSpinner />;
   }
   if (!courseData) {

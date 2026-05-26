@@ -295,7 +295,7 @@ interface CourseWriteClientProps {
 
 export default function CourseWriteClient({ mode = "create", initialData, courseId }: Readonly<CourseWriteClientProps>): React.ReactElement {
   const router = useRouter();
-  const { user, isArtist, isLoading: authLoading } = useAuth();
+  const { user, artist, isArtist, isLoading: authLoading } = useAuth();
   const [form, setForm] = useState<CourseFormData>(initialData ?? INITIAL_FORM);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -303,6 +303,7 @@ export default function CourseWriteClient({ mode = "create", initialData, course
 
   if (authLoading) return <FullPageSpinner />;
   if (!isArtist) { router.push("/login"); return <FullPageSpinner />; }
+  if (!artist) { router.push("/register/artist"); return <FullPageSpinner />; }
 
   const isEdit = mode === "edit";
   const defaultLabel = isEdit ? "수정 완료" : "등록 완료";

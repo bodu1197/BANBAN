@@ -21,6 +21,7 @@ import {
   MessageSquarePlus,
   ShoppingCart,
   CalendarDays,
+  AlertCircle,
 } from "lucide-react";
 import { PointCoinIcon } from "@/components/icons/PointCoinIcon";
 import { useAuth } from "@/hooks/useAuth";
@@ -212,6 +213,52 @@ function ArtistDashboardCard({ icon: Icon, label, value, href }: Readonly<{
   );
 }
 
+function ArtistShopSetupBanner(): React.ReactElement {
+  return (
+    <div className="bg-background p-4">
+      <Link
+        href="/register/artist"
+        className="flex items-center gap-4 rounded-xl border-2 border-destructive bg-destructive/5 p-4 motion-safe:transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <AlertCircle className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-destructive">샵을 등록하고 활동을 시작하세요</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            샵 정보를 등록하면 검색·포트폴리오 노출이 가능해집니다
+          </p>
+        </div>
+        <ChevronRight className="h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+      </Link>
+    </div>
+  );
+}
+
+function ArtistWithoutShopView(): React.ReactElement {
+  return (
+    <div className="bg-background p-4">
+      <p className="text-center text-sm text-muted-foreground">
+        샵 등록 후 시술사 활동을 시작할 수 있습니다.
+      </p>
+    </div>
+  );
+}
+
+function ArtistSection({ artistId }: Readonly<{
+  artistId: string | null;
+}>): React.ReactElement {
+  if (!artistId) {
+    return (
+      <>
+        <ArtistShopSetupBanner />
+        <ArtistWithoutShopView />
+      </>
+    );
+  }
+  return <ArtistView artistId={artistId} />;
+}
+
 function ArtistView({ artistId }: Readonly<{
   artistId: string;
 }>): React.ReactElement {
@@ -355,8 +402,8 @@ export function MyPageClient(): React.ReactElement {
         <div className="bg-background px-4 py-3">
           <AnnouncementsBanner />
         </div>
-        {isArtist && artist?.id
-          ? <ArtistView artistId={artist.id} />
+        {isArtist
+          ? <ArtistSection artistId={artist?.id ?? null} />
           : <UserView userId={user.id} />}
       </section>
     </div>

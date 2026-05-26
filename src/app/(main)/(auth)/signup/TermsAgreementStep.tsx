@@ -108,7 +108,7 @@ export function TermsAgreementStep({ termsAgreed, setTermsAgreed, onNext }: Read
         <TermsItem id="privacy" checked={termsAgreed.privacy} onCheck={handleSingleCheck} label={STRINGS.auth.privacyPolicyAgree} required={STRINGS.auth.privacyPolicyRequired} viewText={STRINGS.auth.viewTerms} dialogTitle={STRINGS.pages.privacy} dialogContent={STRINGS.pages.privacyContent} />
         <TermsItem id="terms" checked={termsAgreed.terms} onCheck={handleSingleCheck} label={STRINGS.auth.termsOfServiceAgree} required={STRINGS.auth.termsOfServiceRequired} viewText={STRINGS.auth.viewTerms} dialogTitle={STRINGS.pages.terms} dialogContent={STRINGS.pages.termsContent} />
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive" role="alert" aria-live="polite">{error}</p>}
       <Button type="button" onClick={handleNext} className="w-full" disabled={!allChecked}>{STRINGS.common.next}</Button>
       <p className="text-center text-sm text-muted-foreground">
         {STRINGS.auth.hasAccount}{" "}

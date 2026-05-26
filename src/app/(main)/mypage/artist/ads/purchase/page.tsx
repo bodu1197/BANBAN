@@ -414,7 +414,7 @@ function PurchaseContent({ plans, durations, walletBalance, onPurchase, isPurcha
 
 export default function AdPurchasePage(): React.ReactElement {
     const router = useRouter();
-    const { user, isLoading: authLoading } = useAuth();
+    const { user, artist, isArtist, isLoading: authLoading } = useAuth();
     const { plans, durations, walletBalance, loading, fetchData } = usePurchaseData(authLoading, user);
 
     const handleSuccess = useCallback((): void => {
@@ -432,6 +432,8 @@ export default function AdPurchasePage(): React.ReactElement {
             </div>
         );
     }
+    if (!isArtist) { router.push("/login"); return <div />; }
+    if (!artist) { router.push("/register/artist"); return <div />; }
 
     return (
         <div className="mx-auto w-full max-w-[1024px] pb-20">

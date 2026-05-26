@@ -163,7 +163,7 @@ function CourseListContent({ courses, onDelete }: Readonly<{
 
 export default function CourseListClient(): React.ReactElement {
   const router = useRouter();
-  const { user, isArtist, isLoading: authLoading } = useAuth();
+  const { user, artist, isArtist, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: courses, isLoading } = useQuery({
@@ -183,6 +183,7 @@ export default function CourseListClient(): React.ReactElement {
 
   if (authLoading || isLoading) return <FullPageSpinner />;
   if (!isArtist) { router.push("/login"); return <FullPageSpinner />; }
+  if (!artist) { router.push("/register/artist"); return <FullPageSpinner />; }
 
   return <CourseListContent courses={courses ?? []} onDelete={handleDelete} />;
 }

@@ -1,8 +1,28 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getProviderSlug, normalizeTypeSocial } from "@/lib/auth-labels";
+import { ONBOARDING_WINDOW_MS } from "@/lib/onboarding/constants";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+type SignupIntent = "artist" | "user" | null;
+
+// 신규 가입자 판별: last_sign_in 과 created_at 차이 < 60초
+const NEW_SIGNUP_THRESHOLD_MS = 60 * 1000;
+
+function parseIntent(raw: string | null): SignupIntent {
+  if (raw === "artist") return "artist";
+  if (raw === "user") return "user";
+  return null;
+}
+
+function isNewSignup(user: { created_at?: string; last_sign_in_at?: string | null }): boolean {
+  if (!user.created_at) return false;
+  const createdAtMs = new Date(user.created_at).getTime();
+  const lastSignInMs = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : createdAtMs;
+  return Math.abs(lastSignInMs - createdAtMs) < NEW_SIGNUP_THRESHOLD_MS;
+}
 
 function getRedirectUrl(request: Request, origin: string, path: string): string {
   const forwardedHost = request.headers.get("x-forwarded-host");
@@ -17,11 +37,20 @@ function sanitizeNext(param: string | null): string {
   return next.startsWith("/") && !next.startsWith("//") ? next : "/";
 }
 
+async function safeRun(label: string, op: () => PromiseLike<unknown>): Promise<void> {
+  try {
+    await op();
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error(`[Auth Callback] ${label} failed:`, e);
+  }
+}
+
 type ConflictProfile = Readonly<{ id: string; type_social: string | null }>;
 
 /** 같은 이메일로 다른 id 의 active profile 이 있는지 확인 (중복 가입 차단) */
 async function findEmailConflict(
-  adminClient: ReturnType<typeof createAdminClient>,
+  adminClient: AdminClient,
   email: string,
   currentUserId: string,
 ): Promise<ConflictProfile | null> {
@@ -66,6 +95,7 @@ async function ensureProfile(
   const normalizedEmail = (user.email ?? "").toLowerCase();
   const provider = user.app_metadata?.provider as string | undefined;
 
+  // SNS 신규 가입자: role 기본값 'user' (DB default). intent 가 있으면 후속에서 'artist' 로 변경.
   const { error } = await adminClient.from("profiles").upsert({
     id: user.id,
     email: normalizedEmail,
@@ -81,7 +111,28 @@ async function ensureProfile(
   if (error) throw error;
 }
 
-async function handleCallback(request: Request, code: string | null, next: string): Promise<NextResponse> {
+/**
+ * intent='artist' SNS 가입자: 5분 윈도우 안에서 role='user' → 'artist' 자동 변경.
+ * RLS 트리거가 클라이언트 직접 변경을 차단하므로 service role 로 처리.
+ */
+async function applyArtistIntent(adminClient: AdminClient, userId: string): Promise<void> {
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("role, created_at")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!profile || profile.role !== "user" || !profile.created_at) return;
+  const createdAtMs = new Date(profile.created_at).getTime();
+  if (Date.now() - createdAtMs >= ONBOARDING_WINDOW_MS) return;
+  await adminClient.from("profiles").update({ role: "artist" }).eq("id", userId);
+}
+
+async function handleCallback(
+  request: Request,
+  code: string | null,
+  next: string,
+  intent: SignupIntent,
+): Promise<NextResponse> {
   const { origin } = new URL(request.url);
 
   if (!code) {
@@ -113,20 +164,31 @@ async function handleCallback(request: Request, code: string | null, next: strin
     return NextResponse.redirect(`${origin}/login?error=email_already_registered&method=${slug}`);
   }
 
-  try {
-    await ensureProfile(adminClient, user);
-    await adminClient.from("artists").update({ status: "active" }).eq("user_id", user.id).eq("status", "dormant");
-  } catch {
-    // eslint-disable-next-line no-console
-    console.error("[Auth Callback] Post-login tasks failed");
+  let finalNext = next;
+  await safeRun("ensure profile", () => ensureProfile(adminClient, user));
+  await safeRun("reactivate dormant artist", () =>
+    adminClient.from("artists").update({ status: "active" }).eq("user_id", user.id).eq("status", "dormant"),
+  );
+
+  if (intent === "artist") {
+    await safeRun("apply artist intent", () => applyArtistIntent(adminClient, user.id));
+  }
+  // intent 가 없는 신규 가입자 (login 페이지에서 SNS 로 가입) → /onboarding 으로 유형 선택 유도
+  if (intent === null && isNewSignup(user)) {
+    finalNext = "/onboarding";
   }
 
-  return NextResponse.redirect(getRedirectUrl(request, origin, next));
+  return NextResponse.redirect(getRedirectUrl(request, origin, finalNext));
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
-  return handleCallback(request, searchParams.get("code"), sanitizeNext(searchParams.get("next")));
+  return handleCallback(
+    request,
+    searchParams.get("code"),
+    sanitizeNext(searchParams.get("next")),
+    parseIntent(searchParams.get("intent")),
+  );
 }
 
 // Apple Sign In sends callback as POST with form data
@@ -135,17 +197,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   const code = formData.get("code") as string | null;
   const state = formData.get("state") as string | null;
 
-  // Supabase encodes the next path in the state parameter
+  // Supabase encodes the next path + intent in the state parameter (base64 JSON)
   let next = "/";
+  let intent: SignupIntent = null;
   if (state) {
     try {
       const decoded = atob(state);
       const parsed = JSON.parse(decoded) as Record<string, string>;
       next = sanitizeNext(parsed.next ?? null);
+      intent = parseIntent(parsed.intent ?? null);
     } catch {
       next = sanitizeNext(null);
     }
   }
 
-  return handleCallback(request, code, next);
+  return handleCallback(request, code, next, intent);
 }

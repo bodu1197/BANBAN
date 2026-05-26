@@ -107,8 +107,20 @@ function isReady(
     isLoading: boolean,
     data: PortfoliosResult | undefined,
     isArtist: boolean,
+    artist: { id: string } | null,
 ): boolean {
-    return !authLoading && !isLoading && !!data && isArtist;
+    return !authLoading && !isLoading && !!data && isArtist && artist !== null;
+}
+
+function handleNotReadyRedirect(
+    authLoading: boolean,
+    isArtist: boolean,
+    artist: { id: string } | null,
+    router: ReturnType<typeof useRouter>,
+): void {
+    if (authLoading) return;
+    if (!isArtist) { router.push("/login"); return; }
+    if (!artist) router.push("/register/artist");
 }
 type TabType = "portfolios" | "exhibitions";
 
@@ -172,10 +184,8 @@ export default function PortfolioListClient(): React.ReactElement {
         handlePortfolioDelete(portfolio, queryClient);
     };
 
-    if (!isReady(authLoading, isLoading, data, isArtist)) {
-        if (!authLoading && !isArtist) {
-            router.push("/login");
-        }
+    if (!isReady(authLoading, isLoading, data, isArtist, artist)) {
+        handleNotReadyRedirect(authLoading, isArtist, artist, router);
         return <FullPageSpinner />;
     }
 

@@ -3,21 +3,37 @@
 import { createClient } from "./server";
 import { redirect } from "next/navigation";
 import type { User, Session } from "@supabase/supabase-js";
-
-export type OAuthProvider = "kakao" | "google" | "apple";
+import type { OAuthProvider } from "@/lib/auth/oauth-providers";
 
 export type OAuthResult =
   | { ok: true; url: string }
   | { ok: false; error: string };
 
-export async function getOAuthUrl(provider: OAuthProvider): Promise<OAuthResult> {
+interface OAuthOptions {
+  /** 콜백 후 이동할 경로 */
+  next?: string;
+  /** SNS 가입 시 역할 지정 — callback 에서 applyArtistIntent 가 사용 */
+  intent?: "artist" | "user";
+}
+
+function buildCallbackUrl(siteUrl: string, options: OAuthOptions): string {
+  const params = new URLSearchParams();
+  params.set("next", options.next ?? "/");
+  if (options.intent) params.set("intent", options.intent);
+  return `${siteUrl}/auth/callback?${params.toString()}`;
+}
+
+export async function getOAuthUrl(
+  provider: OAuthProvider,
+  options: OAuthOptions = {},
+): Promise<OAuthResult> {
   const supabase = await createClient();
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://banunni.com").trim();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${siteUrl}/auth/callback?next=/`,
+      redirectTo: buildCallbackUrl(siteUrl, options),
       skipBrowserRedirect: true,
     },
   });

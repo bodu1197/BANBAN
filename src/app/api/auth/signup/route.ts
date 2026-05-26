@@ -6,6 +6,7 @@ import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
 import { getProviderLabel } from "@/lib/auth-labels";
 import type { Database } from "@/types/database";
+import type { SignupRole } from "@/app/(main)/(auth)/signup/types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -15,6 +16,7 @@ interface SignupData {
   password: string;
   contact?: string;
   email: string;
+  role: SignupRole;
 }
 
 function generateNickname(): string {
@@ -204,6 +206,7 @@ async function createUser(
     is_admin: false,
     language: "ko",
     message_push_enabled: true,
+    role: data.role,
   };
   const { error: profileError } = await adminClient
     .from("profiles")
@@ -221,12 +224,15 @@ async function createUser(
 
 function parseRequestBody(body: Record<string, unknown>): SignupData {
   const nickname = body.nickname ? String(body.nickname).trim() : "";
+  const rawRole = String(body.role ?? "user").trim().toLowerCase();
+  const role: SignupRole = rawRole === "artist" ? "artist" : "user";
   return {
     username: String(body.username ?? "").trim(),
     nickname: nickname || generateNickname(),
     password: String(body.password ?? ""),
     contact: body.contact ? String(body.contact).trim() : undefined,
     email: String(body.email ?? "").trim().toLowerCase(),
+    role,
   };
 }
 

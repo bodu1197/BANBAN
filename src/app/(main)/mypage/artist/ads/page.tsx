@@ -229,7 +229,7 @@ function useAdDashboard(authLoading: boolean, user: unknown): {
 
 export default function AdManagementPage(): React.ReactElement {
     const router = useRouter();
-    const { user, isLoading: authLoading } = useAuth();
+    const { user, artist, isArtist, isLoading: authLoading } = useAuth();
     const { dashboard, wallet, loading } = useAdDashboard(authLoading, user);
     const [now] = useState(() => Date.now());
 
@@ -240,6 +240,8 @@ export default function AdManagementPage(): React.ReactElement {
             </div>
         );
     }
+    if (!isArtist) { router.push("/login"); return <div />; }
+    if (!artist) { router.push("/register/artist"); return <div />; }
 
     const activeSubscriptions = (dashboard?.subscriptions ?? []).filter(
         s => s.status === "ACTIVE" && s.expires_at && new Date(s.expires_at).getTime() > now,
