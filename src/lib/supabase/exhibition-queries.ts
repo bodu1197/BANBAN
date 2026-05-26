@@ -11,6 +11,20 @@ export interface ExhibitionItem {
     category: string;
 }
 
+/** DB enum 카테고리 → 한국어 라벨 (ExhibitionCard / HomeExhibitionCard 공유) */
+export const EXHIBITION_CATEGORY_LABELS: Record<string, string> = {
+    WOMENS_BEAUTY: "여자뷰티",
+    MENS_BEAUTY: "남자뷰티",
+    SEMI_PERMANENT: "반영구",
+};
+
+/** DB enum 카테고리 → Tailwind 배경색 클래스 (ExhibitionCard / HomeExhibitionCard 공유) */
+export const EXHIBITION_CATEGORY_COLORS: Record<string, string> = {
+    SEMI_PERMANENT: "bg-purple-500/80",
+    WOMENS_BEAUTY: "bg-pink-500/80",
+    MENS_BEAUTY: "bg-blue-500/80",
+};
+
 /**
  * Fetch active exhibitions for the public exhibition page.
  * Optionally filter by category.

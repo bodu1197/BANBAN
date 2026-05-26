@@ -1,7 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import type { ExhibitionItem } from "@/lib/supabase/exhibition-queries";
+import {
+    EXHIBITION_CATEGORY_COLORS,
+    EXHIBITION_CATEGORY_LABELS,
+    type ExhibitionItem,
+} from "@/lib/supabase/exhibition-queries";
 import { SUPABASE_URL } from "@/lib/supabase/config";
 
 function toImageUrl(path: string): string {
@@ -9,26 +13,14 @@ function toImageUrl(path: string): string {
     return `${SUPABASE_URL}/storage/v1/object/public/portfolios/${path}`;
 }
 
-const CATEGORY_LABELS: Record<string, Record<string, string>> = {
-    WOMENS_BEAUTY: { ko: "여자뷰티" },
-    MENS_BEAUTY: { ko: "남자뷰티" },
-    SEMI_PERMANENT: { ko: "반영구" },
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-    SEMI_PERMANENT: "bg-purple-500/80",
-    WOMENS_BEAUTY: "bg-pink-500/80",
-    MENS_BEAUTY: "bg-blue-500/80",
-};
-
 function getCategoryLabel(category: string): string {
     // eslint-disable-next-line security/detect-object-injection -- Safe: known constant keys
-    return CATEGORY_LABELS[category]?.ko ?? category;
+    return EXHIBITION_CATEGORY_LABELS[category] ?? category;
 }
 
 function getCategoryColor(category: string): string {
     // eslint-disable-next-line security/detect-object-injection -- Safe: known constant keys
-    return CATEGORY_COLORS[category] ?? "bg-zinc-500/80";
+    return EXHIBITION_CATEGORY_COLORS[category] ?? "bg-zinc-500/80";
 }
 
 export function ExhibitionCard({ item}: Readonly<{ item: ExhibitionItem; }>): React.ReactElement {

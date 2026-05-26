@@ -4,7 +4,12 @@ import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
 import { fetchPopularEvents } from "@/lib/supabase/event-queries";
-import { fetchExhibitions, type ExhibitionItem } from "@/lib/supabase/exhibition-queries";
+import {
+  EXHIBITION_CATEGORY_COLORS,
+  EXHIBITION_CATEGORY_LABELS,
+  fetchExhibitions,
+  type ExhibitionItem,
+} from "@/lib/supabase/exhibition-queries";
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { SalePortfolioCard } from "@/components/home/cards";
@@ -112,26 +117,14 @@ function CategorySections({ hp, lipPortfolios, mensEyebrowPortfolios }: Readonly
   );
 }
 
-const CATEGORY_KO: Record<string, string> = {
-  WOMENS_BEAUTY: "여자뷰티",
-  MENS_BEAUTY: "남자뷰티",
-  SEMI_PERMANENT: "반영구",
-};
-
-const CATEGORY_BG: Record<string, string> = {
-  SEMI_PERMANENT: "bg-purple-500/80",
-  WOMENS_BEAUTY: "bg-pink-500/80",
-  MENS_BEAUTY: "bg-blue-500/80",
-};
-
 function HomeExhibitionCard({ item }: Readonly<{ item: ExhibitionItem }>): React.ReactElement {
   const src = item.image_path.startsWith("http")
     ? item.image_path
     : `${SUPABASE_URL}/storage/v1/object/public/portfolios/${item.image_path}`;
   // eslint-disable-next-line security/detect-object-injection -- 알려진 상수 키 (DB enum)
-  const catLabel = CATEGORY_KO[item.category] ?? item.category;
+  const catLabel = EXHIBITION_CATEGORY_LABELS[item.category] ?? item.category;
   // eslint-disable-next-line security/detect-object-injection -- 알려진 상수 키 (DB enum)
-  const catBg = CATEGORY_BG[item.category] ?? "bg-zinc-500/80";
+  const catBg = EXHIBITION_CATEGORY_COLORS[item.category] ?? "bg-zinc-500/80";
   return (
     <Link
       href={`/exhibition/${item.id}`}
