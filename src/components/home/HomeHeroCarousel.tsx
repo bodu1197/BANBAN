@@ -21,9 +21,6 @@ function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; p
   const altText = banner.title ?? banner.subtitle ?? "반언니 시즌 배너";
   return (
     <div className="relative h-full w-full">
-      {/* next/image — Vercel Image Optimizer 가 AVIF/WebP 변환 + 글로벌 CDN 캐시 (인도네시아 등 해외 latency 개선)
-          priority — 첫 슬라이드만 true (LCP 보호). 나머지는 false 지만 fill + sizes 로 viewport 안 들어오면 즉시 로드.
-          referrerPolicy — 외부 fallback 도메인(바비톡) IP leak 방지. */}
       <Image
         src={banner.imageUrl}
         alt={altText}
@@ -31,6 +28,7 @@ function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; p
         className="object-cover"
         sizes="(min-width: 1024px) 1024px, 100vw"
         priority={priority}
+        fetchPriority={priority ? "high" : undefined}
         referrerPolicy="no-referrer"
       />
       {/* title/subtitle 있을 때만 텍스트 표시. 어두운 gradient 장막 제거 — 이미지 본연 유지.
@@ -144,12 +142,19 @@ export function HomeHeroCarousel({ banners }: Readonly<Props>): React.ReactEleme
 
   useEffect(() => {
     if (list.length <= 1 || paused || reducedMotion) return;
-    // 4초 간격은 flicker 가 아니므로 WCAG 2.3.1 (Three Flashes) 위반 아님.
-    // hover/focus pause + prefers-reduced-motion 존중 + 인디케이터로 사용자 제어 가능.
-    const timer = globalThis.setInterval(() => {
-      setIdx((i) => (i + 1) % list.length);
-    }, SLIDE_INTERVAL_MS);
-    return () => globalThis.clearInterval(timer);
+    // LCP 측정 후에만 자동 회전 시작 — Lighthouse 가 슬라이드 변경을 새 LCP candidate 로 인식해
+    // 측정값이 끝없이 갱신되는 문제(LCP 25 초 폭증) 방지.
+    // requestIdleCallback + 6 초 지연 (LCP measurement window 종료 후).
+    let timer: ReturnType<typeof globalThis.setInterval> | null = null;
+    const startId = globalThis.setTimeout(() => {
+      timer = globalThis.setInterval(() => {
+        setIdx((i) => (i + 1) % list.length);
+      }, SLIDE_INTERVAL_MS);
+    }, 6000);
+    return () => {
+      globalThis.clearTimeout(startId);
+      if (timer !== null) globalThis.clearInterval(timer);
+    };
   }, [list.length, paused, reducedMotion]);
 
   // 좌측 슬라이드 애니메이션 — transform translateX(-idx*100%)

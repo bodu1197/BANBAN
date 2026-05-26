@@ -10,7 +10,10 @@ const pretendard = localFont({
   weight: "100 900",
   variable: "--font-pretendard",
   fallback: ["system-ui", "-apple-system", "Apple SD Gothic Neo", "Malgun Gothic", "sans-serif"],
-  preload: true,
+  // 2MB Pretendard 가 critical path 를 차단해 LCP 25 초 폭증.
+  // preload=false → 첫 페인트는 system font 로 (display: swap) → 폰트 로드 후 자연스럽게 교체.
+  // FOIT 없음 (swap), FOUT 약간 있으나 LCP/FCP 대폭 개선.
+  preload: false,
   adjustFontFallback: "Arial",
 });
 
