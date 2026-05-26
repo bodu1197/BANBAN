@@ -38,7 +38,6 @@ export function EventDetailImageStack({
               height={1536}
               className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, 768px"
-              loading={i === 0 ? "eager" : "lazy"}
               preload={i === 0}
               quality={85}
             />

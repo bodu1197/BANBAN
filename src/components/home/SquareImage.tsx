@@ -31,7 +31,6 @@ export function SquareImage({
           quality={quality}
           className="object-cover"
           preload={priority}
-          loading={priority ? "eager" : "lazy"}
         />
       ) : (
         <Image
@@ -42,7 +41,6 @@ export function SquareImage({
           quality={quality}
           className="object-cover"
           preload={priority}
-          loading={priority ? "eager" : "lazy"}
         />
       )}
     </div>
