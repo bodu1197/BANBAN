@@ -1,7 +1,7 @@
 import "server-only";
 import OpenAI from "openai";
 import type { EncyclopediaTopic } from "./topics";
-import { pickRelatedPortfolioImages, uploadThumbnailToStorage } from "./queries";
+import { pickImagesForSections, uploadThumbnailToStorage } from "./queries";
 import { estimateReadingTime } from "@/lib/board/utils";
 
 const MODEL = "gpt-4o";
@@ -293,17 +293,19 @@ export async function generateEncyclopediaArticle(
   const client = new OpenAI({ apiKey });
 
   const gender = /남자|남성/.test(topic.keyword) ? "남성" as const : "여성" as const;
-  const [parsed, portfolioImages] = await Promise.all([
-    callOpenAiText(client, topic),
-    pickRelatedPortfolioImages(topic.keyword, 3, gender),
-  ]);
-
+  // 1) AI 본문 먼저 받아 sections 확보.
+  const parsed = await callOpenAiText(client, topic);
   const title = parsed.title?.trim() ?? topic.title;
-  const thumbnailBuffer = await generateThumbnail(client, topic, title);
+
+  // 2) sections 별 의미 임베딩 매칭 + 커버 썸네일 병렬.
+  const [sectionImages, thumbnailBuffer] = await Promise.all([
+    pickImagesForSections(parsed.sections ?? [], topic.keyword, gender),
+    generateThumbnail(client, topic, title),
+  ]);
   const thumbnailUrl = await uploadThumbnailToStorage(thumbnailBuffer, topic.id, topic.slug, title);
 
   const coverImage = { url: thumbnailUrl, alt: `${topic.keyword} — ${title}` };
-  const images = [coverImage, ...portfolioImages];
+  const images = [coverImage, ...sectionImages];
   const content = buildContentMarkdown(parsed, images);
   return normalizeAiOutput(parsed, topic, content, images);
 }
