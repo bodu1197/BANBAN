@@ -4,17 +4,18 @@ import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
 import { fetchPopularEvents } from "@/lib/supabase/event-queries";
+import { fetchExhibitions, type ExhibitionItem } from "@/lib/supabase/exhibition-queries";
 import { PromoBannerGrid } from "@/components/home/PromoBannerGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
-import { SalePortfolioCard, PopularArtistCard } from "@/components/home/cards";
+import { SalePortfolioCard } from "@/components/home/cards";
+import { ExhibitionCard } from "@/components/exhibition/ExhibitionCard";
 import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
 import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
-import type { HomePortfolio, HomeArtist } from "@/lib/supabase/home-queries";
+import type { HomePortfolio } from "@/lib/supabase/home-queries";
 import { fetchPromoBanners, fetchHomeBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-queries";
-import { fetchNewArtists } from "@/lib/supabase/home-artist-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
@@ -109,34 +110,36 @@ function CategorySections({ hp, lipPortfolios, mensEyebrowPortfolios }: Readonly
   );
 }
 
-function ActiveArtistSection({ artists, title, moreText }: Readonly<{
-  artists: HomeArtist[];
+function HomeExhibitionSection({ items, title, moreText }: Readonly<{
+  items: ExhibitionItem[];
   title: string;
   moreText?: string;
 }>): React.ReactElement | null {
-  if (artists.length === 0) return null;
+  if (items.length === 0) return null;
   return (
     <section className="py-4">
-      <SectionHeader title={title} moreLink="/artists" moreText={moreText} />
+      <SectionHeader title={title} moreLink="/exhibition" moreText={moreText} />
       <HorizontalScrollList>
-        {artists.map((a, i) => (
-          <PopularArtistCard key={a.id} artist={a} priority={i === 0} />
+        {items.map((item) => (
+          <div key={item.id} className="w-[320px] shrink-0 md:w-[420px]">
+            <ExhibitionCard item={item} />
+          </div>
         ))}
       </HorizontalScrollList>
     </section>
   );
 }
 
-function CuratedExhibitions({ hp, activeArtists }: Readonly<{
+function CuratedExhibitions({ hp, exhibitions }: Readonly<{
   hp: Record<string, string>;
-  activeArtists: HomeArtist[];
+  exhibitions: ExhibitionItem[];
 }>): React.ReactElement {
   return (
     <>
       <AiTestPromoBanner />
-      <ActiveArtistSection
-        artists={activeArtists}
-        title={hp.todayActiveArtists ?? "오늘의 인기 아티스트"}
+      <HomeExhibitionSection
+        items={exhibitions}
+        title="진행 중인 기획전"
         moreText={hp.seeMore}
       />
     </>
@@ -168,15 +171,15 @@ async function fetchTopHomeData() {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchBottomHomeData() {
-  const [timeSalePortfolios, eyebrowPortfolios, lipPortfolios, activeArtists, mensEyebrowPortfolios] = await Promise.all([
+  const [timeSalePortfolios, eyebrowPortfolios, lipPortfolios, exhibitions, mensEyebrowPortfolios] = await Promise.all([
     safe(() => fetchTimeSalePortfolios(10), []),
     safe(() => fetchEyebrowPortfolios(10), []),
     safe(() => fetchLipPortfolios(10), []),
-    safe(() => fetchNewArtists(5), []),
+    safe(() => fetchExhibitions(), []),
     safe(() => fetchMensEyebrowPortfolios(10), []),
   ]);
 
-  return { timeSalePortfolios, eyebrowPortfolios, lipPortfolios, activeArtists, mensEyebrowPortfolios };
+  return { timeSalePortfolios, eyebrowPortfolios, lipPortfolios, exhibitions, mensEyebrowPortfolios };
 }
 
 function HomeDiscoverySections({
@@ -241,7 +244,7 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
         moreText={hp.seeMore}
       />
       <LazyHomeSection size="md">
-        <CuratedExhibitions hp={hp} activeArtists={homeData.activeArtists} />
+        <CuratedExhibitions hp={hp} exhibitions={homeData.exhibitions} />
       </LazyHomeSection>
       <HomeDiscoverySections hp={hp} common={common} homeData={homeData} />
       <HomeCategorySections hp={hp} common={common} homeData={homeData} />
