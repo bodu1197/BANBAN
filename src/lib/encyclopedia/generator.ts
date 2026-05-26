@@ -299,7 +299,7 @@ export async function generateEncyclopediaArticle(
 
   // 2) sections 별 의미 임베딩 매칭 + 커버 썸네일 병렬.
   const [sectionImages, thumbnailBuffer] = await Promise.all([
-    pickImagesForSections(parsed.sections ?? [], topic.keyword, gender),
+    pickImagesForSections(parsed.sections ?? [], topic.category, topic.keyword, gender),
     generateThumbnail(client, topic, title),
   ]);
   const thumbnailUrl = await uploadThumbnailToStorage(thumbnailBuffer, topic.id, topic.slug, title);

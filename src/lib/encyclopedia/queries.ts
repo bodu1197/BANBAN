@@ -2,7 +2,6 @@ import "server-only";
 import path from "path";
 import sharp from "sharp";
 import { createAdminClient } from "@/lib/supabase/server";
-import { CLIP_URL } from "@/lib/ai-client";
 import type { Database } from "@/types/database";
 
 export async function fetchPublishedTopicIds(): Promise<Set<number>> {
@@ -366,87 +365,63 @@ export async function pickRelatedPortfolioImages(
     }));
 }
 
-// ── Section 의미 매칭 (CLIP text embedding + pgvector cosine similarity) ─────
-
-interface PortfolioMatchRow {
-  portfolio_media_id: string;
-  portfolio_id: string;
-  storage_path: string;
-  similarity: number;
-}
-
-async function fetchSectionTextEmbedding(text: string): Promise<number[] | null> {
-  if (!CLIP_URL) return null;
-  try {
-    const res = await fetch(`${CLIP_URL}/embed/text`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text.slice(0, 1000) }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { embedding?: unknown };
-    if (!Array.isArray(data.embedding)) return null;
-    if (!data.embedding.every((v) => typeof v === "number")) return null;
-    return data.embedding as number[];
-  } catch {
-    return null;
-  }
-}
-
-async function searchSimilarMedia(
-  supabase: ReturnType<typeof createAdminClient>,
-  embedding: number[],
-  matchCount: number,
-  threshold: number,
-): Promise<PortfolioMatchRow[]> {
-  const { data, error } = await supabase.rpc("match_portfolios", {
-    query_embedding: JSON.stringify(embedding),
-    match_threshold: threshold,
-    match_count: matchCount,
-  });
-  if (error) return [];
-  return (data ?? []) as PortfolioMatchRow[];
-}
+// ── Section 별 portfolio 사진 매칭 (topic.category 기반) ──────────────────────
 
 /**
- * 각 section.body 의 의미와 가장 가까운 portfolio_media 를 매칭.
+ * topic.category 의 portfolio pool 안에서만 section 수만큼 portfolio_media 선택.
  *
- * Why: 기존 pickRelatedPortfolioImages 는 글 전체 keyword 1번 검색 → 랜덤 shuffle 이라
- * section 별 내용과 무관한 사진이 박히는 문제 발생.
+ * Why: 기존 pickRelatedPortfolioImages 는 글 전체 keyword 1번 검색.
+ * CLIP 임베딩 시도(ca54eb0)는 "한국어 텍스트 ↔ 시술 이미지" 의미 매칭이 약하고
+ * (예: 아이라인 텍스트가 두피SMP 이미지에 더 가까운 visual similarity 매칭)
+ * → 카테고리 매칭이 가장 정확. topic.category 는 ENCYCLOPEDIA_TOPICS 에 명시되어 신뢰 가능.
  *
- * How: CLIP 텍스트 임베딩 → pgvector cosine similarity 로 section 별 top-N 검색,
- * 중복 방지하며 1장씩 선택. CLIP 미설정 / 매칭 실패 시 기존 keyword 기반 fallback.
+ * How: topic.category 의 portfolio pool fetch → portfolio 별 첫 미디어 → section 수만큼
+ * 다른 portfolio 의 미디어 1장씩 (중복 방지). pool 부족 시 keyword fallback.
  */
 export async function pickImagesForSections(
   sections: ReadonlyArray<{ heading: string; body: string }>,
+  topicCategory: string,
   fallbackKeyword: string,
   gender: "여성" | "남성" = "여성",
 ): Promise<{ url: string; alt: string }[]> {
   const supabase = createAdminClient();
   const bucketUrl = `${(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()}/storage/v1/object/public/portfolios`;
+  const needed = sections.length;
 
-  const used = new Set<string>();
-  const results: { url: string; alt: string }[] = [];
+  const poolIds = await findCategoryPortfolioIds(supabase, topicCategory, needed * MEDIA_FETCH_MULTIPLIER, gender);
+  if (poolIds.length === 0) {
+    return pickRelatedPortfolioImages(fallbackKeyword, needed, gender);
+  }
 
-  for (const section of sections) {
-    const emb = await fetchSectionTextEmbedding(`${section.heading}\n${section.body}`);
-    // 한 section 의 embedding 실패가 전체 매칭을 중단시키면 안 됨 — graceful degradation
-    if (!emb) continue;
-    const matches = await searchSimilarMedia(supabase, emb, 10, 0.2);
-    const pick = matches.find((m) => !used.has(m.portfolio_media_id));
-    if (pick) {
-      used.add(pick.portfolio_media_id);
-      results.push({
-        url: `${bucketUrl}/${pick.storage_path}`,
-        alt: `${section.heading} 관련 시술 예시`,
-      });
+  const { data: imgs } = await supabase
+    .from("portfolio_media")
+    .select("portfolio_id, storage_path")
+    .in("portfolio_id", poolIds)
+    .order("order_index", { ascending: true });
+
+  const byPortfolio = new Map<string, string>();
+  for (const row of (imgs ?? []) as MediaRow[]) {
+    if (!byPortfolio.has(row.portfolio_id)) {
+      byPortfolio.set(row.portfolio_id, row.storage_path);
     }
   }
 
-  // 부족분은 기존 keyword 기반으로 보충 (CLIP 미설정 / 매칭 부족 fallback)
-  if (results.length < sections.length) {
-    const needed = sections.length - results.length;
-    const fallback = await pickRelatedPortfolioImages(fallbackKeyword, needed, gender);
+  const candidates = shuffle(Array.from(byPortfolio.values()));
+  const results: { url: string; alt: string }[] = [];
+  for (let i = 0; i < Math.min(needed, candidates.length); i++) {
+    // eslint-disable-next-line security/detect-object-injection -- numeric index from for-loop
+    const path = candidates[i];
+    // eslint-disable-next-line security/detect-object-injection -- numeric index from for-loop
+    const section = sections[i];
+    results.push({
+      url: `${bucketUrl}/${path}`,
+      alt: `${section.heading} 관련 ${topicCategory} 시술 예시`,
+    });
+  }
+
+  if (results.length < needed) {
+    const missing = needed - results.length;
+    const fallback = await pickRelatedPortfolioImages(fallbackKeyword, missing, gender);
     results.push(...fallback);
   }
 
