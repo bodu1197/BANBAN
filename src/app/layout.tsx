@@ -5,15 +5,17 @@ import { SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
 const pretendard = localFont({
-  src: "./fonts/PretendardVariable.woff2",
+  // Pretendard 한글 서브셋 static (Regular 267KB + Bold 271KB = 총 538KB)
+  // 기존 Variable woff2 2MB → 73% 감소. browser 가 100-500 → Regular, 600-900 → Bold 자동 매칭.
+  // 작아진 만큼 preload 부활 가능 (LCP 영향 미미).
+  src: [
+    { path: "./fonts/Pretendard-Regular.subset.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Pretendard-Bold.subset.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
-  weight: "100 900",
   variable: "--font-pretendard",
   fallback: ["system-ui", "-apple-system", "Apple SD Gothic Neo", "Malgun Gothic", "sans-serif"],
-  // 2MB Pretendard 가 critical path 를 차단해 LCP 25 초 폭증.
-  // preload=false → 첫 페인트는 system font 로 (display: swap) → 폰트 로드 후 자연스럽게 교체.
-  // FOIT 없음 (swap), FOUT 약간 있으나 LCP/FCP 대폭 개선.
-  preload: false,
+  preload: true,
   adjustFontFallback: "Arial",
 });
 
