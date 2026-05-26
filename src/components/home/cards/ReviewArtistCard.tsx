@@ -27,7 +27,7 @@ function PortfolioPreviewGrid({
                 sizes="80px"
                 quality={70}
                 className="object-cover"
-                priority={priority}
+                preload={priority}
               />
             ) : (
               <div className="h-full w-full bg-muted" />
@@ -64,7 +64,7 @@ export function ReviewArtistCard({
             sizes="80px"
             quality={70}
             className="object-cover"
-            priority={priority}
+            preload={priority}
           />
         </div>
       </div>

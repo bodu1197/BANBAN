@@ -211,7 +211,7 @@ function LegacyImageCarousel({
         fill
         className="object-cover"
         sizes="(max-width: 768px) 100vw, 768px"
-        priority
+        preload
       />
       {images.length > 1 && (
         <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">

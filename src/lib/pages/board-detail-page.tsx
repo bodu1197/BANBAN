@@ -234,7 +234,7 @@ export async function renderBoardDetailPage(
             height={630}
             className="h-auto w-full"
             sizes="(max-width: 767px) 100vw, 767px"
-            priority
+            preload
             unoptimized
           />
           <WatermarkStamp />

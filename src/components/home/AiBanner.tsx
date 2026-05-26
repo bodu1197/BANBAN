@@ -25,7 +25,7 @@ export function AiBanner({ imageUrl, linkUrl, altText }: Readonly<AiBannerProps>
         sizes="(min-width: 768px) 362px, calc(100vw - 2rem)"
         className="h-auto w-full"
         quality={75}
-        priority
+        preload
       />
     </Link>
   );

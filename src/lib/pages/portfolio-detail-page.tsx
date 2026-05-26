@@ -38,7 +38,7 @@ function buildHeroMedia(url: string | null, title: string): React.ReactElement |
                 sizes="(max-width: 767px) 100vw, 767px"
                 quality={65}
                 className="object-cover"
-                priority
+                preload
             />
         </div>
     );

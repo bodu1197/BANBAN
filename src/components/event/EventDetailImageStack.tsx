@@ -39,7 +39,7 @@ export function EventDetailImageStack({
               className="h-auto w-full"
               sizes="(max-width: 768px) 100vw, 768px"
               loading={i === 0 ? "eager" : "lazy"}
-              priority={i === 0}
+              preload={i === 0}
               quality={85}
             />
             <figcaption className="sr-only">{label}</figcaption>

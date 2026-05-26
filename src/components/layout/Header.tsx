@@ -19,7 +19,7 @@ export function Header(): React.ReactElement {
                         alt="반언니"
                         width={100}
                         height={32}
-                        priority
+                        preload
                     />
                 </Link>
 

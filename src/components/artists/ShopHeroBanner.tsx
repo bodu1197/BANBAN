@@ -75,7 +75,7 @@ function HeroCarousel({
           fill
           className="object-cover"
           sizes="(min-width: 1024px) 1024px, 100vw"
-          priority
+          preload
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">

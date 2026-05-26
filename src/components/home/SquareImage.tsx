@@ -30,7 +30,7 @@ export function SquareImage({
           sizes={sizes}
           quality={quality}
           className="object-cover"
-          priority={priority}
+          preload={priority}
           loading={priority ? "eager" : "lazy"}
         />
       ) : (
@@ -41,7 +41,7 @@ export function SquareImage({
           sizes={sizes}
           quality={quality}
           className="object-cover"
-          priority={priority}
+          preload={priority}
           loading={priority ? "eager" : "lazy"}
         />
       )}

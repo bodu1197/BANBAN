@@ -63,7 +63,7 @@ function ImageCarousel({ images, title }: Readonly<{
                 fill
                 sizes="(max-width: 767px) 100vw, 512px"
                 className="object-cover"
-                priority={current === 0}
+                preload={current === 0}
             />
             {total > 1 && (
                 <>
