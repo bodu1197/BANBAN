@@ -269,6 +269,55 @@ function HomeCategorySections({
   );
 }
 
+const APP_STORE_URL = "https://apps.apple.com/us/app/%EB%B0%98%EC%96%B8%EB%8B%88-%EB%88%88%EC%8D%B9%EB%AC%B8%EC%8B%A0-%EB%B0%98%EC%98%81%EA%B5%AC-%EA%B0%80%EA%B2%A9%EB%B9%84%EA%B5%90-%EB%B0%8F-%EA%B0%84%ED%8E%B8-%EC%98%88%EC%95%BD/id6762251420";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.swing2app.v3.da2371fb31eee407fb0e926e1fe9a607e&hl=ko";
+
+function AppDownloadSection(): React.ReactElement {
+  return (
+    <section aria-label="앱 다운로드" className="px-4 py-8">
+      <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 px-6 py-7 shadow-lg">
+        <p className="text-center text-xs font-medium text-zinc-300">반언니 모바일 앱</p>
+        <h2 className="mt-1 text-center text-lg font-bold text-white">언제 어디서나 더 편리하게</h2>
+        <div className="mt-5 flex flex-col justify-center gap-2.5 sm:flex-row">
+          <Link
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="App Store 에서 반언니 다운로드"
+            className="flex items-center justify-center gap-2.5 rounded-xl bg-black px-5 py-3 text-white shadow-md transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:flex-1"
+          >
+            <svg width="26" height="26" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true">
+              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
+            </svg>
+            <div className="text-left leading-tight">
+              <p className="text-[10px] opacity-80">Download on the</p>
+              <p className="text-base font-bold">App Store</p>
+            </div>
+          </Link>
+          <Link
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Google Play 에서 반언니 다운로드"
+            className="flex items-center justify-center gap-2.5 rounded-xl bg-black px-5 py-3 text-white shadow-md transition-transform hover:scale-[1.02] focus-visible:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:flex-1"
+          >
+            <svg width="26" height="26" viewBox="0 0 512 512" aria-hidden="true">
+              <path fill="#34A853" d="M325.3 234.3 104.6 13l280.8 161.2-60.1 60.1z" />
+              <path fill="#FBBC04" d="m104.6 499 220.7-220.7 60.1 60.1L104.6 499z" />
+              <path fill="#4285F4" d="M483.7 227.6c14.4 8.5 14.4 35 0 43.5l-98.9 56.6-65.5-65.5 65.5-65.5 98.9 30.9z" />
+              <path fill="#EA4335" d="m104.6 13 220.7 220.7-220.7 220.7c-7.6-3.4-12.6-11-12.6-20V33c0-9 5-16.6 12.6-20z" />
+            </svg>
+            <div className="text-left leading-tight">
+              <p className="text-[10px] opacity-80">GET IT ON</p>
+              <p className="text-base font-bold">Google Play</p>
+            </div>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 async function AsyncHomeBottom(): Promise<React.ReactElement> {
   const homeData = await fetchBottomHomeData();
   const hp = STRINGS.homepage as unknown as Record<string, string>;
@@ -287,6 +336,7 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
       </LazyHomeSection>
       <HomeDiscoverySections hp={hp} common={common} homeData={homeData} />
       <HomeCategorySections hp={hp} common={common} homeData={homeData} />
+      <AppDownloadSection />
     </>
   );
 }
