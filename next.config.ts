@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
     ],
     // Custom sizes tuned for homepage card widths at 2x DPR:
     // 160 (80px grid), 200 (100px event), 320 (130px sale), 480 (240px popular)
-    imageSizes: [16, 32, 48, 64, 96, 128, 160, 200, 256, 320, 384, 480],
+    imageSizes: [16, 32, 48, 64, 96, 128, 160, 200, 256, 320, 384, 480, 720, 1024],
     // AVIF first for better compression (30% smaller than WebP)
     formats: ['image/avif', 'image/webp'],
     // Global quality for smaller payloads (component-level overrides still work)

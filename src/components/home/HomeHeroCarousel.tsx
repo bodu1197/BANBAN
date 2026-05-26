@@ -28,7 +28,6 @@ function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; p
         className="object-cover"
         sizes="(min-width: 1024px) 1024px, 100vw"
         priority={priority}
-        fetchPriority={priority ? "high" : undefined}
         referrerPolicy="no-referrer"
       />
       {/* title/subtitle 있을 때만 텍스트 표시. 어두운 gradient 장막 제거 — 이미지 본연 유지.
