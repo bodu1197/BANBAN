@@ -131,32 +131,38 @@ export async function fetchPopularPortfolios(options?: {
 // === Time Sale Portfolios (타임세일 — sale_ended_at이 있는 할인 포트폴리오) ===
 
 export async function fetchTimeSalePortfolios(limit = 10): Promise<HomePortfolio[]> {
-  const supabase = createStaticClient();
-  const now = new Date().toISOString();
+  return unstable_cache(
+    async (): Promise<HomePortfolio[]> => {
+      const supabase = createStaticClient();
+      const now = new Date().toISOString();
 
-  const artistIds = await getArtistIdsByType(supabase);
-  if (artistIds.length === 0) return [];
+      const artistIds = await getArtistIdsByType(supabase);
+      if (artistIds.length === 0) return [];
 
-  const base = supabase
-    .from("portfolios")
-    .select(SELECT_BASIC)
-    .is("deleted_at", null)
-    .gt("price", 0)
-    .gt("discount_rate", 0)
-    .in("artist_id", artistIds);
+      const base = supabase
+        .from("portfolios")
+        .select(SELECT_BASIC)
+        .is("deleted_at", null)
+        .gt("price", 0)
+        .gt("discount_rate", 0)
+        .in("artist_id", artistIds);
 
-  const { data, error } = await base
-    .not("sale_ended_at", "is", null)
-    .gte("sale_ended_at", now)
-    .order("sale_ended_at", { ascending: true })
-    .limit(limit * 3);
+      const { data, error } = await base
+        .not("sale_ended_at", "is", null)
+        .gte("sale_ended_at", now)
+        .order("sale_ended_at", { ascending: true })
+        .limit(limit * 3);
 
-  if (error) {
-    throw new Error(`Failed to fetch time sale portfolios: ${error.message}`);
-  }
+      if (error) {
+        throw new Error(`Failed to fetch time sale portfolios: ${error.message}`);
+      }
 
-  const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
-  return rows.slice(0, limit).map(mapPortfolioRow);
+      const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
+      return rows.slice(0, limit).map(mapPortfolioRow);
+    },
+    [`home-time-sale-portfolios-${limit}`],
+    { revalidate: 60, tags: ["home", "portfolios"] },
+  )();
 }
 
 // === Discount Portfolios (할인 페이지) ===

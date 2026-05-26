@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { createClient, createAdminClient } from "./server";
 import { getEventStorageUrl } from "./storage-utils";
 import type { Database } from "@/types/database";
@@ -309,9 +310,7 @@ export async function incrementEventViews(id: string): Promise<void> {
   }
 }
 
-export const fetchPopularEvents = cache(async function fetchPopularEvents(
-  limit = 8,
-): Promise<EventCardData[]> {
+async function fetchPopularEventsInternal(limit: number): Promise<EventCardData[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("events")
@@ -326,7 +325,18 @@ export const fetchPopularEvents = cache(async function fetchPopularEvents(
   if (!data) return [];
 
   return data.map(mapRowToEventCard);
-});
+}
+
+// 인기 이벤트 ISR 300s — 홈 페이지 SSR 응답 시간 단축. cache() 로 같은 요청 내 dedup.
+export const fetchPopularEvents = cache(
+  async (limit = 8): Promise<EventCardData[]> => {
+    return unstable_cache(
+      () => fetchPopularEventsInternal(limit),
+      [`popular-events-${limit}`],
+      { revalidate: 300, tags: ["events"] },
+    )();
+  },
+);
 
 export const fetchRelatedEvents = cache(async function fetchRelatedEvents(
   artistId: string,

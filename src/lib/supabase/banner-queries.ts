@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
 
@@ -18,20 +19,20 @@ export interface HomeBannerData {
   is_active: boolean;
 }
 
-export async function fetchHomeBanners(): Promise<HomeBannerData[]> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  const { data, error } = await supabase
-    .from("home_banners")
-    .select("slot, image_path, link_url, alt_text, is_active")
-    .eq("is_active", true);
-
-  if (error || !data) return [];
-
-  return data as HomeBannerData[];
-}
+export const fetchHomeBanners = unstable_cache(
+  async (): Promise<HomeBannerData[]> => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supabase
+      .from("home_banners")
+      .select("slot, image_path, link_url, alt_text, is_active")
+      .eq("is_active", true);
+    if (error || !data) return [];
+    return data as HomeBannerData[];
+  },
+  ["home-banners"],
+  { revalidate: 300, tags: ["banners"] },
+);
 
 export interface QuickMenuItem {
   id: string;
@@ -42,34 +43,34 @@ export interface QuickMenuItem {
   is_active: boolean;
 }
 
-export async function fetchQuickMenuItems(): Promise<QuickMenuItem[]> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
+export const fetchQuickMenuItems = unstable_cache(
+  async (): Promise<QuickMenuItem[]> => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supabase
+      .from("quick_menu_items")
+      .select("id, order_index, label, icon_path, link_url, is_active")
+      .eq("is_active", true)
+      .order("order_index", { ascending: true });
+    if (error || !data) return [];
+    return data as QuickMenuItem[];
+  },
+  ["quick-menu-items"],
+  { revalidate: 300, tags: ["banners"] },
+);
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  const { data, error } = await supabase
-    .from("quick_menu_items")
-    .select("id, order_index, label, icon_path, link_url, is_active")
-    .eq("is_active", true)
-    .order("order_index", { ascending: true });
-
-  if (error || !data) return [];
-
-  return data as QuickMenuItem[];
-}
-
-export async function fetchPromoBanners(): Promise<PromoBannerData[]> {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  const { data, error } = await supabase
-    .from("promo_banners")
-    .select("id, title, subtitle, image_path, link_url, is_active")
-    .eq("is_active", true)
-    .order("order_index", { ascending: true });
-
-  if (error || !data) return [];
-
-  return data as PromoBannerData[];
-}
+export const fetchPromoBanners = unstable_cache(
+  async (): Promise<PromoBannerData[]> => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supabase
+      .from("promo_banners")
+      .select("id, title, subtitle, image_path, link_url, is_active")
+      .eq("is_active", true)
+      .order("order_index", { ascending: true });
+    if (error || !data) return [];
+    return data as PromoBannerData[];
+  },
+  ["promo-banners"],
+  { revalidate: 300, tags: ["banners"] },
+);

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 // Uses ANON_KEY (respects RLS) — exhibitions table must have SELECT policy for anon role
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
@@ -28,8 +29,10 @@ export const EXHIBITION_CATEGORY_COLORS: Record<string, string> = {
 /**
  * Fetch active exhibitions for the public exhibition page.
  * Optionally filter by category.
+ *
+ * ISR cache 300s (5분) — 활성/노출 기간 변경이 거의 없음.
  */
-export async function fetchExhibitions(category?: string): Promise<ExhibitionItem[]> {
+async function fetchExhibitionsInternal(category?: string): Promise<ExhibitionItem[]> {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -58,3 +61,9 @@ export async function fetchExhibitions(category?: string): Promise<ExhibitionIte
         category: row.category as string,
     }));
 }
+
+export const fetchExhibitions = unstable_cache(
+    fetchExhibitionsInternal,
+    ["exhibitions"],
+    { revalidate: 300, tags: ["exhibitions"] },
+);
