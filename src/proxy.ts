@@ -37,8 +37,6 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
         "https://*.iamport.kr", "https://*.portone.io",
         // Media vendor (postcode, swing2app, MediaPipe CDN)
         "https://t1.daumcdn.net", "https://pcdn2.swing2app.co.kr", "https://cdn.jsdelivr.net",
-        // Ads
-        "https://www.googletagmanager.com", "https://*.doubleclick.net", "https://googleads.g.doubleclick.net",
     ],
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": [
@@ -47,10 +45,6 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
         "https://*.supabase.co",
         // External media
         "https://flagcdn.com", "https://*.googleusercontent.com", "https://k.kakaocdn.net", "https://*.pstatic.net",
-        // Ads (conversion / remarketing pixel — Google 의 지역 TLD 분기 대응)
-        "https://www.googletagmanager.com", "https://*.google-analytics.com", "https://*.doubleclick.net",
-        "https://www.google.com", "https://www.google.co.kr", "https://www.google.co.jp",
-        "https://www.google.co.id", "https://www.google.com.hk", "https://www.google.com.sg", "https://www.google.com.tw",
     ],
     "font-src": ["'self'", "data:"],
     "connect-src": [
@@ -63,9 +57,6 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
         "https://*.iamport.kr", "https://*.portone.io",
         // Vercel
         "https://vitals.vercel-insights.com",
-        // Ads
-        "https://www.googletagmanager.com", "https://*.google-analytics.com", "https://*.analytics.google.com",
-        "https://*.googleadservices.com", "https://*.doubleclick.net", "https://www.google.com",
         // Media vendor (MediaPipe wasm + model)
         "https://cdn.jsdelivr.net", "https://storage.googleapis.com",
     ],
