@@ -40,6 +40,8 @@ interface UseAuthReturn {
   user: AuthUser | null;
   artist: Artist | null;
   role: Role | null;
+  /** profiles.profile_image_path — SNS 가입자 아바타 (callback 에서 다운로드+저장) */
+  profileImagePath: string | null;
   isLoading: boolean;
   /** profiles.role === 'artist' — 시술사로 가입했는지 */
   isArtist: boolean;
@@ -63,6 +65,7 @@ export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [artist, setArtist] = useState<Artist | null>(null);
   const [role, setRole] = useState<Role | null>(null);
+  const [profileImagePath, setProfileImagePath] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const initialFetchDone = useRef(false);
 
@@ -83,7 +86,7 @@ export function useAuth(): UseAuthReturn {
             .maybeSingle(),
           supabase
             .from("profiles")
-            .select("role")
+            .select("role, profile_image_path")
             .eq("id", authUser.id)
             .maybeSingle(),
         ]);
@@ -91,15 +94,18 @@ export function useAuth(): UseAuthReturn {
         setUser(authUser);
         setArtist(artistData);
         setRole(normalizeRole(profileData?.role));
+        setProfileImagePath(profileData?.profile_image_path ?? null);
       } else {
         setUser(null);
         setArtist(null);
         setRole(null);
+        setProfileImagePath(null);
       }
     } catch {
       setUser(null);
       setArtist(null);
       setRole(null);
+      setProfileImagePath(null);
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +141,7 @@ export function useAuth(): UseAuthReturn {
     setUser(null);
     setArtist(null);
     setRole(null);
+    setProfileImagePath(null);
     globalThis.location.href = "/";
   }, []);
 
@@ -146,6 +153,7 @@ export function useAuth(): UseAuthReturn {
     user,
     artist,
     role,
+    profileImagePath,
     isLoading,
     isArtist: role === "artist",
     hasShop: artist !== null,

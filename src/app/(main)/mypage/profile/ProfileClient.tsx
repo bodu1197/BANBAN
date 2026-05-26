@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 
 export function ProfileClient(): React.ReactElement {
   const router = useRouter();
-  const { user, artist, isArtist, isLoading, logout } = useAuth();
+  const { user, artist, isArtist, profileImagePath, isLoading, logout } = useAuth();
 
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
@@ -43,13 +43,14 @@ export function ProfileClient(): React.ReactElement {
       setContact(user.user_metadata?.contact || "");
       setChatNotification(user.user_metadata?.message_push_enabled !== false);
 
-      if (artist?.profile_image_path) {
-        setProfileImage(getAvatarUrl(artist.profile_image_path));
-      } else if (user.user_metadata?.avatar_url) {
-        setProfileImage(user.user_metadata.avatar_url as string);
+      // 우선순위: artists.profile_image_path > profiles.profile_image_path (SNS 다운로드)
+      // user_metadata.avatar_url 직접 사용 안 함 — 외부 CDN 토큰 만료 + next/image remotePatterns 외 도메인 거부.
+      const path = artist?.profile_image_path ?? profileImagePath;
+      if (path) {
+        setProfileImage(getAvatarUrl(path));
       }
     }
-  }, [user, artist]);
+  }, [user, artist, profileImagePath]);
 
   useEffect(() => {
     if (!isLoading && !user) {

@@ -61,6 +61,22 @@ const nextConfig: NextConfig = {
         hostname: 'flagcdn.com',
         pathname: '/w20/**',  // 국기 아이콘만 — pathname 한정으로 SSRF 추가 방어
       },
+      // SNS 로그인 사용자 avatar (user_metadata.avatar_url) — MyPageClient/Header 표시
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',  // Google profile photo (lh3/avatars/...)
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'k.kakaocdn.net',  // Kakao profile photo
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.pstatic.net',  // Naver (사용 시)
+        pathname: '/**',
+      },
     ],
     // Custom sizes tuned for homepage card widths at 2x DPR:
     // 160 (80px grid), 200 (100px event), 320 (130px sale), 480 (240px popular)

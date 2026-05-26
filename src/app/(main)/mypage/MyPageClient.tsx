@@ -311,23 +311,24 @@ function resolveDisplayName(
 }
 
 function resolveImageUrl(
-  user: { user_metadata?: Record<string, unknown> } | null,
   artist: { profile_image_path?: string | null } | null,
+  profileImagePath: string | null,
 ): string {
-  if (artist?.profile_image_path) {
-    return getAvatarUrl(artist.profile_image_path) ?? DEFAULT_PROFILE_IMAGE;
-  }
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
-  return avatarUrl ?? DEFAULT_PROFILE_IMAGE;
+  // 우선순위: artists.profile_image_path (시술사 프로필) > profiles.profile_image_path (SNS 다운로드)
+  // user_metadata.avatar_url 직접 사용 안 함 — 외부 CDN 토큰 만료 + next/image remotePatterns 외 도메인 거부.
+  const path = artist?.profile_image_path ?? profileImagePath;
+  if (path) return getAvatarUrl(path) ?? DEFAULT_PROFILE_IMAGE;
+  return DEFAULT_PROFILE_IMAGE;
 }
 
 function useUserDisplay(
   user: { email?: string; user_metadata?: Record<string, unknown> } | null,
   artist: { title: string; profile_image_path?: string | null } | null,
+  profileImagePath: string | null,
 ): UserDisplay {
   return {
     name: resolveDisplayName(user, artist),
-    imageUrl: resolveImageUrl(user, artist),
+    imageUrl: resolveImageUrl(artist, profileImagePath),
   };
 }
 
@@ -382,8 +383,8 @@ function ProfileSection({ display, isArtist }: Readonly<{
 // --- Main Component ---
 
 export function MyPageClient(): React.ReactElement {
-  const { user, artist, isArtist, isLoading, logout } = useAuthRedirect();
-  const display = useUserDisplay(user, artist);
+  const { user, artist, isArtist, profileImagePath, isLoading, logout } = useAuthRedirect();
+  const display = useUserDisplay(user, artist, profileImagePath);
   const handleLogout = async (): Promise<void> => { await logout(); };
 
   if (isLoading) return <FullPageSpinner />;

@@ -75,6 +75,42 @@ function deriveNickname(user: User): string {
   return NICKNAME_REGEX.test(emailPrefix) ? emailPrefix : "회원";
 }
 
+/**
+ * SNS provider 의 avatar_url 을 Supabase Storage 의 avatars 버킷에 다운로드 + 저장.
+ * Google/Kakao CDN URL 은 토큰 만료/CDN 변경 위험 — 영구 저장으로 안정성 확보.
+ * 실패해도 가입 흐름 안 막음 (null 반환 → profile_image_path 미설정).
+ */
+async function downloadAndStoreAvatar(
+  adminClient: SupabaseClient<Database>,
+  user: User,
+): Promise<string | null> {
+  const avatarUrl = (user.user_metadata as { avatar_url?: string } | undefined)?.avatar_url;
+  if (!avatarUrl || typeof avatarUrl !== "string") return null;
+
+  try {
+    const res = await fetch(avatarUrl);
+    if (!res.ok) return null;
+    const buffer = await res.arrayBuffer();
+    const contentType = res.headers.get("content-type") ?? "image/jpeg";
+    const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
+    const path = `profiles/${user.id}.${ext}`;
+
+    const { error } = await adminClient.storage
+      .from("avatars")
+      .upload(path, buffer, { contentType, upsert: true });
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error("[Auth Callback] avatar upload failed:", error.message);
+      return null;
+    }
+    return path;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("[Auth Callback] avatar download failed:", e);
+    return null;
+  }
+}
+
 async function ensureProfile(
   adminClient: SupabaseClient<Database>,
   user: User,
@@ -83,17 +119,25 @@ async function ensureProfile(
 
   const { data: existing } = await adminClient
     .from("profiles")
-    .select("id")
+    .select("id, profile_image_path")
     .eq("id", user.id)
     .maybeSingle();
 
   if (existing) {
-    await adminClient.from("profiles").update({ last_login_at: now }).eq("id", user.id);
+    // 기존 회원: last_login_at 갱신 + profile_image_path 미설정인 SNS 회원에게는 avatar 다운로드 보강
+    const update: { last_login_at: string; profile_image_path?: string } = { last_login_at: now };
+    if (!existing.profile_image_path) {
+      const avatarPath = await downloadAndStoreAvatar(adminClient, user);
+      if (avatarPath) update.profile_image_path = avatarPath;
+    }
+    await adminClient.from("profiles").update(update).eq("id", user.id);
     return;
   }
 
   const normalizedEmail = (user.email ?? "").toLowerCase();
   const provider = user.app_metadata?.provider as string | undefined;
+  // 신규 SNS 가입자: avatar 다운로드 (Google/Kakao). 실패해도 null → fallback (default 이미지)
+  const profileImagePath = await downloadAndStoreAvatar(adminClient, user);
 
   // SNS 신규 가입자: role 기본값 'user' (DB default). intent 가 있으면 후속에서 'artist' 로 변경.
   const { error } = await adminClient.from("profiles").upsert({
@@ -102,6 +146,7 @@ async function ensureProfile(
     nickname: deriveNickname(user),
     username: normalizedEmail,
     type_social: normalizeTypeSocial(provider),
+    profile_image_path: profileImagePath,
     is_admin: false,
     language: "ko",
     message_push_enabled: true,
