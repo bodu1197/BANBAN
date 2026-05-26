@@ -128,14 +128,14 @@ function HomeExhibitionCard({ item }: Readonly<{ item: ExhibitionItem }>): React
   return (
     <Link
       href={`/exhibition/${item.id}`}
-      className="group relative block overflow-hidden rounded-xl shadow-md transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group relative block w-[160px] shrink-0 overflow-hidden rounded-xl shadow-md transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring snap-start md:w-[200px] lg:w-[230px]"
     >
       <div className="relative aspect-[4/3]">
         <Image
           src={src}
           alt={item.title}
           fill
-          sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, 250px"
+          sizes="(max-width: 767px) 160px, (max-width: 1023px) 200px, 230px"
           className="object-cover"
           loading="lazy"
         />
@@ -160,11 +160,11 @@ function HomeExhibitionSection({ items, title, moreText }: Readonly<{
   return (
     <section className="py-4">
       <SectionHeader title={title} moreLink="/exhibition" moreText={moreText} />
-      <div className="grid grid-cols-2 gap-3 px-4 md:grid-cols-3 lg:grid-cols-4">
-        {items.slice(0, 8).map((item) => (
+      <HorizontalScrollList className="flex gap-3 py-1">
+        {items.map((item) => (
           <HomeExhibitionCard key={item.id} item={item} />
         ))}
-      </div>
+      </HorizontalScrollList>
     </section>
   );
 }
