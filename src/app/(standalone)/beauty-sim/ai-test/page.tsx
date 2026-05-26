@@ -34,19 +34,12 @@ export default async function Page(): Promise<React.ReactElement> {
         // 아티스트 로딩 실패 시 빈 배열로 진행
     }
 
+    // manual <link rel="preload">는 picture/source srcSet 과 정확히 매칭 안 되어
+    // "preload but not used" 콘솔 경고 발생 (Chrome type="image/avif" 한계).
+    // picture <img> 의 fetchPriority="high" 가 native 우선순위 처리 → preload 불필요.
     return (
-        <>
-            <link
-                rel="preload"
-                as="image"
-                href="/images/beauty-sim/hero-banner.avif"
-                type="image/avif"
-                imageSrcSet="/images/beauty-sim/hero-banner-512w.avif 512w, /images/beauty-sim/hero-banner.avif 1029w"
-                imageSizes="(max-width: 640px) 100vw, 512px"
-            />
-            <main className="min-h-screen bg-gradient-to-b from-[#eef4ff] via-white to-[#eef4ff]/60">
-                <AiBeautyClient artists={artists} />
-            </main>
-        </>
+        <main className="min-h-screen bg-gradient-to-b from-[#eef4ff] via-white to-[#eef4ff]/60">
+            <AiBeautyClient artists={artists} />
+        </main>
     );
 }
