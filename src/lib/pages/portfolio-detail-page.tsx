@@ -39,6 +39,7 @@ function buildHeroMedia(url: string | null, title: string): React.ReactElement |
                 quality={65}
                 className="object-cover"
                 preload
+                fetchPriority="high"
             />
         </div>
     );

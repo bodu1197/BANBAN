@@ -66,7 +66,7 @@ function ExhibitionBanner({
     <section className="relative h-[200px] w-full overflow-hidden md:h-[280px] lg:h-[320px]">
       {bannerUrl ? (
         <Image src={bannerUrl} alt={exhibition.title} fill
-          sizes="(max-width: 767px) 100vw, 767px" className="object-cover" preload />
+          sizes="(max-width: 767px) 100vw, 767px" className="object-cover" preload fetchPriority="high" />
       ) : null}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-5 md:p-8">
