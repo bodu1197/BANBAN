@@ -384,8 +384,10 @@ async function fetchSectionTextEmbedding(text: string): Promise<number[] | null>
       body: JSON.stringify({ text: text.slice(0, 1000) }),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { embedding?: number[] };
-    return Array.isArray(data.embedding) ? data.embedding : null;
+    const data = (await res.json()) as { embedding?: unknown };
+    if (!Array.isArray(data.embedding)) return null;
+    if (!data.embedding.every((v) => typeof v === "number")) return null;
+    return data.embedding as number[];
   } catch {
     return null;
   }
@@ -428,7 +430,8 @@ export async function pickImagesForSections(
 
   for (const section of sections) {
     const emb = await fetchSectionTextEmbedding(`${section.heading}\n${section.body}`);
-    if (!emb) break;
+    // 한 section 의 embedding 실패가 전체 매칭을 중단시키면 안 됨 — graceful degradation
+    if (!emb) continue;
     const matches = await searchSimilarMedia(supabase, emb, 10, 0.2);
     const pick = matches.find((m) => !used.has(m.portfolio_media_id));
     if (pick) {
