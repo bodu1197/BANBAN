@@ -1,7 +1,3 @@
-// @client-reason: 매 페이지 로드마다 인기 이벤트 카드 순서를 랜덤화 (ISR 캐시와 무관)
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { SquareImage } from "@/components/home/SquareImage";
 import { secureShuffle } from "@/lib/random";
@@ -40,13 +36,10 @@ function PopularEventCard({ event, priority = false }: Readonly<{
   );
 }
 
-export function PopularEventsList({ events }: Readonly<{ events: EventCardData[] }>): React.ReactElement {
-  const initialDisplay = useMemo(() => events.slice(0, DISPLAY_COUNT), [events]);
-  const [displayed, setDisplayed] = useState<EventCardData[]>(initialDisplay);
-
-  useEffect(() => {
-    setDisplayed(secureShuffle(events).slice(0, DISPLAY_COUNT));
-  }, [events]);
+// SSR-only: 셔플(useEffect)을 ISR generation 시점에 서버에서 수행.
+// 매 ISR revalidate(1시간) 마다 새 순서. client hydration 비용 0.
+export function PopularEventsList({ events }: Readonly<{ events: ReadonlyArray<EventCardData> }>): React.ReactElement {
+  const displayed = secureShuffle(events).slice(0, DISPLAY_COUNT);
 
   return (
     <>
