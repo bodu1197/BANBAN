@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# Generated font subsets (postinstall copies from node_modules/pretendard)
+/public/fonts/pretendard/
+
 # production
 /build
 
