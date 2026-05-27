@@ -23,7 +23,7 @@ import { PortfolioHeroBanner } from "@/components/portfolio/PortfolioHeroBanner"
 import { PortfolioSecondarySection } from "@/components/portfolio/PortfolioSecondarySection";
 import { PORTFOLIO_SECTION_IDS } from "@/components/portfolio/portfolio-section-ids";
 import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
-import { applyBoostToRecommendations } from "@/lib/supabase/boost-ranking";
+import { fetchBoostArtistIds, applyBoostGeneric } from "@/lib/supabase/boost-ranking";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
 import type { ArtistType } from "@/types/database";
@@ -127,12 +127,13 @@ async function StreamedSecondaryData({ id, artistId, artistType, price, artist, 
         fetchSameCategoryPortfolios(id, artistType, 5),
         fetchArtistShopStats(artistId),
     ]);
-    const [boostedRandom, boostedLower, boostedHigher, boostedSameBody] = await Promise.all([
-        applyBoostToRecommendations(randomPool),
-        applyBoostToRecommendations(lowerPrice),
-        applyBoostToRecommendations(higherPrice),
-        applyBoostToRecommendations(sameBodyPart),
-    ]);
+    const boostIds = new Set(await fetchBoostArtistIds());
+    const boost = <T extends { artist_id: string }>(items: T[]): T[] =>
+        applyBoostGeneric(items, boostIds, (p) => p.artist_id);
+    const boostedRandom = boost(randomPool);
+    const boostedLower = boost(lowerPrice);
+    const boostedHigher = boost(higherPrice);
+    const boostedSameBody = boost(sameBodyPart);
     const otherCustomersViewed = boostedRandom.slice(0, 5);
     const styleSuggestions = boostedRandom.slice(5);
 
