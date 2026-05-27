@@ -114,7 +114,7 @@ export function proxy(request: NextRequest): NextResponse {
     const { pathname } = request.nextUrl;
 
     if (pathname.startsWith("/api")) {
-        return applySecurityHeaders(refreshSession(request, NextResponse.next()));
+        return applySecurityHeaders(NextResponse.next());
     }
 
     if (SESSION_REFRESH_SKIP_PREFIXES.some((p) => pathname.startsWith(p))) {
