@@ -10,6 +10,7 @@ import {
   mapPortfolioRow,
 } from "./portfolio-common";
 import { secureShuffle } from "@/lib/random";
+import { applyBoostToPortfolios } from "./boost-ranking";
 
 type SupabaseInstance = Awaited<ReturnType<typeof createStaticClient>>;
 
@@ -79,7 +80,8 @@ async function fetchPortfolios(
   const rows = ((data ?? []) as PortfolioRowWithType[]).filter(isVisibleArtist);
 
   const deduplicated = deduplicatePortfolios(rows);
-  return deduplicated.slice(0, limit).map(mapPortfolioRow);
+  const mapped = deduplicated.slice(0, limit).map(mapPortfolioRow);
+  return applyBoostToPortfolios(mapped);
 }
 
 // === Section 4: Lowest Price Portfolios ===
@@ -158,7 +160,8 @@ export async function fetchTimeSalePortfolios(limit = 10): Promise<HomePortfolio
       }
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
-      return rows.slice(0, limit).map(mapPortfolioRow);
+      const mapped = rows.slice(0, limit).map(mapPortfolioRow);
+      return applyBoostToPortfolios(mapped);
     },
     [`home-time-sale-portfolios-${limit}`],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -194,8 +197,8 @@ export async function fetchDiscountPortfolios(options?: {
       const filtered = rows
         .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at)
         .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "SEMI_PERMANENT" }));
-      // Shuffle so every artist gets fair exposure
-      return secureShuffle(filtered).slice(0, limit);
+      const shuffled = secureShuffle(filtered).slice(0, limit);
+      return applyBoostToPortfolios(shuffled);
     },
     ["discount-portfolios"],
     { revalidate: 60, tags: ["portfolios"] },
@@ -238,7 +241,8 @@ export async function fetchLipPortfolios(limit = 10): Promise<HomePortfolio[]> {
       }
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
-      return secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
+      const mapped = secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
+      return applyBoostToPortfolios(mapped);
     },
     ["home-lip-portfolios"],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -264,7 +268,8 @@ export async function fetchEyebrowPortfolios(limit = 8): Promise<HomePortfolio[]
       }
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
-      return secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
+      const mapped = secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
+      return applyBoostToPortfolios(mapped);
     },
     ["home-eyebrow-portfolios"],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -295,7 +300,8 @@ export async function fetchMensEyebrowPortfolios(limit = 10): Promise<HomePortfo
       }
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
-      return secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
+      const mapped = secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
+      return applyBoostToPortfolios(mapped);
     },
     ["home-mens-eyebrow-portfolios"],
     { revalidate: 30, tags: ["home", "portfolios"] },
