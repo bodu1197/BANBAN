@@ -1,7 +1,7 @@
-// @client-reason: useState/useEffect for real-time countdown timer updates
+// @client-reason: useState/useEffect for real-time countdown + IntersectionObserver for scroll-triggered activation
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function getTimeLeft(endDate: string): { days: number; hours: number; minutes: number; seconds: number } | null {
   const diff = new Date(endDate).getTime() - Date.now();
@@ -16,20 +16,34 @@ function getTimeLeft(endDate: string): { days: number; hours: number; minutes: n
 
 export function CountdownTimer({ endDate }: Readonly<{ endDate: string }>): React.ReactElement | null {
   const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(endDate));
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    setTimeLeft(getTimeLeft(endDate));
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(endDate));
     }, 1000);
     return () => clearInterval(interval);
-  }, [endDate]);
+  }, [endDate, isVisible]);
 
   if (!timeLeft) return null;
 
   const pad = (n: number): string => String(n).padStart(2, "0");
 
   return (
-    <div className="flex items-center gap-1 text-sm font-mono font-bold tabular-nums" suppressHydrationWarning>
+    <div ref={ref} aria-label="타임세일 남은 시간" aria-live="polite" aria-atomic="true" className="flex items-center gap-1 text-sm font-mono font-bold tabular-nums" suppressHydrationWarning>
       {timeLeft.days > 0 && (
         <>
           <span className="rounded bg-foreground px-1.5 py-0.5 text-background" suppressHydrationWarning>{timeLeft.days}</span>

@@ -319,15 +319,15 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
 
   return (
     <>
+      <LazyHomeSection size="md">
+        <CuratedExhibitions hp={hp} exhibitions={homeData.exhibitions} />
+      </LazyHomeSection>
       <TimeSaleSection
         items={homeData.timeSalePortfolios}
         title={hp.timeSaleSection}
         moreLink="/discount"
         moreText={hp.seeMore}
       />
-      <LazyHomeSection size="md">
-        <CuratedExhibitions hp={hp} exhibitions={homeData.exhibitions} />
-      </LazyHomeSection>
       <HomeDiscoverySections hp={hp} common={common} homeData={homeData} />
       <HomeCategorySections hp={hp} common={common} homeData={homeData} />
       <AppDownloadSection />

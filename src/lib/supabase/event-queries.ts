@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { createClient, createAdminClient } from "./server";
+import { createClient, createAdminClient, createStaticClient } from "./server";
 import { getEventStorageUrl } from "./storage-utils";
 import type { Database } from "@/types/database";
 
@@ -311,7 +311,7 @@ export async function incrementEventViews(id: string): Promise<void> {
 }
 
 async function fetchPopularEventsInternal(limit: number): Promise<EventCardData[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase
     .from("events")
     .select(EVENT_CARD_SELECT)

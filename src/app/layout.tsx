@@ -1,20 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
-import localFont from "next/font/local";
 import { SITE_URL } from "@/lib/seo";
 import "./globals.css";
-
-const pretendard = localFont({
-  src: [
-    { path: "./fonts/Pretendard-Regular.subset.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/Pretendard-Bold.subset.woff2", weight: "700", style: "normal" },
-  ],
-  display: "swap",
-  variable: "--font-pretendard",
-  fallback: ["system-ui", "-apple-system", "Apple SD Gothic Neo", "Malgun Gothic", "sans-serif"],
-  preload: true,
-  adjustFontFallback: "Arial",
-});
 
 const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracker").then(m => m.PageViewTracker));
 const Swing2AppBridge = dynamic(() => import("@/components/layout/Swing2AppBridge").then(m => m.Swing2AppBridge));
@@ -106,9 +93,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `(function(){var h=location.hash;if(!h)return;if(location.pathname.indexOf("reset-password")>-1)return;if(h.indexOf("type=recovery")>-1)location.replace("/reset-password"+h);else if(h.indexOf("error=")>-1&&h.indexOf("otp_expired")>-1)location.replace("/reset-password?error=link_expired")}())` }} />
       </head>
 
-      <body
-        className={`${pretendard.variable} font-sans`}
-      >
+      <body className="font-sans">
         {/* Skip to main content — WCAG 2.4.1 Bypass Blocks. 키보드 사용자가 헤더/네비 건너뛰기 */}
         <a
           href="#main-content"
