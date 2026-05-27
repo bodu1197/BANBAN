@@ -1,10 +1,12 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { SquareImage } from "./SquareImage";
 import { PriceDisplay } from "./PriceDisplay";
 import { UserAvatar } from "./UserAvatar";
 import { HorizontalScrollList } from "./HorizontalScrollList";
 import type { HomePortfolio } from "@/lib/supabase/home-queries";
-import { CountdownTimer } from "./CountdownTimer";
+
+const CountdownTimer = dynamic(() => import("./CountdownTimer").then(m => m.CountdownTimer));
 
 function TimeSaleCard({ portfolio, priority }: Readonly<{
   portfolio: HomePortfolio;

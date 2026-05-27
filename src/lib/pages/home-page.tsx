@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
@@ -28,7 +29,8 @@ import { HomeHeroBanner } from "@/components/home/HomeHeroBanner";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
 import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
 import { PopularEventsList } from "@/components/home/PopularEventsList";
-import { ImpressionZone } from "@/components/shared/ImpressionZone";
+
+const ImpressionZone = dynamic(() => import("@/components/shared/ImpressionZone").then(m => m.ImpressionZone));
 
 export async function generateHomeMetadata(): Promise<Metadata> {
   const title = "반언니 - 반영구 화장 가격비교 & 아티스트 추천 | 대한민국 1등 반영구 플랫폼";
