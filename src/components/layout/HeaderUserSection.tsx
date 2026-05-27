@@ -1,4 +1,4 @@
-// @client-reason: User state hydrated from supabase client to keep MainLayout static (ISR)
+// @client-reason: useEffect + useState for hydration-safe cookie-based auth state
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,91 +7,100 @@ import Link from "next/link";
 import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { STRINGS } from "@/lib/strings";
+import { SUPABASE_URL } from "@/lib/supabase/config";
 
 const NotificationBell = dynamic(() => import("./NotificationBell").then((m) => m.NotificationBell));
 const HeaderMobileMenu = dynamic(() => import("./HeaderMobileMenu").then((m) => m.HeaderMobileMenu));
 const LoggedInUserMenu = dynamic(() => import("./LoggedInUserMenu").then((m) => m.LoggedInUserMenu));
 
-interface HeaderUser {
+export interface HeaderUser {
   id: string;
   email?: string;
   name?: string;
   avatarUrl?: string;
 }
 
-interface SupabaseUserMeta {
-  nickname?: string;
-  name?: string;
-  avatar_url?: string;
+const BASE64_PREFIX = "base64-";
+
+function getStorageKey(): string {
+  try {
+    return `sb-${new URL(SUPABASE_URL).hostname.split(".")[0]}-auth-token`;
+  } catch {
+    return "";
+  }
 }
 
-interface SupabaseUser {
-  id: string;
-  email?: string;
-  user_metadata?: SupabaseUserMeta;
+function base64UrlDecode(value: string): string {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+  return atob(padded);
 }
 
-function toHeaderUser(u: SupabaseUser): HeaderUser {
-  const meta = u.user_metadata;
-  return {
-    id: u.id,
-    email: u.email,
-    name: meta?.nickname ?? meta?.name,
-    avatarUrl: meta?.avatar_url,
-  };
+function parseCookies(): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const part of document.cookie.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    result[part.substring(0, idx).trim()] = part.substring(idx + 1);
+  }
+  return result;
 }
 
-function idle(cb: () => void): void {
-  // requestIdleCallback 은 Safari 등 미지원 환경 있음 → typed window 접근 + setTimeout fallback
-  const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
-  if (ric) ric(cb, { timeout: 2000 });
-  else globalThis.setTimeout(cb, 800);
-}
+function readUserFromCookie(): HeaderUser | null {
+  const key = getStorageKey();
+  if (!key) return null;
 
-interface SupabaseAuthClient {
-  getUser(): Promise<{ data: { user: SupabaseUser | null } }>;
-  onAuthStateChange(cb: (event: string, session: { user?: SupabaseUser } | null) => void): { data: { subscription: { unsubscribe: () => void } } };
-}
+  try {
+    const cookies = parseCookies();
 
-function bindAuth(
-  auth: SupabaseAuthClient,
-  setUser: (u: HeaderUser | null) => void,
-  isCancelled: () => boolean,
-): () => void {
-  void auth.getUser().then(({ data }) => {
-    if (isCancelled() || !data.user) return;
-    setUser(toHeaderUser(data.user));
-  });
-  const { data: { subscription } } = auth.onAuthStateChange((_e, session) => {
-    if (isCancelled()) return;
-    setUser(session?.user ? toHeaderUser(session.user) : null);
-  });
-  return () => { subscription.unsubscribe(); };
-}
+    const chunks: string[] = [];
+    if (cookies[key]) {
+      chunks.push(cookies[key]);
+    } else {
+      for (let i = 0; ; i++) {
+        const chunk = cookies[`${key}.${i}`];
+        if (chunk === undefined) break;
+        chunks.push(chunk);
+      }
+    }
+    if (chunks.length === 0) return null;
 
-function useHeaderUser(): HeaderUser | null {
-  const [user, setUser] = useState<HeaderUser | null>(null);
+    let raw = chunks.join("");
+    if (raw.startsWith(BASE64_PREFIX)) {
+      raw = base64UrlDecode(raw.substring(BASE64_PREFIX.length));
+    }
 
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    let cancelled = false;
-    const isCancelled = (): boolean => cancelled;
+    const session: unknown = JSON.parse(raw);
+    if (typeof session !== "object" || session === null) return null;
 
-    idle(() => {
-      void import("@/lib/supabase/client").then(({ createClient }) => {
-        if (cancelled) return;
-        unsubscribe = bindAuth(createClient().auth as unknown as SupabaseAuthClient, setUser, isCancelled);
-      });
-    });
+    const user = (session as Record<string, unknown>).user;
+    if (typeof user !== "object" || user === null) return null;
 
-    return () => { cancelled = true; unsubscribe?.(); };
-  }, []);
+    const u = user as Record<string, unknown>;
+    if (typeof u.id !== "string") return null;
 
-  return user;
+    const meta = typeof u.user_metadata === "object" && u.user_metadata !== null
+      ? u.user_metadata as Record<string, unknown>
+      : undefined;
+
+    return {
+      id: u.id,
+      email: typeof u.email === "string" ? u.email : undefined,
+      name: (typeof meta?.nickname === "string" ? meta.nickname : undefined)
+        ?? (typeof meta?.name === "string" ? meta.name : undefined),
+      avatarUrl: typeof meta?.avatar_url === "string" ? meta.avatar_url : undefined,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function HeaderUserSection(): React.ReactElement {
-  const user = useHeaderUser();
+  const [user, setUser] = useState<HeaderUser | null>(null);
+
+  useEffect(() => {
+    setUser(readUserFromCookie());
+  }, []);
 
   return (
     <>
