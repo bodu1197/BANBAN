@@ -95,7 +95,7 @@ export function HeaderUserSection(): React.ReactElement {
 
   return (
     <>
-      {user ? <NotificationBell /> : null}
+      {user ? <NotificationBell userId={user.id} /> : null}
       {user ? (
         <LoggedInUserMenu user={user} />
       ) : (

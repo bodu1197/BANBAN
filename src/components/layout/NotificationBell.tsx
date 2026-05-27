@@ -10,7 +10,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useAuth } from "@/hooks/useAuth";
 
 interface Notification {
   id: string;
@@ -106,10 +105,9 @@ async function fetchNotifications(): Promise<{ notifications: Notification[]; un
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- hook return type is inferred
-function useNotifications() {
+function useNotifications(userId: string) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { user } = useAuth();
 
   const refresh = useCallback(() => {
     fetchNotifications().then(({ notifications: n, unreadCount: c }) => {
@@ -119,26 +117,21 @@ function useNotifications() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-
-    // Initial fetch
     refresh();
 
-    // Supabase Realtime subscription (lazy-loaded)
     let cleanupRealtime: (() => void) | undefined;
 
-    subscribeRealtime(user.id, setNotifications, setUnreadCount).then((fn) => {
+    subscribeRealtime(userId, setNotifications, setUnreadCount).then((fn) => {
       cleanupRealtime = fn;
     });
 
-    // Fallback polling in case Realtime connection drops
     const interval = setInterval(refresh, FALLBACK_POLL_INTERVAL);
 
     return () => {
       cleanupRealtime?.();
       clearInterval(interval);
     };
-  }, [user, refresh]);
+  }, [userId, refresh]);
 
   const markAllRead = useCallback(async () => {
     await fetch("/api/notifications", { method: "PATCH" });
@@ -149,8 +142,8 @@ function useNotifications() {
   return { notifications, unreadCount, markAllRead };
 }
 
-export function NotificationBell(): React.ReactElement {
-  const { notifications, unreadCount, markAllRead } = useNotifications();
+export function NotificationBell({ userId }: Readonly<{ userId: string }>): React.ReactElement {
+  const { notifications, unreadCount, markAllRead } = useNotifications(userId);
   const [open, setOpen] = useState(false);
 
   function handleOpen(isOpen: boolean): void {

@@ -4,12 +4,9 @@
 import dynamic from "next/dynamic";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { STRINGS } from "@/lib/strings";
 
-const Sheet = dynamic(() => import("@/components/ui/sheet").then((m) => m.Sheet));
-const SheetContent = dynamic(() => import("@/components/ui/sheet").then((m) => m.SheetContent));
-const SheetTrigger = dynamic(() => import("@/components/ui/sheet").then((m) => m.SheetTrigger));
-const SheetTitle = dynamic(() => import("@/components/ui/sheet").then((m) => m.SheetTitle));
 const MobileNav = dynamic(() => import("./NavLinks").then((m) => m.MobileNav));
 
 interface HeaderMobileMenuProps {

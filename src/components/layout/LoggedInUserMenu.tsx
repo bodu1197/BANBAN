@@ -4,11 +4,8 @@
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const DropdownMenu = dynamic(() => import("@/components/ui/dropdown-menu").then((m) => m.DropdownMenu));
-const DropdownMenuTrigger = dynamic(() =>
-    import("@/components/ui/dropdown-menu").then((m) => m.DropdownMenuTrigger),
-);
 const UserMenuContent = dynamic(() => import("./UserMenuContent").then((m) => m.UserMenuContent), { ssr: false });
 
 interface LoggedInUserMenuProps {
