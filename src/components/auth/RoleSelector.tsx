@@ -7,7 +7,7 @@ import type { Role } from "@/lib/onboarding/constants";
 
 /**
  * 회원 유형 카드 — RoleSelectStep (가입 첫 단계) + OnboardingClient (SNS 신규 가입자) 공통.
- * 반언니 도메인: "타투 아티스트" → "반영구 시술사" (UI 카피만 조정, 식별자 role="artist" 유지).
+ * 반언니 도메인: "타투 아티스트" → "반영구 아티스트" (UI 카피만 조정, 식별자 role="artist" 유지).
  */
 
 export interface RoleOption {
@@ -21,14 +21,14 @@ export const ROLE_OPTIONS: ReadonlyArray<RoleOption> = [
   {
     role: "artist",
     icon: <Palette className="h-6 w-6" />,
-    title: "반영구 시술사",
+    title: "반영구 아티스트",
     description: "포트폴리오 등록 및 고객 관리",
   },
   {
     role: "user",
     icon: <User className="h-6 w-6" />,
     title: "일반 회원",
-    description: "작품 구경 및 시술사 검색",
+    description: "작품 구경 및 아티스트 검색",
   },
 ];
 

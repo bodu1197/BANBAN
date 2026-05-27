@@ -239,7 +239,7 @@ function ArtistWithoutShopView(): React.ReactElement {
   return (
     <div className="bg-background p-4">
       <p className="text-center text-sm text-muted-foreground">
-        샵 등록 후 시술사 활동을 시작할 수 있습니다.
+        샵 등록 후 아티스트 활동을 시작할 수 있습니다.
       </p>
     </div>
   );

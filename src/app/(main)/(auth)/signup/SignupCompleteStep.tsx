@@ -20,7 +20,7 @@ function ArtistNextSteps(): React.ReactElement {
           <Palette className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">시술사로 가입되었습니다</p>
+          <p className="font-semibold">아티스트로 가입되었습니다</p>
           <p className="text-xs text-muted-foreground">
             마이페이지에서 샵 정보를 등록하면 검색에 노출됩니다.
           </p>
