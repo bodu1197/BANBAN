@@ -8,8 +8,8 @@ import type { Database } from "@/types/database";
 
 // === 보안 가드 ===
 
-/** 허용 SNS CDN 도메인 — SSRF 방어 (임의 URL fetch 차단). 정확한 host 일치 또는 서브도메인 매칭. */
-const ALLOWED_AVATAR_HOSTS = [
+/** 허용 SNS CDN 호스트 — SSRF 방어 (정확한 hostname 매칭, 서브도메인 와일드카드 미지원). */
+const ALLOWED_AVATAR_HOSTS: ReadonlySet<string> = new Set([
   "lh3.googleusercontent.com",      // Google primary
   "lh4.googleusercontent.com",
   "lh5.googleusercontent.com",
@@ -19,24 +19,32 @@ const ALLOWED_AVATAR_HOSTS = [
   "img1.kakaocdn.net",
   "p.kakaocdn.net",
   "phinf.pstatic.net",              // Naver (사용 시)
-] as const;
+]);
 
 /** 허용 MIME 타입 — 임의 파일 업로드 차단. */
-const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const);
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;  // 5MB
 const FETCH_TIMEOUT_MS = 5000;             // 5초
 
 function isAllowedHost(url: URL): boolean {
   if (url.protocol !== "https:") return false;
-  return ALLOWED_AVATAR_HOSTS.some((host) => url.hostname === host);
+  return ALLOWED_AVATAR_HOSTS.has(url.hostname);  // O(1) lookup
 }
 
 function extFromMime(mime: string): string {
-  if (mime === "image/png") return "png";
-  if (mime === "image/webp") return "webp";
-  if (mime === "image/gif") return "gif";
-  return "jpg";
+  switch (mime) {
+    case "image/png": return "png";
+    case "image/webp": return "webp";
+    case "image/gif": return "gif";
+    case "image/jpeg":
+    default: return "jpg";
+  }
 }
 
 /**
@@ -73,9 +81,11 @@ export async function downloadAndStoreAvatar(
   }
 
   try {
+    // CRITICAL: redirect: "error" — 화이트리스트 통과 후 redirect 로 우회 방지 (SSRF 방어).
+    // SNS 공식 CDN(Google/Kakao/Naver) 은 redirect 사용 안 함 → 영향 없음.
     const res = await fetch(url.href, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      redirect: "follow",
+      redirect: "error",
     });
     if (!res.ok) return null;
 
