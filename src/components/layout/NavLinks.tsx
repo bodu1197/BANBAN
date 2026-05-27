@@ -118,7 +118,7 @@ export function MobileNav({
         <Link
           key={item.href}
           href={item.href}
-          className="text-lg font-medium transition-colors hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
+          className="rounded-lg px-3 py-2 text-lg font-medium transition-colors hover:bg-muted hover:text-brand-primary focus-visible:bg-muted focus-visible:text-brand-primary focus-visible:outline-none"
         >
           {item.label}
         </Link>
@@ -127,7 +127,7 @@ export function MobileNav({
       {user ? (
         <Button
           variant="ghost"
-          className="justify-start gap-2 px-0 text-lg font-medium text-destructive hover:text-destructive focus-visible:text-destructive"
+          className="justify-start gap-2 rounded-lg px-3 py-2 text-lg font-medium text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive"
           onClick={handleLogout}
         >
           <LogOut className="h-5 w-5" />
@@ -136,7 +136,7 @@ export function MobileNav({
       ) : (
         <Link
           href={"/login"}
-          className="flex items-center gap-2 text-lg font-medium transition-colors hover:text-brand-primary focus-visible:text-brand-primary focus-visible:outline-none"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-lg font-medium transition-colors hover:bg-muted hover:text-brand-primary focus-visible:bg-muted focus-visible:text-brand-primary focus-visible:outline-none"
         >
           <LogIn className="h-5 w-5" />
           {loginLabel}

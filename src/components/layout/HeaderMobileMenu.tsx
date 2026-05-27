@@ -26,7 +26,7 @@ export function HeaderMobileMenu({ user }: Readonly<HeaderMobileMenuProps>): Rea
                     <Menu className="h-5 w-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72" aria-describedby={undefined}>
+            <SheetContent side="right" className="w-72 px-6 py-4" aria-describedby={undefined}>
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <MobileNav
                     labels={STRINGS.nav}
