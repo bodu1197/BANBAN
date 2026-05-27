@@ -21,16 +21,22 @@ const ALLOWED_AVATAR_HOSTS: ReadonlySet<string> = new Set([
   "phinf.pstatic.net",              // Naver (사용 시)
 ]);
 
-/** 허용 MIME 타입 — 임의 파일 업로드 차단. literal union 으로 type narrowing 가능. */
-type AllowedMime = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
-const ALLOWED_MIME_TYPES: ReadonlySet<AllowedMime> = new Set<AllowedMime>([
+/**
+ * 허용 MIME 타입 — 임의 파일 업로드 차단.
+ * const tuple 하나에서 type + Set 모두 derive → 양쪽 1:1 sync 자동 보장
+ * (향후 새 MIME 추가 시 ALLOWED_MIME_VALUES 만 수정).
+ */
+const ALLOWED_MIME_VALUES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
-]);
+] as const;
+type AllowedMime = typeof ALLOWED_MIME_VALUES[number];
+const ALLOWED_MIME_TYPES: ReadonlySet<AllowedMime> = new Set(ALLOWED_MIME_VALUES);
 
 function isAllowedMime(mime: string): mime is AllowedMime {
+  // Set<AllowedMime>.has 는 string 인자 거부 — 검증 후 narrowing 위해 cast 불가피
   return (ALLOWED_MIME_TYPES as ReadonlySet<string>).has(mime);
 }
 
