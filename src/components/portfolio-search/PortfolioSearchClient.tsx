@@ -4,6 +4,7 @@
 import { Suspense } from "react";
 import { STRINGS } from "@/lib/strings";
 import { usePortfolioFilters } from "@/hooks/usePortfolioFilters";
+import { useImpressionTracker } from "@/hooks/useImpressionTracker";
 import type { HomePortfolio } from "@/lib/supabase/home-queries";
 import type { Region } from "@/types/database";
 import type { CategoryItem } from "@/types/portfolio-search";
@@ -32,9 +33,10 @@ function PortfolioSearchInner({
     usePortfolioFilters(initialCategoryIds);
   const { portfolios, isLoading, isLoadingMore, sentinelRef } =
     usePortfolioSearch(initialData, initialTotalCount, typeArtist, hasActiveFilters, filters, targetGender);
+  const impressionRef = useImpressionTracker("search");
 
   return (
-    <div className="mx-auto w-full max-w-[1024px]">
+    <div ref={impressionRef} className="mx-auto w-full max-w-[1024px]">
       <PortfolioFilterControls
         categories={categories} regions={regions} d={d}
         filters={filters} setRegions={setRegions} setCategoryIds={setCategoryIds} setPriceMax={setPriceMax}

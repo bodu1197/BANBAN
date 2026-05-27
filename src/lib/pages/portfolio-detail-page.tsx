@@ -26,6 +26,7 @@ import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { fetchBoostArtistIds, applyBoostGeneric } from "@/lib/supabase/boost-ranking";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
+import { ImpressionZone } from "@/components/shared/ImpressionZone";
 import type { ArtistType } from "@/types/database";
 
 function buildHeroMedia(url: string | null, title: string): React.ReactElement | null {
@@ -288,16 +289,18 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                 heroBanner={buildHeroBanner(portfolio, reviewStats)}
                 artistSection={
                     <section id={PORTFOLIO_SECTION_IDS.artist} aria-label="작가 정보 및 추천">
-                        <Suspense fallback={<RecommendationsSkeleton />}>
-                            <StreamedSecondaryData
-                                id={id}
-                                artistId={portfolio.artist_id}
-                                artistType={artistType}
-                                price={portfolio.price ?? 0}
-                                artist={portfolio.artist}
-                                reviewStats={reviewStats}
-                            />
-                        </Suspense>
+                        <ImpressionZone placement="portfolio-detail">
+                            <Suspense fallback={<RecommendationsSkeleton />}>
+                                <StreamedSecondaryData
+                                    id={id}
+                                    artistId={portfolio.artist_id}
+                                    artistType={artistType}
+                                    price={portfolio.price ?? 0}
+                                    artist={portfolio.artist}
+                                    reviewStats={reviewStats}
+                                />
+                            </Suspense>
+                        </ImpressionZone>
                     </section>
                 }
             />

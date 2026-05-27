@@ -30,6 +30,7 @@ import dynamic from "next/dynamic";
 const RecentEventsSection = dynamic(() => import("@/components/home/RecentEventsSection").then((m) => m.RecentEventsSection));
 import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
 import { PopularEventsList } from "@/components/home/PopularEventsList";
+import { ImpressionZone } from "@/components/shared/ImpressionZone";
 
 
 
@@ -359,7 +360,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
       />
-      <div className="mx-auto w-full max-w-[1024px]">
+      <ImpressionZone placement="home" className="mx-auto w-full max-w-[1024px]">
         {/* 바비톡 패턴 순서: 검색바 → 인기검색어 → 히어로 캐러셀 → 퀵메뉴 → ... */}
         <HomeSearchTrigger />
         <HomePopularKeywords />
@@ -384,7 +385,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         <Suspense fallback={<HomeBottomSkeleton />}>
           <AsyncHomeBottom />
         </Suspense>
-      </div>
+      </ImpressionZone>
     </main>
   );
 }

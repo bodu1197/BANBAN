@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { grantFreeSubscription } from "@/lib/supabase/ad-queries";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation";
 const VALID_MONTHS = new Set([1, 2, 3, 6, 12]);
 
 interface GrantBody {
