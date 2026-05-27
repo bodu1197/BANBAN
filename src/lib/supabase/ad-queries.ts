@@ -1,8 +1,11 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createStaticClient } from "./server";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
+import type { Database } from "@/types/database";
 
 const STATUS_ACTIVE: AdSubscriptionStatus = "ACTIVE";
 const SELECT_WITH_PLAN = "*, plan:ad_plans(*)";
+const DAYS_PER_MONTH = 30;
 
 // ─── Plans ───────────────────────────────────────────────
 
@@ -46,7 +49,7 @@ export async function createAdSubscription(params: {
     merchantUid: string;
     durationMonths: number;
 }): Promise<AdSubscription> {
-    const days = params.durationMonths * 30;
+    const days = params.durationMonths * DAYS_PER_MONTH;
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("ad_subscriptions")
@@ -315,6 +318,46 @@ export async function setAdPortfolioSlots(
 
     if (error) throw new Error(`Failed to set portfolio slots: ${error.message}`);
     return (data ?? []) as AdPortfolioSlot[];
+}
+
+// ─── Admin Grant ────────────────────────────────────────
+
+export async function grantFreeSubscription(
+    adminClient: SupabaseClient<Database>,
+    artistId: string,
+    durationMonths: number,
+): Promise<AdSubscription> {
+    const [{ data: artist }, { data: plan }] = await Promise.all([
+        adminClient.from("artists").select("id").eq("id", artistId).single(),
+        adminClient.from("ad_plans").select("id").eq("is_active", true)
+            .order("price", { ascending: true }).limit(1).single(),
+    ]);
+
+    if (!artist) throw new Error("아티스트를 찾을 수 없습니다.");
+    if (!plan) throw new Error("활성 광고 플랜이 없습니다.");
+
+    const now = new Date().toISOString();
+    const days = durationMonths * DAYS_PER_MONTH;
+
+    const { data, error } = await adminClient
+        .from("ad_subscriptions")
+        .insert({
+            artist_id: artistId,
+            plan_id: plan.id,
+            price_paid: 0,
+            paid_by_points: 0,
+            paid_by_cash: 0,
+            merchant_uid: `ADMIN_GRANT-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+            duration_months: durationMonths,
+            status: STATUS_ACTIVE,
+            started_at: now,
+            expires_at: getExpiryDate(days),
+        })
+        .select()
+        .single();
+
+    if (error) throw new Error(`무료 광고 부여 실패: ${error.message}`);
+    return data as AdSubscription;
 }
 
 // ─── Helpers ─────────────────────────────────────────────

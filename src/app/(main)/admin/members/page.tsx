@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users, Store, Pencil } from "lucide-react";
+import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users, Store, Pencil, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminSearchBar, AdminPagination, AdminSearchResetBadge, AdminLoadingSpinner, AdminErrorState, AdminPageHeader } from "@/components/admin/admin-shared";
 
@@ -216,6 +216,59 @@ function MemberEditExtras({ form, setForm }: Readonly<{ form: MemberForm; setFor
     );
 }
 
+// ─── AdGrantButton ─────────────────────────────────────
+
+function AdGrantButton({ artistId, shopName }: Readonly<{
+    artistId: string; shopName: string;
+}>): React.ReactElement {
+    const [granting, setGranting] = useState(false);
+    const [months, setMonths] = useState(1);
+
+    const handleGrant = async (): Promise<void> => {
+        if (!globalThis.confirm(`"${shopName}"에게 ${months}개월 무료 광고를 부여하시겠습니까?`)) return;
+        setGranting(true);
+        try {
+            const res = await fetch("/api/admin/ads/grant", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ artistId, durationMonths: months }),
+            });
+            if (res.ok) {
+                alert(`${shopName}에게 ${months}개월 무료 광고가 부여되었습니다.`);
+            } else {
+                const err = await res.json() as { error?: string };
+                alert(`부여 실패: ${err.error ?? "알 수 없는 오류"}`);
+            }
+        } finally { setGranting(false); }
+    };
+
+    return (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+            <Megaphone className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+            <span className="text-xs text-emerald-300">무료 광고</span>
+            <select
+                value={months}
+                onChange={(e) => setMonths(Number(e.target.value))}
+                className="rounded border border-white/10 bg-white/5 px-2 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="광고 기간 선택"
+            >
+                {[1, 2, 3, 6, 12].map((m) => (
+                    <option key={m} value={m}>{m}개월</option>
+                ))}
+            </select>
+            <button
+                type="button"
+                disabled={granting}
+                aria-busy={granting}
+                onClick={() => void handleGrant()}
+                className="min-h-[44px] rounded-lg bg-emerald-500 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-emerald-600 disabled:opacity-50"
+            >
+                {granting ? "부여중..." : "부여"}
+            </button>
+        </div>
+    );
+}
+
 // ─── MemberEditPanel ────────────────────────────────────
 
 function MemberEditPanel({ member, onSaved, onDeleted, onCancel }: Readonly<{
@@ -261,6 +314,9 @@ function MemberEditPanel({ member, onSaved, onDeleted, onCancel }: Readonly<{
                         <EditActionButtons saving={saving} onSave={() => void handleSave()} onDelete={() => void handleDelete()} onCancel={onCancel} />
                     </div>
                     <MemberEditFormFields form={form} setForm={setForm} />
+                    {member.artist_id && (
+                        <AdGrantButton artistId={member.artist_id} shopName={member.shop_name ?? member.nickname} />
+                    )}
                 </div>
             </td>
         </tr>
