@@ -53,7 +53,7 @@ interface ArtistRegisterClientProps {
 export function ArtistRegisterClient({ categories,
 }: Readonly<ArtistRegisterClientProps>): React.ReactElement {
   const router = useRouter();
-  const { user, isLoading: authLoading, isArtist } = useAuth();
+  const { user, isLoading: authLoading, hasShop } = useAuth();
   const { isOpen: isAddressOpen, open: openAddress, close: closeAddress } = useDaumPostcode();
 
   const [formData, setFormData] = useState<ArtistFormData>(INITIAL_FORM_DATA);
@@ -70,11 +70,11 @@ export function ArtistRegisterClient({ categories,
       globalThis.location.href = "/login";
       return;
     }
-    if (!authLoading && isArtist) {
+    if (!authLoading && hasShop) {
       globalThis.alert("이미 아티스트로 등록되어 있습니다.");
       router.push("/mypage");
     }
-  }, [authLoading, user, isArtist, router]);
+  }, [authLoading, user, hasShop, router]);
 
   const handleAddressSearch = async (): Promise<void> => {
     const result = await openAddress();
