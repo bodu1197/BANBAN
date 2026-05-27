@@ -21,13 +21,18 @@ const ALLOWED_AVATAR_HOSTS: ReadonlySet<string> = new Set([
   "phinf.pstatic.net",              // Naver (사용 시)
 ]);
 
-/** 허용 MIME 타입 — 임의 파일 업로드 차단. */
-const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
+/** 허용 MIME 타입 — 임의 파일 업로드 차단. literal union 으로 type narrowing 가능. */
+type AllowedMime = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+const ALLOWED_MIME_TYPES: ReadonlySet<AllowedMime> = new Set<AllowedMime>([
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
-] as const);
+]);
+
+function isAllowedMime(mime: string): mime is AllowedMime {
+  return (ALLOWED_MIME_TYPES as ReadonlySet<string>).has(mime);
+}
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;  // 5MB
 const FETCH_TIMEOUT_MS = 5000;             // 5초
@@ -37,13 +42,13 @@ function isAllowedHost(url: URL): boolean {
   return ALLOWED_AVATAR_HOSTS.has(url.hostname);  // O(1) lookup
 }
 
-function extFromMime(mime: string): string {
+function extFromMime(mime: AllowedMime): string {
+  // exhaustiveness: 모든 AllowedMime case 명시 — 향후 union 추가 시 TS 에러로 누락 감지
   switch (mime) {
     case "image/png": return "png";
     case "image/webp": return "webp";
     case "image/gif": return "gif";
-    case "image/jpeg":
-    default: return "jpg";
+    case "image/jpeg": return "jpg";
   }
 }
 
@@ -100,11 +105,12 @@ export async function downloadAndStoreAvatar(
     // MIME 검증 — split(";")[0] 으로 charset 등 파라미터 제거
     const rawContentType = res.headers.get("content-type") ?? "";
     const mime = rawContentType.split(";")[0].trim().toLowerCase();
-    if (!ALLOWED_MIME_TYPES.has(mime)) {
+    if (!isAllowedMime(mime)) {
       // eslint-disable-next-line no-console
       console.warn("[avatar-download] disallowed mime:", mime);
       return null;
     }
+    // mime 은 이제 AllowedMime literal union 으로 narrowing 됨
 
     const arrayBuffer = await res.arrayBuffer();
     // Content-Length 헤더 누락된 경우 실제 크기로 재검증
