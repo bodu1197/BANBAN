@@ -27,7 +27,7 @@ import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
 import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
 import dynamic from "next/dynamic";
-const RecentEventsSection = dynamic(() => import("@/components/home/RecentEventsSection").then((m) => m.RecentEventsSection), { ssr: false });
+const RecentEventsSection = dynamic(() => import("@/components/home/RecentEventsSection").then((m) => m.RecentEventsSection));
 import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
 import { PopularEventsList } from "@/components/home/PopularEventsList";
 
