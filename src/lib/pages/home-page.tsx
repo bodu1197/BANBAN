@@ -24,7 +24,7 @@ import { fetchPromoBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-qu
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
-import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
+import { HomeHeroBanner } from "@/components/home/HomeHeroBanner";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
 import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
 import { PopularEventsList } from "@/components/home/PopularEventsList";
@@ -360,7 +360,7 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         {/* 바비톡 패턴 순서: 검색바 → 인기검색어 → 히어로 캐러셀 → 퀵메뉴 → ... */}
         <HomeSearchTrigger />
         <HomePopularKeywords />
-        <HomeHeroCarousel banners={heroBanners} />
+        <HomeHeroBanner banner={heroBanners[0] ?? null} />
         <div className="pt-4">
           <QuickMenu items={quickMenuItems} />
         </div>
