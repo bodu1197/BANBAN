@@ -27,7 +27,7 @@ function SlideContent({ banner, priority }: Readonly<{ banner: HeroBannerData; p
         fill
         className="object-cover"
         sizes="(min-width: 1024px) 1024px, 100vw"
-        preload={priority}
+        priority={priority}
         fetchPriority={priority ? "high" : undefined}
         referrerPolicy="no-referrer"
       />

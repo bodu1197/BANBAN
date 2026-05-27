@@ -40,7 +40,7 @@ function CardContent({ banner, imageUrl, priority }: Readonly<{ banner: PromoBan
           fill
           sizes="(max-width: 767px) 50vw, 360px"
           className="object-cover"
-          preload={priority}
+          priority={priority}
           fetchPriority={priority ? "high" : undefined}
         />
       ) : null}
