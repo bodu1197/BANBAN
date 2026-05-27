@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createEvent, insertEventMedia, insertEventCategories } from "@/lib/supabase/event-queries";
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (body.categoryIds?.length) {
       await insertEventCategories(id, body.categoryIds);
     }
+
+    revalidateTag("events", { expire: 0 });
+    revalidatePath("/");
+    revalidatePath("/events");
 
     return NextResponse.json({ id });
   } catch (e: unknown) {

@@ -1,5 +1,4 @@
 import { cache } from "react";
-import { unstable_cache } from "next/cache";
 import { createClient, createAdminClient } from "./server";
 import { getEventStorageUrl } from "./storage-utils";
 import type { Database } from "@/types/database";
@@ -327,16 +326,10 @@ async function fetchPopularEventsInternal(limit: number): Promise<EventCardData[
   return data.map(mapRowToEventCard);
 }
 
-// 인기 이벤트 ISR 300s — 홈 페이지 SSR 응답 시간 단축. cache() 로 같은 요청 내 dedup.
-export const fetchPopularEvents = cache(
-  async (limit = 8): Promise<EventCardData[]> => {
-    return unstable_cache(
-      () => fetchPopularEventsInternal(limit),
-      [`popular-events-${limit}`],
-      { revalidate: 300, tags: ["events"] },
-    )();
-  },
-);
+// 인기 이벤트는 실시간성 우선 — unstable_cache 제거.
+// cache() 만 적용 (같은 요청 내 dedup). home page ISR(revalidate) + events admin route 의
+// revalidatePath('/') 로 데이터 변경 즉시 반영.
+export const fetchPopularEvents = cache(fetchPopularEventsInternal);
 
 export const fetchRelatedEvents = cache(async function fetchRelatedEvents(
   artistId: string,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { updateEvent } from "@/lib/supabase/event-queries";
@@ -152,6 +153,12 @@ export async function PUT(
       return NextResponse.json({ error: lengthError }, { status: 400 });
     }
     await updateEvent(id, buildUpdatePayload(raw));
+
+    // ISR/unstable_cache 무효화 — 홈 + 상세 페이지 즉시 반영
+    revalidateTag("events", { expire: 0 });
+    revalidatePath("/");
+    revalidatePath("/events");
+    revalidatePath(`/events/${id}`);
 
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
