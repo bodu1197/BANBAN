@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { searchPortfolios } from "@/lib/supabase/portfolio-search-queries";
+import { applyBoostToPortfolios } from "@/lib/supabase/boost-ranking";
 import { MAX_LIMIT } from "@/lib/constants";
 import { parsePagination } from "@/lib/api-helpers";
 import type { PortfolioSortOption, PortfolioSearchParams } from "@/types/portfolio-search";
@@ -51,7 +52,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const result = await searchPortfolios(params);
-  return NextResponse.json(result, {
+  const boostedPortfolios = await applyBoostToPortfolios(result.portfolios);
+  return NextResponse.json({ ...result, portfolios: boostedPortfolios }, {
     headers: { "Cache-Control": `public, s-maxage=${PORTFOLIO_SEARCH_CACHE_TTL}, stale-while-revalidate=120` },
   });
 }

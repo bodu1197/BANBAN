@@ -1,15 +1,13 @@
-// @client-reason: Renders portfolio grid with dynamic ad artist highlighting
+// @client-reason: Renders portfolio grid with loading state
 "use client";
 
 import { GridPortfolioCard } from "@/components/home/cards";
 import type { HomePortfolio } from "@/lib/supabase/home-queries";
 
-export function PortfolioGrid({ portfolios, noResults, isLoading, adArtistIds, adPortfolioIds }: Readonly<{
+export function PortfolioGrid({ portfolios, noResults, isLoading }: Readonly<{
   portfolios: HomePortfolio[];
   noResults: string;
   isLoading: boolean;
-  adArtistIds: Set<string>;
-  adPortfolioIds?: Set<string>;
 }>): React.ReactElement {
   if (isLoading) return <PortfolioSkeleton />;
 
@@ -28,7 +26,6 @@ export function PortfolioGrid({ portfolios, noResults, isLoading, adArtistIds, a
           key={p.id}
           portfolio={p}
           priority={i < 2}
-          isAd={(adPortfolioIds?.has(p.id) ?? false) || adArtistIds.has(p.artistId)}
         />
       ))}
     </div>

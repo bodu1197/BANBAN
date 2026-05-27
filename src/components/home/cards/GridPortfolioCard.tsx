@@ -4,19 +4,16 @@ import { PriceDisplay } from "../PriceDisplay";
 import { UserAvatar } from "../UserAvatar";
 import { RegionBadge } from "../RegionBadge";
 import { IconWithLabel } from "../IconWithLabel";
-import { AdBadge } from "./AdBadge";
 import type { HomePortfolio } from "@/lib/supabase/home-queries";
 
 interface GridPortfolioCardProps {
   portfolio: HomePortfolio;
   priority?: boolean;
-  isAd?: boolean;
 }
 
 export function GridPortfolioCard({
   portfolio,
   priority = false,
-  isAd = false,
 }: Readonly<GridPortfolioCardProps>): React.ReactElement {
   const regionName = portfolio.artistRegion;
 
@@ -31,7 +28,6 @@ export function GridPortfolioCard({
       </div>
 
       <div className="relative">
-        {isAd && <AdBadge />}
         <SquareImage
           src={portfolio.imageUrl}
           alt={portfolio.title}

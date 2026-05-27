@@ -8,7 +8,6 @@ import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
 import { GridPortfolioCard } from "@/components/home/cards";
-import { AdBadge } from "@/components/home/cards/AdBadge";
 import type { HomePortfolio } from "@/lib/supabase/portfolio-common";
 import type { HomeArtist } from "@/lib/supabase/home-artist-queries";
 import { useSearchFetch } from "./useSearchFetch";
@@ -20,7 +19,6 @@ interface ArtistResult {
   profileImage: string | null;
   region: string | null;
   portfolioCount: number;
-  isAd: boolean;
 }
 
 // --- Tab button ---
@@ -62,9 +60,6 @@ function ArtistResultCard({ artist }: Readonly<{
             {artist.name.charAt(0)}
           </div>
         )}
-        {artist.isAd && (
-          <div className="absolute -top-0.5 -right-0.5"><AdBadge /></div>
-        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{artist.name}</p>
@@ -81,13 +76,13 @@ function ArtistResultCard({ artist }: Readonly<{
 
 // --- Content sections ---
 
-function PortfolioResults({ portfolios, adArtistIds, adPortfolioIds }: Readonly<{
-  portfolios: HomePortfolio[]; adArtistIds: Set<string>; adPortfolioIds: Set<string>;
+function PortfolioResults({ portfolios }: Readonly<{
+  portfolios: HomePortfolio[];
 }>): React.ReactElement {
   return (
     <div className="grid grid-cols-2 gap-3">
       {portfolios.map((p, i) => (
-        <GridPortfolioCard key={p.id} portfolio={p} priority={i < 2} isAd={adPortfolioIds.has(p.id) || adArtistIds.has(p.artistId)} />
+        <GridPortfolioCard key={p.id} portfolio={p} priority={i < 2} />
       ))}
     </div>
   );
@@ -134,15 +129,15 @@ function SearchResultsInner({ popularArtists }: Readonly<{ popularArtists: Reado
   const d = STRINGS.globalSearch;
 
   // useSearchFetch 는 query 가 비어있으면 enabled:false 로 fetch 안 함 — hook 순서 보존을 위해 항상 호출
-  const { portfolios, artists, adArtistIds, adPortfolioIds, isLoading } = useSearchFetch(query);
+  const { portfolios, artists, isLoading } = useSearchFetch(query);
 
   const renderContent = useCallback((): React.ReactElement => {
     if (isLoading) return <SearchSkeleton />;
     if (portfolios.length === 0 && artists.length === 0 && query) return <EmptyState message={d.noSearchResults} />;
     if (tab === "artist" && artists.length > 0) return <ArtistResults artists={artists} />;
-    if (tab === "portfolio" && portfolios.length > 0) return <PortfolioResults portfolios={portfolios} adArtistIds={adArtistIds} adPortfolioIds={adPortfolioIds} />;
+    if (tab === "portfolio" && portfolios.length > 0) return <PortfolioResults portfolios={portfolios} />;
     return <EmptyState message={d.noSearchResults} />;
-  }, [isLoading, portfolios, artists, adArtistIds, adPortfolioIds, query, tab, d.noSearchResults]);
+  }, [isLoading, portfolios, artists, query, tab, d.noSearchResults]);
 
   // q 없으면 탐색 모드 — autoFocus 검색바 + 인기 검색어 + 인기 아티스트
   if (!query.trim()) {
