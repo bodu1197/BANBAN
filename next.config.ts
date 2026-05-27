@@ -99,11 +99,7 @@ const nextConfig: NextConfig = {
 
   // Experimental features for performance
   experimental: {
-    // NOTE: optimizeCss / inlineCss are App Router 비호환.
-    // - optimizeCss(critters)는 Pages Router 전용 — App Router에서 silent no-op.
-    // - inlineCss는 Tailwind v4 full sheet(~173KB)를 RSC 스트림에 dump해서
-    //   브라우저가 JS로 먼저 parse 후 CSS로 다시 parse → TBT가 ~1.2s 악화됨.
-    // 대신 normal <link rel="stylesheet">는 첫 페인트 후 캐시되어 반복 방문에 더 빠름.
+    inlineCss: true,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-avatar",
