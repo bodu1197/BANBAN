@@ -23,6 +23,7 @@ import { PortfolioHeroBanner } from "@/components/portfolio/PortfolioHeroBanner"
 import { PortfolioSecondarySection } from "@/components/portfolio/PortfolioSecondarySection";
 import { PORTFOLIO_SECTION_IDS } from "@/components/portfolio/portfolio-section-ids";
 import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
+import { applyBoostToRecommendations } from "@/lib/supabase/boost-ranking";
 import { parseDescriptionText } from "@/lib/text-utils";
 import { STRINGS } from "@/lib/strings";
 import type { ArtistType } from "@/types/database";
@@ -126,8 +127,14 @@ async function StreamedSecondaryData({ id, artistId, artistType, price, artist, 
         fetchSameCategoryPortfolios(id, artistType, 5),
         fetchArtistShopStats(artistId),
     ]);
-    const otherCustomersViewed = randomPool.slice(0, 5);
-    const styleSuggestions = randomPool.slice(5);
+    const [boostedRandom, boostedLower, boostedHigher, boostedSameBody] = await Promise.all([
+        applyBoostToRecommendations(randomPool),
+        applyBoostToRecommendations(lowerPrice),
+        applyBoostToRecommendations(higherPrice),
+        applyBoostToRecommendations(sameBodyPart),
+    ]);
+    const otherCustomersViewed = boostedRandom.slice(0, 5);
+    const styleSuggestions = boostedRandom.slice(5);
 
     const shopCardData: ArtistShopCardData = {
         artistId: artist.id,
@@ -146,7 +153,7 @@ async function StreamedSecondaryData({ id, artistId, artistType, price, artist, 
             artistPortfolios={artistPortfolios.filter(p => p.id !== id)}
             artistPortfolioCount={artistPortfolioCount}
             shopStats={shopCardData}
-            recommendations={{ otherCustomersViewed, lowerPrice, higherPrice, sameBodyPart, styleSuggestions }}
+            recommendations={{ otherCustomersViewed, lowerPrice: boostedLower, higherPrice: boostedHigher, sameBodyPart: boostedSameBody, styleSuggestions }}
         />
     );
 }
