@@ -11,29 +11,6 @@ export interface PromoBannerData {
   is_active: boolean;
 }
 
-export interface HomeBannerData {
-  slot: string;
-  image_path: string;
-  link_url: string;
-  alt_text: string;
-  is_active: boolean;
-}
-
-export const fetchHomeBanners = unstable_cache(
-  async (): Promise<HomeBannerData[]> => {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return [];
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data, error } = await supabase
-      .from("home_banners")
-      .select("slot, image_path, link_url, alt_text, is_active")
-      .eq("is_active", true);
-    if (error || !data) return [];
-    return data as HomeBannerData[];
-  },
-  ["home-banners"],
-  { revalidate: 300, tags: ["banners"] },
-);
-
 export interface QuickMenuItem {
   id: string;
   order_index: number;

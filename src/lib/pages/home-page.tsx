@@ -16,13 +16,11 @@ import { SalePortfolioCard } from "@/components/home/cards";
 import { SUPABASE_URL } from "@/lib/supabase/config";
 import Image from "next/image";
 import Link from "next/link";
-import { AiBanner } from "@/components/home/AiBanner";
 import { HorizontalScrollList } from "@/components/home/HorizontalScrollList";
-import { ExhibitionBanner } from "@/components/home/ExhibitionBanner";
 import { QuickMenu } from "@/components/home/QuickMenu";
 import { TimeSaleSection } from "@/components/home/TimeSaleSection";
 import type { HomePortfolio } from "@/lib/supabase/home-queries";
-import { fetchPromoBanners, fetchHomeBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-queries";
+import { fetchPromoBanners, fetchQuickMenuItems } from "@/lib/supabase/banner-queries";
 import { LazyHomeSection } from "@/components/home/LazyHomeSection";
 import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
@@ -199,13 +197,12 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 async function fetchTopHomeData() {
-  const [promoBanners, homeBanners, quickMenuItems, popularEvents] = await Promise.all([
+  const [promoBanners, quickMenuItems, popularEvents] = await Promise.all([
     safe(() => fetchPromoBanners(), []),
-    safe(() => fetchHomeBanners(), []),
     safe(() => fetchQuickMenuItems(), []),
     safe(() => fetchPopularEvents(30), []),
   ]);
-  return { promoBanners, homeBanners, quickMenuItems, popularEvents };
+  return { promoBanners, quickMenuItems, popularEvents };
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -351,10 +348,7 @@ function HomeBottomSkeleton(): React.ReactElement {
 
 export async function renderHomePage(): Promise<React.ReactElement> {
   const [topData, heroBanners] = await Promise.all([fetchTopHomeData(), fetchHeroBanners()]);
-  const { promoBanners, homeBanners, quickMenuItems, popularEvents } = topData;
-
-  const exhibitionBanner = homeBanners.find((b) => b.slot === "exhibition");
-  const aiBanner = homeBanners.find((b) => b.slot === "ai-matching");
+  const { promoBanners, quickMenuItems, popularEvents } = topData;
 
   const organizationJsonLd = getOrganizationJsonLd();
 
@@ -385,24 +379,6 @@ export async function renderHomePage(): Promise<React.ReactElement> {
             </HorizontalScrollList>
           </section>
         )}
-        {(exhibitionBanner ?? aiBanner) ? (
-          <div className="grid grid-cols-1 gap-3 px-4 pt-3 pb-1 md:grid-cols-2">
-            {exhibitionBanner ? (
-              <ExhibitionBanner
-                imageUrl={exhibitionBanner.image_path}
-                linkUrl={exhibitionBanner.link_url}
-                altText={exhibitionBanner.alt_text}
-              />
-            ) : null}
-            {aiBanner ? (
-              <AiBanner
-                imageUrl={aiBanner.image_path}
-                linkUrl={aiBanner.link_url}
-                altText={aiBanner.alt_text}
-              />
-            ) : null}
-          </div>
-        ) : null}
         <PromoBannerGrid banners={promoBanners} />
         <Suspense fallback={<HomeBottomSkeleton />}>
           <AsyncHomeBottom />
