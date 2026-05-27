@@ -31,8 +31,6 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
         "'self'",
         "'unsafe-inline'",
         "'wasm-unsafe-eval'", // MediaPipe wasm
-        // Vercel
-        "https://*.vercel-insights.com", "https://*.vercel-scripts.com",
         // Payment
         "https://*.iamport.kr", "https://*.portone.io",
         // Media vendor (postcode, swing2app, MediaPipe CDN)
@@ -55,8 +53,6 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
         "https://api.openai.com",
         // Payment
         "https://*.iamport.kr", "https://*.portone.io",
-        // Vercel
-        "https://vitals.vercel-insights.com",
         // Media vendor (MediaPipe wasm + model)
         "https://cdn.jsdelivr.net", "https://storage.googleapis.com",
     ],

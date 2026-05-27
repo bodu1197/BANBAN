@@ -16,7 +16,6 @@ const pretendard = localFont({
   adjustFontFallback: "Arial",
 });
 
-const Analytics = dynamic(() => import("@vercel/analytics/next").then(m => m.Analytics));
 const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracker").then(m => m.PageViewTracker));
 const Swing2AppBridge = dynamic(() => import("@/components/layout/Swing2AppBridge").then(m => m.Swing2AppBridge));
 const ServiceWorkerRegistration = dynamic(() => import("@/components/layout/ServiceWorkerRegistration").then(m => m.ServiceWorkerRegistration));
@@ -121,7 +120,6 @@ export default function RootLayout({
         <PageViewTracker />
         <Swing2AppBridge />
         <ServiceWorkerRegistration />
-        <Analytics />
       </body>
     </html>
   );
