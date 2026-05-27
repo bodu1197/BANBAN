@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import sharp from "sharp";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 180;
@@ -96,7 +96,14 @@ const ALL_STYLE_PROMPTS: Record<string, string> = {
     "Brick red lip color, semi-permanent lip tattoo, matte finish warm red-brown tone. Photorealistic.",
 };
 
+// Subset of ALL_STYLE_PROMPTS keys — update both when adding lip styles
+const LIP_STYLES = new Set(["natural-pink", "coral", "rose", "mlbb", "brick-red"]);
 const DEFAULT_STYLE = "hairstroke";
+
+function getArea(step: SimStep, style?: string): "eyebrow" | "lip" | null {
+  if (step === "remove") return "eyebrow";
+  return LIP_STYLES.has(style ?? DEFAULT_STYLE) ? "lip" : "eyebrow";
+}
 
 function getPrompt(step: SimStep, style?: string): string {
   if (step === "remove") return REMOVE_PROMPT;
@@ -139,21 +146,31 @@ async function generateEdit(body: SimRequest, apiKey: string): Promise<string> {
 
 // ─── Handler ────────────────────────────────────────────────────────────────
 
-async function checkAuth(): Promise<NextResponse | null> {
+async function checkAuth(): Promise<{ error: NextResponse } | { userId: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+    return { error: NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }) };
   }
   const key = `beauty-sim-v2:${user.id}`;
   const { success } = rateLimit({ key, limit: 30, windowMs: 60_000 });
-  if (!success) return rateLimitResponse();
-  return null;
+  if (!success) return { error: rateLimitResponse() };
+  return { userId: user.id };
+}
+
+function logUsage(userId: string, step: SimStep, style?: string): void {
+  void (async () => {
+    try {
+      await createAdminClient()
+        .from("sim_usage_logs")
+        .insert({ user_id: userId, step, area: getArea(step, style), style: style ?? null });
+    } catch (e: unknown) { console.warn("[sim-log]", e instanceof Error ? e.message : e); }
+  })();
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const blocked = await checkAuth();
-  if (blocked) return blocked;
+  const auth = await checkAuth();
+  if ("error" in auth) return auth.error;
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
@@ -168,6 +185,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const outputBase64 = await generateEdit(body, apiKey);
+    logUsage(auth.userId, body.step, body.style);
     return NextResponse.json({ image: outputBase64, step: body.step, style: body.style });
   } catch (error: unknown) {
     // eslint-disable-next-line no-console -- Server-side error logging

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ad_duration_options: {
@@ -2817,6 +2842,41 @@ export type Database = {
           },
         ]
       }
+      sim_usage_logs: {
+        Row: {
+          area: string | null
+          created_at: string
+          id: string
+          step: string
+          style: string | null
+          user_id: string
+        }
+        Insert: {
+          area?: string | null
+          created_at?: string
+          id?: string
+          step: string
+          style?: string | null
+          user_id: string
+        }
+        Update: {
+          area?: string | null
+          created_at?: string
+          id?: string
+          step?: string
+          style?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sim_usage_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       similarity_top_results: {
         Row: {
           created_at: string | null
@@ -3121,6 +3181,25 @@ export type Database = {
           type_artist: string
         }[]
       }
+      reorder_quick_menu_items: {
+        Args: { p_items: Json }
+        Returns: {
+          created_at: string
+          icon_path: string
+          id: string
+          is_active: boolean
+          label: string
+          link_url: string
+          order_index: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "quick_menu_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       search_artist_insights: {
         Args: {
           p_limit?: number
@@ -3239,12 +3318,6 @@ export type Database = {
           p_storage_paths: string[]
         }
         Returns: undefined
-      }
-      reorder_quick_menu_items: {
-        Args: {
-          p_items: Json
-        }
-        Returns: Database["public"]["Tables"]["quick_menu_items"]["Row"][]
       }
     }
     Enums: {
@@ -3374,6 +3447,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
