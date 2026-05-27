@@ -313,28 +313,12 @@ export const STRINGS ={
     "mypage": "MY"
   },
   "homepage": {
-    "semiPermanent": "반영구",
-    "popularArtists": "내 고민을 해결할 인기 아티스트",
-    "reviewedArtists": "후기가 많은 아티스트 추천",
-    "discountedWorks": "할인율이 가장 높은 작품",
-    "lowestPrice": "최저가 작품",
-    "popularArtistsPreview": "인기 아티스트",
-    "recommendedWorks": "추천작품",
-    "popularWorks": "인기 작품",
     "seeMore": "더보기",
-    "searchRegion": "지역을 검색해보세요.",
-    "searchGenre": "장르를 검색해보세요.",
-    "todayActiveArtists": "오늘의 인기 아티스트",
     "eyebrowSection": "첫인상의 완성은 눈썹",
-    "semiPermanentRecommended": "반영구 추천",
-    "exhibition": "기획전",
     "lipSection": "쌩얼 자신감 UP",
     "mensEyebrowSection": "남자의 변신은 무죄",
     "timeSaleSection": "타임세일",
-    "popularEventsSection": "지금 많이 찾는 인기 이벤트",
-    "recentEventsSection": "최근 본 이벤트",
-    "tattooGenres": "반영구 장르별 인기 작품",
-    "allGenre": "전체"
+    "popularEventsSection": "지금 많이 찾는 인기 이벤트"
   },
   "quickMenu": {},
   "portfolioSearch": {

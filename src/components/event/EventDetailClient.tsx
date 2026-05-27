@@ -1,11 +1,11 @@
 // @client-reason: Image carousel swipe + interactive FAQ accordion (legacy), sticky CTA, tab scroll, collapsible panels
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Share2, ChevronDown, Heart, Edit2, Star, MessageSquareText } from "lucide-react";
+import { ArrowLeft, Share2, ChevronDown, Edit2, Star, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { EventWithDetails } from "@/lib/supabase/event-queries";
@@ -14,8 +14,6 @@ import { isLegacyContent, isDetailCopy } from "@/lib/event-content-types";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { EventDetailImageStack } from "./EventDetailImageStack";
 import { EVENT_SECTION_IDS } from "./event-section-ids";
-import { saveRecentEvent } from "@/lib/recent-events";
-import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 
 const RETOUCH_LABELS: Record<string, string> = {
@@ -59,20 +57,6 @@ export function EventDetailClient({
 }: Readonly<EventDetailClientProps>): React.ReactElement {
   const detailMedia = event.event_media.filter((m) => m.media_type.startsWith("detail_"));
 
-  useEffect(() => {
-    const thumb = event.event_media.find((m) => m.media_type === "thumbnail")
-      ?? event.event_media.find((m) => m.media_type === "detail_hero")
-      ?? event.event_media.find((m) => m.media_type === "hero");
-    saveRecentEvent({
-      id: event.id,
-      title: event.title,
-      procedureName: event.procedure_name,
-      heroImage: thumb ? getEventStorageUrl(thumb.storage_path) : null,
-      price: event.price,
-      priceOrigin: event.price_origin,
-      discountRate: event.discount_rate,
-    });
-  }, [event.id, event.title, event.procedure_name, event.event_media, event.price, event.price_origin, event.discount_rate]);
   const isImageBased = hasDetailImages(event.event_media);
 
   return (
@@ -515,5 +499,3 @@ function EventHeader(): React.ReactElement {
     </header>
   );
 }
-
-

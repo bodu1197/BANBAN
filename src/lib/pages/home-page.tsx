@@ -26,13 +26,9 @@ import { HomeSearchTrigger } from "@/components/home/HomeSearchTrigger";
 import { HomePopularKeywords } from "@/components/home/HomePopularKeywords";
 import { HomeHeroCarousel } from "@/components/home/HomeHeroCarousel";
 import { fetchHeroBanners } from "@/lib/supabase/hero-banner-queries";
-import dynamic from "next/dynamic";
-const RecentEventsSection = dynamic(() => import("@/components/home/RecentEventsSection").then((m) => m.RecentEventsSection));
 import { AiTestPromoBanner } from "@/components/home/AiTestPromoBanner";
 import { PopularEventsList } from "@/components/home/PopularEventsList";
 import { ImpressionZone } from "@/components/shared/ImpressionZone";
-
-
 
 export async function generateHomeMetadata(): Promise<Metadata> {
   const title = "반언니 - 반영구 화장 가격비교 & 아티스트 추천 | 대한민국 1등 반영구 플랫폼";
@@ -368,7 +364,6 @@ export async function renderHomePage(): Promise<React.ReactElement> {
         <div className="pt-4">
           <QuickMenu items={quickMenuItems} />
         </div>
-        <RecentEventsSection />
         {popularEvents.length > 0 && (
           <section className="py-4">
             <SectionHeader
