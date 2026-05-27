@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getProviderSlug, normalizeTypeSocial } from "@/lib/auth-labels";
 import { ONBOARDING_WINDOW_MS } from "@/lib/onboarding/constants";
+import { downloadAndStoreAvatar } from "@/lib/auth/avatar-download";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -73,42 +74,6 @@ function deriveNickname(user: User): string {
   if (raw && NICKNAME_REGEX.test(raw.slice(0, 12))) return raw.slice(0, 12);
   const emailPrefix = (user.email ?? "").split("@")[0].slice(0, 12);
   return NICKNAME_REGEX.test(emailPrefix) ? emailPrefix : "회원";
-}
-
-/**
- * SNS provider 의 avatar_url 을 Supabase Storage 의 avatars 버킷에 다운로드 + 저장.
- * Google/Kakao CDN URL 은 토큰 만료/CDN 변경 위험 — 영구 저장으로 안정성 확보.
- * 실패해도 가입 흐름 안 막음 (null 반환 → profile_image_path 미설정).
- */
-async function downloadAndStoreAvatar(
-  adminClient: SupabaseClient<Database>,
-  user: User,
-): Promise<string | null> {
-  const avatarUrl = (user.user_metadata as { avatar_url?: string } | undefined)?.avatar_url;
-  if (!avatarUrl || typeof avatarUrl !== "string") return null;
-
-  try {
-    const res = await fetch(avatarUrl);
-    if (!res.ok) return null;
-    const buffer = await res.arrayBuffer();
-    const contentType = res.headers.get("content-type") ?? "image/jpeg";
-    const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
-    const path = `profiles/${user.id}.${ext}`;
-
-    const { error } = await adminClient.storage
-      .from("avatars")
-      .upload(path, buffer, { contentType, upsert: true });
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.error("[Auth Callback] avatar upload failed:", error.message);
-      return null;
-    }
-    return path;
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error("[Auth Callback] avatar download failed:", e);
-    return null;
-  }
 }
 
 async function ensureProfile(
