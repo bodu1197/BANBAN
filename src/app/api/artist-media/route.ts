@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { isSafeStoragePath } from "@/lib/supabase/storage-utils";
 
 interface PostBody {
   artistId: string;
@@ -55,6 +56,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!body.artistId) {
     return NextResponse.json({ error: "artistId is required" }, { status: 400 });
+  }
+
+  // 쓰기 경계 검증 — 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용).
+  if (body.profileImagePath && !isSafeStoragePath(body.profileImagePath)) {
+    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
+  }
+  if (body.storagePath && !isSafeStoragePath(body.storagePath)) {
+    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
   }
 
   const admin = createAdminClient();

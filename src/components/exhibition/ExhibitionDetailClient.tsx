@@ -6,7 +6,7 @@ import { useState, useEffect, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X, Check, Clock, XCircle, Loader2 } from "lucide-react";
-import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
+import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import { submitExhibitionEntry, withdrawExhibitionEntry } from "@/lib/actions/exhibition-entries";
 import type { ExhibitionEntryWithDetails, ArtistEntry } from "@/lib/supabase/exhibition-entry-queries";
 // ─── Types ───────────────────────────────────────────────
@@ -52,7 +52,8 @@ function StatusBadge({ status }: Readonly<{ status: string }>): React.ReactEleme
 
 function EntryCard({ entry}: Readonly<{ entry: ExhibitionEntryWithDetails; }>): React.ReactElement {
   const thumbnailUrl = getStorageUrl(entry.portfolio.thumbnail_path);
-  const artistImageUrl = getAvatarUrl(entry.artist.profile_image_path);
+  // profile_image_path 는 query 레이어(exhibition-entry-queries)에서 이미 avatars URL 로 변환됨.
+  const artistImageUrl = entry.artist.profile_image_path;
   return (
     <Link href={`/portfolios/${entry.portfolio_id}`}
       className="group block overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

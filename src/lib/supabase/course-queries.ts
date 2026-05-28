@@ -1,4 +1,5 @@
 import { createClient } from "./server";
+import { getAvatarUrl } from "./storage-utils";
 
 export interface CourseDetail {
   id: string;
@@ -142,7 +143,7 @@ function buildCourseDetail(course: CourseRow, rel: Awaited<ReturnType<typeof fet
     location: course.location, duration: course.duration, classType: course.class_type,
     category: course.category, price: course.price, originalPrice: course.original_price, discountRate: course.discount_rate,
     artistName: rel.artistName,
-    artistProfileImage: nullStr(d?.profile_image_path),
+    artistProfileImage: getAvatarUrl(d?.profile_image_path ?? null),
     artistInstagram: nullStr(d?.instagram_url),
     artistIntroduce: nullStr(d?.introduce),
     artistKakaoUrl: nullStr(d?.kakao_url),

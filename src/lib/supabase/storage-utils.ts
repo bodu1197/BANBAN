@@ -131,3 +131,18 @@ export function getImageSrcSet(
     })
     .join(", ");
 }
+
+/**
+ * 스토리지 경로 입력 검증 — 쓰기 경계(admin PATCH, artist-media 등)에서 사용.
+ * 정상값은 "uuid/hash.webp", "profiles/uuid.webp" 같은 버킷 상대 경로.
+ * 거부: 절대경로/프로토콜-상대(/), 경로 탈출(..), 백슬래시(\), 모든 URI 스킴(http:·data:·javascript:·blob: 등).
+ * Why: profile_image_path 가 외부 URL/스킴으로 저장되면 getAvatarUrl 의 http passthrough 로
+ *      <Image> 에 외부 리소스가 렌더됨 (remotePatterns/CSP 가 1차 차단하지만 입력단 방어).
+ */
+export function isSafeStoragePath(path: string): boolean {
+  if (path.startsWith("/")) return false;              // 절대경로 / 프로토콜-상대 //
+  if (path.includes("..")) return false;               // 경로 탈출
+  if (path.includes("\\")) return false;               // 백슬래시 탈출
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return false; // 모든 URI 스킴 (http: data: javascript: blob: ...)
+  return true;
+}

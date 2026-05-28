@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config";
+import { getAvatarUrl } from "./storage-utils";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -127,7 +128,8 @@ function mapEntriesToDetails(
         artist: {
           id: artist.id,
           title: artist.title,
-          profile_image_path: artist.profile_image_path,
+          // query 레이어에서 avatars 버킷 public URL 로 변환 (소비처 EntryCard 는 그대로 사용).
+          profile_image_path: getAvatarUrl(artist.profile_image_path),
         },
       };
     })

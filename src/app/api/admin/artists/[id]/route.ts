@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { isSafeStoragePath } from "@/lib/supabase/storage-utils";
 
 import type { BusinessHoursMap } from "@/types/artist-form";
 
@@ -83,6 +84,12 @@ export async function PATCH(
   }
 
   const body = await request.json() as ArtistPatchBody;
+
+  // 쓰기 경계 검증 — profile_image_path 에 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용).
+  if (typeof body.profile_image_path === "string" && body.profile_image_path.length > 0 && !isSafeStoragePath(body.profile_image_path)) {
+    return NextResponse.json({ error: "profile_image_path 는 스토리지 경로만 허용됩니다." }, { status: 400 });
+  }
+
   const updates = buildArtistUpdates(body);
 
   if (Object.keys(updates).length > 0) {

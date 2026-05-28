@@ -185,7 +185,7 @@ export async function getActiveAdArtists(): Promise<ActiveAdArtist[]> {
         artist_id: row.artist_id,
         subscription_id: row.id,
         artist_title: row.artist.title,
-        profile_image_path: row.artist.profile_image_path,
+        profile_image_path: getAvatarUrl(row.artist.profile_image_path),
         portfolio_ids: row.slots.map(s => s.portfolio_id),
     }));
 }
