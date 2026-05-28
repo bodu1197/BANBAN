@@ -1,6 +1,7 @@
 // @client-reason: Image rendering + interactive selection for admin portfolio pickers
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import { ImageIcon, Check } from "lucide-react";
 
@@ -10,10 +11,16 @@ export interface AdminPortfolioOption {
     thumbnail: string | null;
 }
 
-export function PortfolioThumb({ p, selected, disabled, onToggle }: Readonly<{
-    p: AdminPortfolioOption; selected: boolean; disabled: boolean; onToggle: () => void;
-}>): React.ReactElement {
-    // disabled 시 opacity-40 만으로는 텍스트 대비 미달 → 배경/텍스트 명시적으로 조정
+interface Props {
+    p: AdminPortfolioOption;
+    selected: boolean;
+    disabled: boolean;
+    /** id 기반 콜백 — 부모는 useCallback 한 번만 만들면 모든 thumb 가 동일 ref 공유 → memo 효과 발휘 */
+    onToggle: (id: string) => void;
+}
+
+function PortfolioThumbImpl({ p, selected, disabled, onToggle }: Readonly<Props>): React.ReactElement {
+    // disabled 시 opacity 만으로는 텍스트 대비 미달 → grayscale + 불투명도 조정
     const borderCls = selected
         ? "border-emerald-500 ring-2 ring-emerald-500/30"
         : disabled
@@ -22,11 +29,11 @@ export function PortfolioThumb({ p, selected, disabled, onToggle }: Readonly<{
     return (
         <button
             type="button"
-            onClick={onToggle}
+            onClick={() => onToggle(p.id)}
             disabled={disabled && !selected}
             aria-pressed={selected}
             aria-label={`${p.title} ${selected ? "선택됨" : "선택"}`}
-            className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${borderCls}`}
+            className={`relative aspect-square overflow-hidden rounded-lg border-2 motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${borderCls}`}
         >
             {p.thumbnail ? (
                 <Image src={p.thumbnail} alt={p.title} fill sizes="100px" className="object-cover" />
@@ -46,3 +53,6 @@ export function PortfolioThumb({ p, selected, disabled, onToggle }: Readonly<{
         </button>
     );
 }
+
+/** React.memo — selected/disabled/onToggle 안정화되면 50개 그리드에서도 리렌더 1회만 */
+export const PortfolioThumb = memo(PortfolioThumbImpl);

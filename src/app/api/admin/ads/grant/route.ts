@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { grantFreeSubscription, listAdminGrants } from "@/lib/supabase/ad-queries";
-import { VALID_GRANT_MONTHS } from "@/lib/supabase/ad-constants";
+import { VALID_GRANT_MONTHS_SET, GRANTS_PAGE_SIZE } from "@/lib/supabase/ad-constants";
 import { UUID_RE } from "@/lib/validation";
 import type { AdSubscriptionStatus } from "@/types/ads";
 
-const VALID_MONTHS = new Set<number>(VALID_GRANT_MONTHS);
+// AdSubscriptionStatus 와 동기화 필요 — 신규 status 추가 시 여기도 추가
 const VALID_STATUS = new Set<AdSubscriptionStatus | "ALL">(["ALL", "ACTIVE", "EXPIRED", "CANCELLED", "PENDING"]);
 
 interface GrantBody {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const months = Number(durationMonths) || 1;
-    if (!VALID_MONTHS.has(months)) {
+    if (!VALID_GRANT_MONTHS_SET.has(months)) {
         return NextResponse.json({ error: "기간은 1, 2, 3, 6, 12개월 중 선택" }, { status: 400 });
     }
 
@@ -64,16 +64,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get("page") ?? "1") || 1;
-    const pageSize = Number(searchParams.get("pageSize") ?? "20") || 20;
+    const pageSize = Number(searchParams.get("pageSize") ?? String(GRANTS_PAGE_SIZE)) || GRANTS_PAGE_SIZE;
     const statusParam = (searchParams.get("status") ?? "ALL") as AdSubscriptionStatus | "ALL";
     const search = searchParams.get("search") ?? undefined;
+    const includeStats = searchParams.get("includeStats") === "true";
 
     if (!VALID_STATUS.has(statusParam)) {
         return NextResponse.json({ error: "유효하지 않은 status" }, { status: 400 });
     }
 
     try {
-        const result = await listAdminGrants(auth.supabase, { page, pageSize, status: statusParam, search });
+        const result = await listAdminGrants(auth.supabase, { page, pageSize, status: statusParam, search, includeStats });
         return NextResponse.json(result);
     } catch (e) {
         const message = e instanceof Error ? e.message : "알 수 없는 오류";

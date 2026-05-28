@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createStaticClient } from "./server";
 import { getStorageUrl } from "./storage-utils";
+import { escapeLikePattern } from "./query-utils";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
 import type { Database } from "@/types/database";
 
@@ -325,15 +326,7 @@ export async function setAdPortfolioSlots(
 
 // 상수는 ad-constants.ts 에서 import — server/client 양쪽 안전
 export { ADMIN_GRANT_PREFIX, VALID_GRANT_MONTHS, MAX_PAGE_SIZE } from "./ad-constants";
-import { ADMIN_GRANT_PREFIX, MAX_PAGE_SIZE, DEFAULT_MAX_PORTFOLIOS } from "./ad-constants";
-
-// 검색이 너무 광범위할 때 in() 절이 거대해지지 않도록 매칭 아티스트 ID 갯수 cap
-const MAX_ARTIST_SEARCH_FILTER_IDS = 200;
-
-/** ILIKE 패턴의 wildcard 메타문자(% _ \) 를 이스케이프 — 의도한 부분 매칭만 허용 */
-function escapeLikePattern(s: string): string {
-    return s.replace(/[\\%_]/g, "\\$&");
-}
+import { ADMIN_GRANT_PREFIX, MAX_PAGE_SIZE, DEFAULT_MAX_PORTFOLIOS, MAX_ARTIST_SEARCH_FILTER_IDS, GRANTS_PAGE_SIZE } from "./ad-constants";
 
 export async function grantFreeSubscription(
     adminClient: SupabaseClient<Database>,
@@ -423,29 +416,42 @@ export async function setSlotsAsAdmin(
     return validIds;
 }
 
-/** 통계 4개를 head:true count 쿼리 4번으로 집계 — 행 데이터 fetch 없이 카운트만 */
-async function fetchGrantStats(
+export interface AdminGrantStats {
+    totalCount: number;
+    activeCount: number;
+    expiredCount: number;
+    thisMonthCount: number;
+}
+
+/** 통계 4개를 head:true count 쿼리 4번으로 집계 — 행 데이터 fetch 없이 카운트만.
+ *  expired 는 두 쿼리(status=EXPIRED + active-but-past-expiry)를 합쳐 .or() 문자열 보간 제거. */
+export async function fetchGrantStats(
     adminClient: SupabaseClient<Database>,
-): Promise<{ totalCount: number; activeCount: number; expiredCount: number; thisMonthCount: number }> {
+): Promise<AdminGrantStats> {
     const now = new Date();
     const nowIso = now.toISOString();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const base = (): ReturnType<typeof adminClient.from> => adminClient.from("ad_subscriptions");
+    const prefix = `${ADMIN_GRANT_PREFIX}%`;
 
-    const [totalRes, activeRes, expiredRes, monthRes] = await Promise.all([
-        base().select("id", { count: "exact", head: true }).like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`),
+    const [totalRes, activeRes, expiredByStatusRes, expiredByDateRes, monthRes] = await Promise.all([
+        base().select("id", { count: "exact", head: true }).like("merchant_uid", prefix),
         base().select("id", { count: "exact", head: true })
-            .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`).eq("status", STATUS_ACTIVE).gt("expires_at", nowIso),
+            .like("merchant_uid", prefix).eq("status", STATUS_ACTIVE).gt("expires_at", nowIso),
+        // status 가 명시적으로 EXPIRED 인 것 (cron 처리됨)
         base().select("id", { count: "exact", head: true })
-            .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`).or(`status.eq.EXPIRED,and(expires_at.lte.${nowIso})`),
+            .like("merchant_uid", prefix).eq("status", "EXPIRED"),
+        // status 는 ACTIVE 지만 만료 시점이 지난 것 (cron 미처리, expired와 중복 안 됨)
         base().select("id", { count: "exact", head: true })
-            .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`).gte("created_at", monthStart),
+            .like("merchant_uid", prefix).eq("status", STATUS_ACTIVE).lte("expires_at", nowIso),
+        base().select("id", { count: "exact", head: true })
+            .like("merchant_uid", prefix).gte("created_at", monthStart),
     ]);
 
     return {
         totalCount: totalRes.count ?? 0,
         activeCount: activeRes.count ?? 0,
-        expiredCount: expiredRes.count ?? 0,
+        expiredCount: (expiredByStatusRes.count ?? 0) + (expiredByDateRes.count ?? 0),
         thisMonthCount: monthRes.count ?? 0,
     };
 }
@@ -463,17 +469,28 @@ async function resolveSearchArtistIds(
     return ids.length === 0 ? null : ids;
 }
 
+export interface AdminGrantsListResult {
+    grants: AdminGrantRow[];
+    /** includeStats=false 면 null — 페이지 변경/필터 변경 시 4쿼리 절약 */
+    stats: AdminGrantStats | null;
+    pagination: { page: number; pageSize: number; totalCount: number; totalPages: number };
+}
+
 /** 관리자: 무료 부여 구독 목록 + 통계 (merchant_uid prefix `ADMIN_GRANT-` 로 필터) */
 export async function listAdminGrants(
     adminClient: SupabaseClient<Database>,
-    options: { page?: number; pageSize?: number; status?: AdSubscriptionStatus | "ALL"; search?: string } = {},
-): Promise<{
-    grants: AdminGrantRow[];
-    stats: { totalCount: number; activeCount: number; expiredCount: number; thisMonthCount: number };
-    pagination: { page: number; pageSize: number; totalCount: number; totalPages: number };
-}> {
+    options: {
+        page?: number;
+        pageSize?: number;
+        status?: AdSubscriptionStatus | "ALL";
+        search?: string;
+        /** 첫 로드만 true — 페이지/필터 변경 시 false 로 4쿼리 비용 절약 */
+        includeStats?: boolean;
+    } = {},
+): Promise<AdminGrantsListResult> {
     const page = Math.max(1, options.page ?? 1);
-    const pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, options.pageSize ?? 20));
+    const pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, options.pageSize ?? GRANTS_PAGE_SIZE));
+    const includeStats = options.includeStats ?? false;
 
     let searchArtistIds: string[] | null = null;
     if (options.search) {
@@ -481,7 +498,7 @@ export async function listAdminGrants(
         if (searchArtistIds === null) {
             return {
                 grants: [],
-                stats: { totalCount: 0, activeCount: 0, expiredCount: 0, thisMonthCount: 0 },
+                stats: includeStats ? { totalCount: 0, activeCount: 0, expiredCount: 0, thisMonthCount: 0 } : null,
                 pagination: { page, pageSize, totalCount: 0, totalPages: 0 },
             };
         }
@@ -501,7 +518,10 @@ export async function listAdminGrants(
 
     query = query.range((page - 1) * pageSize, page * pageSize - 1);
 
-    const [{ data: grants, count }, stats] = await Promise.all([query, fetchGrantStats(adminClient)]);
+    const [{ data: grants, count }, stats] = await Promise.all([
+        query,
+        includeStats ? fetchGrantStats(adminClient) : Promise.resolve(null),
+    ]);
 
     const totalCount = count ?? 0;
     const rows = (grants ?? []) as unknown as AdminGrantRowRaw[];
