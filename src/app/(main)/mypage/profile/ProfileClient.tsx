@@ -171,7 +171,10 @@ export function ProfileClient(): React.ReactElement {
           quality: 0.85,
         });
 
-        const fileName = `${user?.id}/profile.webp`;
+        // 아티스트는 샵 사진(artistId 기준), 일반 회원은 회원 사진(userId 기준). 둘 다 타임스탬프로 cache-busting.
+        const fileName = isArtist && artist?.id
+          ? `${artist.id}/profile_${Date.now()}.webp`
+          : `${user?.id}/profile_${Date.now()}.webp`;
 
         const { error: uploadError } = await supabase.storage
           .from("avatars")

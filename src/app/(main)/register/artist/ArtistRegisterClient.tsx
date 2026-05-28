@@ -148,8 +148,9 @@ export function ArtistRegisterClient({ categories,
       if (profileImage.length > 0) {
         const profileForm = new globalThis.FormData();
         profileForm.append("file", profileImage[0]);
-        // 마이페이지(ProfileClient)와 동일하게 userId 기준 경로 — 등록/수정이 같은 파일을 가리켜 분기/orphan 방지.
-        const profilePath = `${user.id}/profile.webp`;
+        // 샵 사진 경로는 artistId 기준 + 타임스탬프로 통일 (등록/마이페이지/샵수정 동일 규칙, admin 수정 컨텍스트도 커버).
+        // 매 업로드가 새 URL → 1년 cacheControl + Next 30일 캐시로 인한 stale-cache 회피.
+        const profilePath = `${artistId}/profile_${Date.now()}.webp`;
         const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
         const profileJson = await profileRes.json() as { success: boolean };
         if (profileJson.success) {

@@ -94,7 +94,8 @@ async function patchArtistProfileImage(artistId: string, path: string, isAdmin: 
 async function uploadProfileImage(artistId: string, file: File, isAdmin: boolean): Promise<void> {
   const form = new globalThis.FormData();
   form.append("file", file);
-  const path = `artists/${artistId}/profile_${Date.now()}.webp`;
+  // 샵 사진 경로 통일 — artistId 기준 + 타임스탬프 (등록/마이페이지와 동일 규칙, cache-busting).
+  const path = `${artistId}/profile_${Date.now()}.webp`;
   const res = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as { error?: string };
