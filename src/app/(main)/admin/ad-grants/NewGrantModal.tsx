@@ -295,7 +295,8 @@ function PortfolioGrid({ artistId, selected, onChange }: Readonly<{
 }>): React.ReactElement {
     const { portfolios, maxPortfolios, loading, error } = usePortfolios(artistId);
 
-    // setState updater 패턴 — selected deps 제거로 handleToggle 안정화 → PortfolioThumb memo 발휘
+    // setState updater 패턴 — prev 로 최신 state 참조해 deps 에 selected 제외.
+    // 결과: handleToggle 안정화 → PortfolioThumb React.memo 발휘 (50개 그리드에서 리렌더 1회).
     const handleToggle = useCallback((id: string) => {
         onChange((prev) => {
             const next = new Set(prev);
