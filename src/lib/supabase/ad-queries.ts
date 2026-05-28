@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createStaticClient } from "./server";
+import { getStorageUrl } from "./storage-utils";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
 import type { Database } from "@/types/database";
 
@@ -82,7 +83,7 @@ export async function activateSubscription(
         .from("ad_subscriptions").select("duration_months").eq("id", subscriptionId).single();
     const months = sub?.duration_months ?? 1;
     const now = new Date().toISOString();
-    const expiresAt = getExpiryDate(months * 30);
+    const expiresAt = getExpiryDate(months * DAYS_PER_MONTH);
 
     const { data, error } = await supabase
         .from("ad_subscriptions")
@@ -322,14 +323,27 @@ export async function setAdPortfolioSlots(
 
 // ─── Admin Grant ────────────────────────────────────────
 
+// 상수는 ad-constants.ts 에서 import — server/client 양쪽 안전
+export { ADMIN_GRANT_PREFIX, VALID_GRANT_MONTHS, MAX_PAGE_SIZE } from "./ad-constants";
+import { ADMIN_GRANT_PREFIX, MAX_PAGE_SIZE, DEFAULT_MAX_PORTFOLIOS } from "./ad-constants";
+
+// 검색이 너무 광범위할 때 in() 절이 거대해지지 않도록 매칭 아티스트 ID 갯수 cap
+const MAX_ARTIST_SEARCH_FILTER_IDS = 200;
+
+/** ILIKE 패턴의 wildcard 메타문자(% _ \) 를 이스케이프 — 의도한 부분 매칭만 허용 */
+function escapeLikePattern(s: string): string {
+    return s.replace(/[\\%_]/g, "\\$&");
+}
+
 export async function grantFreeSubscription(
     adminClient: SupabaseClient<Database>,
     artistId: string,
     durationMonths: number,
+    portfolioIds?: string[],
 ): Promise<AdSubscription> {
     const [{ data: artist }, { data: plan }] = await Promise.all([
         adminClient.from("artists").select("id").eq("id", artistId).single(),
-        adminClient.from("ad_plans").select("id").eq("is_active", true)
+        adminClient.from("ad_plans").select("id, max_portfolios").eq("is_active", true)
             .order("price", { ascending: true }).limit(1).single(),
     ]);
 
@@ -347,7 +361,7 @@ export async function grantFreeSubscription(
             price_paid: 0,
             paid_by_points: 0,
             paid_by_cash: 0,
-            merchant_uid: `ADMIN_GRANT-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+            merchant_uid: `${ADMIN_GRANT_PREFIX}${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
             duration_months: durationMonths,
             status: STATUS_ACTIVE,
             started_at: now,
@@ -357,7 +371,254 @@ export async function grantFreeSubscription(
         .single();
 
     if (error) throw new Error(`무료 광고 부여 실패: ${error.message}`);
+
+    // 부여 시점에 슬롯도 같이 설정 — 회원이 직접 슬롯 선택 단계 회피
+    if (portfolioIds && portfolioIds.length > 0) {
+        const validIds = await filterArtistPortfolios(adminClient, artistId, portfolioIds);
+        const capped = validIds.slice(0, plan.max_portfolios ?? DEFAULT_MAX_PORTFOLIOS);
+        if (capped.length > 0) {
+            const { error: slotsError } = await adminClient.from("ad_portfolio_slots").insert(
+                capped.map((pid) => ({ subscription_id: data.id, portfolio_id: pid })),
+            );
+            if (slotsError) throw new Error(`슬롯 설정 실패: ${slotsError.message}`);
+        }
+    }
+
     return data as AdSubscription;
+}
+
+/** 관리자: 특정 구독의 슬롯을 회원 대신 직접 설정 (소유권/max/상태 검증) */
+export async function setSlotsAsAdmin(
+    adminClient: SupabaseClient<Database>,
+    subscriptionId: string,
+    portfolioIds: string[],
+): Promise<string[]> {
+    const { data: sub } = await adminClient
+        .from("ad_subscriptions")
+        .select("artist_id, status, plan:ad_plans(max_portfolios)")
+        .eq("id", subscriptionId)
+        .single();
+    if (!sub) throw new Error("구독을 찾을 수 없습니다.");
+    // 종료된 구독에는 슬롯 변경 불가 — UI에서는 ACTIVE 만 노출되지만 API 단에서도 가드
+    if (sub.status === "CANCELLED" || sub.status === "EXPIRED") {
+        throw new Error("종료된 구독은 슬롯을 변경할 수 없습니다.");
+    }
+
+    const plan = sub.plan as { max_portfolios?: number } | null;
+    const max = plan?.max_portfolios ?? DEFAULT_MAX_PORTFOLIOS;
+    if (portfolioIds.length > max) throw new Error(`최대 ${max}개까지 선택 가능합니다.`);
+
+    const validIds = await filterArtistPortfolios(adminClient, sub.artist_id, portfolioIds);
+    if (validIds.length !== portfolioIds.length) {
+        throw new Error("회원 소유가 아닌 포트폴리오가 포함되어 있습니다.");
+    }
+
+    await adminClient.from("ad_portfolio_slots").delete().eq("subscription_id", subscriptionId);
+    if (validIds.length === 0) return [];
+
+    const { error } = await adminClient.from("ad_portfolio_slots").insert(
+        validIds.map((pid) => ({ subscription_id: subscriptionId, portfolio_id: pid })),
+    );
+    if (error) throw new Error(`슬롯 설정 실패: ${error.message}`);
+    return validIds;
+}
+
+/** 통계 4개를 head:true count 쿼리 4번으로 집계 — 행 데이터 fetch 없이 카운트만 */
+async function fetchGrantStats(
+    adminClient: SupabaseClient<Database>,
+): Promise<{ totalCount: number; activeCount: number; expiredCount: number; thisMonthCount: number }> {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const base = (): ReturnType<typeof adminClient.from> => adminClient.from("ad_subscriptions");
+
+    const [totalRes, activeRes, expiredRes, monthRes] = await Promise.all([
+        base().select("id", { count: "exact", head: true }).like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`),
+        base().select("id", { count: "exact", head: true })
+            .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`).eq("status", STATUS_ACTIVE).gt("expires_at", nowIso),
+        base().select("id", { count: "exact", head: true })
+            .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`).or(`status.eq.EXPIRED,and(expires_at.lte.${nowIso})`),
+        base().select("id", { count: "exact", head: true })
+            .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`).gte("created_at", monthStart),
+    ]);
+
+    return {
+        totalCount: totalRes.count ?? 0,
+        activeCount: activeRes.count ?? 0,
+        expiredCount: expiredRes.count ?? 0,
+        thisMonthCount: monthRes.count ?? 0,
+    };
+}
+
+/** 검색어 → 아티스트 ID 목록 매핑 (없으면 null = 결과 없음) */
+async function resolveSearchArtistIds(
+    adminClient: SupabaseClient<Database>,
+    search: string,
+): Promise<string[] | null> {
+    const { data } = await adminClient
+        .from("artists").select("id")
+        .ilike("title", `%${escapeLikePattern(search)}%`)
+        .limit(MAX_ARTIST_SEARCH_FILTER_IDS);
+    const ids = (data ?? []).map((a) => a.id);
+    return ids.length === 0 ? null : ids;
+}
+
+/** 관리자: 무료 부여 구독 목록 + 통계 (merchant_uid prefix `ADMIN_GRANT-` 로 필터) */
+export async function listAdminGrants(
+    adminClient: SupabaseClient<Database>,
+    options: { page?: number; pageSize?: number; status?: AdSubscriptionStatus | "ALL"; search?: string } = {},
+): Promise<{
+    grants: AdminGrantRow[];
+    stats: { totalCount: number; activeCount: number; expiredCount: number; thisMonthCount: number };
+    pagination: { page: number; pageSize: number; totalCount: number; totalPages: number };
+}> {
+    const page = Math.max(1, options.page ?? 1);
+    const pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, options.pageSize ?? 20));
+
+    let searchArtistIds: string[] | null = null;
+    if (options.search) {
+        searchArtistIds = await resolveSearchArtistIds(adminClient, options.search);
+        if (searchArtistIds === null) {
+            return {
+                grants: [],
+                stats: { totalCount: 0, activeCount: 0, expiredCount: 0, thisMonthCount: 0 },
+                pagination: { page, pageSize, totalCount: 0, totalPages: 0 },
+            };
+        }
+    }
+
+    let query = adminClient
+        .from("ad_subscriptions")
+        .select(
+            "id, artist_id, status, started_at, expires_at, duration_months, impression_count, click_count, created_at, artist:artists(id, title, profile_image_path), slots:ad_portfolio_slots(portfolio_id)",
+            { count: "exact" },
+        )
+        .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`)
+        .order("created_at", { ascending: false });
+
+    if (options.status && options.status !== "ALL") query = query.eq("status", options.status);
+    if (searchArtistIds) query = query.in("artist_id", searchArtistIds);
+
+    query = query.range((page - 1) * pageSize, page * pageSize - 1);
+
+    const [{ data: grants, count }, stats] = await Promise.all([query, fetchGrantStats(adminClient)]);
+
+    const totalCount = count ?? 0;
+    const rows = (grants ?? []) as unknown as AdminGrantRowRaw[];
+    return {
+        grants: rows.map((g) => ({
+            id: g.id,
+            artistId: g.artist_id,
+            artistTitle: g.artist?.title ?? "(이름 없음)",
+            artistProfileImage: g.artist?.profile_image_path ?? null,
+            status: g.status,
+            startedAt: g.started_at,
+            expiresAt: g.expires_at,
+            durationMonths: g.duration_months,
+            impressionCount: g.impression_count,
+            clickCount: g.click_count,
+            slotCount: (g.slots ?? []).length,
+            createdAt: g.created_at,
+        })),
+        stats,
+        pagination: { page, pageSize, totalCount, totalPages: Math.ceil(totalCount / pageSize) },
+    };
+}
+
+/** 관리자: 특정 회원의 포트폴리오 + 썸네일 + 현재 슬롯 정보 */
+export async function getArtistPortfoliosForAdmin(
+    adminClient: SupabaseClient<Database>,
+    artistId: string,
+    subscriptionId?: string,
+): Promise<{
+    portfolios: { id: string; title: string; thumbnail: string | null }[];
+    currentSlots: string[];
+    maxPortfolios: number;
+}> {
+    const [portfoliosResult, slotsResult, planResult] = await Promise.all([
+        adminClient
+            .from("portfolios")
+            .select("id, title, portfolio_media(storage_path, order_index)")
+            .eq("artist_id", artistId)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false }),
+        subscriptionId
+            ? adminClient.from("ad_portfolio_slots").select("portfolio_id").eq("subscription_id", subscriptionId)
+            : Promise.resolve({ data: [] as { portfolio_id: string }[] }),
+        subscriptionId
+            ? adminClient
+                .from("ad_subscriptions")
+                .select("plan:ad_plans(max_portfolios)")
+                .eq("id", subscriptionId)
+                .single()
+            : Promise.resolve({ data: null }),
+    ]);
+
+    const rows = (portfoliosResult.data ?? []) as {
+        id: string; title: string; portfolio_media: { storage_path: string; order_index: number }[];
+    }[];
+
+    const portfolios = rows.map((p) => {
+        const sorted = [...p.portfolio_media].sort((a, b) => a.order_index - b.order_index);
+        return {
+            id: p.id,
+            title: p.title,
+            thumbnail: getStorageUrl(sorted[0]?.storage_path ?? null),
+        };
+    });
+
+    const planData = planResult.data as { plan?: { max_portfolios?: number } } | null;
+    return {
+        portfolios,
+        currentSlots: (slotsResult.data ?? []).map((s) => s.portfolio_id),
+        maxPortfolios: planData?.plan?.max_portfolios ?? DEFAULT_MAX_PORTFOLIOS,
+    };
+}
+
+/** Helper: 회원 소유 포트폴리오만 필터링 */
+async function filterArtistPortfolios(
+    adminClient: SupabaseClient<Database>,
+    artistId: string,
+    portfolioIds: string[],
+): Promise<string[]> {
+    if (portfolioIds.length === 0) return [];
+    const { data } = await adminClient
+        .from("portfolios")
+        .select("id")
+        .eq("artist_id", artistId)
+        .in("id", portfolioIds)
+        .is("deleted_at", null);
+    const valid = new Set((data ?? []).map((p) => p.id));
+    return portfolioIds.filter((id) => valid.has(id));
+}
+
+interface AdminGrantRowRaw {
+    id: string;
+    artist_id: string;
+    artist?: { id: string; title: string; profile_image_path: string | null } | null;
+    status: AdSubscriptionStatus;
+    started_at: string | null;
+    expires_at: string | null;
+    duration_months: number;
+    impression_count: number;
+    click_count: number;
+    slots?: { portfolio_id: string }[];
+    created_at: string;
+}
+
+export interface AdminGrantRow {
+    id: string;
+    artistId: string;
+    artistTitle: string;
+    artistProfileImage: string | null;
+    status: AdSubscriptionStatus;
+    startedAt: string | null;
+    expiresAt: string | null;
+    durationMonths: number;
+    impressionCount: number;
+    clickCount: number;
+    slotCount: number;
+    createdAt: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────
