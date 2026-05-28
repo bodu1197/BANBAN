@@ -22,6 +22,13 @@ interface ProfileRow {
     username: string | null;
 }
 
+/** 응답 행 셰이프 — toMergedArtist 반환 / merged Map 값 / 최종 응답 변환에 공유 */
+interface MergedArtist {
+    id: string;
+    title: string;
+    profile_image_path: string | null;
+}
+
 /** profile 의 표시명 우선순위 — nickname > username */
 function profileDisplayName(p: ProfileRow): string {
     return p.nickname ?? p.username ?? "";
@@ -52,7 +59,7 @@ async function fetchArtistsByUserIds(
 }
 
 /** 표시명 fallback (title → nickname/username → "(이름 없음)") + 결과 행 변환 */
-function toMergedArtist(a: ArtistRow, profileMap: Map<string, string>): { id: string; title: string; profile_image_path: string | null } {
+function toMergedArtist(a: ArtistRow, profileMap: Map<string, string>): MergedArtist {
     return {
         id: a.id,
         title: a.title || profileMap.get(a.user_id) || "(이름 없음)",
@@ -103,8 +110,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const profileMap = buildProfileMap([...byNicknameData, ...byUsernameData]);
     const extraArtists = await fetchArtistsByUserIds(auth.supabase, [...profileMap.keys()], limit);
 
-    // dedupe + 표시명 fallback
-    const merged = new Map<string, { id: string; title: string; profile_image_path: string | null }>();
+    // dedupe + 표시명 fallback — merged.size 가 byTitleData.length + extraArtists.length 까지 커질 수 있음
+    const merged = new Map<string, MergedArtist>();
     for (const a of byTitleData) merged.set(a.id, toMergedArtist(a, profileMap));
     for (const a of extraArtists) {
         if (merged.has(a.id)) continue;
@@ -112,6 +119,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // 결정적 순서 보장 — title 기준 ko 로컬 정렬 (3쿼리 병렬화로 인한 비결정성 제거)
+    // slice(0, limit) — dedupe 후 최대 2*limit 개 가능 → 응답 size 를 limit 으로 cap
     const artists = [...merged.values()]
         .sort((a, b) => a.title.localeCompare(b.title, "ko"))
         .slice(0, limit)
