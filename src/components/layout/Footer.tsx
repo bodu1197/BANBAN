@@ -27,7 +27,7 @@ export function Footer(): React.ReactElement {
     <footer className="border-t bg-muted/50">
       <div className="mx-auto max-w-[1024px] px-4 py-8 md:px-6">
         <FooterNav f={f} />
-        <details className="group mt-6 text-center text-xs text-foreground/60">
+        <details className="group mt-6 text-center text-xs text-foreground/70">
           <summary className="inline-flex cursor-pointer list-none items-center gap-1 select-none text-foreground/70 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
             {f.companyName}
             <span className="transition-transform group-open:rotate-180">▼</span>
@@ -40,7 +40,7 @@ export function Footer(): React.ReactElement {
             <p>{f.companyComplaint}</p>
           </div>
         </details>
-        <p className="mt-4 text-center text-xs text-foreground/60">{copyright}</p>
+        <p className="mt-4 text-center text-xs text-foreground/70">{copyright}</p>
       </div>
     </footer>
   );
