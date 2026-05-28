@@ -66,6 +66,8 @@ export function SlotEditor({ subscriptionId, onUpdated, cache, onCacheUpdate }: 
         return () => { cancelled = true; };
     }, [subscriptionId, cache]);
 
+    // setState updater 패턴 — prev 로 최신 state 참조해 deps 에 selected 제외.
+    // 결과: handleToggle 안정화 → PortfolioThumb React.memo 발휘 (50개 그리드에서 리렌더 1회).
     const handleToggle = useCallback((id: string) => {
         if (!data) return;
         setSelected((prev) => {
