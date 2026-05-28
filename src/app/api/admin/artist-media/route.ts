@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { sanitizeStoragePath } from "@/lib/supabase/storage-utils";
 
 interface PostBody {
   artistId: string;
@@ -15,15 +16,6 @@ interface DeleteBody {
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-/** Storage path 정규화 — 경로 탐색 (`..`, 선행 `/`, `//`) 차단. /api/upload 와 동일 정책. */
-function sanitizeStoragePath(path: string): string | null {
-  const normalized = path.replace(/\\/g, "/");
-  if (normalized.includes("..") || normalized.startsWith("/") || normalized.includes("//")) {
-    return null;
-  }
-  return normalized;
-}
 
 /** POST /api/admin/artist-media — admin 전용 갤러리 추가 (본인 검증 없이 artist_id 직접) */
 export async function POST(request: NextRequest): Promise<NextResponse> {

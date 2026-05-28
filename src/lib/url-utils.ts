@@ -8,7 +8,9 @@
  * Supabase Storage 경로만 받도록 storage path regex 로 검증한다.
  */
 
-const STORAGE_PATH_REGEX = /^[a-zA-Z0-9/_.-]+$/;
+// storage 경로 검증은 storage-utils 단일 구현 재사용 (SSOT)
+export { sanitizeStoragePath } from "./supabase/storage-utils";
+
 const MAX_INTERNAL_PATH_LENGTH = 2048;
 
 /**
@@ -26,24 +28,6 @@ export function sanitizeLinkUrl(input: string | null | undefined): string {
   if (!trimmed.startsWith("/")) return "/";
   if (trimmed.startsWith("//")) return "/";
   return trimmed;
-}
-
-/**
- * Supabase Storage 경로로 안전한 문자열인지 정규화/검증한다.
- *
- * - `http(s)://` 로 시작하면 거부 (외부 호스트 차단).
- * - `..` 포함 거부 (경로 탈출 차단).
- * - 영문/숫자/슬래시/하이픈/언더스코어/점만 허용.
- *
- * @returns 안전하면 trim 된 path, 그렇지 않으면 null.
- */
-export function sanitizeStoragePath(input: string | null | undefined): string | null {
-  if (!input) return null;
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return null;
-  if (trimmed.includes("..")) return null;
-  return STORAGE_PATH_REGEX.test(trimmed) ? trimmed : null;
 }
 
 /**

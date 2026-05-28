@@ -3,6 +3,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import sharp from "sharp";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { sanitizeStoragePath } from "@/lib/supabase/storage-utils";
 
 export const maxDuration = 60;
 
@@ -27,14 +28,6 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const INTERNAL_SERVER_ERROR = "Internal server error";
 const INVALID_BUCKET = "Invalid bucket";
 const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media", "banners"]);
-
-function sanitizeStoragePath(path: string): string | null {
-  const normalized = path.replace(/\\/g, "/");
-  if (normalized.includes("..") || normalized.startsWith("/") || normalized.includes("//")) {
-    return null;
-  }
-  return normalized;
-}
 
 function validateBucket(bucket: string): boolean {
   return ALLOWED_BUCKETS.has(bucket);

@@ -132,17 +132,27 @@ export function getImageSrcSet(
     .join(", ");
 }
 
+/** Supabase Storage 키 허용 문자 — 영숫자·슬래시·언더스코어·점·하이픈. */
+const STORAGE_PATH_REGEX = /^[a-zA-Z0-9/_.-]+$/;
+
 /**
- * 스토리지 경로 입력 검증 — 쓰기 경계(admin PATCH, artist-media 등)에서 사용.
+ * 스토리지 경로 검증 — 쓰기 경계(admin PATCH, artist-media, upload 등)의 단일 기준.
  * 정상값은 "uuid/hash.webp", "profiles/uuid.webp" 같은 버킷 상대 경로.
- * 거부: 절대경로/프로토콜-상대(/), 경로 탈출(..), 백슬래시(\), 모든 URI 스킴(http:·data:·javascript:·blob: 등).
- * Why: profile_image_path 가 외부 URL/스킴으로 저장되면 getAvatarUrl 의 http passthrough 로
- *      <Image> 에 외부 리소스가 렌더됨 (remotePatterns/CSP 가 1차 차단하지만 입력단 방어).
+ * 거부: 선행 슬래시(절대경로/프로토콜-상대), 내부 이중 슬래시(//), 경로 탈출(..),
+ *      화이트리스트 밖 문자 — 콜론(http:·data:·javascript: 등 모든 스킴)·백슬래시·공백·제어문자.
+ * Why: profile_image_path/storage_path 가 외부 URL/스킴으로 저장되면 get*Url passthrough 로
+ *      <Image> 에 외부 리소스가 렌더됨 (remotePatterns/CSP 1차 차단 + 입력단 2차 방어).
  */
 export function isSafeStoragePath(path: string): boolean {
-  if (path.startsWith("/")) return false;              // 절대경로 / 프로토콜-상대 //
-  if (path.includes("..")) return false;               // 경로 탈출
-  if (path.includes("\\")) return false;               // 백슬래시 탈출
-  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return false; // 모든 URI 스킴 (http: data: javascript: blob: ...)
-  return true;
+  if (path.startsWith("/")) return false;   // 절대경로 / 프로토콜-상대 //
+  if (path.includes("//")) return false;    // 내부 이중 슬래시
+  if (path.includes("..")) return false;    // 경로 탈출
+  return STORAGE_PATH_REGEX.test(path);     // 화이트리스트 (콜론·백슬래시·공백·제어문자 차단)
+}
+
+/** isSafeStoragePath 의 string|null 형태 — 안전하면 trim 된 경로, 아니면 null (upload/admin 라우트용). */
+export function sanitizeStoragePath(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  return isSafeStoragePath(trimmed) ? trimmed : null;
 }
