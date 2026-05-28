@@ -175,7 +175,8 @@ export function ArtistRegisterClient({ categories,
         const shopForm = new globalThis.FormData();
         // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
         shopForm.append("file", shopImages[i]);
-        const shopPath = `artists/${artistId}/shop_${i}.webp`;
+        // 타임스탬프로 cache-busting (샵수정 ArtistEditClient 와 동일 — 재업로드 시 stale-cache 방지).
+        const shopPath = `artists/${artistId}/shop_${i}_${Date.now()}.webp`;
         const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
         const shopJson = await shopRes.json() as { success: boolean };
         if (shopJson.success) {

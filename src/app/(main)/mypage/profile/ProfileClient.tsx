@@ -200,6 +200,12 @@ export function ProfileClient(): React.ReactElement {
             await supabase.from("artists")
               .update({ profile_image_path: fileName })
               .eq("id", artist.id);
+          } else if (user?.id) {
+            // 일반 회원도 profiles.profile_image_path 반영 — 리뷰/커뮤니티/마이페이지 표시가 헤더(avatar_url)와 일치.
+            // RLS profiles_update(USING id=auth.uid()) 로 본인 행 client 업데이트 허용 확인됨.
+            await supabase.from("profiles")
+              .update({ profile_image_path: fileName })
+              .eq("id", user.id);
           }
         }
       }
