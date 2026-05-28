@@ -16,6 +16,23 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 
   async headers() {
+    // iamport/portone=결제, t1.daumcdn=우편번호, pcdn2.swing2app=앱브릿지, cdn.jsdelivr=외부CDN
+    // supabase.co=DB/Storage/Auth, flagcdn=국기, googleusercontent/kakaocdn/pstatic=SNS아바타
+    // api.openai=GPT, storage.googleapis=Supabase Edge Functions
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.iamport.kr https://*.portone.io https://t1.daumcdn.net https://pcdn2.swing2app.co.kr https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://*.supabase.co https://flagcdn.com https://*.googleusercontent.com https://k.kakaocdn.net https://*.pstatic.net",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://*.iamport.kr https://*.portone.io https://cdn.jsdelivr.net https://storage.googleapis.com",
+      "frame-src 'self' https://*.iamport.kr https://*.portone.io https://postcode.map.kakao.com https://t1.daumcdn.net",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
@@ -26,6 +43,7 @@ const nextConfig: NextConfig = {
           { key: "X-DNS-Prefetch-Control", value: "on" },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), payment=(self), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), interest-cohort=()" },
+          ...(process.env.NODE_ENV === "production" ? [{ key: "Content-Security-Policy", value: csp }] : []),
         ],
       },
     ];
