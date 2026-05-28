@@ -148,7 +148,8 @@ export function ArtistRegisterClient({ categories,
       if (profileImage.length > 0) {
         const profileForm = new globalThis.FormData();
         profileForm.append("file", profileImage[0]);
-        const profilePath = `${artistId}/profile.webp`;
+        // 마이페이지(ProfileClient)와 동일하게 userId 기준 경로 — 등록/수정이 같은 파일을 가리켜 분기/orphan 방지.
+        const profilePath = `${user.id}/profile.webp`;
         const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
         const profileJson = await profileRes.json() as { success: boolean };
         if (profileJson.success) {
@@ -157,6 +158,14 @@ export function ArtistRegisterClient({ categories,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ artistId, profileImagePath: profilePath }),
           });
+          // 샵 대표 사진을 user_metadata.avatar_url 에도 동기화 — 헤더/마이페이지가 같은 사진 표시 (ProfileClient 와 동일).
+          // 등록은 이미 완료된 상태라 동기화 실패는 비핵심으로 무시.
+          try {
+            const { getAvatarUrl } = await import("@/lib/supabase/storage-utils");
+            await createClient().auth.updateUser({ data: { avatar_url: getAvatarUrl(profilePath) ?? "" } });
+          } catch {
+            /* avatar_url 동기화 실패 무시 */
+          }
         }
       }
 
