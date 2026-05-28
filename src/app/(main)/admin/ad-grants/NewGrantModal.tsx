@@ -133,7 +133,7 @@ function ArtistSearchInput({ value, onChange, onArrowDown, hasResults }: Readonl
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={onKey}
                 placeholder={`샵 이름·닉네임·아이디 검색 (${MIN_SEARCH_LENGTH}자 이상)`}
-                aria-label="아티스트 검색"
+                aria-label="샵 이름, 닉네임, 아이디로 아티스트 검색"
                 aria-controls="artist-search-results"
                 aria-expanded={hasResults}
                 aria-autocomplete="list"
