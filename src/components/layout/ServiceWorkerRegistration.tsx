@@ -2,8 +2,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { idle } from "@/lib/idle";
 
 const SW_URL = "/sw.js";
+const SW_REGISTER_IDLE_TIMEOUT_MS = 5000;
 
 function postSkipWaiting(registration: ServiceWorkerRegistration): void {
   registration.waiting?.postMessage({ type: "SKIP_WAITING" });
@@ -37,7 +39,8 @@ async function registerServiceWorker(): Promise<void> {
 
 export function ServiceWorkerRegistration(): null {
   useEffect(() => {
-    void registerServiceWorker();
+    // SW 등록은 비핵심 — idle time 까지 5초 가량 지연해 첫 페인트와 hydration 간섭 방지.
+    idle(() => void registerServiceWorker(), SW_REGISTER_IDLE_TIMEOUT_MS);
   }, []);
   return null;
 }

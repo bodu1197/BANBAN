@@ -3,21 +3,16 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { idle } from "@/lib/idle";
 
 const Toaster = dynamic(() => import("sonner").then((m) => m.Toaster), { ssr: false });
-
-function idle(cb: () => void): void {
-    // requestIdleCallback 은 Safari 등 미지원 환경 있음 → typed window 접근 + setTimeout fallback
-    const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
-    if (ric) ric(cb, { timeout: 3000 });
-    else globalThis.setTimeout(cb, 2000);
-}
+const TOASTER_IDLE_TIMEOUT_MS = 3000;
 
 export function IdleToaster(): React.ReactElement | null {
     const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        idle(() => setReady(true));
+        idle(() => setReady(true), TOASTER_IDLE_TIMEOUT_MS);
     }, []);
 
     if (!ready) return null;

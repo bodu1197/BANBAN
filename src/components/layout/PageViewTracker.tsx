@@ -3,10 +3,12 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { idle } from "@/lib/idle";
 
 const VISITOR_KEY = "htv_id";
 const VISIT_API = "/api/analytics/visit";
 const SKIP_PATTERN = /\/admin/;
+const ANALYTICS_IDLE_TIMEOUT_MS = 2000;
 
 function generateId(): string {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -60,13 +62,6 @@ function sendVisit(pathname: string, visitorId: string): void {
     }).catch(() => { /* non-fatal */ });
 }
 
-function idle(cb: () => void): void {
-    // requestIdleCallback 은 Safari 등 미지원 환경 있음 → typed window 접근 + setTimeout fallback
-    const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
-    if (ric) ric(cb, { timeout: 2000 });
-    else globalThis.setTimeout(cb, 1500);
-}
-
 export function PageViewTracker(): null {
     const pathname = usePathname();
     const lastPath = useRef("");
@@ -80,7 +75,7 @@ export function PageViewTracker(): null {
             const visitorId = getOrCreateVisitorId();
             if (!visitorId) return;
             sendVisit(pathname, visitorId);
-        });
+        }, ANALYTICS_IDLE_TIMEOUT_MS);
     }, [pathname]);
 
     return null;

@@ -2,6 +2,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { idle } from "@/lib/idle";
+
+const SWING_IDLE_TIMEOUT_MS = 2000;
 
 // Swing2App 플러그인 타입은 globals.d.ts 의 Window.swingWebViewPlugin ambient 선언 사용.
 interface MinimalUser {
@@ -41,11 +44,6 @@ export function Swing2AppBridge(): null {
     document.head.appendChild(script);
 
     let unsubscribe: (() => void) | null = null;
-    const idle = (cb: () => void): void => {
-      const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
-      if (ric) ric(cb, { timeout: 2000 });
-      else globalThis.setTimeout(cb, 1500);
-    };
 
     idle(() => {
       void import("@/lib/supabase/client").then(({ createClient }) => {
@@ -56,7 +54,7 @@ export function Swing2AppBridge(): null {
         });
         unsubscribe = () => subscription.unsubscribe();
       });
-    });
+    }, SWING_IDLE_TIMEOUT_MS);
 
     return () => unsubscribe?.();
   }, []);
