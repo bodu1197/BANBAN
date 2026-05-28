@@ -1,118 +1,33 @@
-// Banunni Service Worker
-// Strategy:
-//   - precache: 핵심 셸 자산 (offline page, manifest, icons)
-//   - runtime cache: stale-while-revalidate (정적 리소스), network-first (HTML/API)
-//   - offline fallback: 네트워크 실패 시 /offline.html 반환
-// 자동 업데이트: skipWaiting + clients.claim 으로 새 SW 즉시 활성화
-
-const VERSION = "banunni-v1";
-const CACHE_STATIC = `${VERSION}-static`;
-const CACHE_RUNTIME = `${VERSION}-runtime`;
-
-const PRECACHE_URLS = [
-  "/offline.html",
-  "/manifest.webmanifest",
-  "/icon-192.png",
-  "/icon-512.png",
-  "/icon-maskable-512.png",
-  "/apple-icon.png",
-  "/ban_logo.png",
-];
-
-// 인증·관리·API·동적 API 경로는 SW 캐시 금지 — 다른 사용자 세션 누출 방지.
-const SCOPE_BYPASS = [
-  "/api/",
-  "/admin/",
-  "/mypage",          // 사용자 개인 대시보드
-  "/likes",           // 좋아요 목록
-  "/messages",        // 메시지
-  "/inquiries",       // 문의
-  "/points",          // 포인트
-  "/reset-password",  // 비밀번호 재설정
-  "/_next/static/",   // Next.js 가 자체 long-cache headers 적용
-];
+// 긴급 비활성화 — controllerchange + location.reload() 패턴이 무한 새로고침 유발 사고로 SW 영구 unregister.
+// 이전 버전: PWA 캐시 + offline fallback. 추후 안정화된 다른 패턴으로 재도입 예정.
+// 자살 절차:
+//  1. install: skipWaiting 으로 즉시 활성화 진입
+//  2. activate: 모든 cache 삭제 + 자기 자신 unregister + 모든 클라이언트 새로고침 (마지막 1회)
+//  3. 다음 페이지 로드부터 SW 없음 → fresh JS 받음 → ServiceWorkerRegistration 도 등록 안 함
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE_STATIC)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => !key.startsWith(VERSION))
-            .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => self.clients.claim()),
-  );
-});
-
-function shouldBypass(url) {
-  if (url.origin !== self.location.origin) return true;
-  return SCOPE_BYPASS.some((prefix) => url.pathname.startsWith(prefix));
-}
-
-async function networkFirstHtml(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const copy = response.clone();
-      const cache = await caches.open(CACHE_RUNTIME);
-      cache.put(request, copy).catch(() => {});
+  event.waitUntil((async () => {
+    // 1. 모든 기존 cache 삭제 (allSettled 로 부분 실패해도 진행)
+    const keys = await caches.keys();
+    await Promise.allSettled(keys.map((key) => caches.delete(key)));
+    // 2. 자기 자신 unregister
+    await self.registration.unregister();
+    // 3. 모든 열린 클라이언트 navigate (마지막 1회 reload — SW 없는 상태로)
+    //    origin 검증으로 cross-origin navigate 방어 (theoretically client.url 은 same-origin)
+    const clients = await self.clients.matchAll({ type: "window" });
+    for (const client of clients) {
+      try {
+        const url = new URL(client.url);
+        if (url.origin === self.location.origin) {
+          client.navigate(url.href);
+        }
+      } catch { /* navigate 실패 무시 */ }
     }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    return caches.match("/offline.html");
-  }
-}
-
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE_RUNTIME);
-  const cached = await cache.match(request);
-  const networkPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) cache.put(request, response.clone()).catch(() => {});
-      return response;
-    })
-    .catch(() => cached);
-  return cached ?? networkPromise;
-}
-
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  if (request.method !== "GET") return;
-
-  const url = new URL(request.url);
-  if (shouldBypass(url)) return;
-
-  const accept = request.headers.get("accept") ?? "";
-  const isHtml = request.mode === "navigate" || accept.includes("text/html");
-
-  if (isHtml) {
-    event.respondWith(networkFirstHtml(request));
-    return;
-  }
-
-  // 이미지/폰트/CSS/JS — stale-while-revalidate
-  if (/\.(png|jpg|jpeg|webp|svg|gif|ico|css|woff2?|ttf)$/i.test(url.pathname)) {
-    event.respondWith(staleWhileRevalidate(request));
-  }
+  })());
 });
 
-// 클라이언트에서 보낸 SKIP_WAITING 메시지에 응답 (업데이트 즉시 적용)
-self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
+// fetch handler 없음 — 모든 요청은 네트워크 직접 처리
