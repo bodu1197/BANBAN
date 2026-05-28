@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
-import { getStorageUrl } from "@/lib/supabase/storage-utils";
+import { getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { escapeLikePattern } from "@/lib/supabase/query-utils";
 import { ARTIST_SEARCH_RESULT_LIMIT } from "@/lib/supabase/ad-constants";
 import type { Database } from "@/types/database";
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .map((a) => ({
             id: a.id,
             title: a.title,
-            profile_image_path: getStorageUrl(a.profile_image_path),
+            profile_image_path: getAvatarUrl(a.profile_image_path),
         }));
 
     return NextResponse.json({ artists });

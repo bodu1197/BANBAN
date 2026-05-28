@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createStaticClient } from "./server";
-import { getStorageUrl } from "./storage-utils";
+import { getStorageUrl, getAvatarUrl } from "./storage-utils";
 import { escapeLikePattern } from "./query-utils";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
 import type { Database } from "@/types/database";
@@ -530,7 +530,7 @@ export async function listAdminGrants(
             id: g.id,
             artistId: g.artist_id,
             artistTitle: g.artist?.title ?? "(이름 없음)",
-            artistProfileImage: g.artist?.profile_image_path ?? null,
+            artistProfileImage: getAvatarUrl(g.artist?.profile_image_path ?? null),
             status: g.status,
             startedAt: g.started_at,
             expiresAt: g.expires_at,
