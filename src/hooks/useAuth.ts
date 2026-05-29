@@ -68,6 +68,8 @@ export function useAuth(): UseAuthReturn {
   const [profileImagePath, setProfileImagePath] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const initialFetchDone = useRef(false);
+  // 현재 로그인 유저 id — SIGNED_IN(탭 포커스 복귀 시 Supabase 가 재발화) 에서 실제 유저 변경 여부 판별용
+  const currentUserIdRef = useRef<string | null>(null);
 
   const fetchUserAndArtist = useCallback(async () => {
     const supabase = await getClient();
@@ -91,17 +93,20 @@ export function useAuth(): UseAuthReturn {
             .maybeSingle(),
         ]);
 
+        currentUserIdRef.current = authUser.id;
         setUser(authUser);
         setArtist(artistData);
         setRole(normalizeRole(profileData?.role));
         setProfileImagePath(profileData?.profile_image_path ?? null);
       } else {
+        currentUserIdRef.current = null;
         setUser(null);
         setArtist(null);
         setRole(null);
         setProfileImagePath(null);
       }
     } catch {
+      currentUserIdRef.current = null;
       setUser(null);
       setArtist(null);
       setRole(null);
@@ -121,10 +126,20 @@ export function useAuth(): UseAuthReturn {
     let subscription: { unsubscribe: () => void } | null = null;
 
     getClient().then((supabase) => {
-      const { data } = supabase.auth.onAuthStateChange((event: string) => {
-        // 로그인/로그아웃 이벤트에서만 다시 조회 (INITIAL_SESSION 제외)
-        if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        // SIGNED_OUT 은 항상 재조회. SIGNED_IN 은 '실제 유저 변경' 시에만 —
+        // Supabase 는 탭 포커스 복귀마다 SIGNED_IN 을 재발화하는데, 매번 재조회하면 새 user 객체가
+        // 생성돼 구독 페이지(예: /admin/ad-grants)가 데이터 재페치 + 로딩스피너로 깜빡 = "페이지 자동 새로고침".
+        // INITIAL_SESSION / TOKEN_REFRESHED 는 무시.
+        if (event === "SIGNED_OUT") {
           fetchUserAndArtist();
+        } else if (event === "SIGNED_IN") {
+          const newId = session?.user?.id ?? null;
+          if (newId && newId !== currentUserIdRef.current) {
+            // fetch 전에 ref 선반영 — 초기 로드 race(첫 SIGNED_IN 이 초기 fetch 전 도착) + 동시 SIGNED_IN 중복 fetch 방지.
+            currentUserIdRef.current = newId;
+            fetchUserAndArtist();
+          }
         }
       });
       subscription = data.subscription;
