@@ -1373,6 +1373,61 @@ export type Database = {
           },
         ]
       }
+      review_comments: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          parent_id: string | null
+          review_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          parent_id?: string | null
+          review_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          parent_id?: string | null
+          review_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_comments_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "review_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estimate_inquiries: {
         Row: {
           artist_id: string

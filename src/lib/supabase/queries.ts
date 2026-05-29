@@ -309,6 +309,62 @@ export async function fetchAllReviews(
   };
 }
 
+export interface ReviewComment {
+  id: string;
+  content: string;
+  parentId: string | null;
+  authorNickname: string | null;
+  authorId: string | null;
+  createdAt: string;
+}
+
+interface ReviewCommentRow {
+  id: string;
+  review_id: string;
+  content: string;
+  parent_id: string | null;
+  created_at: string;
+  user_id: string | null;
+  profile: { nickname: string | null } | { nickname: string | null }[] | null;
+}
+
+/**
+ * 후기 ID 목록의 댓글을 review_id 별로 묶어 반환.
+ * review_comments 테이블 미적용(마이그레이션 전)이어도 에러 없이 빈 Map 반환 → 후기 탭이 깨지지 않음.
+ */
+export async function fetchReviewCommentsByReviewIds(
+  reviewIds: readonly string[],
+): Promise<Map<string, ReviewComment[]>> {
+  const map = new Map<string, ReviewComment[]>();
+  if (reviewIds.length === 0) return map;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("review_comments")
+    .select(`id, review_id, content, parent_id, created_at, user_id, profile:profiles!user_id(nickname)`)
+    .in("review_id", reviewIds as string[])
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return map;
+
+  for (const row of data as unknown as ReviewCommentRow[]) {
+    const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
+    const comment: ReviewComment = {
+      id: row.id,
+      content: row.content,
+      parentId: row.parent_id,
+      authorNickname: profile?.nickname ?? null,
+      authorId: row.user_id,
+      createdAt: row.created_at,
+    };
+    const list = map.get(row.review_id) ?? [];
+    list.push(comment);
+    map.set(row.review_id, list);
+  }
+  return map;
+}
+
 export type BeforeAfterPhoto = Database["public"]["Tables"]["before_after_photos"]["Row"];
 
 /**

@@ -7,7 +7,9 @@ import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { boardLabel } from "@/lib/board/constants";
 import type { CommunityPost, PostSortType } from "@/lib/supabase/community-queries";
-import type { ReviewWithArtist } from "@/lib/supabase/queries";
+import type { ReviewWithArtist, ReviewComment } from "@/lib/supabase/queries";
+import { ReviewComments } from "@/components/community/ReviewComments";
+import { formatRelativeTime } from "@/lib/utils/format-time";
 
 const t = STRINGS.community;
 
@@ -70,18 +72,6 @@ function TabsNav({ activeTab }: Readonly<{ activeTab: CommunityTabKey }>): React
       })}
     </nav>
   );
-}
-
-function formatRelativeTime(dateStr: string): string {
-  const diff = new Date().getTime() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "방금 전";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}일 전`;
-  return new Date(dateStr).toLocaleDateString("ko-KR");
 }
 
 function PostCard({ post }: Readonly<{ post: CommunityPost }>): React.ReactElement {
@@ -161,7 +151,11 @@ function PostBoardSection({ posts, tab, sort, userId }: Readonly<{
   );
 }
 
-function ReviewCard({ review }: Readonly<{ review: ReviewWithArtist }>): React.ReactElement {
+function ReviewCard({ review, comments, userId }: Readonly<{
+  review: ReviewWithArtist;
+  comments: readonly ReviewComment[];
+  userId: string | null;
+}>): React.ReactElement {
   const shop = review.artist;
   return (
     <article className="px-4 py-4">
@@ -184,18 +178,28 @@ function ReviewCard({ review }: Readonly<{ review: ReviewWithArtist }>): React.R
           {shop.title}에서 더 보기 →
         </Link>
       ) : null}
+      <ReviewComments reviewId={review.id} comments={comments} userId={userId} />
     </article>
   );
 }
 
-function ReviewsSection({ reviews }: Readonly<{ reviews: readonly ReviewWithArtist[] }>): React.ReactElement {
+function ReviewsSection({ reviews, commentsByReview, userId }: Readonly<{
+  reviews: readonly ReviewWithArtist[];
+  commentsByReview: ReadonlyMap<string, ReviewComment[]>;
+  userId: string | null;
+}>): React.ReactElement {
   if (reviews.length === 0) {
     return <p className="py-20 text-center text-sm text-muted-foreground">아직 등록된 후기가 없습니다.</p>;
   }
   return (
     <section aria-label={t.review} className="divide-y divide-border">
       {reviews.map((review) => (
-        <ReviewCard key={review.id} review={review} />
+        <ReviewCard
+          key={review.id}
+          review={review}
+          comments={commentsByReview.get(review.id) ?? []}
+          userId={userId}
+        />
       ))}
     </section>
   );
@@ -228,6 +232,7 @@ interface HubProps {
   activeTab: CommunityTabKey;
   posts: readonly CommunityPost[];
   reviews: readonly ReviewWithArtist[];
+  commentsByReview: ReadonlyMap<string, ReviewComment[]>;
   sort: PostSortType;
   userId: string | null;
 }
@@ -236,10 +241,13 @@ function CommunityTabContent({
   activeTab,
   posts,
   reviews,
+  commentsByReview,
   sort,
   userId,
 }: Readonly<HubProps>): React.ReactElement {
-  if (activeTab === "reviews") return <ReviewsSection reviews={reviews} />;
+  if (activeTab === "reviews") {
+    return <ReviewsSection reviews={reviews} commentsByReview={commentsByReview} userId={userId} />;
+  }
   if (activeTab === "beautylab") return <BeautyLabSection />;
   return <PostBoardSection posts={posts} tab={activeTab} sort={sort} userId={userId} />;
 }
