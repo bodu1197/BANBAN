@@ -1,7 +1,8 @@
 import "server-only";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MessageSquare, Eye, Heart, PenSquare, Star, Sparkles } from "lucide-react";
+import Image from "next/image";
+import { MessageSquare, Eye, Heart, PenSquare, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
@@ -10,6 +11,7 @@ import type { CommunityPost, PostSortType } from "@/lib/supabase/community-queri
 import type { ReviewWithArtist, ReviewComment } from "@/lib/supabase/queries";
 import { ReviewComments } from "@/components/community/ReviewComments";
 import { formatRelativeTime } from "@/lib/utils/format-time";
+import type { BoardListItem } from "@/lib/board/queries";
 
 const t = STRINGS.community;
 
@@ -25,7 +27,6 @@ export const COMMUNITY_TABS: ReadonlyArray<{ key: CommunityTabKey; label: string
 const SORT_OPTIONS: ReadonlyArray<{ key: PostSortType; label: string }> = [
   { key: "latest", label: t.latest },
   { key: "popular", label: t.popular },
-  { key: "recommended", label: t.recommended },
 ];
 
 // 탭/정렬 검증 단일소스 — page.tsx 가 searchParams 를 안전하게 해석할 때 사용.
@@ -98,8 +99,8 @@ function PostCard({ post }: Readonly<{ post: CommunityPost }>): React.ReactEleme
   );
 }
 
-function SortBar({ tab, currentSort, userId }: Readonly<{
-  tab: CommunityTabKey; currentSort: PostSortType; userId: string | null;
+function SortBar({ tab, currentSort }: Readonly<{
+  tab: CommunityTabKey; currentSort: PostSortType;
 }>): React.ReactElement {
   return (
     <div className="flex items-center justify-between px-4 py-3">
@@ -119,25 +120,24 @@ function SortBar({ tab, currentSort, userId }: Readonly<{
           </Link>
         ))}
       </div>
-      {userId ? (
-        <Link
-          href="/community/write"
-          className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />
-          {t.writePost}
-        </Link>
-      ) : null}
+      {/* 비회원에게도 노출 — 클릭 시 /community/write 가 로그인으로 유도(쓰기 권한은 로그인 필요). */}
+      <Link
+        href="/community/write"
+        className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />
+        {t.writePost}
+      </Link>
     </div>
   );
 }
 
-function PostBoardSection({ posts, tab, sort, userId }: Readonly<{
-  posts: readonly CommunityPost[]; tab: CommunityTabKey; sort: PostSortType; userId: string | null;
+function PostBoardSection({ posts, tab, sort }: Readonly<{
+  posts: readonly CommunityPost[]; tab: CommunityTabKey; sort: PostSortType;
 }>): React.ReactElement {
   return (
     <section aria-label={COMMUNITY_TABS.find((x) => x.key === tab)?.label ?? t.title}>
-      <SortBar tab={tab} currentSort={sort} userId={userId} />
+      <SortBar tab={tab} currentSort={sort} />
       {posts.length === 0 ? (
         <p className="py-20 text-center text-sm text-muted-foreground">{t.noPosts}</p>
       ) : (
@@ -160,7 +160,7 @@ function ReviewCard({ review, comments, userId }: Readonly<{
   return (
     <article className="px-4 py-4">
       <div className="mb-1.5 flex items-center gap-2">
-        <span className="text-sm font-semibold">{review.profile?.nickname ?? t.anonymous}</span>
+        <span className="text-sm font-semibold">{review.profile?.nickname ?? review.profile?.username ?? "회원"}</span>
         <span className="flex items-center gap-0.5 text-xs font-medium text-brand-primary">
           <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
           {review.rating.toFixed(1)}
@@ -188,6 +188,19 @@ function ReviewsSection({ reviews, commentsByReview, userId }: Readonly<{
   commentsByReview: ReadonlyMap<string, ReviewComment[]>;
   userId: string | null;
 }>): React.ReactElement {
+  if (!userId) {
+    return (
+      <div className="px-4 py-16 text-center">
+        <p className="mb-3 text-sm text-muted-foreground">로그인한 회원만 후기를 볼 수 있습니다.</p>
+        <Link
+          href="/login"
+          className="inline-flex items-center justify-center rounded-lg bg-brand-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          로그인하고 후기 보기
+        </Link>
+      </div>
+    );
+  }
   if (reviews.length === 0) {
     return <p className="py-20 text-center text-sm text-muted-foreground">아직 등록된 후기가 없습니다.</p>;
   }
@@ -205,25 +218,47 @@ function ReviewsSection({ reviews, commentsByReview, userId }: Readonly<{
   );
 }
 
-function BeautyLabSection(): React.ReactElement {
+function BeautyLabCard({ article }: Readonly<{ article: BoardListItem }>): React.ReactElement {
   return (
-    <section aria-label={t.beautyLab} className="px-4 py-8">
-      <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-6 text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10">
-          <Sparkles className="h-6 w-6 text-brand-primary" aria-hidden="true" />
-        </div>
-        <h2 className="mb-1.5 text-lg font-bold">{t.beautyLab}</h2>
-        <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
-          내 사진으로 눈썹·입술 반영구 스타일을 AI 로 미리 시뮬레이션해보세요. 어울리는 디자인을 찾고 추천 아티스트까지 한 번에.
-        </p>
-        <Link
-          href="/beauty-sim/ai-test"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Sparkles className="h-4 w-4" aria-hidden="true" />
-          AI 뷰티 시뮬레이션 시작
-        </Link>
+    <Link
+      href={`/encyclopedia/${article.slug}`}
+      className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="relative aspect-[16/9] w-full bg-muted">
+        {article.cover_image_url ? (
+          <Image
+            src={article.cover_image_url}
+            alt={article.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 240px"
+            unoptimized
+          />
+        ) : null}
       </div>
+      <div className="flex flex-1 flex-col p-3">
+        <span className="mb-1 w-fit rounded bg-brand-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-primary">
+          {article.category}
+        </span>
+        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">{article.title}</h3>
+        <span className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+          <Eye className="h-3 w-3" aria-hidden="true" />
+          {article.view_count.toLocaleString()}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function BeautyLabSection({ articles }: Readonly<{ articles: readonly BoardListItem[] }>): React.ReactElement {
+  if (articles.length === 0) {
+    return <p className="py-20 text-center text-sm text-muted-foreground">준비 중입니다.</p>;
+  }
+  return (
+    <section aria-label={t.beautyLab} className="grid grid-cols-2 gap-3 px-4 py-4 md:grid-cols-3 lg:grid-cols-4">
+      {articles.map((article) => (
+        <BeautyLabCard key={article.id} article={article} />
+      ))}
     </section>
   );
 }
@@ -233,6 +268,7 @@ interface HubProps {
   posts: readonly CommunityPost[];
   reviews: readonly ReviewWithArtist[];
   commentsByReview: ReadonlyMap<string, ReviewComment[]>;
+  articles: readonly BoardListItem[];
   sort: PostSortType;
   userId: string | null;
 }
@@ -242,14 +278,15 @@ function CommunityTabContent({
   posts,
   reviews,
   commentsByReview,
+  articles,
   sort,
   userId,
 }: Readonly<HubProps>): React.ReactElement {
   if (activeTab === "reviews") {
     return <ReviewsSection reviews={reviews} commentsByReview={commentsByReview} userId={userId} />;
   }
-  if (activeTab === "beautylab") return <BeautyLabSection />;
-  return <PostBoardSection posts={posts} tab={activeTab} sort={sort} userId={userId} />;
+  if (activeTab === "beautylab") return <BeautyLabSection articles={articles} />;
+  return <PostBoardSection posts={posts} tab={activeTab} sort={sort} />;
 }
 
 export function renderCommunityHub(props: Readonly<HubProps>): React.ReactElement {

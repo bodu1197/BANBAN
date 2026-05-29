@@ -3,7 +3,7 @@ import { getAvatarUrl } from "./storage-utils";
 
 export type PostBoardType = "SHOP_IN_SHOP" | "QNA" | "FREETALK";
 export type PostCategoryType = "BEAUTY";
-export type PostSortType = "latest" | "popular" | "recommended";
+export type PostSortType = "latest" | "popular";
 
 export interface CommunityPost {
   id: string;
@@ -135,8 +135,6 @@ async function fetchCommunityPostsInternal(options: {
 
   if (sort === "popular") {
     query = query.order("views_count", { ascending: false });
-  } else if (sort === "recommended") {
-    query = query.order("likes_count", { ascending: false });
   } else {
     query = query.order("created_at", { ascending: false });
   }

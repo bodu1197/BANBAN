@@ -9,6 +9,7 @@ import {
   type ReviewWithArtist,
   type ReviewComment,
 } from "@/lib/supabase/queries";
+import { fetchBoardList, type BoardListItem } from "@/lib/board/queries";
 import { getUser } from "@/lib/supabase/auth";
 import {
   renderCommunityHub,
@@ -37,10 +38,17 @@ export default async function Page({ searchParams }: Readonly<PageProps>): Promi
   let posts: CommunityPost[] = [];
   let reviews: ReviewWithArtist[] = [];
   let commentsByReview: Map<string, ReviewComment[]> = new Map();
+  let articles: BoardListItem[] = [];
   if (activeTab === "reviews") {
-    reviews = (await fetchAllReviews({ limit: 20 })).data;
-    commentsByReview = await fetchReviewCommentsByReviewIds(reviews.map((r) => r.id));
-  } else if (activeTab !== "beautylab") {
+    // 후기는 로그인 회원만 열람 — 비로그인 시 페칭하지 않음(ReviewsSection 이 로그인 안내).
+    if (user) {
+      reviews = (await fetchAllReviews({ limit: 20 })).data;
+      commentsByReview = await fetchReviewCommentsByReviewIds(reviews.map((r) => r.id));
+    }
+  } else if (activeTab === "beautylab") {
+    // 뷰티랩 = 백과사전 글을 커뮤니티 안에서 바로 카드로 노출(클릭 시 /encyclopedia/[slug] 에서 읽기).
+    articles = (await fetchBoardList({ limit: 30 })).items;
+  } else {
     const typeBoard = activeTab === "qna" ? "QNA" : "SHOP_IN_SHOP";
     posts = await fetchCommunityPosts({ typeBoard, sort });
   }
@@ -50,6 +58,7 @@ export default async function Page({ searchParams }: Readonly<PageProps>): Promi
     posts,
     reviews,
     commentsByReview,
+    articles,
     sort,
     userId: user?.id ?? null,
   });

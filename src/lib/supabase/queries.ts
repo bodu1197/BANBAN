@@ -277,7 +277,7 @@ export async function fetchReviewsByArtist(
  * Review with artist info for public reviews page
  */
 export interface ReviewWithArtist extends Review {
-  profile?: { nickname: string } | null;
+  profile?: { nickname: string | null; username: string | null } | null;
   artist?: { id: string; title: string; user_id: string; profile_image_path: string | null; profiles?: { nickname: string; profile_image_path: string | null } | null } | null;
 }
 
@@ -292,7 +292,7 @@ export async function fetchAllReviews(
 
   const { data, error, count } = await supabase
     .from("reviews")
-    .select(`*, profile:profiles!user_id(nickname), artist:artists!artist_id(id, title, user_id, profile_image_path, profiles:profiles!artists_user_id_fkey(nickname, profile_image_path))`, { count: "exact" })
+    .select(`*, profile:profiles!user_id(nickname, username), artist:artists!artist_id(id, title, user_id, profile_image_path, profiles:profiles!artists_user_id_fkey(nickname, profile_image_path))`, { count: "exact" })
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
