@@ -26,7 +26,7 @@ export function ReviewList({
           key={review.id}
           rating={review.rating}
           content={review.content}
-          authorName={review.profile?.nickname ?? "익명"}
+          authorName={review.profile?.nickname ?? review.profile?.username ?? "익명"}
           createdAt={review.created_at ?? new Date().toISOString()}
         />
       ))}

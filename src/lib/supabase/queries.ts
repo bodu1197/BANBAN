@@ -78,7 +78,7 @@ export interface PortfolioWithMedia extends Portfolio {
  * Review with user profile info
  */
 export interface ReviewWithUser extends Review {
-  profile?: { nickname: string } | null;
+  profile?: { nickname: string | null; username?: string | null } | null;
 }
 
 // === Internal Helpers ===
@@ -255,7 +255,7 @@ export async function fetchReviewsByArtist(
 
   const { data, error, count } = await supabase
     .from("reviews")
-    .select(`*, profile:profiles!user_id(nickname)`, { count: "exact" })
+    .select(`*, profile:profiles!user_id(nickname, username)`, { count: "exact" })
     .eq("artist_id", artistId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -267,17 +267,20 @@ export async function fetchReviewsByArtist(
     return { data: [], count: 0 };
   }
 
-  return {
-    data: (data ?? []) as unknown as ReviewWithUser[],
-    count: count ?? 0,
-  };
+  // PostgREST 1:1 embed 가 배열로 올 수 있어 객체로 정규화 — 작성자 닉네임 누락 방지.
+  const normalized = (data ?? []).map((row) => {
+    const r = row as Record<string, unknown>;
+    return { ...r, profile: Array.isArray(r.profile) ? (r.profile[0] ?? null) : (r.profile ?? null) };
+  }) as unknown as ReviewWithUser[];
+
+  return { data: normalized, count: count ?? 0 };
 }
 
 /**
  * Review with artist info for public reviews page
  */
 export interface ReviewWithArtist extends Review {
-  profile?: { nickname: string | null; username: string | null } | null;
+  profile?: { nickname: string | null; username?: string | null } | null;
   artist?: { id: string; title: string; user_id: string; profile_image_path: string | null; profiles?: { nickname: string; profile_image_path: string | null } | null } | null;
 }
 
@@ -303,10 +306,17 @@ export async function fetchAllReviews(
     return { data: [], count: 0 };
   }
 
-  return {
-    data: (data ?? []) as unknown as ReviewWithArtist[],
-    count: count ?? 0,
-  };
+  // PostgREST 1:1 embed 가 배열로 올 수 있어 객체로 정규화 — 작성자 닉네임 누락("회원" 폴백) 방지.
+  const normalized = (data ?? []).map((row) => {
+    const r = row as Record<string, unknown>;
+    return {
+      ...r,
+      profile: Array.isArray(r.profile) ? (r.profile[0] ?? null) : (r.profile ?? null),
+      artist: Array.isArray(r.artist) ? (r.artist[0] ?? null) : (r.artist ?? null),
+    };
+  }) as unknown as ReviewWithArtist[];
+
+  return { data: normalized, count: count ?? 0 };
 }
 
 export interface ReviewComment {

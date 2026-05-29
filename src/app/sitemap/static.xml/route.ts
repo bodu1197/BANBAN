@@ -13,7 +13,6 @@ const STATIC_PAGES: StaticEntry[] = [
   { path: "/discount",       priority: "0.9", changefreq: "daily"   },
   { path: "/women-beauty",   priority: "0.9", changefreq: "daily"   },
   { path: "/mens-beauty",    priority: "0.9", changefreq: "daily"   },
-  { path: "/encyclopedia",   priority: "0.9", changefreq: "daily"   },
   { path: "/location",       priority: "0.8", changefreq: "daily"   },
   { path: "/exhibition",     priority: "0.7", changefreq: "weekly"  },
   { path: "/courses",        priority: "0.7", changefreq: "weekly"  },
