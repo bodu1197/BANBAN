@@ -11,6 +11,7 @@ import {
   buildPageSeo,
   getBreadcrumbJsonLd,
   getCanonicalUrl,
+  getFaqPageJsonLd,
   jsonLdSafe,
 } from "@/lib/seo";
 
@@ -193,6 +194,27 @@ function buildBreadcrumbJsonLd(article: BoardArticle): string {
   );
 }
 
+function FaqSection({ faq }: Readonly<{ faq: BoardArticle["faq"] }>): React.ReactElement | null {
+  if (!faq || faq.length === 0) return null;
+  return (
+    <section className="mt-8 border-t border-border pt-6" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" className="mb-4 text-base font-bold md:text-lg">자주 묻는 질문</h2>
+      <div className="space-y-2">
+        {faq.map((item, i) => (
+          <details key={`faq-${String(i)}`} className="group rounded-lg border border-border bg-card">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-foreground motion-safe:transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted/50 md:text-[15px]">
+              {item.question}
+            </summary>
+            <p className="px-4 pb-4 text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+              {item.answer}
+            </p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export async function renderBoardDetailPage(
   slug: string,
 ): Promise<React.ReactElement> {
@@ -213,6 +235,12 @@ export async function renderBoardDetailPage(
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: buildBreadcrumbJsonLd(article) }}
       />
+      {article.faq?.length ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdSafe(getFaqPageJsonLd(article.faq)) }}
+        />
+      ) : null}
 
       <div className="px-4 py-3">
         <Link
@@ -275,6 +303,7 @@ export async function renderBoardDetailPage(
         </h1>
 
         <ArticleBody article={article} />
+        <FaqSection faq={article.faq} />
       </div>
     </article>
   );

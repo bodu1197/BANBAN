@@ -298,6 +298,24 @@ export function getOrganizationJsonLd(): Record<string, unknown> {
 }
 
 /**
+ * Generate JSON-LD FAQPage schema (질문/답변 목록). AEO 핵심 — Google/AI 가 Q&A 를 직접 인용.
+ * 빈 배열이면 호출부에서 emit 하지 말 것(빈 FAQPage 무의미).
+ */
+export function getFaqPageJsonLd(
+  items: ReadonlyArray<{ question: string; answer: string }>,
+): Record<string, unknown> {
+  return {
+    "@context": SCHEMA_CONTEXT,
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}
+
+/**
  * JSON-LD 객체를 `<script type="application/ld+json">` 안에 안전하게 임베드하기 위한 직렬화.
  * `<` 문자를 `<` 로 escape 하여 `</script>` 조기 종료 공격(XSS)을 차단한다.
  * 사용: `<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(obj) }} />`

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import { SITE_URL } from "@/lib/seo";
+import { PUBLIC_ENV } from "@/lib/config/env";
 import "./globals.css";
 
 const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracker").then(m => m.PageViewTracker));
@@ -13,7 +14,7 @@ const SITE_DESCRIPTION = "반영구 잘하는 곳 찾을 땐 반언니! 전국 �
 
 // 공개 준비 중에는 NEXT_PUBLIC_BLOCK_INDEXING=true → meta robots noindex + robots.ts disallow.
 // 공개 시점에 Vercel env 에서 변수 제거(또는 false)로 전환. robots.ts 와 반드시 동기화.
-const BLOCK_INDEXING = process.env.NEXT_PUBLIC_BLOCK_INDEXING === "true";
+const BLOCK_INDEXING = PUBLIC_ENV.BLOCK_INDEXING; // SSOT: @/lib/config/env (NEXT_PUBLIC_BLOCK_INDEXING)
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

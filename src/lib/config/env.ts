@@ -26,6 +26,8 @@ export const PUBLIC_ENV = {
     SITE_URL: readEnv("NEXT_PUBLIC_SITE_URL", SITE_URL_DEFAULT),
     SUPABASE_URL,         // re-export from lib/supabase/config (SSOT)
     SUPABASE_ANON_KEY,    // re-export from lib/supabase/config (SSOT)
+    // 색인 차단 플래그 — robots.ts/layout.tsx 와 반드시 동일 변수(NEXT_PUBLIC_BLOCK_INDEXING) 사용.
+    BLOCK_INDEXING: readEnv("NEXT_PUBLIC_BLOCK_INDEXING") === "true",
 } as const;
 
 /** Server-only — 브라우저 번들에 포함되면 안 됨 */
@@ -35,7 +37,6 @@ export const SERVER_ENV = {
     OPENAI_API_KEY: readEnv("OPENAI_API_KEY"),
     PORTONE_IMP_KEY: readEnv("PORTONE_IMP_KEY"),
     PORTONE_IMP_SECRET: readEnv("PORTONE_IMP_SECRET"),
-    BLOCK_INDEXING: readEnv("BLOCK_INDEXING") === "true",
     GOOGLE_SITE_VERIFICATION: readEnv("GOOGLE_SITE_VERIFICATION"),
     EMBED_WEBHOOK_SECRET: readEnv("EMBED_WEBHOOK_SECRET"),
 } as const;
