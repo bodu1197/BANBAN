@@ -1,0 +1,17 @@
+# 반언니 (banunni)
+
+> 반언니는 전국 반영구·타투 아티스트와 샵을 비교·추천하는 한국어 플랫폼입니다. 눈썹·입술·아이라인 등 반영구 화장 포트폴리오, 지역별 가격 비교, 아티스트 추천, 실사용자 리뷰를 제공합니다.
+
+## 핵심 페이지
+- [아티스트·샵 찾기](https://banunni.com/artists): 전국 반영구 아티스트·샵 검색 및 비교
+- [반영구 백과사전](https://banunni.com/encyclopedia): 반영구 시술 정보·가격·유지기간·자주 묻는 질문
+- [여성 뷰티](https://banunni.com/women-beauty): 여성 반영구 카테고리
+- [남성 뷰티](https://banunni.com/mens-beauty): 남성 반영구 카테고리
+- [리뷰](https://banunni.com/reviews): 실사용자 시술 후기
+- [클래스](https://banunni.com/courses): 반영구 교육·강의
+- [기획전](https://banunni.com/exhibition): 시즌 기획전
+
+## 안내
+- 언어: 한국어 전용 (대한민국)
+- 운영: 반언니 — https://banunni.com
+- 사이트맵: https://banunni.com/sitemap.xml
