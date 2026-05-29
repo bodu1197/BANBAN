@@ -2,10 +2,18 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { sanitizeLinkUrl, sanitizeStoragePath } from "@/lib/url-utils";
+import { revalidateTag, revalidatePath } from "next/cache";
 
 const COLUMNS = "id, order_index, label, icon_path, link_url, is_active, updated_at";
 const TABLE = "quick_menu_items";
 const MAX_LABEL_LENGTH = 100;
+
+// 퀵메뉴 변경(추가/수정/삭제/순서)을 즉시 반영 — fetchQuickMenuItems 의 unstable_cache("banners" 태그)와
+// 홈 ISR("/") 페이지 캐시를 함께 무효화. 없으면 캐시 만료(최대 300초)까지 메인에 안 보임.
+function bustQuickMenuCache(): void {
+  revalidateTag("banners", { expire: 0 });
+  revalidatePath("/");
+}
 
 export async function GET(): Promise<NextResponse> {
   const auth = await requireAdmin();
@@ -55,6 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  bustQuickMenuCache();
   return NextResponse.json({ item: data });
 }
 
@@ -81,6 +90,7 @@ async function handleReorder(
     );
   }
 
+  bustQuickMenuCache();
   return NextResponse.json({ items: data ?? [] });
 }
 
@@ -139,6 +149,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  bustQuickMenuCache();
   return NextResponse.json({ item: data });
 }
 
@@ -153,5 +164,6 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
 
   const { error } = await auth.supabase.from(TABLE).delete().eq("id", body.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  bustQuickMenuCache();
   return NextResponse.json({ success: true });
 }
