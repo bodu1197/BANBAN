@@ -1,17 +1,17 @@
 import "server-only";
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { MessageSquare, Eye, Heart, PenSquare, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { getAlternates } from "@/lib/seo";
 import { boardLabel } from "@/lib/board/constants";
-import type { CommunityPost, PostSortType } from "@/lib/supabase/community-queries";
+import type { CommunityPost } from "@/lib/supabase/community-queries";
 import type { ReviewWithArtist, ReviewComment } from "@/lib/supabase/queries";
-import { ReviewComments } from "@/components/community/ReviewComments";
-import { formatRelativeTime } from "@/lib/utils/format-time";
 import type { BoardListItem } from "@/lib/board/queries";
+import { ReviewComments } from "@/components/community/ReviewComments";
+import { ArticleCard } from "@/components/board/ArticleCard";
+import { formatRelativeTime } from "@/lib/utils/format-time";
 
 const t = STRINGS.community;
 
@@ -24,21 +24,10 @@ export const COMMUNITY_TABS: ReadonlyArray<{ key: CommunityTabKey; label: string
   { key: "beautylab", label: t.beautyLab },
 ];
 
-const SORT_OPTIONS: ReadonlyArray<{ key: PostSortType; label: string }> = [
-  { key: "latest", label: t.latest },
-  { key: "popular", label: t.popular },
-];
-
-// 탭/정렬 검증 단일소스 — page.tsx 가 searchParams 를 안전하게 해석할 때 사용.
 const VALID_TAB_KEYS = new Set<CommunityTabKey>(COMMUNITY_TABS.map((tab) => tab.key));
-const VALID_SORTS = new Set<PostSortType>(SORT_OPTIONS.map((opt) => opt.key));
 
 export function resolveCommunityTab(raw: string | undefined): CommunityTabKey {
   return raw && VALID_TAB_KEYS.has(raw as CommunityTabKey) ? (raw as CommunityTabKey) : "shop-in-shop";
-}
-
-export function resolveCommunitySort(raw: string | undefined): PostSortType {
-  return raw && VALID_SORTS.has(raw as PostSortType) ? (raw as PostSortType) : "latest";
 }
 
 export function generateCommunityMetadata(): Metadata {
@@ -99,45 +88,21 @@ function PostCard({ post }: Readonly<{ post: CommunityPost }>): React.ReactEleme
   );
 }
 
-function SortBar({ tab, currentSort }: Readonly<{
-  tab: CommunityTabKey; currentSort: PostSortType;
-}>): React.ReactElement {
-  return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <div className="flex gap-2">
-        {SORT_OPTIONS.map((opt) => (
-          <Link
-            key={opt.key}
-            href={`/community?tab=${tab}&sort=${opt.key}`}
-            aria-current={opt.key === currentSort ? "true" : undefined}
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-              "hover:bg-brand-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              opt.key === currentSort ? "bg-brand-primary text-white" : "bg-muted text-muted-foreground",
-            )}
-          >
-            {opt.label}
-          </Link>
-        ))}
-      </div>
-      {/* 비회원에게도 노출 — 클릭 시 /community/write 가 로그인으로 유도(쓰기 권한은 로그인 필요). */}
-      <Link
-        href="/community/write"
-        className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />
-        {t.writePost}
-      </Link>
-    </div>
-  );
-}
-
-function PostBoardSection({ posts, tab, sort }: Readonly<{
-  posts: readonly CommunityPost[]; tab: CommunityTabKey; sort: PostSortType;
+function PostBoardSection({ posts, tab }: Readonly<{
+  posts: readonly CommunityPost[]; tab: CommunityTabKey;
 }>): React.ReactElement {
   return (
     <section aria-label={COMMUNITY_TABS.find((x) => x.key === tab)?.label ?? t.title}>
-      <SortBar tab={tab} currentSort={sort} />
+      {/* 글쓰기: 비회원에게도 노출 — 클릭 시 /community/write 가 로그인 유도(쓰기 권한은 로그인 필요). */}
+      <div className="flex justify-end px-4 py-3">
+        <Link
+          href="/community/write"
+          className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />
+          {t.writePost}
+        </Link>
+      </div>
       {posts.length === 0 ? (
         <p className="py-20 text-center text-sm text-muted-foreground">{t.noPosts}</p>
       ) : (
@@ -191,7 +156,7 @@ function ReviewsSection({ reviews, commentsByReview, userId }: Readonly<{
   if (!userId) {
     return (
       <div className="px-4 py-16 text-center">
-        <p className="mb-3 text-sm text-muted-foreground">로그인한 회원만 후기를 볼 수 있습니다.</p>
+        <p className="mb-3 text-sm font-medium text-foreground">로그인한 회원만 후기를 볼 수 있습니다.</p>
         <Link
           href="/login"
           className="inline-flex items-center justify-center rounded-lg bg-brand-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -218,46 +183,14 @@ function ReviewsSection({ reviews, commentsByReview, userId }: Readonly<{
   );
 }
 
-function BeautyLabCard({ article }: Readonly<{ article: BoardListItem }>): React.ReactElement {
-  return (
-    <Link
-      href={`/encyclopedia/${article.slug}`}
-      className="group flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <div className="relative aspect-[16/9] w-full bg-muted">
-        {article.cover_image_url ? (
-          <Image
-            src={article.cover_image_url}
-            alt={article.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 240px"
-            unoptimized
-          />
-        ) : null}
-      </div>
-      <div className="flex flex-1 flex-col p-3">
-        <span className="mb-1 w-fit rounded bg-brand-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-primary">
-          {article.category}
-        </span>
-        <h3 className="line-clamp-2 text-sm font-bold leading-snug text-foreground">{article.title}</h3>
-        <span className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-          <Eye className="h-3 w-3" aria-hidden="true" />
-          {article.view_count.toLocaleString()}
-        </span>
-      </div>
-    </Link>
-  );
-}
-
 function BeautyLabSection({ articles }: Readonly<{ articles: readonly BoardListItem[] }>): React.ReactElement {
   if (articles.length === 0) {
-    return <p className="py-20 text-center text-sm text-muted-foreground">준비 중입니다.</p>;
+    return <p className="py-20 text-center text-sm text-muted-foreground">아직 게시된 글이 없습니다.</p>;
   }
   return (
-    <section aria-label={t.beautyLab} className="grid grid-cols-2 gap-3 px-4 py-4 md:grid-cols-3 lg:grid-cols-4">
-      {articles.map((article) => (
-        <BeautyLabCard key={article.id} article={article} />
+    <section aria-label={t.beautyLab} className="grid grid-cols-1 gap-x-5 gap-y-8 px-4 py-6 sm:grid-cols-2 lg:grid-cols-3">
+      {articles.map((item) => (
+        <ArticleCard key={item.id} item={item} />
       ))}
     </section>
   );
@@ -269,7 +202,6 @@ interface HubProps {
   reviews: readonly ReviewWithArtist[];
   commentsByReview: ReadonlyMap<string, ReviewComment[]>;
   articles: readonly BoardListItem[];
-  sort: PostSortType;
   userId: string | null;
 }
 
@@ -279,14 +211,13 @@ function CommunityTabContent({
   reviews,
   commentsByReview,
   articles,
-  sort,
   userId,
 }: Readonly<HubProps>): React.ReactElement {
   if (activeTab === "reviews") {
     return <ReviewsSection reviews={reviews} commentsByReview={commentsByReview} userId={userId} />;
   }
   if (activeTab === "beautylab") return <BeautyLabSection articles={articles} />;
-  return <PostBoardSection posts={posts} tab={activeTab} sort={sort} />;
+  return <PostBoardSection posts={posts} tab={activeTab} />;
 }
 
 export function renderCommunityHub(props: Readonly<HubProps>): React.ReactElement {

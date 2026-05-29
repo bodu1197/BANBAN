@@ -3,7 +3,6 @@ import { getAvatarUrl } from "./storage-utils";
 
 export type PostBoardType = "SHOP_IN_SHOP" | "QNA" | "FREETALK";
 export type PostCategoryType = "BEAUTY";
-export type PostSortType = "latest" | "popular";
 
 export interface CommunityPost {
   id: string;
@@ -111,10 +110,9 @@ function mapCommentRow(row: CommentRow): PostComment {
 async function fetchCommunityPostsInternal(options: {
   typeBoard?: PostBoardType;
   typePost?: PostCategoryType;
-  sort?: PostSortType;
   limit?: number;
 }): Promise<CommunityPost[]> {
-  const { typeBoard, typePost, sort = "latest", limit = 50 } = options;
+  const { typeBoard, typePost, limit = 50 } = options;
   const supabase = createStaticClient();
 
   let query = supabase
@@ -133,11 +131,7 @@ async function fetchCommunityPostsInternal(options: {
     query = query.eq("type_post", typePost);
   }
 
-  if (sort === "popular") {
-    query = query.order("views_count", { ascending: false });
-  } else {
-    query = query.order("created_at", { ascending: false });
-  }
+  query = query.order("created_at", { ascending: false });
 
   const { data, error } = await query;
 
@@ -151,7 +145,6 @@ async function fetchCommunityPostsInternal(options: {
 export async function fetchCommunityPosts(options?: {
   typeBoard?: PostBoardType;
   typePost?: PostCategoryType;
-  sort?: PostSortType;
   limit?: number;
 }): Promise<CommunityPost[]> {
   return fetchCommunityPostsInternal(options ?? {});

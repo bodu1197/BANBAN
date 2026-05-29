@@ -15,7 +15,6 @@ import {
   renderCommunityHub,
   generateCommunityMetadata,
   resolveCommunityTab,
-  resolveCommunitySort,
 } from "@/lib/pages/community-page";
 
 export const revalidate = 30;
@@ -25,13 +24,12 @@ export function generateMetadata(): Metadata {
 }
 
 interface PageProps {
-  searchParams: Promise<{ tab?: string; sort?: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
 export default async function Page({ searchParams }: Readonly<PageProps>): Promise<React.ReactElement> {
   const params = await searchParams;
   const activeTab = resolveCommunityTab(params.tab);
-  const sort = resolveCommunitySort(params.sort);
 
   const user = await getUser();
 
@@ -46,11 +44,11 @@ export default async function Page({ searchParams }: Readonly<PageProps>): Promi
       commentsByReview = await fetchReviewCommentsByReviewIds(reviews.map((r) => r.id));
     }
   } else if (activeTab === "beautylab") {
-    // 뷰티랩 = 백과사전 글을 커뮤니티 안에서 바로 카드로 노출(클릭 시 /encyclopedia/[slug] 에서 읽기).
-    articles = (await fetchBoardList({ limit: 30 })).items;
+    // 뷰티랩 = 백과사전 글을 커뮤니티 안에서 동일 카드(/encyclopedia 와 공유)로 노출.
+    articles = (await fetchBoardList({ limit: 60 })).items;
   } else {
     const typeBoard = activeTab === "qna" ? "QNA" : "SHOP_IN_SHOP";
-    posts = await fetchCommunityPosts({ typeBoard, sort });
+    posts = await fetchCommunityPosts({ typeBoard });
   }
 
   return renderCommunityHub({
@@ -59,7 +57,6 @@ export default async function Page({ searchParams }: Readonly<PageProps>): Promi
     reviews,
     commentsByReview,
     articles,
-    sort,
     userId: user?.id ?? null,
   });
 }
