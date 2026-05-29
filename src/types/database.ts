@@ -1287,6 +1287,92 @@ export type Database = {
         }
         Relationships: []
       }
+      location_seo_pages: {
+        Row: {
+          artist_count: number
+          content: string
+          cover_image_alt: string | null
+          cover_image_url: string | null
+          created_at: string
+          excerpt: string
+          faq: Json
+          id: string
+          inline_images: Json
+          keywords: string[]
+          meta_description: string
+          meta_title: string
+          portfolio_count: number
+          published: boolean
+          published_at: string
+          reading_time_minutes: number
+          region_id: string
+          region_name: string
+          slug: string
+          style: string
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          artist_count?: number
+          content: string
+          cover_image_alt?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          excerpt: string
+          faq?: Json
+          id?: string
+          inline_images?: Json
+          keywords?: string[]
+          meta_description: string
+          meta_title: string
+          portfolio_count?: number
+          published?: boolean
+          published_at?: string
+          reading_time_minutes?: number
+          region_id: string
+          region_name: string
+          slug: string
+          style: string
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          artist_count?: number
+          content?: string
+          cover_image_alt?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          excerpt?: string
+          faq?: Json
+          id?: string
+          inline_images?: Json
+          keywords?: string[]
+          meta_description?: string
+          meta_title?: string
+          portfolio_count?: number
+          published?: boolean
+          published_at?: string
+          reading_time_minutes?: number
+          region_id?: string
+          region_name?: string
+          slug?: string
+          style?: string
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_seo_pages_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estimate_inquiries: {
         Row: {
           artist_id: string

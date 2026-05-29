@@ -7,6 +7,7 @@ import { ArrowLeft, Eye } from "lucide-react";
 import ViewCounter from "@/components/encyclopedia/ViewCounter";
 import { BoardAdminActions } from "@/components/board/BoardAdminActions";
 import { fetchBoardArticleBySlug, type BoardArticle } from "@/lib/board/queries";
+import { ArticleBody, FaqSection, WatermarkStamp } from "@/lib/pages/article-content";
 import {
   buildPageSeo,
   getBreadcrumbJsonLd,
@@ -69,121 +70,6 @@ function ArticleStructuredData({
   );
 }
 
-interface ParsedNode {
-  type: "h2" | "h3" | "p" | "img" | "br";
-  text?: string;
-  src?: string;
-  alt?: string;
-}
-
-function parseMarkdown(content: string): ParsedNode[] {
-  const lines = content.split("\n");
-  const out: ParsedNode[] = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed === "") {
-      out.push({ type: "br" });
-      continue;
-    }
-    if (trimmed.startsWith("## ")) {
-      out.push({ type: "h2", text: trimmed.replace(/^##\s+/, "") });
-      continue;
-    }
-    if (trimmed.startsWith("### ")) {
-      out.push({ type: "h3", text: trimmed.replace(/^###\s+/, "") });
-      continue;
-    }
-    const imgMatch = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(trimmed);
-    if (imgMatch) {
-      out.push({ type: "img", alt: imgMatch[1], src: imgMatch[2] });
-      continue;
-    }
-    out.push({ type: "p", text: trimmed });
-  }
-  return out;
-}
-
-function WatermarkStamp(): React.ReactElement {
-  return (
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-bold tracking-tight text-white shadow-sm backdrop-blur-sm md:text-xs"
-    >
-      반언니
-    </span>
-  );
-}
-
-function MarkdownImage({
-  src,
-  alt,
-}: Readonly<{ src: string; alt?: string }>): React.ReactElement {
-  return (
-    <figure className="my-5 overflow-hidden rounded-lg">
-      <div className="relative aspect-[4/3] w-full bg-muted">
-        <Image
-          src={src}
-          alt={alt ?? ""}
-          fill
-          className="object-cover"
-          sizes="(max-width: 767px) 100vw, 767px"
-          unoptimized
-        />
-        <WatermarkStamp />
-      </div>
-      {alt ? (
-        <figcaption className="mt-2 text-center text-xs text-muted-foreground">
-          {alt}
-        </figcaption>
-      ) : null}
-    </figure>
-  );
-}
-
-function renderNode(node: ParsedNode, key: string): React.ReactElement {
-  if (node.type === "h2") {
-    return (
-      <h2 key={key} className="mb-2 mt-6 text-base font-bold md:text-lg">
-        {node.text}
-      </h2>
-    );
-  }
-  if (node.type === "h3") {
-    return (
-      <h3 key={key} className="mb-2 mt-4 text-sm font-bold md:text-base">
-        {node.text}
-      </h3>
-    );
-  }
-  if (node.type === "img" && node.src) {
-    return <MarkdownImage key={key} src={node.src} alt={node.alt} />;
-  }
-  if (node.type === "br") {
-    return <div key={key} className="h-2" />;
-  }
-  return (
-    <p key={key} className="mb-3 text-sm leading-relaxed md:text-[15px]">
-      {node.text}
-    </p>
-  );
-}
-
-function ArticleBody({
-  article,
-}: Readonly<{ article: BoardArticle }>): React.ReactElement {
-  const nodes = parseMarkdown(article.content);
-  const coverIdx = article.cover_image_url
-    ? nodes.findIndex((n) => n.type === "img" && n.src === article.cover_image_url)
-    : -1;
-  const filtered = coverIdx >= 0 ? nodes.filter((_, i) => i !== coverIdx) : nodes;
-
-  return (
-    <div className="prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground">
-      {filtered.map((node, i) => renderNode(node, `node-${i}`))}
-    </div>
-  );
-}
-
 function buildBreadcrumbJsonLd(article: BoardArticle): string {
   return jsonLdSafe(
     getBreadcrumbJsonLd([
@@ -194,27 +80,7 @@ function buildBreadcrumbJsonLd(article: BoardArticle): string {
   );
 }
 
-function FaqSection({ faq }: Readonly<{ faq: BoardArticle["faq"] }>): React.ReactElement | null {
-  if (!faq || faq.length === 0) return null;
-  return (
-    <section className="mt-8 border-t border-border pt-6" aria-labelledby="faq-heading">
-      <h2 id="faq-heading" className="mb-4 text-base font-bold md:text-lg">자주 묻는 질문</h2>
-      <div className="space-y-2">
-        {faq.map((item, i) => (
-          <details key={`faq-${String(i)}`} className="group rounded-lg border border-border bg-card">
-            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-foreground motion-safe:transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted/50 md:text-[15px]">
-              {item.question}
-            </summary>
-            <p className="px-4 pb-4 text-sm leading-relaxed text-muted-foreground md:text-[15px]">
-              {item.answer}
-            </p>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
-
+// eslint-disable-next-line max-lines-per-function -- 페이지 오케스트레이터: JSON-LD 3종 + 커버 + 메타 헤더 + 본문 렌더 구조상 길이 불가피
 export async function renderBoardDetailPage(
   slug: string,
 ): Promise<React.ReactElement> {
@@ -262,7 +128,6 @@ export async function renderBoardDetailPage(
             height={630}
             className="h-auto w-full"
             sizes="(max-width: 767px) 100vw, 767px"
-            preload
             fetchPriority="high"
             unoptimized
           />
@@ -302,7 +167,7 @@ export async function renderBoardDetailPage(
           {article.title}
         </h1>
 
-        <ArticleBody article={article} />
+        <ArticleBody content={article.content} coverImageUrl={article.cover_image_url} />
         <FaqSection faq={article.faq} />
       </div>
     </article>

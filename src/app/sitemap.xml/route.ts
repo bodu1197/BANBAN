@@ -15,7 +15,7 @@ interface ContentEntry {
 async function getContentEntries(): Promise<ContentEntry[]> {
   const supabase = createAdminClient();
 
-  const [artists, portfolios, exhibitions, courses, posts, encyclopedia] =
+  const [artists, portfolios, exhibitions, courses, posts, encyclopedia, locationSeo] =
     await Promise.all([
       supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "active"),
       supabase.from("portfolios").select("*", { count: "exact", head: true }),
@@ -23,6 +23,7 @@ async function getContentEntries(): Promise<ContentEntry[]> {
       supabase.from("courses").select("*", { count: "exact", head: true }),
       supabase.from("posts").select("*", { count: "exact", head: true }),
       supabase.from("encyclopedia_articles").select("*", { count: "exact", head: true }).eq("published", true),
+      supabase.from("location_seo_pages").select("*", { count: "exact", head: true }).eq("published", true),
     ]);
 
   return [
@@ -32,6 +33,7 @@ async function getContentEntries(): Promise<ContentEntry[]> {
     { slug: "courses", count: courses.count ?? 0 },
     { slug: "community", count: posts.count ?? 0 },
     { slug: "encyclopedia", count: encyclopedia.count ?? 0 },
+    { slug: "location", count: locationSeo.count ?? 0 },
   ];
 }
 

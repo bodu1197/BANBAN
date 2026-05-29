@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import type { FaqItem } from "@/lib/pages/article-content";
 
 export interface BoardArticle {
   id: string;
@@ -15,7 +16,7 @@ export interface BoardArticle {
   meta_description: string;
   keywords: string[];
   tags: string[];
-  faq: { question: string; answer: string }[];
+  faq: FaqItem[];
   published: boolean;
   published_at: string;
   view_count: number;
