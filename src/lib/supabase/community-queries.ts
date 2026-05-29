@@ -1,7 +1,7 @@
 import { createStaticClient } from "./server";
 import { getAvatarUrl } from "./storage-utils";
 
-export type PostBoardType = "QNA" | "FREETALK";
+export type PostBoardType = "SHOP_IN_SHOP" | "QNA" | "FREETALK";
 export type PostCategoryType = "BEAUTY";
 export type PostSortType = "latest" | "popular" | "recommended";
 

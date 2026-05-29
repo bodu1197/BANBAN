@@ -1,5 +1,17 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { STRINGS } from "@/lib/strings";
+import { getUser } from "@/lib/supabase/auth";
+import { PostWriteClient } from "./PostWriteClient";
 
-export default function Page(): never {
-  redirect("/");
+export const metadata: Metadata = {
+  title: STRINGS.community.writePost,
+  robots: { index: false, follow: false },
+};
+
+export default async function Page(): Promise<React.ReactElement> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
+  return <PostWriteClient />;
 }

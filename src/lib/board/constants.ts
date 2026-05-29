@@ -3,6 +3,7 @@ import { STRINGS } from "@/lib/strings";
 const t = STRINGS.community;
 
 export const BOARD_LABEL_MAP: Record<string, string> = {
+  SHOP_IN_SHOP: t.shopInShop,
   PROCEDURE_REVIEW: t.procedureReview,
   COURSE_REVIEW: t.courseReview,
   QNA: t.qna,

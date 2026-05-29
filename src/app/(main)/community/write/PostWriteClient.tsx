@@ -15,8 +15,8 @@ import { createPost } from "@/lib/actions/community";
 const t = STRINGS.community;
 
 const BOARD_OPTIONS = [
-  { key: "PROCEDURE_REVIEW", label: t.procedureReview },
-  { key: "COURSE_REVIEW", label: t.courseReview },
+  { key: "SHOP_IN_SHOP", label: t.shopInShop },
+  { key: "QNA", label: t.qna },
 ] as const;
 
 function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, onFileChange }: Readonly<{

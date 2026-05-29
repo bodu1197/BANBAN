@@ -1,12 +1,48 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import {
+  fetchCommunityPosts,
+  type CommunityPost,
+} from "@/lib/supabase/community-queries";
+import { fetchAllReviews, type ReviewWithArtist } from "@/lib/supabase/queries";
+import { getUser } from "@/lib/supabase/auth";
+import {
+  renderCommunityHub,
+  generateCommunityMetadata,
+  resolveCommunityTab,
+  resolveCommunitySort,
+} from "@/lib/pages/community-page";
 
-// 커뮤니티 메뉴 보류 — 본문 페이지 비활성. Google 이 redirect 따라가서 홈을 중복
-// 인덱싱하는 것을 차단하기 위해 noindex 메타 + sitemap 에서도 제외 (static.xml).
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-};
+export const revalidate = 30;
 
-export default function Page(): never {
-  redirect("/");
+export function generateMetadata(): Metadata {
+  return generateCommunityMetadata();
+}
+
+interface PageProps {
+  searchParams: Promise<{ tab?: string; sort?: string }>;
+}
+
+export default async function Page({ searchParams }: Readonly<PageProps>): Promise<React.ReactElement> {
+  const params = await searchParams;
+  const activeTab = resolveCommunityTab(params.tab);
+  const sort = resolveCommunitySort(params.sort);
+
+  const user = await getUser();
+
+  let posts: CommunityPost[] = [];
+  let reviews: ReviewWithArtist[] = [];
+  if (activeTab === "reviews") {
+    reviews = (await fetchAllReviews({ limit: 20 })).data;
+  } else if (activeTab !== "beautylab") {
+    const typeBoard = activeTab === "qna" ? "QNA" : "SHOP_IN_SHOP";
+    posts = await fetchCommunityPosts({ typeBoard, sort });
+  }
+
+  return renderCommunityHub({
+    activeTab,
+    posts,
+    reviews,
+    sort,
+    userId: user?.id ?? null,
+  });
 }

@@ -8,6 +8,8 @@ import { containsProfanity } from "@/lib/utils/profanity-filter";
 
 const COMMUNITY_PATH = "/community";
 const PROFANITY_ERROR = "부적절한 표현이 포함되어 있습니다";
+// 글쓰기로 생성 가능한 게시판 화이트리스트(샵인샵 임대·구인 / 질문답변). 그 외 값은 QNA 로 강제.
+const ALLOWED_WRITE_BOARDS = new Set(["SHOP_IN_SHOP", "QNA"]);
 
 export interface CreateCommentResult {
   success: boolean;
@@ -185,7 +187,8 @@ export async function createPost(formData: FormData): Promise<{
 
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
-  const typeBoard = (formData.get("type_board") as string) || "QNA";
+  const rawBoard = (formData.get("type_board") as string) || "QNA";
+  const typeBoard = ALLOWED_WRITE_BOARDS.has(rawBoard) ? rawBoard : "QNA";
   const typePost = (formData.get("type_post") as string) || "BEAUTY";
   const imageUrl = (formData.get("image_url") as string) || null;
   const youtubeUrl = (formData.get("youtube_url") as string) || null;
