@@ -1,7 +1,7 @@
 // @client-reason: Swing2App JS bridge requires browser APIs (window, script injection)
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { idle } from "@/lib/idle";
 
 const SWING_IDLE_TIMEOUT_MS = 2000;
@@ -32,6 +32,9 @@ function syncLogout(): void {
 }
 
 export function Swing2AppBridge(): null {
+  // 동기화한 유저 id — Supabase 가 탭 포커스 복귀마다 SIGNED_IN 을 재발화하므로 같은 유저면 native 재로그인 스킵.
+  // useRef 사용 (useAuth 와 동일 패턴) — 리렌더/리마운트에도 보존.
+  const lastSyncedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     const ua = navigator.userAgent;
     const isSwingApp = ua.includes("swing2app") || ua.includes("Swing2App");
@@ -49,8 +52,13 @@ export function Swing2AppBridge(): null {
       void import("@/lib/supabase/client").then(({ createClient }) => {
         const supabase = createClient();
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === "SIGNED_IN" && session?.user) syncLogin(session.user as MinimalUser);
-          else if (event === "SIGNED_OUT") syncLogout();
+          if (event === "SIGNED_IN" && session?.user && session.user.id !== lastSyncedUserIdRef.current) {
+            lastSyncedUserIdRef.current = session.user.id;
+            syncLogin(session.user as MinimalUser);
+          } else if (event === "SIGNED_OUT") {
+            lastSyncedUserIdRef.current = null;
+            syncLogout();
+          }
         });
         unsubscribe = () => subscription.unsubscribe();
       });
