@@ -101,13 +101,13 @@ function LocationStats({
   return (
     <dl className="mb-5 grid grid-cols-2 gap-3">
       <div className="rounded-lg border border-border bg-card p-3 text-center">
-        <dt className="text-xs text-muted-foreground">활동 샵</dt>
+        <dt className="text-xs text-muted-foreground">반언니 등록 샵</dt>
         <dd className="mt-1 text-lg font-bold text-foreground">
           {page.artist_count.toLocaleString()}곳
         </dd>
       </div>
       <div className="rounded-lg border border-border bg-card p-3 text-center">
-        <dt className="text-xs text-muted-foreground">등록 작품</dt>
+        <dt className="text-xs text-muted-foreground">반언니 등록 작품</dt>
         <dd className="mt-1 text-lg font-bold text-foreground">
           {page.portfolio_count.toLocaleString()}개
         </dd>

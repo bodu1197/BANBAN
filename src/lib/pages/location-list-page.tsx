@@ -57,7 +57,7 @@ function LocationCard({
           </h2>
           <p className="line-clamp-2 text-sm text-muted-foreground">{item.excerpt}</p>
           <p className="mt-3 text-xs text-muted-foreground">
-            활동 샵 {item.artist_count.toLocaleString()}곳 · 작품{" "}
+            반언니 등록 샵 {item.artist_count.toLocaleString()}곳 · 작품{" "}
             {item.portfolio_count.toLocaleString()}개
           </p>
         </div>

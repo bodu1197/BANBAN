@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/encyclopedia-generate",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/location-seo-generate",
+      "schedule": "30 0 * * *"
     }
   ],
   "routes": [
