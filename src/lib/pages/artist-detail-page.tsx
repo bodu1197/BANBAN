@@ -19,6 +19,7 @@ import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
 import { getUser } from "@/lib/supabase/auth";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
+import { parseBusinessHours } from "@/types/artist-form";
 
 const DEFAULT_SHOP_BANNERS = [
   "/images/defaults/shop-banner-1.jpg",
@@ -120,10 +121,16 @@ interface BuildArtistJsonLdInput {
   avatarUrl: string | null;
   reviewCount: number;
   ratingAvg: number | undefined;
+  portfolios: ReadonlyArray<{ title: string; price: number | null }>;
 }
 
 function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeof getArtistJsonLd>[0] {
-  const { id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg } = input;
+  const { id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg, portfolios } = input;
+  // 시술 가격(Offer) + 영업시간(OpeningHours) AEO/GEO 스키마 — 추가 페칭 없이 기존 데이터 활용.
+  // slice(30): JSON-LD 비대화 방지 캡 — 포폴 최대 50개 페칭 중 대표 30개면 AEO 인용에 충분.
+  const offers = portfolios
+    .flatMap((p) => (typeof p.price === "number" && p.price > 0 ? [{ name: p.title, price: p.price }] : []))
+    .slice(0, 30);
   return {
     name: artist.title,
     description: artist.introduce,
@@ -134,6 +141,8 @@ function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeo
     longitude: artist.lon,
     rating: ratingAvg,
     reviewCount: reviewCount > 0 ? reviewCount : undefined,
+    offers: offers.length > 0 ? offers : undefined,
+    openingHours: parseBusinessHours(artist.business_hours),
   };
 }
 
@@ -175,7 +184,7 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
     : undefined;
 
   const artistJsonLd = getArtistJsonLd(buildArtistJsonLdProps({
-    id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg,
+    id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg, portfolios: portfolios ?? [],
   }));
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([

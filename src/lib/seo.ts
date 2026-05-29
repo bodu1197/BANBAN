@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { BusinessHoursMap } from "@/types/artist-form";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://banunni.com")
   .trim()
@@ -57,6 +58,8 @@ interface ArtistJsonLdInput {
   longitude?: number | null;
   rating?: number;
   reviewCount?: number;
+  offers?: ReadonlyArray<{ name: string; price: number }>;
+  openingHours?: BusinessHoursMap;
 }
 
 function buildGeoJsonLd(artist: Readonly<ArtistJsonLdInput>): Record<string, unknown> | undefined {
@@ -79,6 +82,44 @@ function buildAggregateRatingJsonLd(artist: Readonly<ArtistJsonLdInput>): Record
     };
   }
   return undefined;
+}
+
+/** 요일 키(mon~sun) → schema.org dayOfWeek. */
+const DAY_OF_WEEK_SCHEMA: Record<string, string> = {
+  mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday",
+  fri: "Friday", sat: "Saturday", sun: "Sunday",
+};
+
+function buildOpeningHoursJsonLd(hours?: BusinessHoursMap): Array<Record<string, unknown>> | undefined {
+  if (!hours) return undefined;
+  const spec: Array<Record<string, unknown>> = [];
+  for (const [day, dayName] of Object.entries(DAY_OF_WEEK_SCHEMA)) {
+    // eslint-disable-next-line security/detect-object-injection -- day 는 DAY_OF_WEEK_SCHEMA 상수 키
+    const h = hours[day];
+    if (h) {
+      spec.push({
+        "@type": "OpeningHoursSpecification",
+        // schema.org enum 정식 IRI — Google 은 URL-prefix/short name 둘 다 지원(공식문서 확인). availability/eventStatus 와 형식 통일.
+        dayOfWeek: `https://schema.org/${dayName}`,
+        opens: h.open,
+        closes: h.close,
+      });
+    }
+  }
+  return spec.length > 0 ? spec : undefined;
+}
+
+function buildMakesOfferJsonLd(
+  offers?: ReadonlyArray<{ name: string; price: number }>,
+): Array<Record<string, unknown>> | undefined {
+  if (!offers || offers.length === 0) return undefined;
+  return offers.map((o) => ({
+    "@type": "Offer",
+    name: o.name,
+    price: o.price,
+    priceCurrency: "KRW",
+    availability: "https://schema.org/InStock",
+  }));
 }
 
 /**
@@ -111,6 +152,16 @@ export function getArtistJsonLd(artist: Readonly<ArtistJsonLdInput>): Record<str
   const aggregateRating = buildAggregateRatingJsonLd(artist);
   if (aggregateRating) {
     jsonLd.aggregateRating = aggregateRating;
+  }
+
+  const openingHours = buildOpeningHoursJsonLd(artist.openingHours);
+  if (openingHours) {
+    jsonLd.openingHoursSpecification = openingHours;
+  }
+
+  const makesOffer = buildMakesOfferJsonLd(artist.offers);
+  if (makesOffer) {
+    jsonLd.makesOffer = makesOffer;
   }
 
   return jsonLd;
