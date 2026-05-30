@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient, createStaticClient } from "./server";
+import { createClient, createAdminClient } from "./server";
 import { getStorageUrl, getAvatarUrl } from "./storage-utils";
 import { escapeLikePattern } from "./query-utils";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
@@ -161,11 +161,13 @@ export async function cancelSubscription(subscriptionId: string): Promise<void> 
 
 /**
  * Get all currently active ad artists (for search/homepage display).
- * 공개 데이터만 읽으므로 cookies()가 필요 없는 createStaticClient 사용 — 호출 페이지가
- * ISR/Static 으로 prerender 가능. (cookies 사용 시 페이지가 강제 dynamic 으로 전환됨)
+ * createAdminClient(service_role) 사용 — ad_subscriptions/ad_portfolio_slots 에 anon SELECT
+ * RLS 정책이 없어 createStaticClient(anon) 로는 항상 0건이 반환됐다(= 광고가 어디에도 안 뜨던 근본 원인).
+ * service_role 도 cookies 를 안 써서 ISR/Static prerender 는 그대로 유지된다.
+ * 반환값은 활성·공개 프로모 데이터(artist_id/title/슬롯 id)뿐 — 민감정보 미포함.
  */
 export async function getActiveAdArtists(): Promise<ActiveAdArtist[]> {
-    const supabase = createStaticClient();
+    const supabase = createAdminClient();
     const now = new Date().toISOString();
 
     const { data } = await supabase
@@ -476,46 +478,75 @@ export interface AdminGrantsListResult {
     pagination: { page: number; pageSize: number; totalCount: number; totalPages: number };
 }
 
+const GRANTS_SELECT =
+    "id, artist_id, status, started_at, expires_at, duration_months, impression_count, click_count, created_at, artist:artists(id, title, profile_image_path), slots:ad_portfolio_slots(portfolio_id)";
+
+interface ListGrantsOptions {
+    page?: number;
+    pageSize?: number;
+    status?: AdSubscriptionStatus | "ALL";
+    search?: string;
+    /** 첫 로드만 true — 페이지/필터 변경 시 false 로 4쿼리 비용 절약 */
+    includeStats?: boolean;
+}
+
+/** page/pageSize/includeStats 기본값·범위 정규화 (listAdminGrants 복잡도 분리) */
+function normalizeGrantOptions(options: ListGrantsOptions): { page: number; pageSize: number; includeStats: boolean } {
+    return {
+        page: Math.max(1, options.page ?? 1),
+        pageSize: Math.max(1, Math.min(MAX_PAGE_SIZE, options.pageSize ?? GRANTS_PAGE_SIZE)),
+        includeStats: options.includeStats ?? false,
+    };
+}
+
+/** 검색 결과 0건 등 빈 목록 응답 */
+function emptyGrantsResult(page: number, pageSize: number, includeStats: boolean): AdminGrantsListResult {
+    return {
+        grants: [],
+        stats: includeStats ? { totalCount: 0, activeCount: 0, expiredCount: 0, thisMonthCount: 0 } : null,
+        pagination: { page, pageSize, totalCount: 0, totalPages: 0 },
+    };
+}
+
+/** raw 구독 row → AdminGrantRow 매핑 */
+function mapGrantRow(g: AdminGrantRowRaw): AdminGrantRow {
+    return {
+        id: g.id,
+        artistId: g.artist_id,
+        artistTitle: g.artist?.title ?? "(이름 없음)",
+        artistProfileImage: getAvatarUrl(g.artist?.profile_image_path ?? null),
+        status: g.status,
+        startedAt: g.started_at,
+        expiresAt: g.expires_at,
+        durationMonths: g.duration_months,
+        impressionCount: g.impression_count,
+        clickCount: g.click_count,
+        slotCount: (g.slots ?? []).length,
+        createdAt: g.created_at,
+    };
+}
+
 /** 관리자: 무료 부여 구독 목록 + 통계 (merchant_uid prefix `ADMIN_GRANT-` 로 필터) */
 export async function listAdminGrants(
     adminClient: SupabaseClient<Database>,
-    options: {
-        page?: number;
-        pageSize?: number;
-        status?: AdSubscriptionStatus | "ALL";
-        search?: string;
-        /** 첫 로드만 true — 페이지/필터 변경 시 false 로 4쿼리 비용 절약 */
-        includeStats?: boolean;
-    } = {},
+    options: ListGrantsOptions = {},
 ): Promise<AdminGrantsListResult> {
-    const page = Math.max(1, options.page ?? 1);
-    const pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, options.pageSize ?? GRANTS_PAGE_SIZE));
-    const includeStats = options.includeStats ?? false;
+    const { page, pageSize, includeStats } = normalizeGrantOptions(options);
 
     let searchArtistIds: string[] | null = null;
     if (options.search) {
         searchArtistIds = await resolveSearchArtistIds(adminClient, options.search);
-        if (searchArtistIds === null) {
-            return {
-                grants: [],
-                stats: includeStats ? { totalCount: 0, activeCount: 0, expiredCount: 0, thisMonthCount: 0 } : null,
-                pagination: { page, pageSize, totalCount: 0, totalPages: 0 },
-            };
-        }
+        if (searchArtistIds === null) return emptyGrantsResult(page, pageSize, includeStats);
     }
 
     let query = adminClient
         .from("ad_subscriptions")
-        .select(
-            "id, artist_id, status, started_at, expires_at, duration_months, impression_count, click_count, created_at, artist:artists(id, title, profile_image_path), slots:ad_portfolio_slots(portfolio_id)",
-            { count: "exact" },
-        )
+        .select(GRANTS_SELECT, { count: "exact" })
         .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`)
         .order("created_at", { ascending: false });
 
     if (options.status && options.status !== "ALL") query = query.eq("status", options.status);
     if (searchArtistIds) query = query.in("artist_id", searchArtistIds);
-
     query = query.range((page - 1) * pageSize, page * pageSize - 1);
 
     const [{ data: grants, count }, stats] = await Promise.all([
@@ -526,20 +557,7 @@ export async function listAdminGrants(
     const totalCount = count ?? 0;
     const rows = (grants ?? []) as unknown as AdminGrantRowRaw[];
     return {
-        grants: rows.map((g) => ({
-            id: g.id,
-            artistId: g.artist_id,
-            artistTitle: g.artist?.title ?? "(이름 없음)",
-            artistProfileImage: getAvatarUrl(g.artist?.profile_image_path ?? null),
-            status: g.status,
-            startedAt: g.started_at,
-            expiresAt: g.expires_at,
-            durationMonths: g.duration_months,
-            impressionCount: g.impression_count,
-            clickCount: g.click_count,
-            slotCount: (g.slots ?? []).length,
-            createdAt: g.created_at,
-        })),
+        grants: rows.map(mapGrantRow),
         stats,
         pagination: { page, pageSize, totalCount, totalPages: Math.ceil(totalCount / pageSize) },
     };
