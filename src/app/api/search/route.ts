@@ -3,7 +3,7 @@ import { createStaticClient } from "@/lib/supabase/server";
 import { mapPortfolioRow, type PortfolioRowWithType } from "@/lib/supabase/portfolio-common";
 import type { HomePortfolio } from "@/lib/supabase/portfolio-common";
 import { getAvatarUrl } from "@/lib/supabase/storage-utils";
-import { applyBoostToPortfolios } from "@/lib/supabase/boost-ranking";
+import { withAdInjection, AD_INJECTION_FETCH_LIMIT } from "@/lib/supabase/boost-ranking";
 
 interface ArtistResult {
   id: string;
@@ -24,13 +24,15 @@ const SELECT_PORTFOLIO = `
   artist:artists!inner(title, address, profile_image_path, type_artist, is_hide, deleted_at, region:regions(name))
 `;
 
+// 키워드 포폴 검색 — adArtistIds 를 주면 "광고 주입용"(활성 샵 + 광고 회원 한정), 아니면 일반 검색.
+// 공통 필터(가시성·판매중·title ilike)를 한 함수로 묶어 자연/광고 쿼리 중복 제거.
 async function searchPortfoliosByKeyword(
   supabase: ReturnType<typeof createStaticClient>,
   keyword: string,
-  limit: number,
+  opts: { limit: number; adArtistIds?: string[] },
 ): Promise<HomePortfolio[]> {
   const now = new Date().toISOString();
-  const { data } = await supabase
+  let q = supabase
     .from("portfolios")
     .select(SELECT_PORTFOLIO)
     .is("deleted_at", null)
@@ -38,10 +40,14 @@ async function searchPortfoliosByKeyword(
     .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
     .is("artists.deleted_at", null)
     .eq("artists.is_hide", false)
-    .ilike("title", `%${keyword}%`)
-    .order("likes_count", { ascending: false })
-    .limit(limit);
+    .ilike("title", `%${keyword}%`);
 
+  // 광고 주입용: 휴면 샵 광고 제외(status=active) + 광고 회원으로 한정
+  if (opts.adArtistIds) {
+    q = q.eq("artists.status", "active").in("artist_id", opts.adArtistIds);
+  }
+
+  const { data } = await q.order("likes_count", { ascending: false }).limit(opts.limit);
   return ((data ?? []) as PortfolioRowWithType[]).map(mapPortfolioRow);
 }
 
@@ -89,11 +95,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const supabase = createStaticClient();
 
   const [portfolios, artists] = await Promise.all([
-    searchPortfoliosByKeyword(supabase, q, 24),
+    searchPortfoliosByKeyword(supabase, q, { limit: 24 }),
     searchArtistsByKeyword(supabase, q, 12),
   ]);
 
-  const boostedPortfolios = await applyBoostToPortfolios(portfolios);
+  const boostedPortfolios = await withAdInjection(portfolios, (adIds) =>
+    searchPortfoliosByKeyword(supabase, q, { limit: AD_INJECTION_FETCH_LIMIT, adArtistIds: adIds }),
+  );
 
   const response: SearchResponse = {
     portfolios: boostedPortfolios,

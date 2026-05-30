@@ -3,7 +3,10 @@ import { getActiveAdArtists } from "./ad-queries";
 import type { HomePortfolio } from "./portfolio-common";
 import { secureRandomInt } from "@/lib/random";
 
-/** Cached active ad artist IDs (60s TTL) */
+/** 광고 주입 시 "같은 스코프"로 가져올 광고 포폴 최대 개수 (홈/검색 공통) */
+export const AD_INJECTION_FETCH_LIMIT = 12;
+
+/** Cached active ad artist IDs (60s TTL) — 노출 집계(impressions)·추천 reorder 용 */
 export const fetchBoostArtistIds = unstable_cache(
   async (): Promise<string[]> => {
     const ads = await getActiveAdArtists();
@@ -13,9 +16,93 @@ export const fetchBoostArtistIds = unstable_cache(
   { revalidate: 60, tags: ["ads"] },
 );
 
+export interface AdBoostContext {
+  /** 현재 활성 광고 회원 아티스트 ID — 각 목록 쿼리에 .in("artist_id", …) 로 결합 */
+  adArtistIds: string[];
+  /** 광고주가 선택한 슬롯(대표작) 포폴 ID — 주입 시 우선 노출 */
+  slotIds: string[];
+}
+
 /**
- * Move ad-artist items to natural-looking positions (0–2).
- * Max 2 per section. Position randomized within boost zone.
+ * 활성 광고 컨텍스트(회원 ID + 슬롯 ID). unstable_cache 로 60s 메모이즈해
+ * 한 렌더에서 여러 섹션이 호출해도 DB 1회. (Set 은 직렬화 불가 → 배열로 보관)
+ */
+export const getAdBoostContext = unstable_cache(
+  async (): Promise<AdBoostContext> => {
+    const ads = await getActiveAdArtists();
+    return {
+      adArtistIds: ads.map((a) => a.artist_id),
+      slotIds: ads.flatMap((a) => a.portfolio_ids),
+    };
+  },
+  ["ad-boost-context"],
+  { revalidate: 60, tags: ["ads"] },
+);
+
+/**
+ * 광고 회원 포폴을 목록 상단(0–2)에 "주입"한다 — 단순 재정렬이 아니라,
+ * 호출부가 "같은 스코프"로 따로 fetch 해 온 광고 포폴(adPortfolios)을 끼워넣는다.
+ * 자연 목록에 광고 회원이 원래 없어도 노출이 보장된다(부여 광고가 항상 보이게).
+ *
+ * - slotIds(광고주 선택 대표작) 우선 → 그 외 포폴
+ * - 아티스트당 최대 1개(한 광고주가 슬롯 독식 방지) + 전체 maxBoost 상한
+ * - 위치는 0–2 내 랜덤(하드코딩 광고처럼 안 보이게)
+ * - 이미 자연 목록에 포함된 포폴은 중복 제거 후 상단 재배치
+ *
+ * 주의: 주입은 "추가"라서 반환 길이가 natural 보다 최대 maxBoost 만큼 늘 수 있다(대체 아님).
+ * 소비 컴포넌트는 고정 개수를 가정하지 말 것(그리드/리스트는 가변 개수 허용).
+ */
+export function injectAdPortfolios(
+  natural: HomePortfolio[],
+  adPortfolios: HomePortfolio[],
+  slotIds: readonly string[],
+  maxBoost = 2,
+): HomePortfolio[] {
+  if (adPortfolios.length === 0) return natural;
+
+  const slotSet = new Set(slotIds);
+  // 슬롯(광고주 대표작)을 앞으로 — 슬롯이면 1, 아니면 0 으로 내림차순
+  const ordered = [...adPortfolios].sort(
+    (a, b) => (slotSet.has(b.id) ? 1 : 0) - (slotSet.has(a.id) ? 1 : 0),
+  );
+
+  const picked: HomePortfolio[] = [];
+  const usedArtists = new Set<string>();
+  for (const p of ordered) {
+    if (usedArtists.has(p.artistId)) continue;
+    usedArtists.add(p.artistId);
+    picked.push(p);
+    if (picked.length >= maxBoost) break;
+  }
+
+  const pickedIds = new Set(picked.map((p) => p.id));
+  const result = natural.filter((p) => !pickedIds.has(p.id));
+  for (const item of picked) {
+    const pos = secureRandomInt(Math.min(3, result.length + 1));
+    result.splice(pos, 0, item);
+  }
+  return result;
+}
+
+/**
+ * 목록에 광고 주입을 적용하는 오케스트레이터.
+ * fetchAds: 해당 목록과 "같은 스코프"로 광고 회원 포폴만 가져오는 호출부 클로저
+ *   (자기 쿼리에 .in("artist_id", adArtistIds) 만 더해 전달 — 카테고리/할인/지역 등 스코프 정확히 일치).
+ * 광고가 없으면 자연 목록 그대로 반환(추가 쿼리 0).
+ */
+export async function withAdInjection(
+  natural: HomePortfolio[],
+  fetchAds: (adArtistIds: string[]) => Promise<HomePortfolio[]>,
+): Promise<HomePortfolio[]> {
+  const { adArtistIds, slotIds } = await getAdBoostContext();
+  if (adArtistIds.length === 0) return natural;
+  const adPortfolios = await fetchAds(adArtistIds);
+  return injectAdPortfolios(natural, adPortfolios, slotIds);
+}
+
+/**
+ * 추천 위젯(포폴 상세) 전용 reorder — 이미 가져온 목록 안에서 광고 회원을 위로.
+ * 추천은 "현재 포폴과 유사" 맥락이라 무관 포폴 주입 대신 reorder 유지.
  */
 export function applyBoostGeneric<T>(
   items: T[],
@@ -45,22 +132,4 @@ export function applyBoostGeneric<T>(
   }
 
   return result;
-}
-
-export function applyBoost(
-  portfolios: HomePortfolio[],
-  boostIds: Set<string>,
-  maxBoost = 2,
-): HomePortfolio[] {
-  return applyBoostGeneric(portfolios, boostIds, (p) => p.artistId, maxBoost);
-}
-
-export async function applyBoostToPortfolios(portfolios: HomePortfolio[]): Promise<HomePortfolio[]> {
-  const boostIds = await fetchBoostArtistIds();
-  return applyBoost(portfolios, new Set(boostIds));
-}
-
-export async function applyBoostToRecommendations<T extends { artist_id: string }>(items: T[]): Promise<T[]> {
-  const boostIds = await fetchBoostArtistIds();
-  return applyBoostGeneric(items, new Set(boostIds), (p) => p.artist_id);
 }

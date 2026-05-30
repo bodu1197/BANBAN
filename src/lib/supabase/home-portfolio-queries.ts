@@ -10,7 +10,7 @@ import {
   mapPortfolioRow,
 } from "./portfolio-common";
 import { secureShuffle } from "@/lib/random";
-import { applyBoostToPortfolios } from "./boost-ranking";
+import { withAdInjection, AD_INJECTION_FETCH_LIMIT } from "./boost-ranking";
 
 type SupabaseInstance = Awaited<ReturnType<typeof createStaticClient>>;
 
@@ -51,6 +51,46 @@ function deduplicatePortfolios<T extends { artist_id: string; title: string }>(r
   });
 }
 
+// === Ad injection fetchers (광고 회원 포폴을 "각 섹션과 같은 스코프"로 가져옴) ===
+// 자연 목록 쿼리에 .in("artist_id", adArtistIds) 만 더해, 그 섹션 기준으로 광고 회원이
+// 노출 자격이 있는 포폴만 가져온다. withAdInjection 이 이를 상단에 주입.
+
+/** 일반 스코프(카테고리 비지정) 광고 포폴 — 자연 목록과 동일 base + modifier(정렬) 재사용 */
+async function fetchAdPortfoliosGeneric(
+  supabase: SupabaseInstance,
+  adArtistIds: string[],
+  modifier: PortfolioQueryModifier,
+): Promise<HomePortfolio[]> {
+  const now = new Date().toISOString();
+  const base = supabase
+    .from("portfolios")
+    .select(SELECT_WITH_TYPE)
+    .is("deleted_at", null)
+    .gt("price", 0)
+    .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
+    .in("artist_id", adArtistIds);
+  const { data } = await modifier(base).limit(AD_INJECTION_FETCH_LIMIT);
+  const rows = ((data ?? []) as PortfolioRowWithType[]).filter(isVisibleArtist);
+  return deduplicatePortfolios(rows).map(mapPortfolioRow);
+}
+
+/** 카테고리 스코프 광고 포폴 — 자연 목록과 동일 RPC 재사용(카테고리 정확히 일치) */
+async function fetchAdPortfoliosByCategory(
+  supabase: SupabaseInstance,
+  adArtistIds: string[],
+  categoryIds: string[],
+): Promise<HomePortfolio[]> {
+  const now = new Date().toISOString();
+  const { data } = await supabase
+    .rpc("search_portfolios_by_category_ids", { p_category_ids: categoryIds, p_type_artist: "SEMI_PERMANENT" })
+    .select(SELECT_BASIC)
+    .gt("price", 0)
+    .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
+    .in("artist_id", adArtistIds)
+    .limit(AD_INJECTION_FETCH_LIMIT);
+  return deduplicatePortfolios((data ?? []) as PortfolioRow[]).map(mapPortfolioRow);
+}
+
 async function fetchPortfolios(
   modifier: PortfolioQueryModifier,
   limit: number,
@@ -81,7 +121,7 @@ async function fetchPortfolios(
 
   const deduplicated = deduplicatePortfolios(rows);
   const mapped = deduplicated.slice(0, limit).map(mapPortfolioRow);
-  return applyBoostToPortfolios(mapped);
+  return withAdInjection(mapped, (ids) => fetchAdPortfoliosGeneric(supabase, ids, modifier));
 }
 
 // === Section 4: Lowest Price Portfolios ===
@@ -161,7 +201,23 @@ export async function fetchTimeSalePortfolios(limit = 10): Promise<HomePortfolio
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
       const mapped = rows.slice(0, limit).map(mapPortfolioRow);
-      return applyBoostToPortfolios(mapped);
+      return withAdInjection(mapped, async (adIds) => {
+        // 광고 회원 ∩ 유효 SEMI 아티스트 — 타임세일 조건(할인+판매중) 동일 적용
+        const validAdIds = adIds.filter((id) => artistIds.includes(id));
+        if (validAdIds.length === 0) return [];
+        const { data: adData } = await supabase
+          .from("portfolios")
+          .select(SELECT_BASIC)
+          .is("deleted_at", null)
+          .gt("price", 0)
+          .gt("discount_rate", 0)
+          .in("artist_id", validAdIds)
+          .not("sale_ended_at", "is", null)
+          .gte("sale_ended_at", now)
+          .order("sale_ended_at", { ascending: true })
+          .limit(AD_INJECTION_FETCH_LIMIT);
+        return deduplicatePortfolios((adData ?? []) as PortfolioRow[]).map(mapPortfolioRow);
+      });
     },
     [`home-time-sale-portfolios-${limit}`],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -198,7 +254,20 @@ export async function fetchDiscountPortfolios(options?: {
         .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at)
         .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "SEMI_PERMANENT" }));
       const shuffled = secureShuffle(filtered).slice(0, limit);
-      return applyBoostToPortfolios(shuffled);
+      return withAdInjection(shuffled, async (adIds) => {
+        const { data: adData } = await supabase
+          .from("portfolios")
+          .select(SELECT_WITH_TYPE)
+          .is("deleted_at", null)
+          .gt("price", 0)
+          .gt("discount_rate", 0)
+          .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
+          .in("artist_id", adIds)
+          .limit(AD_INJECTION_FETCH_LIMIT);
+        return ((adData ?? []) as PortfolioRowWithType[])
+          .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at)
+          .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "SEMI_PERMANENT" }));
+      });
     },
     ["discount-portfolios"],
     { revalidate: 60, tags: ["portfolios"] },
@@ -242,7 +311,7 @@ export async function fetchLipPortfolios(limit = 10): Promise<HomePortfolio[]> {
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
       const mapped = secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
-      return applyBoostToPortfolios(mapped);
+      return withAdInjection(mapped, (ids) => fetchAdPortfoliosByCategory(supabase, ids, LIP_CATEGORY_IDS));
     },
     ["home-lip-portfolios"],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -269,7 +338,7 @@ export async function fetchEyebrowPortfolios(limit = 8): Promise<HomePortfolio[]
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
       const mapped = secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
-      return applyBoostToPortfolios(mapped);
+      return withAdInjection(mapped, (ids) => fetchAdPortfoliosByCategory(supabase, ids, EYEBROW_CATEGORY_IDS));
     },
     ["home-eyebrow-portfolios"],
     { revalidate: 60, tags: ["home", "portfolios"] },
@@ -301,7 +370,7 @@ export async function fetchMensEyebrowPortfolios(limit = 10): Promise<HomePortfo
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRow[]);
       const mapped = secureShuffle(rows).slice(0, limit).map(mapPortfolioRow);
-      return applyBoostToPortfolios(mapped);
+      return withAdInjection(mapped, (ids) => fetchAdPortfoliosByCategory(supabase, ids, MENS_EYEBROW_CATEGORY_IDS));
     },
     ["home-mens-eyebrow-portfolios"],
     { revalidate: 30, tags: ["home", "portfolios"] },

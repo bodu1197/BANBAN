@@ -2,7 +2,8 @@ import { createStaticClient } from "./server";
 import { toCategoryType } from "@/types/portfolio-search";
 import type { PortfolioSearchParams, PortfolioSearchResult, CategoryItem } from "@/types/portfolio-search";
 import type { Region } from "@/types/database";
-import { type PortfolioRowWithType, mapPortfolioRow } from "./portfolio-common";
+import { type PortfolioRowWithType, type HomePortfolio, mapPortfolioRow } from "./portfolio-common";
+import { withAdInjection, AD_INJECTION_FETCH_LIMIT } from "./boost-ranking";
 import { secureShuffle } from "@/lib/random";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -174,6 +175,33 @@ function buildCategoryRpcParams(categoryIds: string[], typeArtist: string, regio
   return params;
 }
 
+/** 광고 회원의 "현재 필터(카테고리/지역/가격)와 동일 스코프" 포폴 — 검색 자연 쿼리 그대로 + .in(artist). */
+async function fetchAdSearchPortfolios(opts: {
+  supabase: DbClient;
+  typeArtist: string;
+  regionIds: string[] | null;
+  categoryIds: string[];
+  priceMin: number | null | undefined;
+  priceMax: number | null | undefined;
+  isCategorySearch: boolean;
+  nowISO: string;
+  adArtistIds: string[];
+}): Promise<HomePortfolio[]> {
+  const { supabase, typeArtist, regionIds, categoryIds, priceMin, priceMax, isCategorySearch, nowISO, adArtistIds } = opts;
+  let adQuery;
+  if (isCategorySearch) {
+    const rpcParams = buildCategoryRpcParams(categoryIds, typeArtist, regionIds);
+    adQuery = supabase.rpc("search_portfolios_by_category_ids", rpcParams).select(SELECT_JOINED)
+      .gt("price", 0)
+      .or(`sale_ended_at.is.null,sale_ended_at.gte.${nowISO}`);
+  } else {
+    adQuery = applyBaseArtistFilters(supabase.from("portfolios").select(SELECT_JOINED), typeArtist, regionIds);
+  }
+  adQuery = applyPriceFilters(adQuery, priceMin, priceMax);
+  const { data } = await adQuery.in("artist_id", adArtistIds).limit(AD_INJECTION_FETCH_LIMIT);
+  return ((data ?? []) as PortfolioRowWithType[]).map(mapPortfolioRow);
+}
+
 async function executePortfolioQuery(
   opts: ExecutePortfolioQueryOptions,
 ): Promise<PortfolioSearchResult> {
@@ -210,6 +238,16 @@ async function executePortfolioQuery(
 
   if (isRandom) {
     portfolios = shuffleArray(portfolios).slice(0, limit);
+  }
+
+  // 광고 주입: 첫 페이지(offset 0)에만 — 더보기 페이지마다 반복 노출 방지.
+  // 같은 필터 스코프로 광고 회원 포폴을 따로 fetch 해 상단 삽입(자연 순위 밖이어도 노출 보장).
+  if (offset === 0) {
+    portfolios = await withAdInjection(portfolios, (adArtistIds) =>
+      fetchAdSearchPortfolios({
+        supabase, typeArtist, regionIds, categoryIds, priceMin, priceMax, isCategorySearch, nowISO, adArtistIds,
+      }),
+    );
   }
 
   return {

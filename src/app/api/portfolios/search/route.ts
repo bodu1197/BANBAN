@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { searchPortfolios } from "@/lib/supabase/portfolio-search-queries";
-import { applyBoostToPortfolios } from "@/lib/supabase/boost-ranking";
 import { MAX_LIMIT } from "@/lib/constants";
 import { parsePagination } from "@/lib/api-helpers";
 import type { PortfolioSortOption, PortfolioSearchParams } from "@/types/portfolio-search";
@@ -51,9 +50,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "typeArtist must be SEMI_PERMANENT" }, { status: 400 });
   }
 
+  // 광고 주입은 searchPortfolios(executePortfolioQuery) 내부에서 첫 페이지에 적용됨 — 여기서 중복 처리 안 함
   const result = await searchPortfolios(params);
-  const boostedPortfolios = await applyBoostToPortfolios(result.portfolios);
-  return NextResponse.json({ ...result, portfolios: boostedPortfolios }, {
+  return NextResponse.json(result, {
     headers: { "Cache-Control": `public, s-maxage=${PORTFOLIO_SEARCH_CACHE_TTL}, stale-while-revalidate=120` },
   });
 }
