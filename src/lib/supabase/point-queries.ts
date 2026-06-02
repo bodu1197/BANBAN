@@ -1,5 +1,5 @@
 import { createAdminClient } from "./server";
-import type { PointWallet, PointTransaction, PointTransactionType, PointReason } from "@/types/ads";
+import type { PointWallet, PointTransaction, PointReason } from "@/types/ads";
 import { todayStartKST } from "@/lib/utils/format";
 
 // ─── Artist Type Helper ────────────────────────────────
@@ -71,39 +71,26 @@ interface EarnPointsParams {
     referenceId?: string;
 }
 
-/** Earn points — adds to wallet balance and creates transaction */
+/**
+ * Earn points — 원자적 RPC(earn_points)로 잔액 증가 + 거래 기록.
+ * 기존 read-modify-write(절대값 할당)는 동시요청 시 lost-update 발생 → 원자적 증감으로 교체.
+ */
 export async function earnPoints(params: EarnPointsParams): Promise<PointTransaction> {
     const { userId, amount, reason, description, expiresAt, referenceId } = params;
-    const wallet = await getOrCreateWallet(userId);
     const supabase = createAdminClient();
 
-    // Create transaction
-    const { data: tx, error: txError } = await supabase
-        .from("point_transactions")
-        .insert({
-            wallet_id: wallet.id,
-            type: "EARN" as PointTransactionType,
-            amount,
-            reason,
-            description: description ?? null,
-            expires_at: expiresAt ?? null,
-            reference_id: referenceId ?? null,
-        })
-        .select()
-        .single();
+    const { data, error } = await supabase.rpc("earn_points", {
+        p_user_id: userId,
+        p_amount: amount,
+        p_reason: reason,
+        p_description: description ?? null,
+        p_expires_at: expiresAt ?? null,
+        p_reference_id: referenceId ?? null,
+    });
 
-    if (txError) throw new Error(`Failed to create transaction: ${txError.message}`);
-
-    // Update wallet balance
-    await supabase
-        .from("point_wallets")
-        .update({
-            balance: wallet.balance + amount,
-            total_earned: wallet.total_earned + amount,
-            updated_at: new Date().toISOString(),
-        })
-        .eq("id", wallet.id);
-
+    if (error) throw new Error(`Failed to earn points: ${error.message}`);
+    const tx = data?.[0];
+    if (!tx) throw new Error("Failed to earn points: no transaction returned");
     return tx as PointTransaction;
 }
 
@@ -115,43 +102,28 @@ interface SpendPointsParams {
     referenceId?: string;
 }
 
-/** Spend points — deducts from wallet balance */
+/**
+ * Spend points — 원자적 RPC(spend_points)로 잔액 충분 시에만 차감 + 거래 기록.
+ * 행 잠금 + 가드된 상대 차감이라 동시요청에도 더블스펜드/음수잔액 불가. 부족하면 INSUFFICIENT_POINTS.
+ */
 export async function spendPoints(params: SpendPointsParams): Promise<PointTransaction> {
     const { userId, amount, reason, description, referenceId } = params;
-    const wallet = await getOrCreateWallet(userId);
-
-    if (wallet.balance < amount) {
-        throw new Error("INSUFFICIENT_POINTS");
-    }
-
     const supabase = createAdminClient();
 
-    // Create transaction (negative amount)
-    const { data: tx, error: txError } = await supabase
-        .from("point_transactions")
-        .insert({
-            wallet_id: wallet.id,
-            type: "SPEND" as PointTransactionType,
-            amount: -amount,
-            reason,
-            description: description ?? null,
-            reference_id: referenceId ?? null,
-        })
-        .select()
-        .single();
+    const { data, error } = await supabase.rpc("spend_points", {
+        p_user_id: userId,
+        p_amount: amount,
+        p_reason: reason,
+        p_description: description ?? null,
+        p_reference_id: referenceId ?? null,
+    });
 
-    if (txError) throw new Error(`Failed to create transaction: ${txError.message}`);
-
-    // Update wallet balance
-    await supabase
-        .from("point_wallets")
-        .update({
-            balance: wallet.balance - amount,
-            total_spent: wallet.total_spent + amount,
-            updated_at: new Date().toISOString(),
-        })
-        .eq("id", wallet.id);
-
+    if (error) {
+        if (error.message.includes("INSUFFICIENT_POINTS")) throw new Error("INSUFFICIENT_POINTS");
+        throw new Error(`Failed to spend points: ${error.message}`);
+    }
+    const tx = data?.[0];
+    if (!tx) throw new Error("Failed to spend points: no transaction returned");
     return tx as PointTransaction;
 }
 

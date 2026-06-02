@@ -3216,6 +3216,49 @@ export type Database = {
         Returns: undefined
       }
       delete_user_account: { Args: never; Returns: undefined }
+      earn_points: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_reason: string
+          p_description?: string | null
+          p_expires_at?: string | null
+          p_reference_id?: string | null
+        }
+        Returns: {
+          id: string
+          wallet_id: string
+          type: string
+          amount: number
+          reason: string
+          description: string | null
+          expires_at: string | null
+          expired: boolean
+          reference_id: string | null
+          created_at: string
+        }[]
+      }
+      spend_points: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_reason: string
+          p_description?: string | null
+          p_reference_id?: string | null
+        }
+        Returns: {
+          id: string
+          wallet_id: string
+          type: string
+          amount: number
+          reason: string
+          description: string | null
+          expires_at: string | null
+          expired: boolean
+          reference_id: string | null
+          created_at: string
+        }[]
+      }
       get_artist_ids_with_portfolio: {
         Args: never
         Returns: {
