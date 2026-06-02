@@ -1,6 +1,10 @@
 import { Client } from 'pg';
+import dotenv from 'dotenv';
 
-const connectionString = "postgresql://postgres.bhcascuuecgwlxujtpkx:chl1197dbA%21%40@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres";
+dotenv.config({ path: '.env.local' });
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error('DATABASE_URL is required (set it in .env.local)');
 
 async function main() {
     const client = new Client({ connectionString });
