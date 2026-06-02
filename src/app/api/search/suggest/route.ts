@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createStaticClient } from "@/lib/supabase/server";
+import { escapeLikePattern } from "@/lib/supabase/query-utils";
 import { isChoseongQuery, buildChoseongRegex } from "@/lib/utils/hangul";
 
 interface SuggestItem {
@@ -24,7 +25,7 @@ function applyFilter(query: ReturnType<SupabaseClient["from"]>, q: string, isCho
   if (isChosung) {
     query.filter("title", "~", buildChoseongRegex(q));
   } else {
-    query.ilike("title", `%${q}%`);
+    query.ilike("title", `%${escapeLikePattern(q)}%`);
   }
 }
 

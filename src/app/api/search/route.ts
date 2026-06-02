@@ -3,6 +3,7 @@ import { createStaticClient } from "@/lib/supabase/server";
 import { mapPortfolioRow, type PortfolioRowWithType } from "@/lib/supabase/portfolio-common";
 import type { HomePortfolio } from "@/lib/supabase/portfolio-common";
 import { getAvatarUrl } from "@/lib/supabase/storage-utils";
+import { escapeLikePattern } from "@/lib/supabase/query-utils";
 import { withAdInjection, AD_INJECTION_FETCH_LIMIT } from "@/lib/supabase/boost-ranking";
 
 interface ArtistResult {
@@ -40,7 +41,7 @@ async function searchPortfoliosByKeyword(
     .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
     .is("artists.deleted_at", null)
     .eq("artists.is_hide", false)
-    .ilike("title", `%${keyword}%`);
+    .ilike("title", `%${escapeLikePattern(keyword)}%`);
 
   // 광고 주입용: 휴면 샵 광고 제외(status=active) + 광고 회원으로 한정
   if (opts.adArtistIds) {
@@ -62,7 +63,7 @@ async function searchArtistsByKeyword(
     .is("deleted_at", null)
     .eq("is_hide", false)
     .eq("status", "active")
-    .ilike("title", `%${keyword}%`)
+    .ilike("title", `%${escapeLikePattern(keyword)}%`)
     .order("likes_count", { ascending: false })
     .limit(limit);
 

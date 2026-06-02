@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { CLIP_URL } from "@/lib/ai-client";
 import { getUser } from "@/lib/supabase/auth";
-import { getStorageUrl } from "@/lib/supabase/storage-utils";
+import { getStorageUrl, isSafeStoragePath } from "@/lib/supabase/storage-utils";
 import pg from "pg";
 
 export const maxDuration = 30;
@@ -46,6 +46,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         if (!mediaId || !storagePath) {
             return NextResponse.json({ error: "mediaId and storagePath are required" }, { status: 400 });
+        }
+        // SSRF 방어: storagePath 는 버킷 상대 경로만 허용(절대 URL/스킴/traversal 거부).
+        // getStorageUrl 는 절대 URL 을 그대로 통과시키므로 fetch 전에 검증 필수.
+        if (!isSafeStoragePath(storagePath)) {
+            return NextResponse.json({ error: "invalid storagePath" }, { status: 400 });
         }
 
         const imageUrl = getStorageUrl(storagePath) ?? "";

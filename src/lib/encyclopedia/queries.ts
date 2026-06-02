@@ -2,6 +2,7 @@ import "server-only";
 import path from "path";
 import sharp from "sharp";
 import { createAdminClient } from "@/lib/supabase/server";
+import { escapeLikePattern } from "@/lib/supabase/query-utils";
 import type { Database } from "@/types/database";
 
 export async function fetchPublishedTopicIds(): Promise<Set<number>> {
@@ -281,7 +282,7 @@ async function findCategoryPortfolioIds(
   gender: "여성" | "남성",
 ): Promise<string[]> {
   const [catResult, genderIds] = await Promise.all([
-    supabase.from("categories").select("id").ilike("name", `%${cleaned}%`).limit(10),
+    supabase.from("categories").select("id").ilike("name", `%${escapeLikePattern(cleaned)}%`).limit(10),
     getGenderCategoryIds(supabase, gender),
   ]);
   const catRows = catResult.data as { id: string }[] | null;

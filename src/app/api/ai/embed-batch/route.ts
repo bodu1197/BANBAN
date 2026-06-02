@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CLIP_URL } from "@/lib/ai-client";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
-import { getStorageUrl } from "@/lib/supabase/storage-utils";
+import { getStorageUrl, isSafeStoragePath } from "@/lib/supabase/storage-utils";
 import pg from "pg";
 
 /** Allow up to 300s for batch embedding processing */
@@ -100,6 +100,8 @@ async function embedChunk(chunk: MediaItem[]): Promise<{ processed: number; fail
         // 1) 모든 임베딩을 병렬로 (CLIP 서버 호출이 가장 큰 비용 — 네트워크 latency 병렬화 효과 큼)
         const results = await Promise.all(
             chunk.map(async (item) => {
+                // SSRF 방어: 안전한 버킷 상대 경로만 fetch (절대 URL/스킴 거부).
+                if (!isSafeStoragePath(item.storage_path)) return { item, emb: null };
                 const url = getStorageUrl(item.storage_path) ?? "";
                 const emb = await embedOne(url);
                 return { item, emb };
