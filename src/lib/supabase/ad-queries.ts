@@ -192,41 +192,27 @@ export async function getActiveAdArtists(): Promise<ActiveAdArtist[]> {
     }));
 }
 
-// ─── Ad Events ───────────────────────────────────────────
+// ─── Ad Events (통계 단일 진실 소스) ──────────────────────
 
-/** Record an ad impression or click */
-export async function recordAdEvent(params: {
-    subscriptionId: string;
-    eventType: "IMPRESSION" | "CLICK";
-    placement: string;
-    pagePath?: string;
-}): Promise<void> {
-    const supabase = await createClient();
+/**
+ * 구독별 노출(IMPRESSION)/클릭(CLICK) 수를 ad_events 에서 직접 집계한다.
+ * ad_events 가 광고 통계의 단일 진실 소스 — 레거시 카운터 컬럼(impression_count 등)은 더 이상 읽지 않는다.
+ * (노출/클릭 기록은 lib/supabase/ad-events.ts recordAdPortfolioEvents 가 ad_events 에 적재.)
+ * 집계값은 비민감이므로 service_role 로 호출해 sparse RLS 를 우회한다.
+ */
+export async function getAdEventCounts(
+    subscriptionIds: string[],
+): Promise<Map<string, { impressions: number; clicks: number }>> {
+    const map = new Map<string, { impressions: number; clicks: number }>();
+    if (subscriptionIds.length === 0) return map;
 
-    await supabase
-        .from("ad_events")
-        .insert({
-            subscription_id: params.subscriptionId,
-            event_type: params.eventType,
-            placement: params.placement,
-            page_path: params.pagePath ?? null,
-        });
+    const { data } = await createAdminClient()
+        .rpc("ad_event_counts", { p_subscription_ids: subscriptionIds });
 
-    const field = params.eventType === "CLICK" ? "click_count" : "impression_count";
-    const { data: sub } = await supabase
-        .from("ad_subscriptions")
-        .select(field)
-        .eq("id", params.subscriptionId)
-        .single();
-
-    if (sub) {
-        // eslint-disable-next-line security/detect-object-injection -- Safe: known key lookup
-        const currentCount = (sub as Record<string, number>)[field] ?? 0;
-        await supabase
-            .from("ad_subscriptions")
-            .update({ [field]: currentCount + 1 })
-            .eq("id", params.subscriptionId);
+    for (const row of data ?? []) {
+        map.set(row.subscription_id, { impressions: row.impressions, clicks: row.clicks });
     }
+    return map;
 }
 
 // ─── Expiration Cron ─────────────────────────────────────
@@ -478,8 +464,9 @@ export interface AdminGrantsListResult {
     pagination: { page: number; pageSize: number; totalCount: number; totalPages: number };
 }
 
+// impression/click 은 ad_subscriptions 컬럼이 아니라 ad_events 집계(getAdEventCounts)에서 채운다.
 const GRANTS_SELECT =
-    "id, artist_id, status, started_at, expires_at, duration_months, impression_count, click_count, created_at, artist:artists(id, title, profile_image_path), slots:ad_portfolio_slots(portfolio_id)";
+    "id, artist_id, status, started_at, expires_at, duration_months, created_at, artist:artists(id, title, profile_image_path), slots:ad_portfolio_slots(portfolio_id)";
 
 interface ListGrantsOptions {
     page?: number;
@@ -508,8 +495,8 @@ function emptyGrantsResult(page: number, pageSize: number, includeStats: boolean
     };
 }
 
-/** raw 구독 row → AdminGrantRow 매핑 */
-function mapGrantRow(g: AdminGrantRowRaw): AdminGrantRow {
+/** raw 구독 row → AdminGrantRow 매핑 (노출/클릭은 ad_events 집계값을 주입) */
+function mapGrantRow(g: AdminGrantRowRaw, counts?: { impressions: number; clicks: number }): AdminGrantRow {
     return {
         id: g.id,
         artistId: g.artist_id,
@@ -519,8 +506,8 @@ function mapGrantRow(g: AdminGrantRowRaw): AdminGrantRow {
         startedAt: g.started_at,
         expiresAt: g.expires_at,
         durationMonths: g.duration_months,
-        impressionCount: g.impression_count,
-        clickCount: g.click_count,
+        impressionCount: counts?.impressions ?? 0,
+        clickCount: counts?.clicks ?? 0,
         slotCount: (g.slots ?? []).length,
         createdAt: g.created_at,
     };
@@ -556,8 +543,9 @@ export async function listAdminGrants(
 
     const totalCount = count ?? 0;
     const rows = (grants ?? []) as unknown as AdminGrantRowRaw[];
+    const counts = await getAdEventCounts(rows.map((r) => r.id));
     return {
-        grants: rows.map(mapGrantRow),
+        grants: rows.map((r) => mapGrantRow(r, counts.get(r.id))),
         stats,
         pagination: { page, pageSize, totalCount, totalPages: Math.ceil(totalCount / pageSize) },
     };
@@ -638,8 +626,6 @@ interface AdminGrantRowRaw {
     started_at: string | null;
     expires_at: string | null;
     duration_months: number;
-    impression_count: number;
-    click_count: number;
     slots?: { portfolio_id: string }[];
     created_at: string;
 }

@@ -3116,6 +3116,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ad_event_counts: {
+        Args: { p_subscription_ids: string[] }
+        Returns: { subscription_id: string; impressions: number; clicks: number }[]
+      }
       analytics_daily: {
         Args: never
         Returns: {

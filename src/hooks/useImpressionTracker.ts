@@ -11,6 +11,24 @@ const MAX_SEEN = 5000;
 const IDLE_TIMEOUT_MS = 3000;
 const PORTFOLIO_HREF_RE = /^\/portfolios\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
+/** 광고 클릭 비콘 — 클릭된 /portfolios/{id} 를 서버로 전송(서버가 광고 여부 판정). sendBeacon 은 페이지 이동 중에도 보장. */
+function beaconAdClick(link: Element, placement: string): void {
+    const match = (link.getAttribute("href") ?? "").match(PORTFOLIO_HREF_RE);
+    if (!match) return;
+    const pagePath = (globalThis.location?.pathname ?? "").split("?")[0];
+    const payload = JSON.stringify({ portfolioIds: [match[1]], placement, pagePath });
+    if (globalThis.navigator?.sendBeacon) {
+        globalThis.navigator.sendBeacon("/api/ads/clicks", new Blob([payload], { type: "application/json" }));
+        return;
+    }
+    fetch("/api/ads/clicks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true,
+    }).catch(() => { /* non-fatal tracking */ });
+}
+
 export function useImpressionTracker(placement: string): React.RefObject<HTMLDivElement | null> {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const seenRef = useRef(new Set<string>());
@@ -34,6 +52,14 @@ export function useImpressionTracker(placement: string): React.RefObject<HTMLDiv
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
+
+        // 광고 클릭 기록: 컨테이너 내 /portfolios/{id} 링크 클릭을 비콘 전송(서버가 광고 여부 판정).
+        const onClick = (e: MouseEvent): void => {
+            const target = e.target instanceof Element ? e.target : null;
+            const link = target?.closest('a[href^="/portfolios/"]');
+            if (link) beaconAdClick(link, placement);
+        };
+        container.addEventListener("click", onClick, true);
 
         let io: IntersectionObserver | null = null;
         let mo: MutationObserver | null = null;
@@ -77,7 +103,8 @@ export function useImpressionTracker(placement: string): React.RefObject<HTMLDiv
             const observeLinks = (): void => {
                 // cancelled guard: cleanup 이후 debounce 타이머가 fire 했을 때 disconnected IO 에 observe 호출 방지
                 if (cancelled || !io) return;
-                container.querySelectorAll('a[href^="/portfolios/"]').forEach((el) => io!.observe(el));
+                const obs = io;
+                container.querySelectorAll('a[href^="/portfolios/"]').forEach((el) => obs.observe(el));
             };
 
             observeLinks();
@@ -91,6 +118,7 @@ export function useImpressionTracker(placement: string): React.RefObject<HTMLDiv
 
         return () => {
             cancelled = true;
+            container.removeEventListener("click", onClick, true);
             io?.disconnect();
             mo?.disconnect();
             if (debounceTimer) clearTimeout(debounceTimer);
@@ -100,7 +128,7 @@ export function useImpressionTracker(placement: string): React.RefObject<HTMLDiv
             }
             flush();
         };
-    }, [flush]);
+    }, [flush, placement]);
 
     return containerRef;
 }
