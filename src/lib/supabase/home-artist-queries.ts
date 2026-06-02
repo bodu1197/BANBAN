@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { createStaticClient } from "./server";
 import { getAvatarUrl, getArtistIdsWithPortfolio } from "./queries";
 import { getStorageUrl } from "./storage-utils";
+import { fetchBoostArtistIds } from "./boost-ranking";
 import { secureShuffle } from "@/lib/random";
 
 type SupabaseInstance = Awaited<ReturnType<typeof createStaticClient>>;
@@ -21,6 +22,8 @@ export interface HomeArtist {
   typeArtist: "SEMI_PERMANENT";
   profileImage: string | null;
   portfolioImage: string | null;
+  /** 광고 집행 중인 회원 여부(인기 아티스트 우선 노출용). 미설정이면 일반 회원. */
+  isAd?: boolean;
 }
 
 export interface ReviewedArtist extends HomeArtist {
@@ -113,23 +116,48 @@ const shuffleArray = secureShuffle;
 
 // === Section 1: Popular Artists ===
 
+/** 광고 회원(인기순 풀 밖일 수 있음)을 id 로 직접 조회해 카드 데이터로 매핑(ARTIST_SELECT/mapArtistRow 재사용). */
+async function fetchAdArtistsByIds(
+  supabase: SupabaseInstance,
+  ids: string[],
+  typeArtist: ArtistTypeFilter,
+): Promise<HomeArtist[]> {
+  if (ids.length === 0) return [];
+  const { data } = await supabase
+    .from("artists")
+    .select(ARTIST_SELECT)
+    .in("id", ids)
+    .is("deleted_at", null)
+    .eq("is_hide", false)
+    .eq("status", "active")
+    .eq("type_artist", typeArtist);
+
+  return ((data ?? []) as ArtistRow[]).map((a) => ({
+    ...mapArtistRow(a, null, getAvatarUrl(a.profile_image_path)),
+    isAd: true,
+  }));
+}
+
 async function fetchPopularArtistsInternal(options?: {
   typeArtist?: ArtistTypeFilter;
   limit?: number;
+  prioritizeAds?: boolean;
 }): Promise<HomeArtist[]> {
-  const { typeArtist = "SEMI_PERMANENT", limit = 6 } = options ?? {};
+  const { typeArtist = "SEMI_PERMANENT", limit = 6, prioritizeAds = false } = options ?? {};
   const supabase = createStaticClient();
 
-  const { data, error } = await supabase.rpc("get_popular_artists_with_portfolio", {
-    p_type_artist: typeArtist,
-    p_limit: limit * 3,
-  });
+  // 인기 풀 RPC 와 광고주 id 조회는 서로 독립 → 병렬로 받아 캐시 미스 시 워터폴 제거.
+  const [poolRes, adIdList] = await Promise.all([
+    supabase.rpc("get_popular_artists_with_portfolio", { p_type_artist: typeArtist, p_limit: limit * 3 }),
+    prioritizeAds ? fetchBoostArtistIds() : Promise.resolve<string[]>([]),
+  ]);
 
+  const { data, error } = poolRes;
   if (error) {
     throw new Error(`Failed to fetch popular artists: ${error.message}`);
   }
 
-  const mapped = ((data ?? []) as Array<{
+  const mapped: HomeArtist[] = ((data ?? []) as Array<{
     id: string; title: string; description: string; introduce: string;
     address: string; likes_count: number; lat: number | null; lon: number | null;
     type_artist: string; profile_image_path: string | null;
@@ -149,22 +177,37 @@ async function fetchPopularArtistsInternal(options?: {
     portfolioImage: null,
   }));
 
-  return shuffleArray(mapped).slice(0, limit);
+  if (!prioritizeAds) return shuffleArray(mapped).slice(0, limit);
+
+  // 광고 회원 우선: 인기 풀의 광고주 + 풀 밖 광고주(직접 조회)를 앞쪽에 배치. 그룹 내부는 셔플.
+  const adIds = new Set(adIdList);
+  if (adIds.size === 0) return shuffleArray(mapped).slice(0, limit);
+
+  const adInPool = mapped.filter((a) => adIds.has(a.id)).map((a) => ({ ...a, isAd: true }));
+  const nonAd = mapped.filter((a) => !adIds.has(a.id));
+
+  const presentAdIds = new Set(adInPool.map((a) => a.id));
+  const missingAdIds = [...adIds].filter((id) => !presentAdIds.has(id));
+  const missingAd = await fetchAdArtistsByIds(supabase, missingAdIds, typeArtist);
+
+  const ads = shuffleArray([...adInPool, ...missingAd]);
+  const rest = shuffleArray(nonAd);
+  return [...ads, ...rest].slice(0, limit);
 }
 
 export async function fetchPopularArtists(options?: {
   typeArtist?: ArtistTypeFilter;
   limit?: number;
+  prioritizeAds?: boolean;
 }): Promise<HomeArtist[]> {
-  const { typeArtist, limit = 6 } = options ?? {};
-  const cacheKey = typeArtist
-    ? `home-popular-artists-${typeArtist}`
-    : "home-popular-artists";
+  const { typeArtist, limit = 6, prioritizeAds = false } = options ?? {};
+  const cacheKey = `home-popular-artists-${typeArtist ?? "default"}-${limit}-${prioritizeAds ? "ads" : "plain"}`;
 
   return unstable_cache(
-    () => fetchPopularArtistsInternal({ typeArtist, limit }),
+    () => fetchPopularArtistsInternal({ typeArtist, limit, prioritizeAds }),
     [cacheKey],
-    { revalidate: 60, tags: ["home", "artists"] },
+    // 광고 우선 변형만 ads 태그 — revalidateTag("ads")로 검색 인기 목록 즉시 갱신
+    { revalidate: 60, tags: prioritizeAds ? ["home", "artists", "ads"] : ["home", "artists"] },
   )();
 }
 

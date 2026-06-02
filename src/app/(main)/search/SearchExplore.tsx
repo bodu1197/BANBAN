@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Search, MapPin } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
+import { secureShuffle } from "@/lib/random";
 import type { HomeArtist } from "@/lib/supabase/home-artist-queries";
 
 interface Props {
@@ -67,12 +68,20 @@ function PopularArtistCard({ artist, rank }: Readonly<{ artist: HomeArtist; rank
 }
 
 function PopularArtistList({ artists }: Readonly<{ artists: ReadonlyArray<HomeArtist> }>): React.ReactElement {
-  if (artists.length === 0) {
+  // 이 영역은 useSearchParams + Suspense 로 클라이언트 전용 렌더(정적 HTML 은 스켈레톤) → 하이드레이션 불일치 없음.
+  // 광고 그룹을 항상 앞에 두고 각 그룹 내부를 셔플. lazy init 으로 마운트(=페이지 열 때)마다 1회 새 랜덤, 재렌더 시 순서 유지.
+  const [ordered] = useState<ReadonlyArray<HomeArtist>>(() => {
+    const ads = artists.filter((a) => a.isAd);
+    const rest = artists.filter((a) => !a.isAd);
+    return [...secureShuffle(ads), ...secureShuffle(rest)];
+  });
+
+  if (ordered.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">인기 아티스트 데이터가 없습니다.</p>;
   }
   return (
     <ol className="grid grid-cols-1 gap-2 md:grid-cols-2">
-      {artists.map((a, i) => (
+      {ordered.map((a, i) => (
         <li key={a.id}>
           <PopularArtistCard artist={a} rank={i + 1} />
         </li>
