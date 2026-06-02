@@ -81,14 +81,17 @@ export async function recordAdPortfolioEvents(params: {
     const safePlacement = params.placement.slice(0, 50);
     const safePath = params.pagePath.split("?")[0].slice(0, 200) || null;
 
-    const events = adPortfolios
-        .filter((p) => artistToSub.has(p.artist_id))
-        .map((p) => ({
-            subscription_id: artistToSub.get(p.artist_id) ?? "",
+    // flatMap 으로 매핑 실패 항목을 제외 — 빈 subscription_id 가 절대 insert 되지 않도록 보장.
+    const events = adPortfolios.flatMap((p) => {
+        const subscriptionId = artistToSub.get(p.artist_id);
+        if (!subscriptionId) return [];
+        return [{
+            subscription_id: subscriptionId,
             event_type: params.eventType,
             placement: safePlacement,
             page_path: safePath,
-        }));
+        }];
+    });
 
     if (events.length === 0) return;
     await admin.from("ad_events").insert(events);
