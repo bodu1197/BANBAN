@@ -12,14 +12,21 @@ import {
   loadImage,
 } from "@/lib/face-analysis";
 import { optimizeImage } from "@/lib/utils/image-optimizer";
-import { useAuth } from "@/hooks/useAuth";
+import {
+  DEFAULT_QUOTAS,
+  areaLabel,
+  otherArea,
+  remainingFor,
+  withRemaining,
+  type Quotas,
+  type SimArea,
+} from "@/lib/beauty-sim/shared";
 
 /* eslint-disable @next/next/no-img-element -- base64 data URIs from AI generation */
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 type Phase = "upload" | "camera" | "analyzing" | "removing" | "simulating" | "done" | "error";
-type SimArea = "eyebrow" | "lip";
 
 interface SimResult {
   id: string;
@@ -142,6 +149,48 @@ async function callSimApi(
   return ((await res.json()) as { image: string }).image;
 }
 
+// ─── Quota (영역별 일일 횟수) — 사전확인(GET) → 결과 획득 후 커밋(POST) ─────────────
+
+const QUOTA_URL = "/api/ai/beauty-sim-v2/quota";
+
+/** 한도 초과 시 파이프라인 중단용 (커밋 전이라 차감 안 됨) */
+class QuotaError extends Error {
+  readonly quotas: Quotas;
+  constructor(quotas: Quotas) {
+    super("quota_exceeded");
+    this.name = "QuotaError";
+    this.quotas = quotas;
+  }
+}
+
+/** 잔여 횟수 조회 (미차감). 마운트 표시 + 파이프라인 시작 전 사전 확인용. */
+async function fetchQuotas(): Promise<Quotas | null> {
+  try {
+    const res = await fetch(QUOTA_URL, { method: "GET" });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as { quotas?: Quotas } | null;
+    return data?.quotas ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** 결과를 완전히 얻은 후 1회 커밋(차감). best-effort — 해당 영역 잔여 반환(실패 시 null). */
+async function commitQuota(area: SimArea): Promise<number | null> {
+  try {
+    const res = await fetch(QUOTA_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ area }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as { remaining?: number } | null;
+    return typeof data?.remaining === "number" ? data.remaining : null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Pipeline ───────────────────────────────────────────────────────────────
 
 function collectFulfilled(settled: PromiseSettledResult<SimResult>[]): SimResult[] {
@@ -193,8 +242,12 @@ async function runSimulationPipeline(
   base64: string,
   area: SimArea,
   onProgress: (phase: Phase, text: string) => void,
+  gate: () => Promise<void>,
   onStyleComplete?: (completed: number, total: number) => void,
 ): Promise<{ croppedOriginal: string; cleanedBase64: string; results: SimResult[] }> {
+  // 사전 확인: 한도 초과면 어떤 작업도 시작하지 않고 즉시 중단(차감 없음).
+  await gate();
+
   onProgress("analyzing", "얼굴 윤곽을 정밀 스캔하고 있습니다");
 
   const cropped = await cropToSquare(base64);
@@ -708,14 +761,27 @@ function ResultsView(props: Readonly<{
   );
 }
 
-function LoginPrompt(props: Readonly<{ onClose: () => void }>): React.ReactElement {
+function LimitPrompt(props: Readonly<{ area: SimArea; quotas: Quotas; onClose: () => void }>): React.ReactElement {
+  const other = otherArea(props.area);
+  const otherRemaining = remainingFor(props.quotas, other);
+  const allExhausted = props.quotas.eyebrow <= 0 && props.quotas.lip <= 0;
+
   return (
-    <div className="mb-5 flex flex-col items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-center" role="alert">
-      <p className="text-sm font-medium text-gray-700">로그인 후 시뮬레이션을 이용할 수 있습니다</p>
-      <div className="flex gap-3">
-        <Link href="/login" className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-500 focus-visible:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">로그인</Link>
-        <button type="button" onClick={props.onClose} className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">닫기</button>
-      </div>
+    <div className="mb-5 flex flex-col items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center" role="alert" aria-live="assertive">
+      {allExhausted ? (
+        <p className="text-sm font-medium text-gray-700">
+          오늘 사용 횟수를 모두 사용했어요.
+          <br />
+          내일 0시(자정) 이후 다시 이용할 수 있어요.
+        </p>
+      ) : (
+        <p className="text-sm font-medium text-gray-700">
+          오늘 {areaLabel(props.area)} 시뮬레이션을 모두 사용했어요.
+          <br />
+          {areaLabel(other)}은 {otherRemaining}회 남았어요.
+        </p>
+      )}
+      <button type="button" onClick={props.onClose} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">닫기</button>
     </div>
   );
 }
@@ -725,7 +791,6 @@ function LoginPrompt(props: Readonly<{ onClose: () => void }>): React.ReactEleme
 export function AiBeautyClient(props: Readonly<{
   artists: RecommendedArtist[];
 }>): React.ReactElement {
-  const { user, isLoading: authLoading } = useAuth();
   const [phase, setPhase] = useState<Phase>("upload");
   const [area, setArea] = useState<SimArea>("eyebrow");
   const [originalBase64, setOriginalBase64] = useState("");
@@ -736,16 +801,22 @@ export function AiBeautyClient(props: Readonly<{
   const [completedStyles, setCompletedStyles] = useState(0);
   const [totalStyles, setTotalStyles] = useState(8);
   const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [quotas, setQuotas] = useState<Quotas>(DEFAULT_QUOTAS);
+  const [limitInfo, setLimitInfo] = useState<{ area: SimArea; quotas: Quotas } | null>(null);
 
   const isProcessing = PROCESSING_PHASES.has(phase);
   const elapsedSeconds = useElapsedTimer(isProcessing);
 
-  const requireAuth = useCallback((): boolean => {
-    if (authLoading) return false;
-    if (!user) { setShowLoginPrompt(true); return false; }
-    return true;
-  }, [user, authLoading]);
+  // 잔여 횟수 초기화 — 페이지는 ISR 캐시(revalidate=300)라 쿼터는 식별자(쿠키/세션)별로
+  // 클라이언트에서 조회해야 하며, GET 시 익명 쿠키도 발급된다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const q = await fetchQuotas();
+      if (!cancelled && q) setQuotas(q);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const startProcessing = useCallback(async (base64: string, simArea: SimArea) => {
     setOriginalBase64(base64);
@@ -756,13 +827,29 @@ export function AiBeautyClient(props: Readonly<{
         base64,
         simArea,
         (p, text) => { setPhase(p); setProgressText(text); },
+        // 사전 확인(차감 X): 한도 초과면 QuotaError 로 중단
+        async () => {
+          const q = await fetchQuotas();
+          if (q) setQuotas(q);
+          if (q && remainingFor(q, simArea) <= 0) throw new QuotaError(q);
+        },
         (completed) => { setCompletedStyles(completed); },
       );
       setOriginalBase64(output.croppedOriginal);
       setResults(output.results);
       setSelectedIdx(0);
       setPhase("done");
+      // 결과를 완전히 얻음 → 1회 커밋(차감). best-effort.
+      void commitQuota(simArea).then((rem) => {
+        if (rem !== null) setQuotas((prev) => withRemaining(prev, simArea, rem));
+      });
     } catch (err: unknown) {
+      if (err instanceof QuotaError) {
+        setQuotas(err.quotas);
+        setLimitInfo({ area: simArea, quotas: err.quotas });
+        setPhase("upload");
+        return;
+      }
       setErrorMsg(err instanceof Error ? err.message : "처리 중 오류가 발생했습니다.");
       setPhase("error");
     }
@@ -770,7 +857,6 @@ export function AiBeautyClient(props: Readonly<{
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    if (!requireAuth()) return;
     try {
       const optimized = await optimizeImage(file, { maxWidth: 2048, quality: 0.9 });
       const reader = new FileReader();
@@ -785,13 +871,12 @@ export function AiBeautyClient(props: Readonly<{
       setErrorMsg("이미지를 처리할 수 없습니다. 다른 사진을 선택해주세요.");
       setPhase("error");
     }
-  }, [startProcessing, area, requireAuth]);
+  }, [startProcessing, area]);
 
   const handleCapture = useCallback((base64: string) => {
-    if (!requireAuth()) return;
     setPhase("analyzing");
     startProcessing(base64, area);
-  }, [startProcessing, area, requireAuth]);
+  }, [startProcessing, area]);
 
   const handleCameraError = useCallback((msg: string) => {
     setErrorMsg(msg);
@@ -813,12 +898,12 @@ export function AiBeautyClient(props: Readonly<{
   }, []);
 
   const handleCameraOpen = useCallback(() => {
-    if (requireAuth()) setPhase("camera");
-  }, [requireAuth]);
+    setPhase("camera");
+  }, []);
 
   return (
     <div className="mx-auto max-w-lg px-4 pb-24 pt-6 md:pt-8">
-      {showLoginPrompt && <LoginPrompt onClose={() => setShowLoginPrompt(false)} />}
+      {limitInfo && <LimitPrompt area={limitInfo.area} quotas={limitInfo.quotas} onClose={() => setLimitInfo(null)} />}
 
       {phase === "upload" && (
         <>
@@ -843,6 +928,9 @@ export function AiBeautyClient(props: Readonly<{
               입술
             </button>
           </div>
+          <p className="mt-2 text-center text-xs text-gray-500" aria-live="polite">
+            오늘 남은 횟수 — 눈썹 {quotas.eyebrow}회 · 입술 {quotas.lip}회
+          </p>
         </>
       )}
 

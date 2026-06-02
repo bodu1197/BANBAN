@@ -2983,6 +2983,30 @@ export type Database = {
           },
         ]
       }
+      sim_daily_quota: {
+        Row: {
+          area: string
+          count: number
+          identity: string
+          updated_at: string
+          used_date: string
+        }
+        Insert: {
+          area: string
+          count?: number
+          identity: string
+          updated_at?: string
+          used_date?: string
+        }
+        Update: {
+          area?: string
+          count?: number
+          identity?: string
+          updated_at?: string
+          used_date?: string
+        }
+        Relationships: []
+      }
       sim_usage_logs: {
         Row: {
           area: string | null
@@ -3171,6 +3195,10 @@ export type Database = {
         }[]
       }
       auto_dormant_artists: { Args: never; Returns: undefined }
+      consume_sim_quota: {
+        Args: { p_identity: string; p_area: string; p_limit: number }
+        Returns: { allowed: boolean; used: number; quota_limit: number }[]
+      }
       count_portfolios_by_categories: {
         Args: { p_artist_ids: string[]; p_category_ids: string[] }
         Returns: number
@@ -3269,6 +3297,10 @@ export type Database = {
         Returns: {
           artist_id: string
         }[]
+      }
+      get_sim_quota: {
+        Args: { p_identity: string }
+        Returns: { area: string; used: number }[]
       }
       increment_encyclopedia_view: {
         Args: { p_slug: string }

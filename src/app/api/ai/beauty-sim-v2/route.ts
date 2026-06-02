@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import sharp from "sharp";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase/server";
+import { rateLimit, rateLimitResponse, getClientIp } from "@/lib/rate-limit";
+import { resolveSimIdentity } from "@/lib/beauty-sim/identity";
 
 export const maxDuration = 180;
 
@@ -146,16 +147,22 @@ async function generateEdit(body: SimRequest, apiKey: string): Promise<string> {
 
 // ─── Handler ────────────────────────────────────────────────────────────────
 
-async function checkAuth(): Promise<{ error: NextResponse } | { userId: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 }) };
+// 비로그인 허용. 익명은 시작 게이트(/quota)에서 발급된 bsim_anon 쿠키 보유가 전제.
+async function resolveAuth(
+  request: NextRequest,
+): Promise<{ error: NextResponse } | { userId: string | null }> {
+  const id = await resolveSimIdentity(request);
+
+  // 비로그인인데 익명 쿠키도 없음 = 시작 게이트 미경유 직접 호출 → 차단
+  if (!id.userId && id.isNewAnon) {
+    return { error: NextResponse.json({ error: "잘못된 요청입니다" }, { status: 400 }) };
   }
-  const key = `beauty-sim-v2:${user.id}`;
-  const { success } = rateLimit({ key, limit: 30, windowMs: 60_000 });
+
+  const subject = id.userId ?? id.anonId ?? getClientIp(request);
+  const { success } = rateLimit({ key: `beauty-sim-v2:${subject}`, limit: 30, windowMs: 60_000 });
   if (!success) return { error: rateLimitResponse() };
-  return { userId: user.id };
+
+  return { userId: id.userId };
 }
 
 function logUsage(userId: string, step: SimStep, style?: string): void {
@@ -169,7 +176,7 @@ function logUsage(userId: string, step: SimStep, style?: string): void {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await checkAuth();
+  const auth = await resolveAuth(request);
   if ("error" in auth) return auth.error;
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -185,7 +192,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const outputBase64 = await generateEdit(body, apiKey);
-    logUsage(auth.userId, body.step, body.style);
+    // sim_usage_logs.user_id 는 NOT NULL(FK) → 로그인 사용자만 기록 (admin 통계 기존 동작 유지)
+    if (auth.userId) logUsage(auth.userId, body.step, body.style);
     return NextResponse.json({ image: outputBase64, step: body.step, style: body.style });
   } catch (error: unknown) {
     // eslint-disable-next-line no-console -- Server-side error logging
