@@ -31,16 +31,44 @@ function preflight(request: NextRequest): NextResponse | null {
     return null;
 }
 
-async function handleSearch(body: { image?: string; text?: string; matchCount?: number; threshold?: number }): Promise<NextResponse> {
-    const { image, text, matchCount = 20, threshold = 0.3 } = body;
+// CLIP 서버 부하/대역폭 남용 방지 — 요청당 payload 상한.
+const MAX_IMAGE_B64 = 4_000_000; // 약 3MB 이미지
+const MAX_TEXT_LEN = 1_000;
+
+/** matchCount/threshold 를 안전 범위로 보정 — 공개 엔드포인트의 거대 matchCount/잘못된 threshold 남용(DoS) 차단. */
+function clampSearchParams(matchCount: unknown, threshold: unknown): { matchCount: number; threshold: number } {
+    const m = Math.trunc(Number(matchCount));
+    const t = Number(threshold);
+    return {
+        matchCount: Math.min(Math.max(Number.isFinite(m) ? m : 20, 1), 100),
+        threshold: Math.min(Math.max(Number.isFinite(t) ? t : 0.3, 0), 1),
+    };
+}
+
+/** image/text 입력 검증 — 문제 있으면 에러 응답, 없으면 null. (handleSearch 복잡도 분리) */
+function validateSearchInput(image?: string, text?: string): NextResponse | null {
     if (!image && !text) {
         return NextResponse.json({ error: "image (base64) or text (prompt) is required" }, { status: 400 });
     }
+    if (typeof image === "string" && image.length > MAX_IMAGE_B64) {
+        return NextResponse.json({ error: "image too large" }, { status: 413 });
+    }
+    if (typeof text === "string" && text.length > MAX_TEXT_LEN) {
+        return NextResponse.json({ error: "text too long" }, { status: 413 });
+    }
+    return null;
+}
 
+async function handleSearch(body: { image?: string; text?: string; matchCount?: number; threshold?: number }): Promise<NextResponse> {
+    const { image, text } = body;
+    const invalid = validateSearchInput(image, text);
+    if (invalid) return invalid;
+
+    const { matchCount, threshold } = clampSearchParams(body.matchCount, body.threshold);
     const embedding = text
         ? await fetchTextEmbedding(text as string)
         : await fetchImageEmbedding(image as string);
-    const matches = await searchSimilar(embedding, threshold as number, matchCount as number);
+    const matches = await searchSimilar(embedding, threshold, matchCount);
     const results = await enrichResults(matches);
 
     if (matches.length > 0) {

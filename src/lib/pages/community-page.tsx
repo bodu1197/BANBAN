@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MessageSquare, Eye, Heart, PenSquare, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { boardLabel } from "@/lib/board/constants";
 import type { CommunityPost } from "@/lib/supabase/community-queries";
 import type { ReviewWithArtist, ReviewComment } from "@/lib/supabase/queries";
@@ -31,10 +31,11 @@ export function resolveCommunityTab(raw: string | undefined): CommunityTabKey {
 }
 
 export function generateCommunityMetadata(): Metadata {
+  const description = `${t.title} — 샵인샵 임대·구인, 질문답변, 후기, 뷰티랩까지 반언니 회원 소통 공간`;
   return {
     title: t.title,
-    description: `${t.title} — 샵인샵 임대·구인, 질문답변, 후기, 뷰티랩까지 반언니 회원 소통 공간`,
-    alternates: getAlternates("/community"),
+    description,
+    ...buildPageSeo({ title: t.title, description, path: "/community" }),
   };
 }
 

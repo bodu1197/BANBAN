@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { fetchPostById } from "@/lib/supabase/community-queries";
 import { getUser } from "@/lib/supabase/auth";
 import { recordPostView } from "@/lib/actions/community";
-import { getAlternates } from "@/lib/seo";
+import { buildPageSeo } from "@/lib/seo";
 import { PostDetailClient } from "./PostDetailClient";
 
 export const revalidate = 30;
@@ -17,10 +17,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = await fetchPostById(id);
   if (!post) return { title: "게시글을 찾을 수 없습니다" };
 
+  const description = post.content.slice(0, 120);
   return {
     title: post.title,
-    description: post.content.slice(0, 120),
-    alternates: getAlternates(`/community/${id}`),
+    description,
+    ...buildPageSeo({ title: post.title, description, path: `/community/${id}`, type: "article" }),
   };
 }
 

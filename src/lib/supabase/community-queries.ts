@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createStaticClient } from "./server";
 import { getAvatarUrl } from "./storage-utils";
 
@@ -150,7 +151,8 @@ export async function fetchCommunityPosts(options?: {
   return fetchCommunityPostsInternal(options ?? {});
 }
 
-export async function fetchPostById(id: string): Promise<CommunityPostDetail | null> {
+// cache(): generateMetadata 와 페이지 본문이 같은 요청에서 동일 id 로 두 번 호출 → 1회로 중복 제거.
+export const fetchPostById = cache(async (id: string): Promise<CommunityPostDetail | null> => {
   const supabase = createStaticClient();
 
   const { data: post, error: postError } = await supabase
@@ -181,4 +183,4 @@ export async function fetchPostById(id: string): Promise<CommunityPostDetail | n
     ...mappedPost,
     comments: (comments ?? []).map((c) => mapCommentRow(c as unknown as CommentRow)),
   };
-}
+});

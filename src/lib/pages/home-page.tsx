@@ -119,9 +119,7 @@ function HomeExhibitionCard({ item }: Readonly<{ item: ExhibitionItem }>): React
   const src = item.image_path.startsWith("http")
     ? item.image_path
     : `${SUPABASE_URL}/storage/v1/object/public/portfolios/${item.image_path}`;
-  // eslint-disable-next-line security/detect-object-injection -- 알려진 상수 키 (DB enum)
   const catLabel = EXHIBITION_CATEGORY_LABELS[item.category] ?? item.category;
-  // eslint-disable-next-line security/detect-object-injection -- 알려진 상수 키 (DB enum)
   const catBg = EXHIBITION_CATEGORY_COLORS[item.category] ?? "bg-zinc-500/80";
   return (
     <Link
@@ -354,6 +352,8 @@ export async function renderHomePage(): Promise<React.ReactElement> {
 
   return (
     <main className="mx-auto w-full max-w-[1024px] overflow-hidden">
+      {/* SEO/접근성: 페이지 단일 h1 (디자인 영향 없이 스크린리더·검색엔진용) */}
+      <h1 className="sr-only">반언니 — 반영구 화장 가격비교 &amp; 아티스트 추천 플랫폼</h1>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
