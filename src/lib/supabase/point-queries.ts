@@ -169,8 +169,10 @@ export async function getPointHistory(
 
 // ─── Daily Limit ────────────────────────────────────────
 
-// 일일 적립 한도 enforcement 의 단일 출처(SSOT). 여기 없는 reason 은 한도 없이 적립된다(earnPointsWithLimit fallback).
-// 새 한도 reason 추가 시 반드시 여기에 등록할 것. (DB point_policies.daily_limit 컬럼이 있으나 현재 enforcement 미사용)
+// 일일 적립 한도 enforcement 의 단일 출처(SSOT) — 서버 트리거 reason(LIKE/REVIEW/CHAT_START 등)용.
+// 여기 없는 reason 은 한도 없이 적립된다(earnPointsWithLimit fallback). 새 한도 reason 추가 시 반드시 등록.
+// 클라이언트 호출 1회성 reason(WELCOME_BONUS/PORTFOLIO_UPLOAD)은 한도가 아니라 멱등 RPC
+// (earn_points_once / earn_points_once_ref)로 처리한다. (DB point_policies.daily_limit 컬럼은 현재 미사용)
 const DAILY_LIMITS: Partial<Record<PointReason, number>> = {
     ATTENDANCE: 1,
     REVIEW: 1,
@@ -207,23 +209,11 @@ export async function earnPointsWithLimit(params: EarnPointsParams): Promise<Poi
 
 // ─── Welcome Bonus ──────────────────────────────────────
 
-/** Grant welcome bonus to a new artist (30,000P) */
-export async function grantWelcomeBonus(userId: string): Promise<PointTransaction> {
-    const wallet = await getOrCreateWallet(userId);
-    const supabase = createAdminClient();
-
-    // Check if already granted
-    const { data: existing } = await supabase
-        .from("point_transactions")
-        .select("id")
-        .eq("wallet_id", wallet.id)
-        .eq("reason", "WELCOME_BONUS")
-        .limit(1);
-
-    if (existing && existing.length > 0) {
-        throw new Error("WELCOME_BONUS_ALREADY_GRANTED");
-    }
-
+/**
+ * Grant welcome bonus to a new artist — 사용자당 1회만(원자적 멱등, earn_points_once).
+ * 반복 호출/재시도해도 1회만 지급(파밍 차단). 이미 지급됐으면 null.
+ */
+export async function grantWelcomeBonus(userId: string): Promise<PointTransaction | null> {
     const artistType = await getArtistType(userId);
     // DB 정책 우선, 없으면 코드 기본값
     const policyAmount = await getPolicyAmount("WELCOME_BONUS", artistType);
@@ -234,12 +224,43 @@ export async function grantWelcomeBonus(userId: string): Promise<PointTransactio
         amount = rule ? getPointAmount(rule, artistType ?? undefined) : 100_000;
     }
 
-    return earnPoints({
-        userId,
-        amount,
-        reason: "WELCOME_BONUS",
-        description: "신규 아티스트 웰컴 보너스",
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("earn_points_once", {
+        p_user_id: userId,
+        p_amount: amount,
+        p_reason: "WELCOME_BONUS",
+        p_description: "신규 아티스트 웰컴 보너스",
     });
+    if (error) throw new Error(`Failed to grant welcome bonus: ${error.message}`);
+    return (data?.[0] as PointTransaction) ?? null; // null = 이미 지급됨
+}
+
+interface EarnOnceRefParams {
+    userId: string;
+    amount: number;
+    reason: PointReason;
+    referenceId: string;
+    description?: string;
+    expiresAt?: string | null;
+}
+
+/**
+ * 이벤트 1회성 적립 — (wallet, reason, referenceId) 당 1회만(원자적 멱등).
+ * 예: PORTFOLIO_UPLOAD(referenceId=portfolioId). 중복(같은 reference 재호출)이면 null.
+ */
+export async function earnPointsOnceRef(params: EarnOnceRefParams): Promise<PointTransaction | null> {
+    const { userId, amount, reason, referenceId, description, expiresAt } = params;
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("earn_points_once_ref", {
+        p_user_id: userId,
+        p_amount: amount,
+        p_reason: reason,
+        p_reference_id: referenceId,
+        p_description: description ?? null,
+        p_expires_at: expiresAt ?? null,
+    });
+    if (error) throw new Error(`Failed to earn points (once-ref): ${error.message}`);
+    return (data?.[0] as PointTransaction) ?? null;
 }
 
 // ─── Expiration ──────────────────────────────────────────

@@ -3262,6 +3262,49 @@ export type Database = {
           created_at: string
         }[]
       }
+      earn_points_once: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_reason: string
+          p_description?: string | null
+          p_expires_at?: string | null
+        }
+        Returns: {
+          id: string
+          wallet_id: string
+          type: string
+          amount: number
+          reason: string
+          description: string | null
+          expires_at: string | null
+          expired: boolean
+          reference_id: string | null
+          created_at: string
+        }[]
+      }
+      earn_points_once_ref: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+          p_reason: string
+          p_reference_id: string
+          p_description?: string | null
+          p_expires_at?: string | null
+        }
+        Returns: {
+          id: string
+          wallet_id: string
+          type: string
+          amount: number
+          reason: string
+          description: string | null
+          expires_at: string | null
+          expired: boolean
+          reference_id: string | null
+          created_at: string
+        }[]
+      }
       spend_points: {
         Args: {
           p_user_id: string

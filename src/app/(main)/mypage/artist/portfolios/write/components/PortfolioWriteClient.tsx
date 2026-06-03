@@ -88,8 +88,8 @@ export default function PortfolioWriteClient(): React.ReactElement {
         return { priceNum, priceOriginNum, discountRate: calcDiscountRate(priceNum, priceOriginNum), saleEnd };
     }
 
-    async function createPortfolio(): Promise<void> {
-        if (!artist) { router.push("/login"); return; }
+    async function createPortfolio(): Promise<string | null> {
+        if (!artist) { router.push("/login"); return null; }
         if (selectedCategories.size === 0) throw new Error("CATEGORY_REQUIRED");
         const supabase = createClient();
         const imagePaths = await uploadFiles(supabase, artist.id, images);
@@ -104,10 +104,11 @@ export default function PortfolioWriteClient(): React.ReactElement {
             .select("id")
             .single();
         if (error) throw error;
-        if (!portfolio) return;
+        if (!portfolio) return null;
         await insertMediaRowsWithEmbedding(supabase, portfolio.id, imagePaths, "image", 0);
         await insertCategorizables(supabase, portfolio.id, Array.from(selectedCategories));
         await submitToExhibitions(portfolio.id);
+        return portfolio.id;
     }
 
     async function handleSubmit(e: FormEvent): Promise<void> {
@@ -118,9 +119,11 @@ export default function PortfolioWriteClient(): React.ReactElement {
         }
         setSubmitting(true);
         try {
-            await createPortfolio();
-            // 포트폴리오 등록 포인트
-            void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "PORTFOLIO_UPLOAD" }) });
+            const newPortfolioId = await createPortfolio();
+            // 포트폴리오 등록 포인트 — 포트폴리오당 1회(referenceId 로 서버에서 멱등 처리)
+            if (newPortfolioId) {
+                void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "PORTFOLIO_UPLOAD", referenceId: newPortfolioId }) }).catch(() => { /* best-effort */ });
+            }
             // 목록 페이지 + 공개 샵 페이지 server cache 무효화
             if (artist) {
                 await revalidatePortfolioPages(artist.id).catch((err: unknown) => {
