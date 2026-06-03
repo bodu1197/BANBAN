@@ -79,14 +79,18 @@ export async function activateSubscription(
     subscriptionId: string,
     impUid: string,
 ): Promise<AdSubscription> {
-    const supabase = await createClient();
+    // service_role 사용 — ad_subscriptions 는 RLS SELECT 정책만 있고 UPDATE 정책이 없어
+    // createClient(authenticated) UPDATE 는 0행으로 무음 실패한다. 인증·결제 검증은 verify 라우트가 수행.
+    const supabase = createAdminClient();
     const { data: sub } = await supabase
         .from("ad_subscriptions").select("duration_months").eq("id", subscriptionId).single();
     const months = sub?.duration_months ?? 1;
     const now = new Date().toISOString();
     const expiresAt = getExpiryDate(months * DAYS_PER_MONTH);
 
-    const { data, error } = await supabase
+    // PENDING → ACTIVE 원자적 활성화. 이미 ACTIVE 면 0행 → 재검증(같은 impUid replay)으로 간주하여
+    // 기존 행을 그대로 반환(started_at/expires_at 리셋 = 광고 기간 연장 방지, H3 멱등).
+    const { data } = await supabase
         .from("ad_subscriptions")
         .update({
             status: STATUS_ACTIVE,
@@ -95,11 +99,18 @@ export async function activateSubscription(
             imp_uid: impUid,
         })
         .eq("id", subscriptionId)
-        .select()
-        .single();
+        .eq("status", "PENDING")
+        .select();
 
-    if (error) throw new Error(`Failed to activate subscription: ${error.message}`);
-    return data as AdSubscription;
+    if (data && data.length > 0) return data[0] as AdSubscription;
+
+    // 0행: 이미 ACTIVE(정상 replay)면 그 행을 변경 없이 반환, 그 외 상태면 활성화 불가 → 에러.
+    const { data: existing } = await supabase
+        .from("ad_subscriptions").select("*").eq("id", subscriptionId).single();
+    if (existing && (existing as { status: string }).status === STATUS_ACTIVE) {
+        return existing as AdSubscription;
+    }
+    throw new Error("Failed to activate subscription: not in PENDING/ACTIVE state");
 }
 
 /** Get subscriptions for an artist */
