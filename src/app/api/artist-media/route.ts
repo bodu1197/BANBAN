@@ -41,6 +41,48 @@ async function handleMediaUpsert(admin: ReturnType<typeof createAdminClient>, bo
 }
 
 /**
+ * Validate POST body — required artistId + safe storage paths.
+ * Returns an error response, or null when the body is valid.
+ */
+function validatePostBody(body: PostBody): NextResponse | null {
+  if (!body.artistId) {
+    return NextResponse.json({ error: "artistId is required" }, { status: 400 });
+  }
+
+  // 쓰기 경계 검증 — 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용).
+  if (body.profileImagePath && !isSafeStoragePath(body.profileImagePath)) {
+    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
+  }
+  if (body.storagePath && !isSafeStoragePath(body.storagePath)) {
+    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
+  }
+
+  return null;
+}
+
+/**
+ * Verify the artist row belongs to the given user.
+ * Returns a forbidden response, or null when ownership is confirmed.
+ */
+async function verifyArtistOwnership(
+  admin: ReturnType<typeof createAdminClient>,
+  artistId: string,
+  userId: string,
+): Promise<NextResponse | null> {
+  const { data: artist } = await admin
+    .from("artists")
+    .select("id, user_id")
+    .eq("id", artistId)
+    .single();
+
+  if (!artist || (artist as { user_id: string }).user_id !== userId) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  return null;
+}
+
+/**
  * POST /api/artist-media
  * Insert artist_media row + optionally update profile_image_path
  * Bypasses RLS by using admin client for writes
@@ -54,30 +96,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const body = await request.json() as PostBody;
 
-  if (!body.artistId) {
-    return NextResponse.json({ error: "artistId is required" }, { status: 400 });
-  }
-
-  // 쓰기 경계 검증 — 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용).
-  if (body.profileImagePath && !isSafeStoragePath(body.profileImagePath)) {
-    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
-  }
-  if (body.storagePath && !isSafeStoragePath(body.storagePath)) {
-    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
-  }
+  const validationError = validatePostBody(body);
+  if (validationError) return validationError;
 
   const admin = createAdminClient();
 
   // Verify the artist belongs to this user
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id, user_id")
-    .eq("id", body.artistId)
-    .single();
-
-  if (!artist || (artist as { user_id: string }).user_id !== user.id) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const ownershipError = await verifyArtistOwnership(admin, body.artistId, user.id);
+  if (ownershipError) return ownershipError;
 
   const errorResponse = await handleMediaUpsert(admin, body);
   if (errorResponse) return errorResponse;
@@ -104,15 +130,8 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const admin = createAdminClient();
 
   // Verify ownership
-  const { data: artist } = await admin
-    .from("artists")
-    .select("id, user_id")
-    .eq("id", body.artistId)
-    .single();
-
-  if (!artist || (artist as { user_id: string }).user_id !== user.id) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const ownershipError = await verifyArtistOwnership(admin, body.artistId, user.id);
+  if (ownershipError) return ownershipError;
 
   await admin.from("artist_media").delete().in("id", body.mediaIds);
 

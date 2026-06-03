@@ -121,25 +121,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ portfolios, total: count ?? 0, page, limit });
 }
 
-/** PATCH /api/admin/portfolios — 포트폴리오 수정 */
-export async function PATCH(request: NextRequest): Promise<NextResponse> {
-    const auth = await requireAdmin();
-    if (!auth.ok) return auth.response;
+type PortfolioPatchBody = {
+    id: string;
+    title?: string;
+    description?: string;
+    price?: number;
+    price_origin?: number;
+    discount_rate?: number;
+};
 
-    const { supabase } = auth;
-    const body = await request.json() as {
-        id: string;
-        title?: string;
-        description?: string;
-        price?: number;
-        price_origin?: number;
-        discount_rate?: number;
-    };
-
-    if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
-
+/** 가격/할인 값 방어 검증 (가격 조작 차단). 문제 발견 시 에러 응답, 정상 시 null */
+function validatePortfolioPatch(body: Readonly<PortfolioPatchBody>): NextResponse | null {
     // 음수/비정상 숫자 방어 (가격 조작 차단)
     for (const numKey of ["price", "price_origin", "discount_rate"] as const) {
+        // 키는 하드코딩된 리터럴 튜플(as const)이라 사용자 입력 인젝션 불가 → 오탐
+        // eslint-disable-next-line security/detect-object-injection
         const v = body[numKey];
         if (v !== undefined && (typeof v !== "number" || v < 0 || !Number.isFinite(v))) {
             return NextResponse.json({ error: `invalid_${numKey}` }, { status: 400 });
@@ -148,13 +144,34 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     if (body.discount_rate !== undefined && body.discount_rate > 100) {
         return NextResponse.json({ error: "invalid_discount_rate" }, { status: 400 });
     }
+    return null;
+}
 
+/** 변경 요청된 필드만 모아 updates 객체 생성 */
+function buildPortfolioUpdates(body: Readonly<PortfolioPatchBody>): Record<string, unknown> {
     const updates: Record<string, unknown> = {};
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;
     if (body.price !== undefined) updates.price = body.price;
     if (body.price_origin !== undefined) updates.price_origin = body.price_origin;
     if (body.discount_rate !== undefined) updates.discount_rate = body.discount_rate;
+    return updates;
+}
+
+/** PATCH /api/admin/portfolios — 포트폴리오 수정 */
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
+    const { supabase } = auth;
+    const body = await request.json() as PortfolioPatchBody;
+
+    if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+    const invalid = validatePortfolioPatch(body);
+    if (invalid) return invalid;
+
+    const updates = buildPortfolioUpdates(body);
 
     if (Object.keys(updates).length === 0) {
         return NextResponse.json({ error: "no fields to update" }, { status: 400 });

@@ -146,18 +146,15 @@ async function resolveArtistIdsByRegion(
   return (artists ?? []).map((a) => a.id);
 }
 
-export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
-  opts: { limit?: number; offset?: number; categoryId?: string; regionId?: string | null; regionSido?: string | null } = {},
-): Promise<EventSearchResult> {
-  const supabase = await createClient();
-  const limit = opts.limit ?? 20;
-  const offset = opts.offset ?? 0;
+type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
+type EventsQueryBuilder = ReturnType<SupabaseInstance["from"]>;
 
-  const artistIds = await resolveArtistIdsByRegion(supabase, opts.regionId ?? null, opts.regionSido ?? null);
-  if (artistIds !== null && artistIds.length === 0) {
-    return { events: [], totalCount: 0 };
-  }
-
+function buildPublishedEventsQuery(
+  supabase: SupabaseInstance,
+  offset: number,
+  limit: number,
+  artistIds: string[] | null,
+): EventsQueryBuilder {
   let query = supabase
     .from("events")
     .select(EVENT_CARD_SELECT_INNER, { count: "exact" })
@@ -171,16 +168,50 @@ export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
     query = query.in("artist_id", artistIds);
   }
 
-  if (opts.categoryId) {
-    const { data: catLinks } = await supabase
-      .from("categorizables")
-      .select("categorizable_id")
-      .eq("categorizable_type", "event")
-      .eq("category_id", opts.categoryId);
-    const ids = (catLinks ?? []).map((c) => c.categorizable_id);
-    if (ids.length === 0) return { events: [], totalCount: 0 };
-    query = query.in("id", ids);
+  return query;
+}
+
+async function resolveRegionArtistIds(
+  supabase: SupabaseInstance,
+  regionId: string | null | undefined,
+  regionSido: string | null | undefined,
+): Promise<{ artistIds: string[] | null; empty: boolean }> {
+  const artistIds = await resolveArtistIdsByRegion(supabase, regionId ?? null, regionSido ?? null);
+  const empty = artistIds !== null && artistIds.length === 0;
+  return { artistIds, empty };
+}
+
+async function applyCategoryFilter(
+  supabase: SupabaseInstance,
+  query: EventsQueryBuilder,
+  categoryId: string | undefined,
+): Promise<EventsQueryBuilder | null> {
+  if (!categoryId) return query;
+  const { data: catLinks } = await supabase
+    .from("categorizables")
+    .select("categorizable_id")
+    .eq("categorizable_type", "event")
+    .eq("category_id", categoryId);
+  const ids = (catLinks ?? []).map((c) => c.categorizable_id);
+  if (ids.length === 0) return null;
+  return query.in("id", ids);
+}
+
+export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
+  opts: { limit?: number; offset?: number; categoryId?: string; regionId?: string | null; regionSido?: string | null } = {},
+): Promise<EventSearchResult> {
+  const supabase = await createClient();
+  const limit = opts.limit ?? 20;
+  const offset = opts.offset ?? 0;
+
+  const { artistIds, empty } = await resolveRegionArtistIds(supabase, opts.regionId, opts.regionSido);
+  if (empty) {
+    return { events: [], totalCount: 0 };
   }
+
+  const baseQuery = buildPublishedEventsQuery(supabase, offset, limit, artistIds);
+  const query = await applyCategoryFilter(supabase, baseQuery, opts.categoryId);
+  if (query === null) return { events: [], totalCount: 0 };
 
   const { data, count } = await query;
   if (!data) return { events: [], totalCount: 0 };

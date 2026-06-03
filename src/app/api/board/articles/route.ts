@@ -49,24 +49,30 @@ async function uniqueSlug(supabase: SupabaseClient<Database>, base: string): Pro
   return `${base}-${Date.now()}`;
 }
 
+function validateArticleBody(body: ArticleBody): NextResponse | null {
+  if (!body.title?.trim()) return NextResponse.json({ error: "제목을 입력하세요." }, { status: 400 });
+  if (!body.category?.trim()) return NextResponse.json({ error: "카테고리를 입력하세요." }, { status: 400 });
+  if (!body.content?.trim()) return NextResponse.json({ error: "본문을 입력하세요." }, { status: 400 });
+  return null;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
 
   const body = (await request.json()) as ArticleBody;
 
-  if (!body.title?.trim()) return NextResponse.json({ error: "제목을 입력하세요." }, { status: 400 });
-  if (!body.category?.trim()) return NextResponse.json({ error: "카테고리를 입력하세요." }, { status: 400 });
-  if (!body.content?.trim()) return NextResponse.json({ error: "본문을 입력하세요." }, { status: 400 });
+  const validationError = validateArticleBody(body);
+  if (validationError) return validationError;
 
-  const title = body.title.trim();
-  const content = body.content.trim();
+  const title = (body.title as string).trim();
+  const content = (body.content as string).trim();
   const slug = await uniqueSlug(auth.supabase, slugify(title));
 
   const insertRow = {
     slug,
     title,
-    category: body.category.trim(),
+    category: (body.category as string).trim(),
     content,
     excerpt: generateExcerpt(content),
     meta_title: title,

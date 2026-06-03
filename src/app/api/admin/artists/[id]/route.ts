@@ -38,6 +38,7 @@ const ALLOWED_ARTIST_FIELDS: ReadonlyArray<keyof ArtistPatchBody> = [
 function buildArtistUpdates(body: ArtistPatchBody): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
   for (const key of ALLOWED_ARTIST_FIELDS) {
+    // eslint-disable-next-line security/detect-object-injection -- key from allow-list
     if (body[key] !== undefined) {
       // eslint-disable-next-line security/detect-object-injection -- key from allow-list
       updates[key] = body[key];
@@ -70,6 +71,44 @@ async function syncCategorizables(
   return {};
 }
 
+/** profile_image_path 쓰기 경계 검증 — 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용). */
+function validateProfileImagePath(body: ArtistPatchBody): NextResponse | null {
+  if (typeof body.profile_image_path === "string" && body.profile_image_path.length > 0 && !isSafeStoragePath(body.profile_image_path)) {
+    return NextResponse.json({ error: "profile_image_path 는 스토리지 경로만 허용됩니다." }, { status: 400 });
+  }
+  return null;
+}
+
+/** artists 테이블 업데이트 적용 — 변경 필드가 있을 때만 쿼리, 에러 시 500 응답. */
+async function applyArtistUpdates(
+  supabase: SupabaseClient,
+  id: string,
+  body: ArtistPatchBody,
+): Promise<NextResponse | null> {
+  const updates = buildArtistUpdates(body);
+  if (Object.keys(updates).length > 0) {
+    const { error } = await supabase.from("artists").update(updates).eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return null;
+}
+
+/** shop_category_ids 동기화 — UUID 형식 검증 후 categorizables 재동기화 (undefined 면 손대지 않음). */
+async function applyCategorySync(
+  supabase: SupabaseClient,
+  id: string,
+  body: ArtistPatchBody,
+): Promise<NextResponse | null> {
+  if (body.shop_category_ids === undefined) return null;
+  // FK 가 잘못된 ID 를 막아주지만 일찍 400 으로 반환 — 디버깅 + 부분 실행 방지
+  if (!body.shop_category_ids.every((cid) => UUID_REGEX.test(cid))) {
+    return NextResponse.json({ error: "유효하지 않은 category UUID 형식이 있습니다." }, { status: 400 });
+  }
+  const result = await syncCategorizables(supabase, id, body.shop_category_ids);
+  if (result.error) return NextResponse.json({ error: result.error }, { status: 500 });
+  return null;
+}
+
 /** PATCH /api/admin/artists/[id] — admin 전용 아티스트 샵 정보 + 카테고리 일괄 수정 (RLS 우회) */
 export async function PATCH(
   request: NextRequest,
@@ -85,26 +124,14 @@ export async function PATCH(
 
   const body = await request.json() as ArtistPatchBody;
 
-  // 쓰기 경계 검증 — profile_image_path 에 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용).
-  if (typeof body.profile_image_path === "string" && body.profile_image_path.length > 0 && !isSafeStoragePath(body.profile_image_path)) {
-    return NextResponse.json({ error: "profile_image_path 는 스토리지 경로만 허용됩니다." }, { status: 400 });
-  }
+  const imagePathError = validateProfileImagePath(body);
+  if (imagePathError) return imagePathError;
 
-  const updates = buildArtistUpdates(body);
+  const updateError = await applyArtistUpdates(auth.supabase, id, body);
+  if (updateError) return updateError;
 
-  if (Object.keys(updates).length > 0) {
-    const { error } = await auth.supabase.from("artists").update(updates).eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (body.shop_category_ids !== undefined) {
-    // FK 가 잘못된 ID 를 막아주지만 일찍 400 으로 반환 — 디버깅 + 부분 실행 방지
-    if (!body.shop_category_ids.every((cid) => UUID_REGEX.test(cid))) {
-      return NextResponse.json({ error: "유효하지 않은 category UUID 형식이 있습니다." }, { status: 400 });
-    }
-    const result = await syncCategorizables(auth.supabase, id, body.shop_category_ids);
-    if (result.error) return NextResponse.json({ error: result.error }, { status: 500 });
-  }
+  const categoryError = await applyCategorySync(auth.supabase, id, body);
+  if (categoryError) return categoryError;
 
   // ISR/CDN 캐시 즉시 무효화 — 인기 100명 prerender + revalidate=120 만으로는 한참 반영 안 됨
   revalidatePath(`/artists/${id}`);

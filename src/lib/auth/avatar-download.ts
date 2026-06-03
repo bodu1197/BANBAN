@@ -59,22 +59,11 @@ function extFromMime(mime: AllowedMime): string {
 }
 
 /**
- * SNS avatar 다운로드 + Supabase Storage 업로드.
- *
- * 보안 가드:
- *  - HTTPS 강제
- *  - 화이트리스트 호스트만 (SSRF 방어 — localhost/내부 IP 차단)
- *  - 5초 타임아웃 (callback hang 방지)
- *  - Content-Length 5MB 제한 (메모리 DoS 방어)
- *  - MIME 화이트리스트 (image/* 만)
- *  - 실패 시 null 반환 (가입 흐름 무영향)
- *
- * @returns storage path (예: "profiles/uuid.jpg") 또는 null
+ * user_metadata 에서 avatar_url 추출 + 검증된 URL 반환.
+ * 가드: 문자열 존재, URL 파싱 가능, 화이트리스트 호스트(HTTPS).
+ * @returns 검증 통과한 URL 또는 null
  */
-export async function downloadAndStoreAvatar(
-  adminClient: SupabaseClient<Database>,
-  user: User,
-): Promise<string | null> {
+function resolveAvatarUrl(user: User): URL | null {
   const rawUrl = (user.user_metadata as { avatar_url?: string } | undefined)?.avatar_url;
   if (!rawUrl || typeof rawUrl !== "string") return null;
 
@@ -91,6 +80,67 @@ export async function downloadAndStoreAvatar(
     return null;
   }
 
+  return url;
+}
+
+/**
+ * fetch 응답에서 size/MIME 검증 후 body + mime 반환.
+ * @returns 검증 통과한 { body, mime } 또는 null
+ */
+async function readValidatedAvatar(
+  res: Response,
+): Promise<{ body: Uint8Array; mime: AllowedMime } | null> {
+  if (!res.ok) return null;
+
+  // Content-Length 사전 검증 (전체 다운로드 전에 크기 차단)
+  const contentLength = Number(res.headers.get("content-length") ?? "0");
+  if (contentLength > MAX_AVATAR_BYTES) {
+    // eslint-disable-next-line no-console
+    console.warn("[avatar-download] too large:", contentLength);
+    return null;
+  }
+
+  // MIME 검증 — split(";")[0] 으로 charset 등 파라미터 제거
+  const rawContentType = res.headers.get("content-type") ?? "";
+  const mime = rawContentType.split(";")[0].trim().toLowerCase();
+  if (!isAllowedMime(mime)) {
+    // eslint-disable-next-line no-console
+    console.warn("[avatar-download] disallowed mime:", mime);
+    return null;
+  }
+  // mime 은 이제 AllowedMime literal union 으로 narrowing 됨
+
+  const arrayBuffer = await res.arrayBuffer();
+  // Content-Length 헤더 누락된 경우 실제 크기로 재검증
+  if (arrayBuffer.byteLength > MAX_AVATAR_BYTES) {
+    // eslint-disable-next-line no-console
+    console.warn("[avatar-download] body too large:", arrayBuffer.byteLength);
+    return null;
+  }
+
+  return { body: new Uint8Array(arrayBuffer), mime };
+}
+
+/**
+ * SNS avatar 다운로드 + Supabase Storage 업로드.
+ *
+ * 보안 가드:
+ *  - HTTPS 강제
+ *  - 화이트리스트 호스트만 (SSRF 방어 — localhost/내부 IP 차단)
+ *  - 5초 타임아웃 (callback hang 방지)
+ *  - Content-Length 5MB 제한 (메모리 DoS 방어)
+ *  - MIME 화이트리스트 (image/* 만)
+ *  - 실패 시 null 반환 (가입 흐름 무영향)
+ *
+ * @returns storage path (예: "profiles/uuid.jpg") 또는 null
+ */
+export async function downloadAndStoreAvatar(
+  adminClient: SupabaseClient<Database>,
+  user: User,
+): Promise<string | null> {
+  const url = resolveAvatarUrl(user);
+  if (!url) return null;
+
   try {
     // CRITICAL: redirect: "error" — 화이트리스트 통과 후 redirect 로 우회 방지 (SSRF 방어).
     // SNS 공식 CDN(Google/Kakao/Naver) 은 redirect 사용 안 함 → 영향 없음.
@@ -98,34 +148,10 @@ export async function downloadAndStoreAvatar(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       redirect: "error",
     });
-    if (!res.ok) return null;
 
-    // Content-Length 사전 검증 (전체 다운로드 전에 크기 차단)
-    const contentLength = Number(res.headers.get("content-length") ?? "0");
-    if (contentLength > MAX_AVATAR_BYTES) {
-      // eslint-disable-next-line no-console
-      console.warn("[avatar-download] too large:", contentLength);
-      return null;
-    }
-
-    // MIME 검증 — split(";")[0] 으로 charset 등 파라미터 제거
-    const rawContentType = res.headers.get("content-type") ?? "";
-    const mime = rawContentType.split(";")[0].trim().toLowerCase();
-    if (!isAllowedMime(mime)) {
-      // eslint-disable-next-line no-console
-      console.warn("[avatar-download] disallowed mime:", mime);
-      return null;
-    }
-    // mime 은 이제 AllowedMime literal union 으로 narrowing 됨
-
-    const arrayBuffer = await res.arrayBuffer();
-    // Content-Length 헤더 누락된 경우 실제 크기로 재검증
-    if (arrayBuffer.byteLength > MAX_AVATAR_BYTES) {
-      // eslint-disable-next-line no-console
-      console.warn("[avatar-download] body too large:", arrayBuffer.byteLength);
-      return null;
-    }
-    const body = new Uint8Array(arrayBuffer);
+    const validated = await readValidatedAvatar(res);
+    if (!validated) return null;
+    const { body, mime } = validated;
 
     const ext = extFromMime(mime);
     const path = `profiles/${user.id}.${ext}`;
