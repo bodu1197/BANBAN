@@ -1,0 +1,6 @@
+# 푸시 전 게이트: 타입 + ESLint 에러 차단.
+# NOTE: 풀 게이트(npm run quality-gate)는 ESLint --max-warnings 0 등으로 현재 잔여 경고(74)
+# 때문에 항상 실패한다 → 경고 0 정리 완료 후 아래를 `npm run quality-gate` 로 교체할 것.
+# 현재는 타입 오류 + ESLint 에러(0건)만 게이트(경고는 허용).
+npx tsc --noEmit
+npx eslint .

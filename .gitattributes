@@ -1,0 +1,3 @@
+# Husky 훅은 sh 로 실행되므로 LF 강제 (core.autocrlf=true 환경에서 CRLF 변환 시 훅 실행 깨짐 방지).
+.husky/pre-commit text eol=lf
+.husky/pre-push text eol=lf
