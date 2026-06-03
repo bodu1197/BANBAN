@@ -34,6 +34,45 @@ function validateBucket(bucket: string): boolean {
 }
 
 /**
+ * 경로가 "아티스트 소유" 네임스페이스면 그 artistId 를 반환, 아니면 null.
+ *   avatars     → `<artistId>/…`
+ *   portfolios  → `artists/<artistId>/…`, `before-after/<artistId>/…` (portfolios 버킷 내부 폴더)
+ * ⚠️ 소유권 검증이 필요한 새 업로드 네임스페이스를 추가하면 반드시 여기 규칙도 추가할 것.
+ *    authorizePutUpload 는 여기서 null 인 경로를 "인증 사용자 허용(allow-by-default)"으로 통과시킨다.
+ */
+function artistScopedId(bucket: string, path: string): string | null {
+  const seg = path.split("/");
+  if (bucket === "avatars") return seg[0] || null;
+  if (bucket === "portfolios" && (seg[0] === "artists" || seg[0] === "before-after")) return seg[1] || null;
+  return null;
+}
+
+/** profiles.is_admin 확인 (service_role — 임의 userId 조회라 RLS 우회 필요). */
+async function isUserAdmin(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<boolean> {
+  const { data } = await admin.from("profiles").select("is_admin").eq("id", userId).maybeSingle();
+  return (data as { is_admin: boolean | null } | null)?.is_admin === true;
+}
+
+/**
+ * PUT 업로드 경로 소유권/권한 검증 — IDOR(타인 파일 경로 지정) 차단.
+ * - banners 버킷                    : 관리자 전용 (quick-menu 등 어드민 콘텐츠)
+ * - 아티스트 네임스페이스            : 경로의 artistId 가 본인 소유이거나 관리자만 (artistScopedId 참조)
+ * - 그 외(community 등 비-scoped 경로): 인증 사용자 모두 허용(allow-by-default). 신규 파일 생성만 가능하고
+ *   기존 파일 덮어쓰기는 upsert:false 로 차단된다. 소유권이 필요해지면 artistScopedId 에 규칙 추가.
+ */
+async function authorizePutUpload(bucket: string, path: string, userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  if (bucket === "banners") return isUserAdmin(admin, userId);
+
+  const artistId = artistScopedId(bucket, path);
+  if (!artistId) return true;
+
+  const { data } = await admin.from("artists").select("user_id").eq("id", artistId).maybeSingle();
+  const ownerId = (data as { user_id: string | null } | null)?.user_id;
+  return ownerId === userId ? true : isUserAdmin(admin, userId);
+}
+
+/**
  * 이미지를 WebP로 변환하고 리사이즈
  */
 async function processImage(buffer: Buffer, size: ImageSize): Promise<Buffer> {
@@ -107,6 +146,8 @@ async function uploadAllSizes(
       const processedBuffer = await processImage(buffer, size);
       const filePath = `${basePath}/${size}.webp`;
 
+      // upsert:true 안전 — POST 의 basePath 는 서버가 crypto.randomUUID() 로 생성(공격자가 타인 경로 지정 불가).
+      // PUT 과 달리 user-controlled path 가 아니므로 IDOR 대상이 아니다.
       const { error: uploadError } = await adminClient.storage
         .from(bucket)
         .upload(filePath, processedBuffer, {
@@ -181,6 +222,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     if (!path) {
       return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 });
     }
+    // 소유권 검증 — 타인 소유 경로 지정(IDOR) 차단. createAdminClient(RLS 우회)로 임의 경로에 쓰기 전 필수.
+    if (!(await authorizePutUpload(bucket, path, auth.userId))) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
 
     // WebP로 변환 및 최적화
     const processedBuffer = await sharp(auth.buffer)
@@ -189,13 +234,14 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       .toBuffer();
 
     // Use admin client for Storage upload (bypasses RLS)
+    // upsert:false — 신규 경로만 생성, 기존 파일 덮어쓰기(타인 파일 변조) 차단. 모든 호출처는 타임스탬프/UUID 로 새 경로 사용.
     const adminClient = createAdminClient();
     const { error: uploadError } = await adminClient.storage
       .from(bucket)
       .upload(path, processedBuffer, {
         contentType: "image/webp",
         cacheControl: "31536000",
-        upsert: true,
+        upsert: false,
       });
 
     if (uploadError) {
