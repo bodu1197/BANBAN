@@ -9,12 +9,12 @@ export async function renderEventsPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <EventsSearchClient
         initialEvents={result.events}
         initialTotalCount={result.totalCount}
         regions={regions}
       />
-    </main>
+    </div>
   );
 }

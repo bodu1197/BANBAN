@@ -47,7 +47,7 @@ async function renderPortfolioContent(config: PortfolioPageConfig): Promise<Reac
   // 자체 segment Provider 가 없어 여기서 주입. ssr:false 인 SegmentQueryProvider 대신 SSR 가능한
   // QueryProvider 사용 — initialData 가 서버 HTML 에 포함돼야 SEO/LCP 유지(ISR revalidate=300 페이지).
   return (
-    <main className="mx-auto w-full max-w-[1024px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       <QueryProvider>
         <PortfolioSearchClient
           key={config.slug}
@@ -60,7 +60,7 @@ async function renderPortfolioContent(config: PortfolioPageConfig): Promise<Reac
           initialCategoryIds={firstParentId ? [firstParentId] : undefined}
         />
       </QueryProvider>
-    </main>
+    </div>
   );
 }
 

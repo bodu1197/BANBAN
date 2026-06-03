@@ -21,7 +21,7 @@ export async function renderAboutPage(): Promise<React.ReactElement> {
   const f = STRINGS.footer;
 
   return (
-    <main className="container mx-auto flex flex-1 flex-col px-4 py-6">
+    <div className="container mx-auto flex flex-1 flex-col px-4 py-6">
       <h1 className="mb-6 text-2xl font-bold">{STRINGS.pages.about}</h1>
 
       <section className="mb-8 rounded-lg border p-6">
@@ -39,6 +39,6 @@ export async function renderAboutPage(): Promise<React.ReactElement> {
         <p className="text-sm text-muted-foreground">{f.companyResponsibility}</p>
         <p className="text-sm text-muted-foreground">{f.companyComplaint}</p>
       </section>
-    </main>
+    </div>
   );
 }

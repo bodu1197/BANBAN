@@ -19,7 +19,7 @@ export function createAuthPage(
     }
 
     return (
-      <main className={`flex flex-1 items-center justify-center px-4 ${config.className ?? "py-16"}`}>
+      <div className={`flex flex-1 items-center justify-center px-4 ${config.className ?? "py-16"}`}>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">{config.title}</CardTitle>
@@ -28,7 +28,7 @@ export function createAuthPage(
             {renderForm()}
           </CardContent>
         </Card>
-      </main>
+      </div>
     );
   };
 }

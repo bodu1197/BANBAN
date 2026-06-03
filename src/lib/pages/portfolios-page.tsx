@@ -29,10 +29,10 @@ export async function renderPortfoliosPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="container mx-auto flex flex-1 flex-col px-4 py-6">
+    <div className="container mx-auto flex flex-1 flex-col px-4 py-6">
       <JsonLdScript jsonLd={breadcrumbJsonLd} />
       <h1 className="mb-6 text-2xl font-bold">{STRINGS.pages.portfoliosList}</h1>
       <PortfolioGrid portfolios={portfolios} emptyMessage={STRINGS.common.noData} />
-    </main>
+    </div>
   );
 }

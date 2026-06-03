@@ -70,7 +70,7 @@ export async function renderLocationListPage(): Promise<React.ReactElement> {
   const { items } = await fetchLocationSeoList({ limit: 60 });
 
   return (
-    <main className="mx-auto w-full max-w-[1024px] px-4 py-6">
+    <div className="mx-auto w-full max-w-[1024px] px-4 py-6">
       <h1 className="mb-2 text-xl font-bold md:text-2xl">{LIST_TITLE}</h1>
       <p className="mb-6 text-sm text-muted-foreground md:text-[15px]">{LIST_DESCRIPTION}</p>
 
@@ -85,6 +85,6 @@ export async function renderLocationListPage(): Promise<React.ReactElement> {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

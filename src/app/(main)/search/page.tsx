@@ -21,10 +21,10 @@ export default async function SearchPage(): Promise<React.ReactElement> {
   // prioritizeAds: 광고 집행 중인 회원을 상단에 우선 노출(순서는 클라이언트에서 매 로드 랜덤)
   const popularArtists = await fetchPopularArtists({ limit: 10, prioritizeAds: true });
   return (
-    <main className="mx-auto w-full max-w-[1024px] px-4 py-6 md:px-6">
+    <div className="mx-auto w-full max-w-[1024px] px-4 py-6 md:px-6">
       <Suspense fallback={null}>
         <SearchResultsClient popularArtists={popularArtists} />
       </Suspense>
-    </main>
+    </div>
   );
 }

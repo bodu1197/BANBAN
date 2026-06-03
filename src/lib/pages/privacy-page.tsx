@@ -19,7 +19,7 @@ export async function generatePrivacyMetadata(): Promise<Metadata> {
 
 export async function renderPrivacyPage(): Promise<React.ReactElement> {
   return (
-    <main className="container mx-auto flex flex-1 flex-col px-4 py-6">
+    <div className="container mx-auto flex flex-1 flex-col px-4 py-6">
       <h1 className="mb-6 text-2xl font-bold">{STRINGS.pages.privacy}</h1>
 
       <article className="prose prose-sm max-w-none rounded-lg border p-6">
@@ -27,6 +27,6 @@ export async function renderPrivacyPage(): Promise<React.ReactElement> {
           {STRINGS.pages.privacyContent}
         </div>
       </article>
-    </main>
+    </div>
   );
 }

@@ -29,9 +29,9 @@ export async function renderExhibitionPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[1024px] px-4 py-6">
+    <div className="mx-auto w-full max-w-[1024px] px-4 py-6">
       <JsonLdScript jsonLd={breadcrumbJsonLd} />
       <ExhibitionCategoryTabs items={exhibitions} />
-    </main>
+    </div>
   );
 }

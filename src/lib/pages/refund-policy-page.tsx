@@ -21,7 +21,7 @@ export async function generateRefundPolicyMetadata(): Promise<Metadata> {
 // eslint-disable-next-line max-lines-per-function -- single static policy page rendered as one block
 export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
   return (
-    <main className="container mx-auto flex flex-1 flex-col px-4 py-6">
+    <div className="container mx-auto flex flex-1 flex-col px-4 py-6">
       <h1 className="mb-2 text-2xl font-bold">반언니 반품 및 환불 정책</h1>
       <p className="mb-6 text-sm text-muted-foreground">Return &amp; Refund Policy</p>
 
@@ -116,6 +116,6 @@ export async function renderRefundPolicyPage(): Promise<React.ReactElement> {
           </ul>
         </section>
       </article>
-    </main>
+    </div>
   );
 }

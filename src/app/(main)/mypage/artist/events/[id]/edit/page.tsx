@@ -33,8 +33,8 @@ export default async function EventEditPage({ params }: PageProps): Promise<Reac
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-2xl bg-background px-4 py-6">
+    <div className="mx-auto min-h-screen max-w-2xl bg-background px-4 py-6">
       <EventEditClient event={event} artistTitle={artist.title} />
-    </main>
+    </div>
   );
 }

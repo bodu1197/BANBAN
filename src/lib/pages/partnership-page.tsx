@@ -22,7 +22,7 @@ export async function generatePartnershipMetadata(): Promise<Metadata> {
 
 export async function renderPartnershipPage(): Promise<React.ReactElement> {
   return (
-    <main className="container mx-auto flex flex-1 flex-col px-4 py-6">
+    <div className="container mx-auto flex flex-1 flex-col px-4 py-6">
       <div className="mb-8 flex items-center gap-3">
         <Handshake className="h-8 w-8 text-brand-primary" aria-hidden="true" />
         <h1 className="text-2xl font-bold">{STRINGS.pages.partnership}</h1>
@@ -50,6 +50,6 @@ export async function renderPartnershipPage(): Promise<React.ReactElement> {
           className="rounded-lg bg-muted/50 p-5"
         />
       </section>
-    </main>
+    </div>
   );
 }

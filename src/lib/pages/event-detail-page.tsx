@@ -148,7 +148,7 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
   });
 
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(eventJsonLd) }} />
       <EventDetailClient
@@ -191,6 +191,6 @@ export async function renderEventDetailPage(id: string): Promise<React.ReactElem
           </Suspense>
         }
       />
-    </main>
+    </div>
   );
 }

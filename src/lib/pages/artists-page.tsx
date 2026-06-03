@@ -36,7 +36,7 @@ export async function renderArtistsPage(): Promise<React.ReactElement> {
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[1024px]">
+    <div className="mx-auto w-full max-w-[1024px]">
       <JsonLdScript jsonLd={breadcrumbJsonLd} />
       <ArtistSearchClient
         initialArtists={result.artists}
@@ -44,6 +44,6 @@ export async function renderArtistsPage(): Promise<React.ReactElement> {
         regions={regions}
         initialLikedIds={likedIds}
       />
-    </main>
+    </div>
   );
 }
