@@ -191,8 +191,9 @@ async function fetchAdSearchPortfolios(opts: {
   const { supabase, typeArtist, regionIds, categoryIds, priceMin, priceMax, isCategorySearch, nowISO, adArtistIds } = opts;
   let adQuery;
   if (isCategorySearch) {
+    // 광고 전용 RPC(미디어 ≥5 게이트 없음) — 자연 검색(executePortfolioQuery)은 기존 RPC 그대로 유지.
     const rpcParams = buildCategoryRpcParams(categoryIds, typeArtist, regionIds);
-    adQuery = supabase.rpc("search_portfolios_by_category_ids", rpcParams).select(SELECT_JOINED)
+    adQuery = supabase.rpc("search_ad_portfolios_by_category_ids", rpcParams).select(SELECT_JOINED)
       .gt("price", 0)
       .or(`sale_ended_at.is.null,sale_ended_at.gte.${nowISO}`);
   } else {

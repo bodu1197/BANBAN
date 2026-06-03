@@ -89,8 +89,10 @@ async function fetchAdPortfoliosByCategory(
   categoryIds: string[],
 ): Promise<HomePortfolio[]> {
   const now = new Date().toISOString();
+  // 광고 전용 RPC — 미디어 ≥5 품질바 없음(부여/유료 광고는 포폴 1장이어도 노출). 자연 카테고리 목록은
+  // search_portfolios_by_category_ids(게이트 유지) 그대로. 노출 범위는 .in("artist_id", 활성광고주)로 한정.
   const { data } = await supabase
-    .rpc("search_portfolios_by_category_ids", { p_category_ids: categoryIds, p_type_artist: "SEMI_PERMANENT" })
+    .rpc("search_ad_portfolios_by_category_ids", { p_category_ids: categoryIds, p_type_artist: "SEMI_PERMANENT" })
     .select(SELECT_BASIC)
     .gt("price", 0)
     .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)

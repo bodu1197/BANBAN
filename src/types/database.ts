@@ -3588,6 +3588,41 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      search_ad_portfolios_by_category_ids: {
+        Args: {
+          p_category_ids: string[]
+          p_region_ids?: string[]
+          p_type_artist?: string
+          p_type_sex?: string
+        }
+        Returns: {
+          artist_id: string
+          created_at: string | null
+          deleted_at: string | null
+          description: string
+          description_cn: string | null
+          description_jp: string | null
+          discount_rate: number | null
+          id: string
+          legacy_id: number | null
+          likes_count: number | null
+          price: number
+          price_origin: number
+          sale_ended_at: string | null
+          title: string
+          title_cn: string | null
+          title_jp: string | null
+          updated_at: string | null
+          views_count: number | null
+          youtube_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "portfolios"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       upsert_similarity_top: {
         Args: {
           p_media_id: string
