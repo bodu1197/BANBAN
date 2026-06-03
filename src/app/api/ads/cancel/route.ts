@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cancelSubscription } from "@/lib/supabase/ad-queries";
-import { earnPoints } from "@/lib/supabase/point-queries";
+import { refundPointsBestEffort } from "@/lib/supabase/point-queries";
 
 /**
  * Cancel a PENDING ad subscription (e.g. when user cancels the payment popup).
@@ -36,18 +36,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "not_pending" }, { status: 400 });
     }
 
-    // Cancel the subscription
-    await cancelSubscription(body.subscriptionId);
+    // PENDING → CANCELLED 원자적 claim. 동시/재시도 호출 중 1건만 성공 → 이중 환불 차단(H4).
+    const claimed = await cancelSubscription(body.subscriptionId, "PENDING");
+    if (!claimed) return NextResponse.json({ error: "not_pending" }, { status: 400 });
 
-    // Refund points if any were spent
-    if (sub.paid_by_points > 0) {
-        await earnPoints({
-            userId: user.id,
-            amount: sub.paid_by_points,
-            reason: "AD_REFUND",
-            description: "광고 결제 취소 - 포인트 환불",
-        });
-    }
+    // claim 성공한 호출만 포인트 환불 (best-effort, 실패 시 로깅)
+    await refundPointsBestEffort({
+        userId: user.id,
+        amount: sub.paid_by_points,
+        description: "광고 결제 취소 - 포인트 환불",
+        context: "ads/cancel",
+    });
 
     return NextResponse.json({ success: true });
 }

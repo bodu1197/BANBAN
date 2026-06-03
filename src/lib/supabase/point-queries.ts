@@ -127,6 +127,24 @@ export async function spendPoints(params: SpendPointsParams): Promise<PointTrans
     return tx as PointTransaction;
 }
 
+/**
+ * 환불 포인트 적립(best-effort) — 실패해도 throw 하지 않고 로깅만 한다.
+ * 호출 시점엔 구독이 이미 취소(claim)된 상태라, 적립 실패는 수동 보정 대상이므로 반드시 로깅.
+ * amount<=0 이면 no-op. context 는 호출 출처(예: "ads/refund").
+ */
+export async function refundPointsBestEffort(
+    params: { userId: string; amount: number; description: string; context: string },
+): Promise<void> {
+    const { userId, amount, description, context } = params;
+    if (amount <= 0) return;
+    try {
+        await earnPoints({ userId, amount, reason: "AD_REFUND", description });
+    } catch (e) {
+        // eslint-disable-next-line no-console -- 구독 취소 완료 후 환불 적립 실패 → 수동 보정 필요, 반드시 로깅
+        console.error(`[${context}] 포인트 환불 실패(구독 취소 완료, 수동 보정 필요):`, { userId, amount, e });
+    }
+}
+
 /** Get transaction history for a user */
 export async function getPointHistory(
     userId: string,

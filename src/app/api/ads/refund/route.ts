@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cancelSubscription } from "@/lib/supabase/ad-queries";
-import { earnPoints } from "@/lib/supabase/point-queries";
+import { refundPointsBestEffort } from "@/lib/supabase/point-queries";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const IMP_KEY = process.env.PORTONE_IMP_KEY ?? "";
@@ -67,31 +67,30 @@ async function fetchSubscription(subscriptionId: string): Promise<SubData | null
     return data as SubData | null;
 }
 
-/** Process the refund: cancel card (best effort), refund points, cancel subscription */
-async function processRefund(sub: SubData): Promise<{ success: boolean; portoneSkipped?: boolean }> {
-    // Try PortOne cancel - if it fails (already cancelled, etc.), proceed anyway
+/** Process the refund: 원자적 취소 claim → 성공 시에만 카드 취소(best effort) + 포인트 환불 (이중 환불 방지) */
+async function processRefund(sub: SubData): Promise<{ success: boolean; alreadyProcessed?: boolean }> {
+    // ACTIVE → CANCELLED 원자적 claim. 동시/재시도 호출 중 1건만 true → 이중 환불 차단(H4).
+    const claimed = await cancelSubscription(sub.id, "ACTIVE");
+    if (!claimed) return { success: true, alreadyProcessed: true };
+
+    // claim 성공한 호출만 환불 수행
     if (sub.paid_by_cash > 0) {
         await cancelPortOnePayment(sub, "관리자 환불 처리");
     }
-
-    if (sub.paid_by_points > 0) {
-        await earnPoints({
-            userId: sub.artist.user_id,
-            amount: sub.paid_by_points,
-            reason: "AD_REFUND",
-            description: "관리자 환불 처리 - 포인트 환불",
-        });
-    }
-
-    await cancelSubscription(sub.id);
+    await refundPointsBestEffort({
+        userId: sub.artist.user_id,
+        amount: sub.paid_by_points,
+        description: "관리자 환불 처리 - 포인트 환불",
+        context: "ads/refund",
+    });
     return { success: true };
 }
 
 /**
- * Admin-only: Refund an ACTIVE ad subscription.
- * - Cancels card payment via PortOne (if any)
- * - Refunds points (if any)
- * - Sets subscription status to CANCELLED
+ * Admin-only: Refund an ACTIVE ad subscription. 멱등(idempotent).
+ * 1) ACTIVE → CANCELLED 를 원자적으로 claim (동시/재시도 중 1건만 성공)
+ * 2) claim 에 성공한 호출만 카드 취소(PortOne, best effort) + 포인트 환불 수행
+ * 이미 처리된(claim 실패) 호출은 환불을 반복하지 않고 success 로 응답.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
     const ip = getClientIp(request);

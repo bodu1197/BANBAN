@@ -148,13 +148,24 @@ export async function getActiveSubscriptions(artistId: string): Promise<AdSubscr
     return (data ?? []) as AdSubscription[];
 }
 
-/** Cancel a subscription */
-export async function cancelSubscription(subscriptionId: string): Promise<void> {
-    const supabase = await createClient();
-    await supabase
+/**
+ * 구독 취소를 원자적으로 "claim" — fromStatus 인 경우에만 CANCELLED 로 전이.
+ * 단일 UPDATE(WHERE status=fromStatus)라 동시/재시도 호출 중 정확히 1건만 성공(true 반환) →
+ * 이중 환불·부분 실패(포인트만 환급되고 구독은 ACTIVE) 방지(H4 멱등성).
+ * service_role 사용 — ad_subscriptions write RLS 정책 부재로 createClient 는 무효일 수 있음.
+ */
+export async function cancelSubscription(
+    subscriptionId: string,
+    fromStatus: AdSubscriptionStatus,
+): Promise<boolean> {
+    const supabase = createAdminClient();
+    const { data } = await supabase
         .from("ad_subscriptions")
         .update({ status: "CANCELLED" as AdSubscriptionStatus })
-        .eq("id", subscriptionId);
+        .eq("id", subscriptionId)
+        .eq("status", fromStatus)
+        .select("id");
+    return (data?.length ?? 0) > 0;
 }
 
 // ─── Active Ads (for rendering) ──────────────────────────
