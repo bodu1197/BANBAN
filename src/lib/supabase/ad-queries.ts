@@ -52,7 +52,9 @@ export async function createAdSubscription(params: {
     durationMonths: number;
 }): Promise<AdSubscription> {
     const days = params.durationMonths * DAYS_PER_MONTH;
-    const supabase = await createClient();
+    // service_role — ad_subscriptions 는 RLS SELECT 정책만 있고 INSERT 정책이 없어 createClient insert 는
+    // 무음 실패(0행)한다. 구매 라우트(/api/ads/purchase)가 아티스트 인증·플랜 검증을 선행하므로 안전.
+    const supabase = createAdminClient();
     const { data, error } = await supabase
         .from("ad_subscriptions")
         .insert({
@@ -241,24 +243,22 @@ export async function getAdEventCounts(
 
 /** Mark expired subscriptions as EXPIRED */
 export async function expireOldSubscriptions(): Promise<number> {
-    const supabase = await createClient();
+    // service_role — cron(사용자 세션 없음) 컨텍스트라 owner 기반 RLS SELECT 로는 0건 조회 + UPDATE 정책
+    // 부재로 무음 실패한다. 전 아티스트 만료 구독을 일괄 처리해야 하므로 admin client 필수.
+    const supabase = createAdminClient();
     const now = new Date().toISOString();
 
-    const { data } = await supabase
-        .from("ad_subscriptions")
-        .select("id")
-        .eq("status", STATUS_ACTIVE)
-        .lt("expires_at", now);
-
-    if (!data || data.length === 0) return 0;
-
-    const ids = data.map(r => r.id);
-    await supabase
+    // 단일 가드 UPDATE — ACTIVE & 만료된 구독을 EXPIRED 로 전이. SELECT 왕복 제거 + RETURNING 으로
+    // 실제 처리 건수 정확 반환(기존 SELECT-then-UPDATE 의 오해 소지 카운트/에러 무시 개선).
+    const { data, error } = await supabase
         .from("ad_subscriptions")
         .update({ status: "EXPIRED" as AdSubscriptionStatus })
-        .in("id", ids);
+        .eq("status", STATUS_ACTIVE)
+        .lt("expires_at", now)
+        .select("id");
 
-    return ids.length;
+    if (error) throw new Error(`Failed to expire subscriptions: ${error.message}`);
+    return data?.length ?? 0;
 }
 
 // ─── Admin Stats ─────────────────────────────────────────
