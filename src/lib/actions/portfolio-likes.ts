@@ -48,7 +48,8 @@ export async function togglePortfolioLike(portfolioId: string): Promise<TogglePo
   await supabase.rpc("increment_portfolio_likes", { portfolio_id_param: portfolioId });
 
   // 좋아요 포인트 (5회/일)
-  void earnPointsWithLimit({ userId: user.id, amount: 500, reason: "LIKE", description: "좋아요" });
+  void earnPointsWithLimit({ userId: user.id, amount: 500, reason: "LIKE", description: "좋아요" })
+    .catch(() => { /* best-effort 적립 — 실패해도 좋아요 자체는 성공 처리 */ });
 
   return { success: true, isLiked: true };
 }

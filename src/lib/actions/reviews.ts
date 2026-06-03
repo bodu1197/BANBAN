@@ -41,7 +41,8 @@ export async function submitReview(
   }
 
   // 후기 작성 포인트 (1회/일)
-  void earnPointsWithLimit({ userId: user.id, amount: 20_000, reason: "REVIEW", description: "후기 작성" });
+  void earnPointsWithLimit({ userId: user.id, amount: 20_000, reason: "REVIEW", description: "후기 작성" })
+    .catch(() => { /* best-effort 적립 — 실패해도 후기 작성 자체는 성공 처리 */ });
 
   revalidatePath(`/artists/${artistId}`);
   return { success: true };

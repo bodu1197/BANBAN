@@ -13,6 +13,19 @@ interface ConversationRow {
     created_at: string;
 }
 
+type OtherProfile = { nickname: string | null; profile_image_path: string | null } | undefined;
+type OtherArtist = { title: string; profile_image_path: string | null } | undefined;
+
+/** 상대 표시 이름 — 아티스트 상호 > 닉네임 > 기본값. */
+function resolveOtherName(artist: OtherArtist, profile: OtherProfile): string {
+    return artist?.title ?? profile?.nickname ?? "사용자";
+}
+
+/** 상대 아바타 URL — 아티스트 대표사진(스토리지 경로→public URL) > 프로필 이미지 > null. */
+function resolveOtherAvatar(artist: OtherArtist, profile: OtherProfile): string | null {
+    return getAvatarUrl(artist?.profile_image_path ?? null) ?? getAvatarUrl(profile?.profile_image_path ?? null) ?? null;
+}
+
 /** GET /api/chat/conversations — list my conversations */
 export async function GET(): Promise<NextResponse> {
     const user = await getUser();
@@ -60,10 +73,8 @@ export async function GET(): Promise<NextResponse> {
         return {
             id: c.id,
             otherId,
-            otherName: artist?.title ?? profile?.nickname ?? "사용자",
-            // artist.profile_image_path 는 Storage 내부 경로 → avatars 버킷 public URL 로 변환.
-            // profile.avatar_url 은 이미 full URL (소셜 가입 OAuth) — getAvatarUrl 이 http(s) prefix 감지하면 그대로 통과.
-            otherAvatar: getAvatarUrl(artist?.profile_image_path ?? null) ?? getAvatarUrl(profile?.profile_image_path ?? null) ?? null,
+            otherName: resolveOtherName(artist, profile),
+            otherAvatar: resolveOtherAvatar(artist, profile),
             lastMessage: c.last_message,
             lastMessageAt: c.last_message_at,
             createdAt: c.created_at,
@@ -104,7 +115,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     // 채팅 상담 시작 포인트 (1회/일)
-    void earnPointsWithLimit({ userId: user.id, amount: 2_000, reason: "CHAT_START", description: "채팅 상담 시작" });
+    void earnPointsWithLimit({ userId: user.id, amount: 2_000, reason: "CHAT_START", description: "채팅 상담 시작" })
+      .catch(() => { /* best-effort 적립 — 실패해도 채팅 시작 자체는 성공 처리 */ });
 
     return NextResponse.json({ conversationId: (newConv as { id: string }).id });
 }

@@ -169,6 +169,8 @@ export async function getPointHistory(
 
 // ─── Daily Limit ────────────────────────────────────────
 
+// 일일 적립 한도 enforcement 의 단일 출처(SSOT). 여기 없는 reason 은 한도 없이 적립된다(earnPointsWithLimit fallback).
+// 새 한도 reason 추가 시 반드시 여기에 등록할 것. (DB point_policies.daily_limit 컬럼이 있으나 현재 enforcement 미사용)
 const DAILY_LIMITS: Partial<Record<PointReason, number>> = {
     ATTENDANCE: 1,
     REVIEW: 1,
@@ -176,31 +178,31 @@ const DAILY_LIMITS: Partial<Record<PointReason, number>> = {
     LIKE: 5,
 };
 
-/** Check if user has exceeded daily limit for a given reason */
-export async function checkDailyLimit(userId: string, reason: PointReason): Promise<boolean> {
-    // eslint-disable-next-line security/detect-object-injection -- Safe: known key lookup
-    const limit = DAILY_LIMITS[reason];
-    if (!limit) return true; // no limit
+/**
+ * Earn points with daily limit — 한도 검사와 적립을 원자적 RPC(earn_points_daily_limited)로 수행.
+ * 지갑 행 잠금으로 동시 요청을 직렬화해 "count→적립" 경쟁(H5: 한도 초과 적립)을 제거.
+ * 한도 없는 reason 은 일반 earnPoints. 한도 도달이면 null.
+ */
+export async function earnPointsWithLimit(params: EarnPointsParams): Promise<PointTransaction | null> {
+    const limit = DAILY_LIMITS[params.reason];
+    if (!limit) return earnPoints(params); // 한도 없는 reason
 
-    const wallet = await getOrCreateWallet(userId);
+    const { userId, amount, reason, description, expiresAt, referenceId } = params;
     const supabase = createAdminClient();
 
-    const { count } = await supabase
-        .from("point_transactions")
-        .select("id", { count: "exact", head: true })
-        .eq("wallet_id", wallet.id)
-        .eq("reason", reason)
-        .eq("type", "EARN")
-        .gte("created_at", todayStartKST());
+    const { data, error } = await supabase.rpc("earn_points_daily_limited", {
+        p_user_id: userId,
+        p_amount: amount,
+        p_reason: reason,
+        p_daily_limit: limit,
+        p_day_start: todayStartKST(),
+        p_description: description ?? null,
+        p_expires_at: expiresAt ?? null,
+        p_reference_id: referenceId ?? null,
+    });
 
-    return (count ?? 0) < limit;
-}
-
-/** Earn points with daily limit check — returns null if limit exceeded */
-export async function earnPointsWithLimit(params: EarnPointsParams): Promise<PointTransaction | null> {
-    const canEarn = await checkDailyLimit(params.userId, params.reason);
-    if (!canEarn) return null;
-    return earnPoints(params);
+    if (error) throw new Error(`Failed to earn points (daily-limited): ${error.message}`);
+    return (data?.[0] as PointTransaction) ?? null; // 빈 결과 = 한도 도달
 }
 
 // ─── Welcome Bonus ──────────────────────────────────────
