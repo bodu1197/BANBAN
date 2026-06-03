@@ -14,8 +14,8 @@ interface MinimalUser {
 }
 
 function getPlugin(): NonNullable<Window["swingWebViewPlugin"]> | null {
-  if (typeof window === "undefined") return null;
-  return window.swingWebViewPlugin ?? null;
+  if (typeof globalThis === "undefined") return null;
+  return (globalThis as unknown as { swingWebViewPlugin?: Window["swingWebViewPlugin"] }).swingWebViewPlugin ?? null;
 }
 
 function getUserDisplayName(user: MinimalUser): string {
@@ -48,18 +48,20 @@ export function Swing2AppBridge(): null {
 
     let unsubscribe: (() => void) | null = null;
 
+    const handleAuthChange = (event: string, session: { user?: MinimalUser } | null): void => {
+      if (event === "SIGNED_IN" && session?.user && session.user.id !== lastSyncedUserIdRef.current) {
+        lastSyncedUserIdRef.current = session.user.id;
+        syncLogin(session.user);
+      } else if (event === "SIGNED_OUT") {
+        lastSyncedUserIdRef.current = null;
+        syncLogout();
+      }
+    };
+
     idle(() => {
       void import("@/lib/supabase/client").then(({ createClient }) => {
         const supabase = createClient();
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === "SIGNED_IN" && session?.user && session.user.id !== lastSyncedUserIdRef.current) {
-            lastSyncedUserIdRef.current = session.user.id;
-            syncLogin(session.user as MinimalUser);
-          } else if (event === "SIGNED_OUT") {
-            lastSyncedUserIdRef.current = null;
-            syncLogout();
-          }
-        });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
         unsubscribe = () => subscription.unsubscribe();
       });
     }, SWING_IDLE_TIMEOUT_MS);

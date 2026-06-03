@@ -304,7 +304,7 @@ function useGrants(authLoading: boolean, user: unknown): {
 
 export default function AdminAdGrantsPage(): React.ReactElement {
     const { user, isLoading: authLoading } = useAuth();
-    const { data, loading, error, status, search, page, setStatus, setSearch, setPage, refetch } = useGrants(authLoading, user);
+    const { data, loading, error, status, setStatus, setSearch, setPage, refetch } = useGrants(authLoading, user);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [showNewModal, setShowNewModal] = useState(false);
     // 슬롯 캐시 — subscriptionId 별 첫 펼침 때만 fetch, 이후 접었다 펼쳐도 캐시 사용.

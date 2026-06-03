@@ -7,7 +7,10 @@ const FALLBACK_MIN_MS = 500;
 const DEFAULT_TIMEOUT_MS = 2000;
 
 export function idle(cb: () => void, timeoutMs: number = DEFAULT_TIMEOUT_MS): void {
-  const ric = typeof window !== "undefined" ? window.requestIdleCallback : undefined;
+  const ric =
+    typeof globalThis !== "undefined"
+      ? (globalThis as typeof globalThis & { requestIdleCallback?: typeof window.requestIdleCallback }).requestIdleCallback
+      : undefined;
   if (ric) {
     ric(cb, { timeout: timeoutMs });
     return;

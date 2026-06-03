@@ -18,9 +18,11 @@ interface UseDaumPostcodeReturn {
   close: () => void;
 }
 
-// Daum Postcode 타입은 globals.d.ts 의 Window.daum ambient 선언 사용 — `as unknown as` 캐스트 제거.
+// Daum Postcode 타입은 globals.d.ts 의 Window.daum ambient 선언 사용.
 function getDaum(): Window["daum"] {
-  return typeof window !== "undefined" ? window.daum : undefined;
+  return typeof globalThis !== "undefined"
+    ? (globalThis as unknown as Window).daum
+    : undefined;
 }
 
 export function useDaumPostcode(): UseDaumPostcodeReturn {

@@ -19,13 +19,19 @@ interface Props {
     onToggle: (id: string) => void;
 }
 
+// disabled 시 opacity 만으로는 텍스트 대비 미달 → grayscale + 불투명도 조정
+function getBorderCls(selected: boolean, disabled: boolean): string {
+    if (selected) {
+        return "border-emerald-500 ring-2 ring-emerald-500/30";
+    }
+    if (disabled) {
+        return "border-white/10 opacity-60 cursor-not-allowed grayscale";
+    }
+    return "border-white/10 hover:border-emerald-300";
+}
+
 function PortfolioThumbImpl({ p, selected, disabled, onToggle }: Readonly<Props>): React.ReactElement {
-    // disabled 시 opacity 만으로는 텍스트 대비 미달 → grayscale + 불투명도 조정
-    const borderCls = selected
-        ? "border-emerald-500 ring-2 ring-emerald-500/30"
-        : disabled
-            ? "border-white/10 opacity-60 cursor-not-allowed grayscale"
-            : "border-white/10 hover:border-emerald-300";
+    const borderCls = getBorderCls(selected, disabled);
     return (
         <button
             type="button"

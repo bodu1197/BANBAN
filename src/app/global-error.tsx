@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 /**
@@ -39,12 +40,12 @@ export default function GlobalError({
             >
               다시 시도
             </button>
-            <a
+            <Link
               href="/"
               className="rounded-lg border px-5 py-2.5 text-sm font-semibold"
             >
               홈으로 이동
-            </a>
+            </Link>
           </div>
         </main>
       </body>

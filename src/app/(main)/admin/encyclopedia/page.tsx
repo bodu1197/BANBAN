@@ -6,10 +6,12 @@ import Link from "next/link";
 
 const POLLING_INTERVAL_MS = 60_000;
 
+const DEFAULT_TONE_CLASS = "border-white/10";
+
 const TONE_CLASS: Record<"ok" | "warn" | "danger", string> = {
   warn: "border-amber-500/40",
   danger: "border-red-500/40",
-  ok: "border-white/10",
+  ok: DEFAULT_TONE_CLASS,
 };
 import {
   BookOpen,
@@ -102,7 +104,8 @@ function StatusCard({
   sub?: string;
   tone?: "ok" | "warn" | "danger";
 }>): React.ReactElement {
-  const toneClass = tone ? (TONE_CLASS[tone] ?? "border-white/10") : "border-white/10";
+  // eslint-disable-next-line security/detect-object-injection -- tone 은 제한된 리터럴 유니온(ok|warn|danger)
+  const toneClass = tone ? (TONE_CLASS[tone] ?? DEFAULT_TONE_CLASS) : DEFAULT_TONE_CLASS;
   return (
     <div className={`rounded-xl border ${toneClass} bg-white/5 p-4 md:p-5`}>
       <div className="mb-2 flex items-center gap-2 text-xs text-zinc-400">

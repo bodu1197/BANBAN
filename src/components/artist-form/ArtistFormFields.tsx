@@ -72,7 +72,6 @@ function toggleInList(list: string[], value: string): string[] {
 }
 
 type NormalizableField = "title" | "introduce" | "description";
-const NORMALIZE_FIELDS = new Set<NormalizableField>(["title", "introduce", "description"]);
 
 export function useArtistFormHandlers(
   setFormData: React.Dispatch<React.SetStateAction<ArtistFormData>>,
@@ -92,6 +91,7 @@ export function useArtistFormHandlers(
   const handleBlurNormalize = useCallback(
     (field: NormalizableField) => () => {
       setFormData((prev) => {
+        // eslint-disable-next-line security/detect-object-injection -- field 는 NormalizableField 제한 타입
         const raw = prev[field];
         if (typeof raw !== "string") return prev;
         const normalized = normalizeFancyText(raw);

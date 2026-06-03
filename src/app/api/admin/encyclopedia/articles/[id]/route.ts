@@ -4,6 +4,7 @@ import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 
 const ENCYCLOPEDIA_CACHE_TAG = "encyclopedia";
+const INVALID_UUID_MESSAGE = "유효한 UUID 형식이 아닙니다.";
 
 interface InlineImage { url: string; alt?: string }
 
@@ -37,8 +38,9 @@ const ALLOWED_KEYS: ReadonlyArray<keyof ArticlePatchBody> = [
 function buildUpdates(body: ArticlePatchBody): Record<string, unknown> {
   const updates: Record<string, unknown> = {};
   for (const key of ALLOWED_KEYS) {
+    // eslint-disable-next-line security/detect-object-injection -- key from ALLOWED_KEYS allow-list
     if (body[key] !== undefined) {
-      // eslint-disable-next-line security/detect-object-injection -- key from allow-list
+      // eslint-disable-next-line security/detect-object-injection -- key from ALLOWED_KEYS allow-list
       updates[key] = body[key];
     }
   }
@@ -57,7 +59,7 @@ export async function GET(
 
   const { id } = await context.params;
   if (!UUID_REGEX.test(id)) {
-    return NextResponse.json({ error: "유효한 UUID 형식이 아닙니다." }, { status: 400 });
+    return NextResponse.json({ error: INVALID_UUID_MESSAGE }, { status: 400 });
   }
 
   const { data, error } = await auth.supabase
@@ -81,7 +83,7 @@ export async function PATCH(
 
   const { id } = await context.params;
   if (!UUID_REGEX.test(id)) {
-    return NextResponse.json({ error: "유효한 UUID 형식이 아닙니다." }, { status: 400 });
+    return NextResponse.json({ error: INVALID_UUID_MESSAGE }, { status: 400 });
   }
 
   const body = await request.json() as ArticlePatchBody;
@@ -129,7 +131,7 @@ export async function DELETE(
 
   const { id } = await context.params;
   if (!UUID_REGEX.test(id)) {
-    return NextResponse.json({ error: "유효한 UUID 형식이 아닙니다." }, { status: 400 });
+    return NextResponse.json({ error: INVALID_UUID_MESSAGE }, { status: 400 });
   }
 
   const { error } = await auth.supabase
