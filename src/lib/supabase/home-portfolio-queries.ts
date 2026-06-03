@@ -41,6 +41,13 @@ function isVisibleArtist(row: PortfolioRowWithType): boolean {
   return artist.portfolio_media_count >= 5;
 }
 
+/** 광고(유료/부여, 슬롯 보유) 전용 가시성 — 일반 노출 품질바(미디어 ≥5)는 면제하되
+ *  숨김·삭제·휴면 아티스트는 계속 제외. 광고주 포폴 수가 적어도 노출 보장. */
+function isAdEligibleArtist(row: PortfolioRowWithType): boolean {
+  const artist = row.artist;
+  return !!artist && !artist.is_hide && !artist.deleted_at && artist.status !== "dormant";
+}
+
 function deduplicatePortfolios<T extends { artist_id: string; title: string }>(rows: T[]): T[] {
   const seen = new Set<string>();
   return rows.filter((row) => {
@@ -70,7 +77,8 @@ async function fetchAdPortfoliosGeneric(
     .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
     .in("artist_id", adArtistIds);
   const { data } = await modifier(base).limit(AD_INJECTION_FETCH_LIMIT);
-  const rows = ((data ?? []) as PortfolioRowWithType[]).filter(isVisibleArtist);
+  // 광고풀은 미디어 ≥5 품질바 면제(isAdEligibleArtist) — 부여/유료 광고주는 포폴 수와 무관히 노출.
+  const rows = ((data ?? []) as PortfolioRowWithType[]).filter(isAdEligibleArtist);
   return deduplicatePortfolios(rows).map(mapPortfolioRow);
 }
 

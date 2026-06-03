@@ -144,7 +144,7 @@ const SELECT_JOINED = `
   artist:artists!inner(title, address, profile_image_path, type_artist, is_hide, deleted_at, region:regions(name))
 `;
 
-function applyBaseArtistFilters(query: QueryBuilder, typeArtist: string, regionIds: string[] | null): QueryBuilder {
+function applyBaseArtistFilters(query: QueryBuilder, typeArtist: string, regionIds: string[] | null, forAd = false): QueryBuilder {
   const now = new Date().toISOString();
   let q = query
     .is("deleted_at", null)
@@ -153,9 +153,10 @@ function applyBaseArtistFilters(query: QueryBuilder, typeArtist: string, regionI
     .eq("artists.type_artist", typeArtist)
     .is("artists.deleted_at", null)
     .eq("artists.is_hide", false)
-    .eq("artists.status", "active")
-    .gte("artists.portfolio_media_count", 5);
+    .eq("artists.status", "active");
 
+  // 광고 페치(forAd)는 미디어 ≥5 품질바 면제 — 부여/유료 광고주는 포폴 수 무관 노출. 자연 검색은 게이트 유지.
+  if (!forAd) q = q.gte("artists.portfolio_media_count", 5);
   if (regionIds && regionIds.length > 0) q = q.in("artists.region_id", regionIds);
   return q;
 }
@@ -195,7 +196,7 @@ async function fetchAdSearchPortfolios(opts: {
       .gt("price", 0)
       .or(`sale_ended_at.is.null,sale_ended_at.gte.${nowISO}`);
   } else {
-    adQuery = applyBaseArtistFilters(supabase.from("portfolios").select(SELECT_JOINED), typeArtist, regionIds);
+    adQuery = applyBaseArtistFilters(supabase.from("portfolios").select(SELECT_JOINED), typeArtist, regionIds, true);
   }
   adQuery = applyPriceFilters(adQuery, priceMin, priceMax);
   const { data } = await adQuery.in("artist_id", adArtistIds).limit(AD_INJECTION_FETCH_LIMIT);

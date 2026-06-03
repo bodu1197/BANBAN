@@ -3,8 +3,10 @@ import { getActiveAdArtists } from "./ad-queries";
 import type { HomePortfolio } from "./portfolio-common";
 import { secureRandomInt } from "@/lib/random";
 
-/** 광고 주입 시 "같은 스코프"로 가져올 광고 포폴 최대 개수 (홈/검색 공통) */
-export const AD_INJECTION_FETCH_LIMIT = 12;
+/** 광고 주입 시 "같은 스코프"로 가져올 광고 포폴 최대 개수 (홈/검색 공통).
+ *  광고주 수 무제한 → 풀에 모든 활성 광고주의 포폴이 포함되도록 넉넉히(60). injectAdPortfolios
+ *  가 광고주당 1개만 추려 주입하므로 과다 노출은 없음. */
+export const AD_INJECTION_FETCH_LIMIT = 60;
 
 /** Cached active ad artist IDs (60s TTL) — 노출 집계(impressions)·추천 reorder 용 */
 export const fetchBoostArtistIds = unstable_cache(
@@ -45,7 +47,8 @@ export const getAdBoostContext = unstable_cache(
  * 자연 목록에 광고 회원이 원래 없어도 노출이 보장된다(부여 광고가 항상 보이게).
  *
  * - slotIds(광고주 선택 대표작) 우선 → 그 외 포폴
- * - 아티스트당 최대 1개(한 광고주가 슬롯 독식 방지) + 전체 maxBoost 상한
+ * - 아티스트당 최대 1개(한 광고주가 슬롯 독식 방지). maxBoost 는 withAdInjection 이 활성 광고주 수로
+ *   넘겨 전원 노출(고정 상한 없음). 직접 호출 시 기본값 2.
  * - 위치는 목록 맨 앞(0번부터) 고정 — 광고주가 구매한 "상단 노출/상단 고정" 가치 보장
  * - 이미 자연 목록에 포함된 포폴은 중복 제거 후 최상단으로 끌어올림
  *
@@ -95,7 +98,8 @@ export async function withAdInjection(
   const { adArtistIds, slotIds } = await getAdBoostContext();
   if (adArtistIds.length === 0) return natural;
   const adPortfolios = await fetchAds(adArtistIds);
-  return injectAdPortfolios(natural, adPortfolios, slotIds);
+  // 광고주 수는 무제한 → 고정 캡(2) 없이 활성 광고주 전원(광고주당 1개씩) 주입해 모두 노출 보장.
+  return injectAdPortfolios(natural, adPortfolios, slotIds, adArtistIds.length);
 }
 
 /**
