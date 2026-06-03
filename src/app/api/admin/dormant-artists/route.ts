@@ -93,13 +93,32 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
   }
 
-  const { error } = await auth.supabase
+  // 복귀 시 공개 가시성(RLS 의 approved_at 게이트)도 함께 복구한다.
+  // approved_at 이 비어 있으면(레거시·과거 휴면 데이터) 지금 시각으로 채워 200 인덱싱 가능 상태로
+  // 되돌리고, 이미 있으면 원래 승인 시각을 유지한다. 이게 없으면 복귀해도 noindex 로 남는다.
+  const { data: current } = await auth.supabase
     .from("artists")
-    .update({ status: "active", updated_at: new Date().toISOString() })
+    .select("approved_at")
     .eq("id", body.id)
-    .eq("status", "dormant");
+    .eq("status", "dormant")
+    .maybeSingle();
+
+  const { data: updated, error } = await auth.supabase
+    .from("artists")
+    .update({
+      status: "active",
+      approved_at: current?.approved_at ?? new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", body.id)
+    .eq("status", "dormant")
+    .select("id");
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // status="dormant" 조건이 0행이면(이미 복귀됨·동시 변경·존재X) 조용한 성공 처리 금지.
+  if (!updated?.length) {
+    return NextResponse.json({ error: "not_dormant_or_already_changed" }, { status: 409 });
+  }
   return NextResponse.json({ success: true });
 }
 

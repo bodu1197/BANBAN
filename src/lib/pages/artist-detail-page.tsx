@@ -33,33 +33,16 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
     if (uuid) {
       permanentRedirect(`/artists/${uuid}`);
     }
-    return {
-      title: "아티스트를 찾을 수 없습니다 | 반언니",
-      description: "요청하신 아티스트를 찾을 수 없습니다.",
-      robots: { index: false, follow: false },
-      ...buildPageSeo({
-        title: "아티스트를 찾을 수 없습니다",
-        description: "요청하신 아티스트를 찾을 수 없습니다.",
-        path: `/artists/${id}`,
-        image: null,
-      }),
-    };
+    // 매칭 UUID 없음 → 진짜 404. generateMetadata 도 notFound 로 통일해 soft 404(200) 방지.
+    notFound();
   }
 
   const artist = await fetchArtistById(id);
 
+  // 휴면(status=dormant)·미승인(approved_at NULL)·삭제·미존재 → 깨끗한 HTTP 404.
+  // 200+noindex(soft 404)는 구글 크롤 감점 → notFound()로 정상 404 신호를 보낸다.
   if (!artist) {
-    return {
-      title: "아티스트를 찾을 수 없습니다 | 반언니",
-      description: "요청하신 아티스트를 찾을 수 없습니다.",
-      robots: { index: false, follow: false },
-      ...buildPageSeo({
-        title: "아티스트를 찾을 수 없습니다",
-        description: "요청하신 아티스트를 찾을 수 없습니다.",
-        path: `/artists/${id}`,
-        image: null,
-      }),
-    };
+    notFound();
   }
 
   const description = artist.introduce;
@@ -194,7 +177,7 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">
+    <div className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdSafe(artistJsonLd) }}
@@ -255,6 +238,6 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
         sourceType="artist"
         sourceId={id}
       />
-    </main>
+    </div>
   );
 }

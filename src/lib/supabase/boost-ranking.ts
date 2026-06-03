@@ -40,14 +40,14 @@ export const getAdBoostContext = unstable_cache(
 );
 
 /**
- * 광고 회원 포폴을 목록 상단(0–2)에 "주입"한다 — 단순 재정렬이 아니라,
+ * 광고 회원 포폴을 목록 최상단에 "주입"한다 — 단순 재정렬이 아니라,
  * 호출부가 "같은 스코프"로 따로 fetch 해 온 광고 포폴(adPortfolios)을 끼워넣는다.
  * 자연 목록에 광고 회원이 원래 없어도 노출이 보장된다(부여 광고가 항상 보이게).
  *
  * - slotIds(광고주 선택 대표작) 우선 → 그 외 포폴
  * - 아티스트당 최대 1개(한 광고주가 슬롯 독식 방지) + 전체 maxBoost 상한
- * - 위치는 0–2 내 랜덤(하드코딩 광고처럼 안 보이게)
- * - 이미 자연 목록에 포함된 포폴은 중복 제거 후 상단 재배치
+ * - 위치는 목록 맨 앞(0번부터) 고정 — 광고주가 구매한 "상단 노출/상단 고정" 가치 보장
+ * - 이미 자연 목록에 포함된 포폴은 중복 제거 후 최상단으로 끌어올림
  *
  * 주의: 주입은 "추가"라서 반환 길이가 natural 보다 최대 maxBoost 만큼 늘 수 있다(대체 아님).
  * 소비 컴포넌트는 고정 개수를 가정하지 말 것(그리드/리스트는 가변 개수 허용).
@@ -76,12 +76,10 @@ export function injectAdPortfolios(
   }
 
   const pickedIds = new Set(picked.map((p) => p.id));
-  const result = natural.filter((p) => !pickedIds.has(p.id));
-  for (const item of picked) {
-    const pos = secureRandomInt(Math.min(3, result.length + 1));
-    result.splice(pos, 0, item);
-  }
-  return result;
+  const rest = natural.filter((p) => !pickedIds.has(p.id));
+  // 광고는 목록 맨 앞(0번부터)에 고정 — 0~2 랜덤이면 2~3번째로 밀려 "상단에 광고가 없다"는
+  // 피드백이 있었음(검색 캐시 세대마다 위치가 달라짐). 구매한 "상단 노출" 가치를 명확히 보장.
+  return [...picked, ...rest];
 }
 
 /**
