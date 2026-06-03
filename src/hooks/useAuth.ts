@@ -55,6 +55,14 @@ function normalizeRole(raw: unknown): Role {
   return raw === "artist" ? "artist" : "user";
 }
 
+/** 두 artist 가 동일한지(참조 유지 판단용) — 변경 없을 때 setState 가 prev 를 그대로 반환해 리렌더 회피. */
+function sameArtist(a: Artist | null, b: Artist | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.id === b.id && a.title === b.title
+    && a.profile_image_path === b.profile_image_path && a.type_artist === b.type_artist;
+}
+
 /** Lazily resolve the browser Supabase client (avoids pulling ~200 KB into the initial bundle). */
 async function getClient(): Promise<SupabaseClient> {
   const { createClient } = await import("@/lib/supabase/client");
@@ -116,6 +124,22 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  // TOKEN_REFRESHED 시 role/artist/avatar drift 만 반영 — 실제 변경이 있을 때만 set 해서
+  // 불필요한 user 객체 재생성/리렌더(탭 깜빡임)를 피한다(M14: 가입 직후 승격 등 stale 방지).
+  const syncRoleArtistIfChanged = useCallback(async () => {
+    const supabase = await getClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const [{ data: artistData }, { data: profileData }] = await Promise.all([
+      supabase.from("artists").select("id, title, profile_image_path, type_artist").eq("user_id", authUser.id).maybeSingle(),
+      supabase.from("profiles").select("role, profile_image_path").eq("id", authUser.id).maybeSingle(),
+    ]);
+    const nextArtist = artistData as Artist | null;
+    setArtist((prev) => (sameArtist(prev, nextArtist) ? prev : nextArtist));
+    setRole((prev) => { const next = normalizeRole(profileData?.role); return prev === next ? prev : next; });
+    setProfileImagePath((prev) => { const next = profileData?.profile_image_path ?? null; return prev === next ? prev : next; });
+  }, []);
+
   useEffect(() => {
     // 초기 로딩 한 번만 실행
     if (!initialFetchDone.current) {
@@ -130,7 +154,7 @@ export function useAuth(): UseAuthReturn {
         // SIGNED_OUT 은 항상 재조회. SIGNED_IN 은 '실제 유저 변경' 시에만 —
         // Supabase 는 탭 포커스 복귀마다 SIGNED_IN 을 재발화하는데, 매번 재조회하면 새 user 객체가
         // 생성돼 구독 페이지(예: /admin/ad-grants)가 데이터 재페치 + 로딩스피너로 깜빡 = "페이지 자동 새로고침".
-        // INITIAL_SESSION / TOKEN_REFRESHED 는 무시.
+        // INITIAL_SESSION 은 무시. TOKEN_REFRESHED 는 role/artist 변경분만 반영(M14, 깜빡임 없음).
         if (event === "SIGNED_OUT") {
           fetchUserAndArtist();
         } else if (event === "SIGNED_IN") {
@@ -140,6 +164,8 @@ export function useAuth(): UseAuthReturn {
             currentUserIdRef.current = newId;
             fetchUserAndArtist();
           }
+        } else if (event === "TOKEN_REFRESHED") {
+          void syncRoleArtistIfChanged();
         }
       });
       subscription = data.subscription;
@@ -148,7 +174,7 @@ export function useAuth(): UseAuthReturn {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [fetchUserAndArtist]);
+  }, [fetchUserAndArtist, syncRoleArtistIfChanged]);
 
   const logout = useCallback(async () => {
     const { signOut } = await import("@/lib/supabase/auth-client");

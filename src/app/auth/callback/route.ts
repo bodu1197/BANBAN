@@ -47,6 +47,27 @@ async function safeRun(label: string, op: () => PromiseLike<unknown>): Promise<v
   }
 }
 
+/**
+ * 프로필 생성/갱신 — 필수 단계. 실패 시 앱 진입 금지(M11): 로그아웃 + 에러 리다이렉트 반환,
+ * 성공 시 null. (기존엔 safeRun 으로 삼켜 프로필 없이 성공 리다이렉트되던 문제.)
+ */
+async function ensureProfileOrRedirect(
+  adminClient: AdminClient,
+  supabase: SupabaseClient<Database>,
+  user: User,
+  origin: string,
+): Promise<NextResponse | null> {
+  try {
+    await ensureProfile(adminClient, user);
+    return null;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("[Auth Callback] ensure profile failed:", e);
+    await supabase.auth.signOut().catch(() => { /* signOut 실패해도 로그인 페이지로 진행 */ });
+    return NextResponse.redirect(`${origin}/login?error=profile_setup_failed`);
+  }
+}
+
 type ConflictProfile = Readonly<{ id: string; type_social: string | null }>;
 
 /** 같은 이메일로 다른 id 의 active profile 이 있는지 확인 (중복 가입 차단) */
@@ -135,6 +156,28 @@ async function applyArtistIntent(adminClient: AdminClient, userId: string): Prom
   const createdAtMs = new Date(profile.created_at).getTime();
   if (Date.now() - createdAtMs >= ONBOARDING_WINDOW_MS) return;
   await adminClient.from("profiles").update({ role: "artist" }).eq("id", userId);
+  // 갱신 검증(M12) — 트리거/경쟁으로 반영 안 되면 throw → safeRun 이 로깅(의도 소실 가시화).
+  const { data: after } = await adminClient
+    .from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (after?.role !== "artist") {
+    throw new Error(`artist intent not applied (role=${after?.role ?? "unknown"})`);
+  }
+}
+
+/**
+ * artists 행이 있는데 profiles.role 이 'artist' 가 아니면 동기화(M13 자가 치유).
+ * 등록 중 promote-to-artist 가 실패하면 role='user' + artists 행 존재의 모순이 남는데,
+ * 다음 로그인마다 idempotent 하게 복구. service role 로 트리거 우회.
+ */
+async function syncArtistRole(adminClient: AdminClient, userId: string): Promise<void> {
+  const { data: artist } = await adminClient
+    .from("artists").select("id").eq("user_id", userId).maybeSingle();
+  if (!artist) return;
+  const { data: profile } = await adminClient
+    .from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (profile && profile.role !== "artist") {
+    await adminClient.from("profiles").update({ role: "artist" }).eq("id", userId);
+  }
 }
 
 async function handleCallback(
@@ -175,10 +218,15 @@ async function handleCallback(
   }
 
   let finalNext = next;
-  await safeRun("ensure profile", () => ensureProfile(adminClient, user));
+  // 프로필 생성은 필수 — 실패 시 앱 진입 금지(M11)
+  const profileRedirect = await ensureProfileOrRedirect(adminClient, supabase, user, origin);
+  if (profileRedirect) return profileRedirect;
+
   await safeRun("reactivate dormant artist", () =>
     adminClient.from("artists").update({ status: "active" }).eq("user_id", user.id).eq("status", "dormant"),
   );
+  // artists 행 존재하나 role!=artist 면 동기화 — 등록 중 promote 실패 자가 치유(M13)
+  await safeRun("sync artist role", () => syncArtistRole(adminClient, user.id));
 
   if (intent === "artist") {
     await safeRun("apply artist intent", () => applyArtistIntent(adminClient, user.id));

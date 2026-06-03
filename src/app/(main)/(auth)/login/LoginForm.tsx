@@ -25,6 +25,9 @@ function describeAuthError(error: string | null, method: string | null): string 
   if (error === "auth_callback_error") {
     return "로그인 처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
   }
+  if (error === "profile_setup_failed") {
+    return "프로필 설정에 실패했습니다. 잠시 후 다시 로그인해 주세요.";
+  }
   return null;
 }
 

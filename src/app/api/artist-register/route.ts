@@ -186,6 +186,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
+  // 시술사 등록 즉시 profiles.role='artist' 동기화 — 별도 promote-to-artist 호출 실패 시의
+  // role=user + artists 행 존재 모순을 근본 차단(M13). service_role 이라 role 변경 트리거 우회.
+  // 실패해도 artists 행은 유지되며 다음 로그인 시 auth 콜백(syncArtistRole)이 자가 치유.
+  const { error: roleError } = await admin
+    .from("profiles").update({ role: "artist" }).eq("id", auth.user.id);
+  if (roleError) {
+    // eslint-disable-next-line no-console
+    console.error("[artist-register] role sync failed (콜백 자가 치유 대상):", roleError.message);
+  }
+
   return NextResponse.json({ artistId: artist.id });
 }
 
