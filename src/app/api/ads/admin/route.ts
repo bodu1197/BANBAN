@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getUser } from "@/lib/supabase/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { createAdminClient } from "@/lib/supabase/server";
 import { getAdRevenueStats } from "@/lib/supabase/ad-queries";
 import { escapeIlike } from "@/lib/supabase/queries";
 
@@ -21,7 +21,7 @@ function computePaymentBreakdown(subs: SubRow[]): { totalCash: number; totalPoin
 
 type ArtistTypeFilter = "SEMI_PERMANENT" | undefined;
 
-type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
+type SupabaseInstance = ReturnType<typeof createAdminClient>;
 type QBuilder = ReturnType<SupabaseInstance["from"]>;
 
 function applyFilters(query: QBuilder, status: string | null, search: string | null): QBuilder {
@@ -57,24 +57,19 @@ function buildQueries(sb: SupabaseInstance, params: { page: number; status: stri
     return { pagedQuery, plansQuery, allSubsQuery };
 }
 
-async function verifyAdmin(userId: string): Promise<boolean> {
-    const supabase = await createClient();
-    const { data: profile } = await supabase
-        .from("profiles").select("is_admin").eq("id", userId).single();
-    return !!(profile && profile.is_admin);
-}
-
 /** Admin-only endpoint for ad management stats (paginated) */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-    const user = await getUser();
-    if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    if (!await verifyAdmin(user.id)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    // 중앙 requireAdmin(#29) — 인증(getUser+is_admin)은 createClient(본인 프로필 RLS 허용),
+    // 반환되는 auth.supabase 는 service_role(RLS 우회). ad_subscriptions SELECT RLS 가 소유자
+    // 제한이라 관리자 전체 조회(목록·결제집계·매출)에는 service_role 이 필수.
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const url = new URL(request.url);
     const page = Math.max(1, Number(url.searchParams.get("page") ?? "1"));
     const artistType = parseArtistType(url.searchParams.get("artistType"));
 
-    const supabase = await createClient();
+    const supabase = auth.supabase;
     const { pagedQuery, plansQuery, allSubsQuery } = buildQueries(supabase, {
         page, status: url.searchParams.get("status"), search: url.searchParams.get("search"), artistType,
     });

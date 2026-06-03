@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, Flag, Grid3X3, BookOpen, Sparkles, Gift } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
@@ -78,20 +78,28 @@ function NavLink({ item, isActive, count }: Readonly<{
 
 function useSidebarCounts(): CountMap {
     const [counts, setCounts] = useState<CountMap>({});
+    const router = useRouter();
 
     // @client-reason: 사이드바 안읽음 배지(신고/건의 등) 카운트 로드 — CLAUDE.md 예외(b) 배지·카운트. 서버 레이아웃 전반에 props 주입 없이 클라에서 비차단 로드
     useEffect(() => {
         let active = true;
 
         fetch(SIDEBAR_COUNTS_API)
-            .then((res) => (res.ok ? res.json() : null))
+            .then((res) => {
+                // 세션 만료(401/403)를 조용히 0 으로 표시하지 않는다 — 레이아웃 인증 게이트를 재실행해 재로그인 유도.
+                if (res.status === 401 || res.status === 403) {
+                    router.refresh();
+                    return null;
+                }
+                return res.ok ? res.json() : null;
+            })
             .then((data: { counts: CountMap } | null) => {
                 if (active && data) setCounts(data.counts);
             })
             .catch(() => { /* non-fatal */ });
 
         return () => { active = false; };
-    }, []);
+    }, [router]);
 
     return counts;
 }

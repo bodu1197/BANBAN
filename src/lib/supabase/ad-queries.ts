@@ -269,7 +269,9 @@ export async function getAdRevenueStats(artistType?: "SEMI_PERMANENT"): Promise<
     activeCount: number;
     totalCount: number;
 }> {
-    const supabase = await createClient();
+    // 관리자 대시보드 집계 — ad_subscriptions 의 SELECT RLS 가 소유자(artist_id=auth.uid())로
+    // 제한되므로 RLS 클라이언트로는 관리자가 본인 소유만(=0) 보게 됨 → service_role 로 전체 집계.
+    const supabase = createAdminClient();
     const now = new Date().toISOString();
 
     let query = supabase

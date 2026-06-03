@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { SITE_URL } from "@/lib/seo";
 import { getProviderSlug, normalizeTypeSocial } from "@/lib/auth-labels";
 import { ONBOARDING_WINDOW_MS } from "@/lib/onboarding/constants";
 import { downloadAndStoreAvatar } from "@/lib/auth/avatar-download";
@@ -25,12 +26,23 @@ function isNewSignup(user: { created_at?: string; last_sign_in_at?: string | nul
   return Math.abs(lastSignInMs - createdAtMs) < NEW_SIGNUP_THRESHOLD_MS;
 }
 
+const PRIMARY_HOST = new URL(SITE_URL).host; // 예: banunni.com
+
+/** x-forwarded-host 는 클라이언트 위조 가능 → 정규 호스트(+www)·Vercel 프리뷰만 허용(오픈 리다이렉트 차단). */
+function isAllowedForwardedHost(host: string): boolean {
+  return host === PRIMARY_HOST || host === `www.${PRIMARY_HOST}` || host.endsWith(".vercel.app");
+}
+
 function getRedirectUrl(request: Request, origin: string, path: string): string {
   const forwardedHost = request.headers.get("x-forwarded-host");
   if (process.env.NODE_ENV === "development" || !forwardedHost) {
     return `${origin}${path}`;
   }
-  return `https://${forwardedHost}${path}`;
+  // 화이트리스트 통과 시에만 forwarded host 사용, 아니면 신뢰 가능한 origin 으로 폴백.
+  if (isAllowedForwardedHost(forwardedHost)) {
+    return `https://${forwardedHost}${path}`;
+  }
+  return `${origin}${path}`;
 }
 
 function sanitizeNext(param: string | null): string {
