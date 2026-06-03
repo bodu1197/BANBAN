@@ -38,7 +38,9 @@ async function convertMask(base64: string): Promise<Buffer> {
 
   // RGBA: invert brightness → alpha so white mask areas become transparent (= edit zone for OpenAI)
   for (let i = 0; i < data.length; i += 4) {
+    // eslint-disable-next-line security/detect-object-injection -- 숫자 인덱스(루프 카운터 i)로 raw RGBA 버퍼 읽기
     const brightness = data[i];
+    // eslint-disable-next-line security/detect-object-injection -- 숫자 인덱스(루프 카운터 i)로 raw RGBA 버퍼 쓰기
     data[i] = 0;
     data[i + 1] = 0;
     data[i + 2] = 0;
@@ -171,7 +173,10 @@ function logUsage(userId: string, step: SimStep, style?: string): void {
       await createAdminClient()
         .from("sim_usage_logs")
         .insert({ user_id: userId, step, area: getArea(step, style), style: style ?? null });
-    } catch (e: unknown) { console.warn("[sim-log]", e instanceof Error ? e.message : e); }
+    } catch (e: unknown) {
+      // eslint-disable-next-line no-console -- 통계 로그 insert 실패는 비치명적 → 서버 경고 로깅만
+      console.warn("[sim-log]", e instanceof Error ? e.message : e);
+    }
   })();
 }
 

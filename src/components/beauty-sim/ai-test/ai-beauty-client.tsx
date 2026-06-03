@@ -504,6 +504,7 @@ function WaitTimeAds(): React.ReactElement {
     return () => clearInterval(timer);
   }, []);
 
+  // eslint-disable-next-line security/detect-object-injection -- 숫자 인덱스(adIdx) 로 상수 배열 AD_CARDS 접근, 외부 입력 아님
   const ad = AD_CARDS[adIdx];
 
   return (
@@ -749,7 +750,7 @@ function ResultsView(props: Readonly<{
                 ) : (
                   <div className="mb-2 flex aspect-square w-full items-center justify-center rounded-lg bg-gray-200 text-2xl text-gray-500" aria-hidden="true">👤</div>
                 )}
-                <p className="truncate text-sm font-medium text-gray-900 group-hover:text-blue-600">{a.title}</p>
+                <p className="truncate text-sm font-medium text-gray-900 group-hover:text-blue-600 group-focus-visible:text-blue-600">{a.title}</p>
                 {a.introduce && <p className="truncate text-xs text-gray-500">{a.introduce}</p>}
                 {a.regionName && <p className="mt-1 text-[10px] text-blue-500">{a.regionName}</p>}
               </Link>
@@ -786,39 +787,185 @@ function LimitPrompt(props: Readonly<{ area: SimArea; quotas: Quotas; onClose: (
   );
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
-
-export function AiBeautyClient(props: Readonly<{
-  artists: RecommendedArtist[];
+function UploadPhaseView(props: Readonly<{
+  area: SimArea;
+  quotas: Quotas;
+  onFile: (f: File) => void;
+  onCamera: () => void;
+  onAreaChange: (area: SimArea) => void;
 }>): React.ReactElement {
-  const [phase, setPhase] = useState<Phase>("upload");
-  const [area, setArea] = useState<SimArea>("eyebrow");
-  const [originalBase64, setOriginalBase64] = useState("");
-  const [results, setResults] = useState<SimResult[]>([]);
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [progressText, setProgressText] = useState("");
-  const [completedStyles, setCompletedStyles] = useState(0);
-  const [totalStyles, setTotalStyles] = useState(8);
-  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
-  const [quotas, setQuotas] = useState<Quotas>(DEFAULT_QUOTAS);
-  const [limitInfo, setLimitInfo] = useState<{ area: SimArea; quotas: Quotas } | null>(null);
+  return (
+    <>
+      <HeroUploadSection onFile={props.onFile} onCamera={props.onCamera} />
+      <div className="mx-auto mt-4 flex w-fit gap-1 rounded-full bg-gray-100 p-1" role="radiogroup" aria-label="시술 영역 선택">
+        <button
+          type="button" role="radio" aria-checked={props.area === "eyebrow"} aria-label="눈썹"
+          onClick={() => props.onAreaChange("eyebrow")}
+          className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+            props.area === "eyebrow" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          눈썹
+        </button>
+        <button
+          type="button" role="radio" aria-checked={props.area === "lip"} aria-label="입술"
+          onClick={() => props.onAreaChange("lip")}
+          className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+            props.area === "lip" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          입술
+        </button>
+      </div>
+      <p className="mt-2 text-center text-xs text-gray-500" aria-live="polite">
+        오늘 남은 횟수 — 눈썹 {props.quotas.eyebrow}회 · 입술 {props.quotas.lip}회
+      </p>
+    </>
+  );
+}
 
-  const isProcessing = PROCESSING_PHASES.has(phase);
-  const elapsedSeconds = useElapsedTimer(isProcessing);
+function ErrorView(props: Readonly<{ message: string; onReset: () => void }>): React.ReactElement {
+  return (
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-red-200 bg-red-50 p-8 text-center" role="alert">
+      <p className="text-sm font-medium text-red-600">{props.message}</p>
+      <button type="button" onClick={props.onReset} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">다시 시도</button>
+    </div>
+  );
+}
 
-  // 잔여 횟수 초기화 — 페이지는 ISR 캐시(revalidate=300)라 쿼터는 식별자(쿠키/세션)별로
-  // 클라이언트에서 조회해야 하며, GET 시 익명 쿠키도 발급된다.
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const q = await fetchQuotas();
-      if (!cancelled && q) setQuotas(q);
-    })();
-    return () => { cancelled = true; };
-  }, []);
+interface AiBeautyViewProps {
+  phase: Phase;
+  area: SimArea;
+  quotas: Quotas;
+  isProcessing: boolean;
+  progressText: string;
+  elapsedSeconds: number;
+  completedStyles: number;
+  totalStyles: number;
+  originalBase64: string;
+  results: SimResult[];
+  selectedIdx: number;
+  errorMsg: string;
+  zoomImage: { src: string; alt: string } | null;
+  limitInfo: { area: SimArea; quotas: Quotas } | null;
+  artists: RecommendedArtist[];
+  onFile: (f: File) => void;
+  onCameraOpen: () => void;
+  onAreaChange: (area: SimArea) => void;
+  onCapture: (base64: string) => void;
+  onCameraCancel: () => void;
+  onCameraError: (msg: string) => void;
+  onSelect: (idx: number) => void;
+  onReset: () => void;
+  onZoom: (src: string, alt: string) => void;
+  onZoomClose: () => void;
+  onLimitClose: () => void;
+}
 
-  const startProcessing = useCallback(async (base64: string, simArea: SimArea) => {
+function AiBeautyView(props: Readonly<AiBeautyViewProps>): React.ReactElement {
+  return (
+    <div className="mx-auto max-w-lg px-4 pb-24 pt-6 md:pt-8">
+      {props.limitInfo && <LimitPrompt area={props.limitInfo.area} quotas={props.limitInfo.quotas} onClose={props.onLimitClose} />}
+
+      {props.phase === "upload" && (
+        <UploadPhaseView
+          area={props.area}
+          quotas={props.quotas}
+          onFile={props.onFile}
+          onCamera={props.onCameraOpen}
+          onAreaChange={props.onAreaChange}
+        />
+      )}
+
+      {props.phase === "camera" && (
+        <CameraCapture onCapture={props.onCapture} onCancel={props.onCameraCancel} onError={props.onCameraError} />
+      )}
+
+      {props.isProcessing && (
+        <ProcessingView
+          phase={props.phase}
+          progressText={props.progressText}
+          elapsedSeconds={props.elapsedSeconds}
+          completedStyles={props.completedStyles}
+          totalStyles={props.totalStyles}
+        />
+      )}
+
+      {props.phase === "done" && (
+        <ResultsView
+          originalBase64={props.originalBase64}
+          results={props.results} selectedIdx={props.selectedIdx} onSelect={props.onSelect} onReset={props.onReset}
+          onZoom={props.onZoom} artists={props.artists}
+        />
+      )}
+
+      {props.phase === "error" && <ErrorView message={props.errorMsg} onReset={props.onReset} />}
+
+      {props.zoomImage && (
+        <ImageZoomModal src={props.zoomImage.src} alt={props.zoomImage.alt} onClose={props.onZoomClose} />
+      )}
+    </div>
+  );
+}
+
+// ─── State Hook ──────────────────────────────────────────────────────────────
+
+interface BeautySimState {
+  phase: Phase;
+  area: SimArea;
+  quotas: Quotas;
+  isProcessing: boolean;
+  progressText: string;
+  elapsedSeconds: number;
+  completedStyles: number;
+  totalStyles: number;
+  originalBase64: string;
+  results: SimResult[];
+  selectedIdx: number;
+  errorMsg: string;
+  zoomImage: { src: string; alt: string } | null;
+  limitInfo: { area: SimArea; quotas: Quotas } | null;
+  setArea: (area: SimArea) => void;
+  setSelectedIdx: (idx: number) => void;
+  handleFile: (file: File) => void;
+  handleCapture: (base64: string) => void;
+  handleCameraError: (msg: string) => void;
+  handleZoom: (src: string, alt: string) => void;
+  handleCameraOpen: () => void;
+  handleCameraCancel: () => void;
+  handleZoomClose: () => void;
+  handleLimitClose: () => void;
+  reset: () => void;
+}
+
+/** 파이프라인/파일 액션이 사용하는 setter 모음 (모두 React 상태 setter라 참조 안정적). */
+interface PipelineSetters {
+  setPhase: React.Dispatch<React.SetStateAction<Phase>>;
+  setProgressText: React.Dispatch<React.SetStateAction<string>>;
+  setOriginalBase64: React.Dispatch<React.SetStateAction<string>>;
+  setResults: React.Dispatch<React.SetStateAction<SimResult[]>>;
+  setSelectedIdx: React.Dispatch<React.SetStateAction<number>>;
+  setCompletedStyles: React.Dispatch<React.SetStateAction<number>>;
+  setTotalStyles: React.Dispatch<React.SetStateAction<number>>;
+  setQuotas: React.Dispatch<React.SetStateAction<Quotas>>;
+  setLimitInfo: React.Dispatch<React.SetStateAction<{ area: SimArea; quotas: Quotas } | null>>;
+  setErrorMsg: React.Dispatch<React.SetStateAction<string>>;
+}
+
+interface PipelineActions {
+  startProcessing: (base64: string, simArea: SimArea) => void;
+  handleFile: (file: File) => void;
+  handleCapture: (base64: string) => void;
+}
+
+/** 이미지 → 파이프라인 실행/커밋, 파일 입력 처리. setter(참조 안정) + area 만 의존. */
+function useSimPipeline(area: SimArea, setters: Readonly<PipelineSetters>): PipelineActions {
+  const {
+    setPhase, setProgressText, setOriginalBase64, setResults, setSelectedIdx,
+    setCompletedStyles, setTotalStyles, setQuotas, setLimitInfo, setErrorMsg,
+  } = setters;
+
+  const startProcessing = useCallback(async (base64: string, simArea: SimArea): Promise<void> => {
     setOriginalBase64(base64);
     setCompletedStyles(0);
     setTotalStyles(simArea === "eyebrow" ? EYEBROW_STYLES.length : LIP_STYLES.length);
@@ -853,9 +1000,9 @@ export function AiBeautyClient(props: Readonly<{
       setErrorMsg(err instanceof Error ? err.message : "처리 중 오류가 발생했습니다.");
       setPhase("error");
     }
-  }, []);
+  }, [setPhase, setProgressText, setOriginalBase64, setResults, setSelectedIdx, setCompletedStyles, setTotalStyles, setQuotas, setLimitInfo, setErrorMsg]);
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback(async (file: File): Promise<void> => {
     if (!file.type.startsWith("image/")) return;
     try {
       const optimized = await optimizeImage(file, { maxWidth: 2048, quality: 0.9 });
@@ -871,19 +1018,55 @@ export function AiBeautyClient(props: Readonly<{
       setErrorMsg("이미지를 처리할 수 없습니다. 다른 사진을 선택해주세요.");
       setPhase("error");
     }
-  }, [startProcessing, area]);
+  }, [startProcessing, area, setErrorMsg, setPhase]);
 
-  const handleCapture = useCallback((base64: string) => {
+  const handleCapture = useCallback((base64: string): void => {
     setPhase("analyzing");
     startProcessing(base64, area);
-  }, [startProcessing, area]);
+  }, [startProcessing, area, setPhase]);
 
-  const handleCameraError = useCallback((msg: string) => {
+  return { startProcessing, handleFile, handleCapture };
+}
+
+function useBeautySim(): BeautySimState {
+  const [phase, setPhase] = useState<Phase>("upload");
+  const [area, setArea] = useState<SimArea>("eyebrow");
+  const [originalBase64, setOriginalBase64] = useState("");
+  const [results, setResults] = useState<SimResult[]>([]);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [progressText, setProgressText] = useState("");
+  const [completedStyles, setCompletedStyles] = useState(0);
+  const [totalStyles, setTotalStyles] = useState(8);
+  const [zoomImage, setZoomImage] = useState<{ src: string; alt: string } | null>(null);
+  const [quotas, setQuotas] = useState<Quotas>(DEFAULT_QUOTAS);
+  const [limitInfo, setLimitInfo] = useState<{ area: SimArea; quotas: Quotas } | null>(null);
+
+  const isProcessing = PROCESSING_PHASES.has(phase);
+  const elapsedSeconds = useElapsedTimer(isProcessing);
+
+  // 잔여 횟수 초기화 — 페이지는 ISR 캐시(revalidate=300)라 쿼터는 식별자(쿠키/세션)별로
+  // 클라이언트에서 조회해야 하며, GET 시 익명 쿠키도 발급된다.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const q = await fetchQuotas();
+      if (!cancelled && q) setQuotas(q);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const { handleFile, handleCapture } = useSimPipeline(area, {
+    setPhase, setProgressText, setOriginalBase64, setResults, setSelectedIdx,
+    setCompletedStyles, setTotalStyles, setQuotas, setLimitInfo, setErrorMsg,
+  });
+
+  const handleCameraError = useCallback((msg: string): void => {
     setErrorMsg(msg);
     setPhase("error");
   }, []);
 
-  const reset = useCallback(() => {
+  const reset = useCallback((): void => {
     setPhase("upload");
     setOriginalBase64("");
     setResults([]);
@@ -893,79 +1076,71 @@ export function AiBeautyClient(props: Readonly<{
     setCompletedStyles(0);
   }, []);
 
-  const handleZoom = useCallback((src: string, alt: string) => {
+  const handleZoom = useCallback((src: string, alt: string): void => {
     setZoomImage({ src: `data:image/png;base64,${src}`, alt });
   }, []);
 
-  const handleCameraOpen = useCallback(() => {
+  const handleCameraOpen = useCallback((): void => {
     setPhase("camera");
   }, []);
 
+  const handleCameraCancel = useCallback((): void => {
+    setPhase("upload");
+  }, []);
+
+  const handleZoomClose = useCallback((): void => {
+    setZoomImage(null);
+  }, []);
+
+  const handleLimitClose = useCallback((): void => {
+    setLimitInfo(null);
+  }, []);
+
+  return {
+    phase, area, quotas, isProcessing, progressText, elapsedSeconds,
+    completedStyles, totalStyles, originalBase64, results, selectedIdx,
+    errorMsg, zoomImage, limitInfo,
+    setArea, setSelectedIdx,
+    handleFile, handleCapture, handleCameraError, handleZoom,
+    handleCameraOpen, handleCameraCancel, handleZoomClose, handleLimitClose, reset,
+  };
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
+export function AiBeautyClient(props: Readonly<{
+  artists: RecommendedArtist[];
+}>): React.ReactElement {
+  const s = useBeautySim();
+
   return (
-    <div className="mx-auto max-w-lg px-4 pb-24 pt-6 md:pt-8">
-      {limitInfo && <LimitPrompt area={limitInfo.area} quotas={limitInfo.quotas} onClose={() => setLimitInfo(null)} />}
-
-      {phase === "upload" && (
-        <>
-          <HeroUploadSection onFile={handleFile} onCamera={handleCameraOpen} />
-          <div className="mx-auto mt-4 flex w-fit gap-1 rounded-full bg-gray-100 p-1" role="radiogroup" aria-label="시술 영역 선택">
-            <button
-              type="button" role="radio" aria-checked={area === "eyebrow"} aria-label="눈썹"
-              onClick={() => setArea("eyebrow")}
-              className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
-                area === "eyebrow" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              눈썹
-            </button>
-            <button
-              type="button" role="radio" aria-checked={area === "lip"} aria-label="입술"
-              onClick={() => setArea("lip")}
-              className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
-                area === "lip" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              입술
-            </button>
-          </div>
-          <p className="mt-2 text-center text-xs text-gray-500" aria-live="polite">
-            오늘 남은 횟수 — 눈썹 {quotas.eyebrow}회 · 입술 {quotas.lip}회
-          </p>
-        </>
-      )}
-
-      {phase === "camera" && (
-        <CameraCapture onCapture={handleCapture} onCancel={() => setPhase("upload")} onError={handleCameraError} />
-      )}
-
-      {isProcessing && (
-        <ProcessingView
-          phase={phase}
-          progressText={progressText}
-          elapsedSeconds={elapsedSeconds}
-          completedStyles={completedStyles}
-          totalStyles={totalStyles}
-        />
-      )}
-
-      {phase === "done" && (
-        <ResultsView
-          originalBase64={originalBase64}
-          results={results} selectedIdx={selectedIdx} onSelect={setSelectedIdx} onReset={reset}
-          onZoom={handleZoom} artists={props.artists}
-        />
-      )}
-
-      {phase === "error" && (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-red-200 bg-red-50 p-8 text-center" role="alert">
-          <p className="text-sm font-medium text-red-600">{errorMsg}</p>
-          <button type="button" onClick={reset} className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">다시 시도</button>
-        </div>
-      )}
-
-      {zoomImage && (
-        <ImageZoomModal src={zoomImage.src} alt={zoomImage.alt} onClose={() => setZoomImage(null)} />
-      )}
-    </div>
+    <AiBeautyView
+      phase={s.phase}
+      area={s.area}
+      quotas={s.quotas}
+      isProcessing={s.isProcessing}
+      progressText={s.progressText}
+      elapsedSeconds={s.elapsedSeconds}
+      completedStyles={s.completedStyles}
+      totalStyles={s.totalStyles}
+      originalBase64={s.originalBase64}
+      results={s.results}
+      selectedIdx={s.selectedIdx}
+      errorMsg={s.errorMsg}
+      zoomImage={s.zoomImage}
+      limitInfo={s.limitInfo}
+      artists={props.artists}
+      onFile={s.handleFile}
+      onCameraOpen={s.handleCameraOpen}
+      onAreaChange={s.setArea}
+      onCapture={s.handleCapture}
+      onCameraCancel={s.handleCameraCancel}
+      onCameraError={s.handleCameraError}
+      onSelect={s.setSelectedIdx}
+      onReset={s.reset}
+      onZoom={s.handleZoom}
+      onZoomClose={s.handleZoomClose}
+      onLimitClose={s.handleLimitClose}
+    />
   );
 }

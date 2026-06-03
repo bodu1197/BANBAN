@@ -36,6 +36,7 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
   const toggle = useCallback(() => setExpanded((v) => !v), []);
 
   const todayEntry = DAYS.find((d) => d.key === todayKey);
+  // eslint-disable-next-line security/detect-object-injection -- todayKey 는 JS_DAY_TO_KEY 상수 튜플에서 파생된 고정 요일 키(외부 입력 아님)
   const todayHours = hours[todayKey] as DayHours | null | undefined;
 
   return (
@@ -64,6 +65,7 @@ export function BusinessHours({ hours }: Readonly<BusinessHoursProps>): React.Re
         <div className="mt-2 space-y-1">
           {DAYS.map(({ key, label }) => {
             const isToday = key === todayKey;
+            // eslint-disable-next-line security/detect-object-injection -- key 는 DAYS 상수 배열의 요일 키(외부 입력 아님)
             const dayHours = hours[key] as DayHours | null | undefined;
 
             return (

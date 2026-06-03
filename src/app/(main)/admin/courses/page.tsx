@@ -190,6 +190,7 @@ export default function AdminCoursesPage(): React.ReactElement {
   const { user, isLoading: authLoading } = useAuth();
   const { data, loading, error, search, page, setSearch, setPage, refetch } = useCourseList();
 
+  // @client-reason: 클라 useAuth 인증 게이트(authLoading/user) 완료 후에만 호출하는 관리자 전용 목록. 검색/페이지네이션 인터랙션으로 refetch 재실행되며, API는 admin 권한(403) 의존이라 서버 컴포넌트 이전 시 회귀 위험.
   useEffect(() => {
     if (!authLoading && user) refetch();
   }, [authLoading, user, refetch]);

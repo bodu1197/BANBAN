@@ -129,6 +129,7 @@ function SubmitModal({ exhibitionId, artistId, artistEntries, onClose, onSubmitt
   const [toast, setToast] = useState<string | null>(null);
   const submittedIds = new Set(artistEntries.map((e) => e.portfolio_id));
 
+  // @client-reason: 모달 오픈 시 지연 로드 — 작가 포트폴리오 목록은 "출품하기" 버튼으로 모달이 열릴 때만 필요하므로 페이지 초기 로드가 아닌 사용자 인터랙션 시점에 페칭(서버 선페칭은 불필요한 데이터 로딩)
   useEffect(() => {
     fetch(`/api/artist-portfolios?artistId=${encodeURIComponent(artistId)}`)
       .then((r) => (r.ok ? r.json() : { portfolios: [] }))

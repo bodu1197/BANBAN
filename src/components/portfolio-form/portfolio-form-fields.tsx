@@ -153,6 +153,7 @@ export function ExhibitionSelector({ selectedIds, onToggle }: Readonly<{
     const [loading, setLoading] = useState(true);
     const didLoad = useRef(false);
 
+    // @client-reason: 이벤트 진행 토글 시에만 조건부 마운트되는 기획전 선택 목록의 지연 로드. 작품 작성/수정 폼은 controlled client component(PortfolioWriteClient/PortfolioEditClient)이고, 이 목록은 사용자 인터랙션(이벤트 진행 선택)으로만 나타나므로 서버 페칭 대상이 아님.
     useEffect(() => {
         if (didLoad.current) return;
         didLoad.current = true;

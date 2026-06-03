@@ -516,6 +516,7 @@ function useCronStatus(): {
     }
   }, []);
 
+  // @client-reason: 크론 상태를 60초마다 폴링(배지·카운트 폴링)하고 수동 실행 후 즉시 재조회해야 하므로 클라이언트 페칭이 필수다. 서버 컴포넌트로 옮기면 자동 새로고침·재조회가 동작하지 않는다.
   useEffect(() => {
     void refetch();
     const interval = globalThis.setInterval(() => void refetch(), POLLING_INTERVAL_MS);

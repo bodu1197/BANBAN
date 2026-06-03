@@ -117,7 +117,7 @@ async function uploadImage(file: File): Promise<string> {
 }
 
 const uploadLabelClass =
-  "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted focus-within:bg-muted focus-within:ring-2 focus-within:ring-ring";
+  "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-within:bg-muted focus-within:ring-2 focus-within:ring-ring";
 
 function BusyIcon({ busy }: Readonly<{ busy: boolean }>): React.ReactElement {
   if (busy) {
@@ -157,7 +157,7 @@ function FormHeader({
   submitting,
   onDelete,
   onPublishedChange,
-}: HeaderProps): React.ReactElement {
+}: Readonly<HeaderProps>): React.ReactElement {
   return (
     <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <h1 className="text-xl font-bold text-foreground">
@@ -227,7 +227,7 @@ function CoverImageSection({
   uploadingCover,
   onChange,
   onUpload,
-}: CoverSectionProps): React.ReactElement {
+}: Readonly<CoverSectionProps>): React.ReactElement {
   return (
     <section className="space-y-2">
       <label className={labelClass}>표지 이미지</label>
@@ -277,7 +277,7 @@ function ContentSection({
   contentRef,
   onChange,
   onUpload,
-}: ContentSectionProps): React.ReactElement {
+}: Readonly<ContentSectionProps>): React.ReactElement {
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
@@ -320,7 +320,7 @@ interface MetaFieldsProps {
   readonly onChange: (k: "title" | "category", v: string) => void;
 }
 
-function MetaFields({ title, category, onChange }: MetaFieldsProps): React.ReactElement {
+function MetaFields({ title, category, onChange }: Readonly<MetaFieldsProps>): React.ReactElement {
   return (
     <div className="space-y-4">
       <div>

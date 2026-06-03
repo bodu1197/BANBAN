@@ -1,4 +1,4 @@
-// @client-reason: fetch sim usage count on mount
+// @client-reason: useAuth() 로 관리자 인증 상태를 클라이언트에서 확인한 뒤에야 통계를 조회 — 클라이언트 전용 인증 게이트
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ export default function AdminSimStatsPage(): React.ReactElement {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // @client-reason: useAuth(클라이언트 전용 인증 훅)가 user 를 해석한 뒤에만 페칭 — authLoading/user 게이트에 의존하므로 서버컴포넌트로 옮길 수 없음
     useEffect(() => {
         if (authLoading || !user) return;
         let active = true;

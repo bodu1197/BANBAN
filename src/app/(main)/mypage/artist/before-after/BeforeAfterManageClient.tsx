@@ -95,7 +95,7 @@ function EditableImage({
         {label}
       </span>
       {isEditing && (
-        <label className="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center bg-black/40 transition-colors hover:bg-black/50 focus-within:bg-black/60 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring">
+        <label className="absolute inset-0 z-10 flex cursor-pointer flex-col items-center justify-center bg-black/40 transition-colors hover:bg-black/50 focus-within:bg-black/60 focus-within:outline-none focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
           <Plus className="h-6 w-6 text-white" />
           <span className="mt-1 text-xs text-white">변경</span>
           <input
@@ -290,7 +290,7 @@ function BeforeAfterPreviewCard({
             type="button"
             onClick={handleSave}
             disabled={isSaving || !editTitle.trim()}
-            className="flex-1 bg-brand-primary text-sm text-white hover:bg-brand-primary-hover"
+            className="flex-1 bg-brand-primary text-sm text-white hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Check className="mr-1 h-3.5 w-3.5" />
             {isSaving ? "저장 중..." : "저장"}
@@ -446,7 +446,7 @@ function UploadForm({
               </button>
             </div>
           ) : (
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring">
+            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:border-ring focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Plus className="h-6 w-6 text-muted-foreground" />
               <span className="mt-1 text-xs text-muted-foreground">
                 업로드
@@ -487,7 +487,7 @@ function UploadForm({
               </button>
             </div>
           ) : (
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring">
+            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted transition-colors hover:bg-muted/80 focus-within:border-ring focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Plus className="h-6 w-6 text-muted-foreground" />
               <span className="mt-1 text-xs text-muted-foreground">
                 업로드
@@ -507,7 +507,7 @@ function UploadForm({
         type="button"
         onClick={handleSubmit}
         disabled={isUploading || !title.trim() || !beforeFile || !afterFile}
-        className="w-full bg-brand-primary py-5 text-sm font-semibold text-white hover:bg-brand-primary-hover"
+        className="w-full bg-brand-primary py-5 text-sm font-semibold text-white hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {isUploading ? "업로드 중..." : "등록하기"}
       </Button>

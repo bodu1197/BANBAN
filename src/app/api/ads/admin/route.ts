@@ -35,7 +35,7 @@ function parseArtistType(param: string | null): ArtistTypeFilter {
     return param === "SEMI_PERMANENT" ? param : undefined;
 }
 
-function buildQueries(sb: SupabaseInstance, params: { page: number; status: string | null; search: string | null; artistType: ArtistTypeFilter }) {
+function buildQueries(sb: SupabaseInstance, params: { page: number; status: string | null; search: string | null; artistType: ArtistTypeFilter }): { pagedQuery: QBuilder; plansQuery: QBuilder; allSubsQuery: QBuilder } {
     const { page, status, search, artistType } = params;
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;

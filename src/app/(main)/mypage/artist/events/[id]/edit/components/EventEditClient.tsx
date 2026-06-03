@@ -198,7 +198,7 @@ export function EventEditClient({
           className={`flex-1 rounded-lg py-3 text-sm font-medium focus-visible:ring-2 focus-visible:ring-ring ${
             isSaving
               ? "bg-brand-primary/80 text-white"
-              : "bg-brand-primary text-white transition-opacity hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground"
+              : "bg-brand-primary text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground"
           }`}
         >
           {isSaving ? (

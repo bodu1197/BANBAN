@@ -260,7 +260,7 @@ function ReportModalActions({ isPending, onClose, onSubmit }: Readonly<{
   return (
     <div className="flex justify-end gap-2">
       <Button variant="ghost" size="sm" onClick={onClose} disabled={isPending}>{STRINGS.common.cancel}</Button>
-      <Button size="sm" onClick={onSubmit} disabled={isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">신고하기</Button>
+      <Button size="sm" onClick={onSubmit} disabled={isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">신고하기</Button>
     </div>
   );
 }

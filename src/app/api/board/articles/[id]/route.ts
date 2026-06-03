@@ -30,6 +30,7 @@ export async function PATCH(
   const body = (await request.json()) as Record<string, unknown>;
   const updates: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body)) {
+    // eslint-disable-next-line security/detect-object-injection -- k 는 ALLOWED_KEYS(상수 허용 키 Set) 통과만 할당되므로 안전
     if (ALLOWED_KEYS.has(k)) updates[k] = v;
   }
 

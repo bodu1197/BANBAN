@@ -43,6 +43,9 @@ export function AnnouncementsBanner(): React.ReactElement | null {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // @client-reason: 부모 MyPageClient 가 useAuth 런타임 상태 기반의 "use client" 컴포넌트라
+  // 서버에서 props 주입이 불가. 공지 데이터는 /api/announcements 가 unstable_cache("announcements"
+  // 태그, 300s)로 서버 캐싱 + admin 변경 시 revalidateTag 즉시 반영하므로 DB 부하 없이 클라 페치.
   useEffect(() => {
     fetch("/api/announcements")
       .then((r) => r.json())

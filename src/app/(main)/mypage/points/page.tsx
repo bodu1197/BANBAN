@@ -426,6 +426,7 @@ function useAttendance(authLoading: boolean, user: unknown, onPointsChanged: () 
 } {
     const [state, setState] = useState<AttendanceState>({ checkedToday: false, streak: 0, monthCount: 0, loading: true });
 
+    // @client-reason: 클라 useAuth 컨텍스트(user/authLoading)가 준비된 뒤에만 호출 가능한 사용자별 출석 상태. 출석 체크(POST 뮤테이션)와 즉시 상태 갱신이 같은 훅에서 인터랙션 기반으로 동작하므로 서버 페칭 예외에 해당.
     useEffect(() => {
         if (!authLoading && user) {
             let cancelled = false;

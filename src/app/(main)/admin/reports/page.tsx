@@ -118,7 +118,7 @@ function ReportContentLink({ type, id }: Readonly<{ type: string; id: string }>)
   const link = getContentLink(type, id);
   if (!link) return null;
   return (
-    <p><a href={link} target="_blank" rel="noopener noreferrer" className="text-brand-primary underline hover:no-underline">신고된 콘텐츠 보기 →</a></p>
+    <p><a href={link} target="_blank" rel="noopener noreferrer" className="text-brand-primary underline hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">신고된 콘텐츠 보기 →</a></p>
   );
 }
 

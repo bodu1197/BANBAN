@@ -242,6 +242,7 @@ export default function AdminDormantArtistsPage(): React.ReactElement {
   const { user, isLoading: authLoading } = useAuth();
   const { data, loading, error, search, page, sort, setSearch, setPage, setSort, refetch } = useDormantList();
 
+  // @client-reason: 관리자 도구 — 검색/정렬/페이지네이션 인터랙션 상태(search/page/sort)로 목록을 재조회하며, useAuth 의 클라 인증 해석(authLoading→user) 완료 후에만 페칭한다
   useEffect(() => {
     if (!authLoading && user) refetch();
   }, [authLoading, user, refetch]);

@@ -302,6 +302,7 @@ export function ArtistEditClient({ artist,
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto-match region from existing address on load (fixes mismatched region_id)
+  // @client-reason: 클라 폼 상태(formData.region_id) 정정용 보정 쿼리 — addressToRegionKey 로 주소에서 파생한 키로 regions 를 조회해 setFormData 로 폼에 주입한다. 동일 로직이 handleAddressSearch(주소검색 인터랙션)에도 존재하며, 이 컴포넌트는 본인/관리자 두 렌더 경로에서 공유되어 props 계약 변경 시 회귀 위험이 있어 클라 페칭 유지.
   useEffect(() => {
     const regionKey = addressToRegionKey(artist.address);
     if (!regionKey) return;

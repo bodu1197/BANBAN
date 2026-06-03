@@ -187,10 +187,13 @@ function LegacyImageCarousel({
   const [currentImage, setCurrentImage] = useState(0);
   if (images.length === 0) return null;
 
+  // eslint-disable-next-line security/detect-object-injection -- currentImage 는 useState(0) 으로 관리되는 숫자 인덱스 (사용자 키 아님)
+  const currentSrc = images[currentImage]?.storage_path ?? "";
+
   return (
     <div className="relative aspect-[4/3] overflow-hidden bg-muted">
       <Image
-        src={images[currentImage]?.storage_path ?? ""}
+        src={currentSrc}
         alt={title}
         fill
         className="object-cover"
@@ -366,6 +369,113 @@ function DetailRow({ label, value }: Readonly<{ label: string; value: string }>)
   );
 }
 
+function ReviewsHeader({
+  artistName,
+  reviewCount,
+  recentReviewsLength,
+  reviewsHref,
+}: Readonly<{
+  artistName: string;
+  reviewCount: number;
+  recentReviewsLength: number;
+  reviewsHref: string;
+}>): React.ReactElement {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-xs text-muted-foreground">직접 시술받고 작성한</p>
+        <h2 className="text-base font-bold">시술후기</h2>
+      </div>
+      {reviewCount > recentReviewsLength && (
+        <Link
+          href={reviewsHref}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+          aria-label={`${artistName} 후기 ${reviewCount}개 모두보기`}
+        >
+          모두보기 ({reviewCount.toLocaleString()})
+          <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function ReviewRating({
+  avgRating,
+  reviewCount,
+}: Readonly<{ avgRating: number; reviewCount: number }>): React.ReactElement {
+  return (
+    <div className="flex items-center gap-1.5" aria-label={`평점 ${avgRating.toFixed(1)}점, 후기 ${reviewCount.toLocaleString()}개`}>
+      <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-hidden />
+      <span className="text-xl font-bold">{avgRating.toFixed(1)}</span>
+      <span className="text-sm text-muted-foreground">({reviewCount.toLocaleString()})</span>
+    </div>
+  );
+}
+
+function WriteReviewLink({ artistId }: Readonly<{ artistId: string }>): React.ReactElement {
+  return (
+    <Link
+      href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
+      className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Edit2 className="h-3 w-3" aria-hidden />
+      후기 작성
+    </Link>
+  );
+}
+
+function ReviewList({
+  artistId,
+  recentReviews,
+}: Readonly<{ artistId: string; recentReviews: RecentReview[] }>): React.ReactElement {
+  return (
+    <div className="space-y-3">
+      {recentReviews.map((r) => (
+        <ReviewCard
+          key={r.id}
+          rating={r.rating}
+          content={r.content}
+          authorName={r.authorName}
+          createdAt={r.createdAt}
+        />
+      ))}
+      <WriteReviewLink artistId={artistId} />
+    </div>
+  );
+}
+
+function EmptyReviewsPrompt({ artistId }: Readonly<{ artistId: string }>): React.ReactElement {
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-dashed border-input p-6 text-center">
+        <MessageSquareText className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" aria-hidden />
+        <p className="text-sm font-medium">아직 등록된 후기가 없어요</p>
+        <p className="mt-1 text-xs text-muted-foreground">첫 후기를 남겨주세요</p>
+      </div>
+      <WriteReviewLink artistId={artistId} />
+    </div>
+  );
+}
+
+function LoginToSeeReviews(): React.ReactElement {
+  return (
+    <div role="region" className="flex flex-col items-center rounded-xl bg-muted/30 px-6 py-10 text-center" aria-label="로그인 안내">
+      <MessageSquareText className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
+      <p className="text-base font-semibold">시술 결과가 궁금하다면</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        로그인하면 시술 받은 유저들의 실제 후기와 변화를 볼 수 있어요
+      </p>
+      <Link
+        href="/login"
+        className="mt-5 flex h-12 w-full max-w-xs items-center justify-center rounded-lg bg-foreground text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        로그인 및 회원가입 하기
+      </Link>
+    </div>
+  );
+}
+
 function ReviewsSection({
   artistId,
   artistName,
@@ -387,82 +497,18 @@ function ReviewsSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground">직접 시술받고 작성한</p>
-          <h2 className="text-base font-bold">시술후기</h2>
-        </div>
-        {reviewCount > recentReviews.length && (
-          <Link
-            href={reviewsHref}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
-            aria-label={`${artistName} 후기 ${reviewCount}개 모두보기`}
-          >
-            모두보기 ({reviewCount.toLocaleString()})
-            <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
-          </Link>
-        )}
-      </div>
+      <ReviewsHeader
+        artistName={artistName}
+        reviewCount={reviewCount}
+        recentReviewsLength={recentReviews.length}
+        reviewsHref={reviewsHref}
+      />
 
-      {hasRating ? (
-        <div className="flex items-center gap-1.5" aria-label={`평점 ${avgRating.toFixed(1)}점, 후기 ${reviewCount.toLocaleString()}개`}>
-          <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" aria-hidden />
-          <span className="text-xl font-bold">{avgRating.toFixed(1)}</span>
-          <span className="text-sm text-muted-foreground">({reviewCount.toLocaleString()})</span>
-        </div>
-      ) : null}
+      {hasRating ? <ReviewRating avgRating={avgRating} reviewCount={reviewCount} /> : null}
 
-      {hasReviewsToShow && (
-        <div className="space-y-3">
-          {recentReviews.map((r) => (
-            <ReviewCard
-              key={r.id}
-              rating={r.rating}
-              content={r.content}
-              authorName={r.authorName}
-              createdAt={r.createdAt}
-            />
-          ))}
-          <Link
-            href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Edit2 className="h-3 w-3" aria-hidden />
-            후기 작성
-          </Link>
-        </div>
-      )}
-      {!hasReviewsToShow && isLoggedIn && (
-        <div className="space-y-3">
-          <div className="rounded-lg border border-dashed border-input p-6 text-center">
-            <MessageSquareText className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" aria-hidden />
-            <p className="text-sm font-medium">아직 등록된 후기가 없어요</p>
-            <p className="mt-1 text-xs text-muted-foreground">첫 후기를 남겨주세요</p>
-          </div>
-          <Link
-            href={`/reviews/write?id=${encodeURIComponent(artistId)}`}
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Edit2 className="h-3 w-3" aria-hidden />
-            후기 작성
-          </Link>
-        </div>
-      )}
-      {!hasReviewsToShow && !isLoggedIn && (
-        <div role="region" className="flex flex-col items-center rounded-xl bg-muted/30 px-6 py-10 text-center" aria-label="로그인 안내">
-          <MessageSquareText className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
-          <p className="text-base font-semibold">시술 결과가 궁금하다면</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            로그인하면 시술 받은 유저들의 실제 후기와 변화를 볼 수 있어요
-          </p>
-          <Link
-            href="/login"
-            className="mt-5 flex h-12 w-full max-w-xs items-center justify-center rounded-lg bg-foreground text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            로그인 및 회원가입 하기
-          </Link>
-        </div>
-      )}
+      {hasReviewsToShow && <ReviewList artistId={artistId} recentReviews={recentReviews} />}
+      {!hasReviewsToShow && isLoggedIn && <EmptyReviewsPrompt artistId={artistId} />}
+      {!hasReviewsToShow && !isLoggedIn && <LoginToSeeReviews />}
     </div>
   );
 }

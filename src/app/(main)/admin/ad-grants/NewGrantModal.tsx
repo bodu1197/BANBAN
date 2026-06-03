@@ -25,6 +25,7 @@ const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled
 // ─── Focus Trap & Initial Focus ──────────────────────────
 
 function useFocusTrap(containerRef: React.RefObject<HTMLElement | null>): void {
+    // @client-reason: 데이터 페칭 아님 — 모달 DOM(ref)에 초기 포커스 부여 + Tab 키 포커스 트랩. 브라우저 전용 DOM/키보드 API라 서버 불가
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -187,7 +188,13 @@ function ArtistSearchSection({ selected, onSelect }: Readonly<{
         const len = results.length;
         if (len === 0) return;
         const safe = ((idx % len) + len) % len;
+        // eslint-disable-next-line security/detect-object-injection -- safe 는 모듈러 연산으로 [0, len) 범위에 정규화된 숫자 인덱스
         itemRefs.current[safe]?.focus();
+    };
+
+    const setItemRef = (i: number) => (el: HTMLButtonElement | null): void => {
+        // eslint-disable-next-line security/detect-object-injection -- i 는 results.map 의 숫자 배열 인덱스
+        itemRefs.current[i] = el;
     };
 
     const onItemKey = (i: number) => (e: React.KeyboardEvent<HTMLButtonElement>): void => {
@@ -228,7 +235,7 @@ function ArtistSearchSection({ selected, onSelect }: Readonly<{
                             key={r.id}
                             r={r}
                             onSelect={() => { onSelect(r); setQuery(""); }}
-                            refCallback={(el) => { itemRefs.current[i] = el; }}
+                            refCallback={setItemRef(i)}
                             onKey={onItemKey(i)}
                         />
                     ))}

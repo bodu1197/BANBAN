@@ -1,3 +1,4 @@
+// @client-reason: React Query Provider 런타임(Context) + next/dynamic ssr:false 클라이언트 전용 로딩 래퍼
 "use client";
 
 import dynamic from "next/dynamic";

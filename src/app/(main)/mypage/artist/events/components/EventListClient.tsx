@@ -46,8 +46,131 @@ function deriveEventCardData(event: EventRow): {
   const heroUrl = hero ? getEventStorageUrl(hero.storage_path) : null;
   const dateExpired = isExpiredByDate(event.event_end_at);
   const effectiveStatus = dateExpired && event.status === "published" ? "expired" : event.status;
+  // eslint-disable-next-line security/detect-object-injection -- STATUS_LABELS 상수 키 조회(상태 문자열), ?? 폴백으로 미정의 키도 안전
   const statusInfo = STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.draft;
   return { heroUrl, statusInfo, reopenLocked: dateExpired };
+}
+
+/** 이벤트 썸네일(히어로 이미지 또는 플레이스홀더 SVG). */
+function EventThumbnail({
+  eventId,
+  title,
+  heroUrl,
+}: Readonly<{ eventId: string; title: string; heroUrl: string | null }>): React.ReactElement {
+  return (
+    <Link
+      href={`/events/${eventId}`}
+      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted"
+    >
+      {heroUrl ? (
+        <Image src={heroUrl} alt={title} fill className="object-cover" sizes="80px" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+          </svg>
+        </div>
+      )}
+    </Link>
+  );
+}
+
+/** 이벤트 카드 액션 버튼(수정/게시토글/삭제). */
+function EventCardActions({
+  event,
+  reopenLocked,
+  onStatusToggle,
+  onDelete,
+}: Readonly<{
+  event: EventRow;
+  reopenLocked: boolean;
+  onStatusToggle: (id: string, currentStatus: string) => void;
+  onDelete: (id: string) => void;
+}>): React.ReactElement {
+  const toggleDisabled = reopenLocked && event.status !== "published";
+  return (
+    <div className="flex shrink-0 flex-col gap-1.5">
+      <Link
+        href={`/mypage/artist/events/${event.id}/edit`}
+        className="flex min-h-[44px] items-center justify-center rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted"
+      >
+        수정
+      </Link>
+      <button
+        type="button"
+        onClick={() => onStatusToggle(event.id, event.status)}
+        disabled={toggleDisabled}
+        title={toggleDisabled ? "기간 만료된 이벤트는 재게시할 수 없습니다. 새로 등록해주세요." : undefined}
+        className="min-h-[44px] rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label={event.status === "published" ? "이벤트 종료" : "이벤트 게시"}
+      >
+        {event.status === "published" ? "종료" : "게시"}
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(event.id)}
+        className="min-h-[44px] rounded-md border border-destructive/30 px-3 py-2 text-xs text-destructive transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-destructive/10"
+        aria-label="이벤트 삭제"
+      >
+        삭제
+      </button>
+    </div>
+  );
+}
+
+/** 이벤트 1건 카드(썸네일 + 정보 + 액션). */
+function EventCard({
+  event,
+  onStatusToggle,
+  onDelete,
+}: Readonly<{
+  event: EventRow;
+  onStatusToggle: (id: string, currentStatus: string) => void;
+  onDelete: (id: string) => void;
+}>): React.ReactElement {
+  const { heroUrl, statusInfo, reopenLocked } = deriveEventCardData(event);
+  return (
+    <div className="flex gap-3 rounded-lg border border-input p-3">
+      <EventThumbnail eventId={event.id} title={event.title} heroUrl={heroUrl} />
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}>
+            {statusInfo.label}
+          </span>
+          {(event.discount_rate ?? 0) > 0 && (
+            <span className="text-xs font-bold text-red-700 dark:text-red-400">{event.discount_rate}%</span>
+          )}
+        </div>
+        <Link href={`/events/${event.id}`} className="block rounded focus-visible:ring-2 focus-visible:ring-ring">
+          <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
+        </Link>
+        <p className="text-xs text-muted-foreground">
+          {event.price.toLocaleString()}원 · 조회 {event.views_count ?? 0}
+        </p>
+      </div>
+      <EventCardActions
+        event={event}
+        reopenLocked={reopenLocked}
+        onStatusToggle={onStatusToggle}
+        onDelete={onDelete}
+      />
+    </div>
+  );
+}
+
+/** 이벤트가 없을 때의 빈 상태. */
+function EmptyEventsState(): React.ReactElement {
+  return (
+    <div className="py-16 text-center">
+      <p className="text-muted-foreground">아직 등록한 이벤트가 없습니다.</p>
+      <Link
+        href="/mypage/artist/events/write"
+        className="mt-4 inline-block rounded-lg bg-brand-primary px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        첫 이벤트 등록하기
+      </Link>
+    </div>
+  );
 }
 
 export function EventListClient(): React.ReactElement {
@@ -120,95 +243,17 @@ export function EventListClient(): React.ReactElement {
       </div>
 
       {events.length === 0 ? (
-        <div className="py-16 text-center">
-          <p className="text-muted-foreground">아직 등록한 이벤트가 없습니다.</p>
-          <Link
-            href="/mypage/artist/events/write"
-            className="mt-4 inline-block rounded-lg bg-brand-primary px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            첫 이벤트 등록하기
-          </Link>
-        </div>
+        <EmptyEventsState />
       ) : (
         <div className="space-y-3">
-          {events.map((event) => {
-            const { heroUrl, statusInfo, reopenLocked } = deriveEventCardData(event);
-
-            return (
-              <div
-                key={event.id}
-                className="flex gap-3 rounded-lg border border-input p-3"
-              >
-                {/* Thumbnail */}
-                <Link
-                  href={`/events/${event.id}`}
-                  className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted"
-                >
-                  {heroUrl ? (
-                    <Image
-                      src={heroUrl}
-                      alt={event.title}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                      </svg>
-                    </div>
-                  )}
-                </Link>
-
-                {/* Info */}
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}>
-                      {statusInfo.label}
-                    </span>
-                    {(event.discount_rate ?? 0) > 0 && (
-                      <span className="text-xs font-bold text-red-700 dark:text-red-400">{event.discount_rate}%</span>
-                    )}
-                  </div>
-                  <Link href={`/events/${event.id}`} className="block rounded focus-visible:ring-2 focus-visible:ring-ring">
-                    <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
-                  </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {event.price.toLocaleString()}원 · 조회 {event.views_count ?? 0}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex shrink-0 flex-col gap-1.5">
-                  <Link
-                    href={`/mypage/artist/events/${event.id}/edit`}
-                    className="flex min-h-[44px] items-center justify-center rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted"
-                  >
-                    수정
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusToggle(event.id, event.status)}
-                    disabled={reopenLocked && event.status !== "published"}
-                    title={reopenLocked && event.status !== "published" ? "기간 만료된 이벤트는 재게시할 수 없습니다. 새로 등록해주세요." : undefined}
-                    className="min-h-[44px] rounded-md border border-input px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label={event.status === "published" ? "이벤트 종료" : "이벤트 게시"}
-                  >
-                    {event.status === "published" ? "종료" : "게시"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(event.id)}
-                    className="min-h-[44px] rounded-md border border-destructive/30 px-3 py-2 text-xs text-destructive transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-destructive/10"
-                    aria-label="이벤트 삭제"
-                  >
-                    삭제
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {events.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              onStatusToggle={handleStatusToggle}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
       )}
     </div>

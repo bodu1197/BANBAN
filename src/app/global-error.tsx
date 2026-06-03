@@ -1,3 +1,4 @@
+// @client-reason: Next.js error boundary 규약상 global-error 는 클라이언트 컴포넌트 필수 (reset 콜백 + 자체 <html>/<body> 렌더)
 "use client";
 
 import Link from "next/link";

@@ -174,7 +174,11 @@ export default function AdminQuickMenuPage(): React.ReactElement {
 
   const hasOrderChanges = useMemo(() => {
     if (items.length !== savedItems.length) return false;
-    return items.some((item, idx) => item.id !== savedItems[idx]?.id);
+    return items.some((item, idx) => {
+      // eslint-disable-next-line security/detect-object-injection -- idx 는 Array.prototype.some 가 제공하는 숫자 인덱스이며 items 와 동일 길이 검증을 마침.
+      const savedItem = savedItems[idx];
+      return item.id !== savedItem?.id;
+    });
   }, [items, savedItems]);
 
   const fetchItems = useCallback(async () => {

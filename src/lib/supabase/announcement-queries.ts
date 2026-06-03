@@ -15,7 +15,9 @@ const ANNOUNCEMENT_COLUMNS = "id, title, body, is_active, created_at";
 /** 공개 활성 공지 캐시 태그 — admin 변경 시 revalidateTag 로 즉시 무효화. */
 export const ANNOUNCEMENTS_CACHE_TAG = "announcements";
 
-function announcementsTable() {
+function announcementsTable(): ReturnType<
+  ReturnType<typeof createAdminClient>["from"]
+> {
   return createAdminClient().from("announcements");
 }
 
@@ -111,7 +113,7 @@ export async function notifyAllUsers(notification: {
     const chunk = rows.slice(i, i + CHUNK_SIZE);
     const { error } = await supabase.from("notifications").insert(chunk);
     if (error) {
-      // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console -- 서버 배치 알림 삽입 실패 로깅(부분 실패 추적용, 서버 사이드 전용)
       console.error(`Failed to insert announcement notifications (batch ${i}): ${error.message}`);
     }
   }

@@ -79,6 +79,7 @@ export function BusinessHoursField({ value, onChange }: Readonly<BusinessHoursFi
 
   const handleTimeChange = useCallback(
     (key: string, field: "open" | "close", time: string) => {
+      // eslint-disable-next-line security/detect-object-injection -- key 는 DAYS 상수의 요일 키(mon~sun)만 전달됨
       const current = value[key] as DayHours | null | undefined;
       if (!current) return;
       updateDay(key, { ...current, [field]: time });
@@ -90,16 +91,20 @@ export function BusinessHoursField({ value, onChange }: Readonly<BusinessHoursFi
     <div className="space-y-2">
       <label className="text-sm font-medium">영업시간 <span className="text-red-500">*</span></label>
       <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-        {DAYS.map(({ key, label }) => (
-          <DayRow
-            key={key}
-            dayKey={key}
-            label={label}
-            dayHours={value[key] as DayHours | null | undefined}
-            onToggle={handleToggle}
-            onTimeChange={handleTimeChange}
-          />
-        ))}
+        {DAYS.map(({ key, label }) => {
+          // eslint-disable-next-line security/detect-object-injection -- key 는 DAYS 상수의 요일 키(mon~sun)만 순회됨
+          const dayHours = value[key] as DayHours | null | undefined;
+          return (
+            <DayRow
+              key={key}
+              dayKey={key}
+              label={label}
+              dayHours={dayHours}
+              onToggle={handleToggle}
+              onTimeChange={handleTimeChange}
+            />
+          );
+        })}
       </div>
     </div>
   );

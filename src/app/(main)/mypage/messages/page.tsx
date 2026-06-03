@@ -259,6 +259,7 @@ type SetMessages = React.Dispatch<React.SetStateAction<Message[]>>;
 function useChatMessages(conversationId: string): { messages: Message[]; setMessages: SetMessages } {
     const [messages, setMessages] = useState<Message[]>([]);
 
+    // @client-reason: 채팅 — 사용자가 대화를 선택(클릭)해 ChatThread 가 마운트될 때, 그리고 대화 전환 시 해당 conversationId 의 메시지를 지연 로드. 이후 useChatRealtime 의 WebSocket 구독으로 신규 메시지를 병합하므로 클라이언트 페칭이 필수.
     useEffect(() => {
         let cancelled = false;
         (async () => {

@@ -8,6 +8,7 @@ export function UnreadBadge(): React.ReactElement | null {
   const { user } = useAuth();
   const [count, setCount] = useState(0);
 
+  // @client-reason: 채팅 안읽음 배지 카운트 — 로그인 사용자별 실시간 데이터로, Supabase realtime(postgres_changes) 구독으로 새 메시지 도착 시 즉시 갱신. 서버 컴포넌트로 옮길 수 없음(라이브 구독 필수).
   useEffect(() => {
     if (!user) return;
     let cancelled = false;

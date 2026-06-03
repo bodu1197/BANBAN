@@ -79,6 +79,7 @@ function NavLink({ item, isActive, count }: Readonly<{
 function useSidebarCounts(): CountMap {
     const [counts, setCounts] = useState<CountMap>({});
 
+    // @client-reason: 사이드바 안읽음 배지(신고/건의 등) 카운트 로드 — CLAUDE.md 예외(b) 배지·카운트. 서버 레이아웃 전반에 props 주입 없이 클라에서 비차단 로드
     useEffect(() => {
         let active = true;
 

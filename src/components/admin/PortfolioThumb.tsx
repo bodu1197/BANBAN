@@ -27,7 +27,7 @@ function getBorderCls(selected: boolean, disabled: boolean): string {
     if (disabled) {
         return "border-white/10 opacity-60 cursor-not-allowed grayscale";
     }
-    return "border-white/10 hover:border-emerald-300";
+    return "border-white/10 hover:border-emerald-300 focus-visible:border-emerald-300";
 }
 
 function PortfolioThumbImpl({ p, selected, disabled, onToggle }: Readonly<Props>): React.ReactElement {

@@ -323,7 +323,7 @@ function ReportReasonFieldset({ reason, onReasonChange }: Readonly<{
       {REPORT_REASONS.map((r) => (
         <label
           key={r.value}
-          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/5"
+          className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:checked]:border-brand-primary has-[:checked]:bg-brand-primary/5"
         >
           <input
             type="radio"
@@ -356,7 +356,7 @@ function ReportActions({ isPending, onClose, onSubmit }: Readonly<{
         size="sm"
         onClick={onSubmit}
         disabled={isPending}
-        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         {t.reportSubmit}
       </Button>

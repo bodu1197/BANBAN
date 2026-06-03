@@ -37,6 +37,7 @@ function MessageList({ roomId }: Readonly<{ roomId: string }>): React.ReactEleme
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // @client-reason: 채팅방 행을 펼칠 때만 마운트되는 지연 로드 — 사용자 인터랙션(행 확장) 기반 채팅 메시지 페칭
   useEffect(() => {
     fetch(`${API_URL}?conversationId=${roomId}`)
       .then((res) => res.json())

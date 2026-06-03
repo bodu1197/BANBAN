@@ -55,8 +55,10 @@ function strOrUndef(v: unknown): string | undefined {
 /** 청크 쿠키(키 또는 key.0, key.1 …) 를 합치고 base64 prefix 면 디코드 — 없으면 null. */
 function collectSessionRaw(cookies: Record<string, string>, key: string): string | null {
   const chunks: string[] = [];
-  if (cookies[key]) {
-    chunks.push(cookies[key]);
+  // eslint-disable-next-line security/detect-object-injection -- key 는 SUPABASE_URL(신뢰 상수)에서 파생된 auth-token 스토리지 키이며 사용자 입력 아님
+  const whole = cookies[key];
+  if (whole) {
+    chunks.push(whole);
   } else {
     for (let i = 0; ; i++) {
       const chunk = cookies[`${key}.${i}`];

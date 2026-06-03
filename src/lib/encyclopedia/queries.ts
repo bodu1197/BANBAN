@@ -239,6 +239,7 @@ function shuffle<T>(arr: readonly T[]): T[] {
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
     const j = buf[0] % (i + 1);
+    // eslint-disable-next-line security/detect-object-injection -- 숫자 인덱스 i, j (Fisher-Yates 셔플 스왑)
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
@@ -360,10 +361,14 @@ export async function pickRelatedPortfolioImages(
   const ordinals = ["대표", "두 번째", "세 번째", "네 번째", "다섯 번째", "여섯 번째", "일곱 번째"];
   return shuffle(Array.from(byPortfolio.entries()))
     .slice(0, limit)
-    .map(([, path], i) => ({
-      url: `${bucketUrl}/${path}`,
-      alt: `${effectiveKeyword} ${ordinals[i] ?? `${i + 1}번째`} 작품 예시`,
-    }));
+    .map(([, path], i) => {
+      // eslint-disable-next-line security/detect-object-injection -- 숫자 인덱스 i (map 콜백 인덱스)
+      const ordinal = ordinals[i] ?? `${i + 1}번째`;
+      return {
+        url: `${bucketUrl}/${path}`,
+        alt: `${effectiveKeyword} ${ordinal} 작품 예시`,
+      };
+    });
 }
 
 // ── Section 별 portfolio 사진 매칭 (topic.category 기반) ──────────────────────

@@ -186,6 +186,108 @@ function getStepButtonClass(index: number, currentStep: number): string {
   return "bg-muted text-muted-foreground";
 }
 
+type StepIndicatorProps = {
+  currentStep: number;
+  onStepSelect: (index: number) => void;
+};
+
+function StepIndicator({ currentStep, onStepSelect }: Readonly<StepIndicatorProps>): React.ReactElement {
+  return (
+    <div className="flex gap-1">
+      {STEPS.map((label, i) => (
+        <button
+          key={label}
+          type="button"
+          onClick={() => (i < currentStep ? onStepSelect(i) : undefined)}
+          className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring ${getStepButtonClass(i, currentStep)}`}
+          aria-label={`${label} (${i + 1}/${STEPS.length})`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type StepContentProps = Readonly<{
+  currentStep: number;
+  formValues: EventFormValues;
+  artist: { id: string; title: string };
+  mediaSlots: EventMediaSlot[];
+  discountRate: number;
+  detailCopy: GeneratedDetailCopy | null;
+  detailSections: DetailSectionResult[];
+  isSubmitting: boolean;
+  updateForm: (updates: Partial<EventFormValues>) => void;
+  onMediaSlotsChange: (slots: EventMediaSlot[]) => void;
+  onDetailCopyChange: (copy: GeneratedDetailCopy | null) => void;
+  onDetailSectionsChange: (sections: DetailSectionResult[]) => void;
+  onNext: () => void;
+  onBack: () => void;
+  onSubmit: () => void;
+}>;
+
+function AuthLoadingState(): React.ReactElement {
+  return (
+    <div className="flex min-h-[400px] items-center justify-center" role="status" aria-label="로딩 중">
+      <div className="h-8 w-8 motion-safe:animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+    </div>
+  );
+}
+
+function NoArtistState(): React.ReactElement {
+  return (
+    <div className="py-20 text-center text-muted-foreground">
+      아티스트 계정으로 로그인해주세요.
+    </div>
+  );
+}
+
+function StepContent(props: StepContentProps): React.ReactElement | null {
+  const { currentStep, formValues, artist } = props;
+  if (currentStep === 0) {
+    return <EventStepBasic values={formValues} onChange={props.updateForm} onNext={props.onNext} />;
+  }
+  if (currentStep === 1) {
+    return (
+      <EventStepDetails
+        values={formValues}
+        onChange={props.updateForm}
+        artistTitle={artist.title}
+        onNext={props.onNext}
+        onBack={props.onBack}
+      />
+    );
+  }
+  if (currentStep === 2) {
+    return (
+      <EventStepPhotos
+        slots={props.mediaSlots}
+        onSlotsChange={props.onMediaSlotsChange}
+        onNext={props.onNext}
+        onBack={props.onBack}
+      />
+    );
+  }
+  if (currentStep === 3) {
+    return (
+      <EventStepGenerate
+        values={formValues}
+        mediaSlots={props.mediaSlots}
+        discountRate={props.discountRate}
+        detailCopy={props.detailCopy}
+        detailSections={props.detailSections}
+        isSubmitting={props.isSubmitting}
+        onDetailCopyChange={props.onDetailCopyChange}
+        onDetailSectionsChange={props.onDetailSectionsChange}
+        onSubmit={props.onSubmit}
+        onBack={props.onBack}
+      />
+    );
+  }
+  return null;
+}
+
 export function EventWriteClient(): React.ReactElement {
   const router = useRouter();
   const { artist, isLoading: authLoading } = useAuth();
@@ -234,76 +336,35 @@ export function EventWriteClient(): React.ReactElement {
     }
   }, [artist, detailCopy, detailSections, formValues, mediaSlots, discountRate, router]);
 
-  if (authLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center" role="status" aria-label="로딩 중">
-        <div className="h-8 w-8 motion-safe:animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
-      </div>
-    );
-  }
+  if (authLoading) return <AuthLoadingState />;
 
-  if (!artist) {
-    return (
-      <div className="py-20 text-center text-muted-foreground">
-        아티스트 계정으로 로그인해주세요.
-      </div>
-    );
-  }
+  if (!artist) return <NoArtistState />;
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold">이벤트 등록</h1>
 
       {/* Step indicator */}
-      <div className="flex gap-1">
-        {STEPS.map((label, i) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => i < currentStep ? setCurrentStep(i) : undefined}
-            className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring ${getStepButtonClass(i, currentStep)}`}
-            aria-label={`${label} (${i + 1}/${STEPS.length})`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <StepIndicator currentStep={currentStep} onStepSelect={setCurrentStep} />
 
       {/* Step content */}
-      {currentStep === 0 && (
-        <EventStepBasic values={formValues} onChange={updateForm} onNext={handleNext} />
-      )}
-      {currentStep === 1 && (
-        <EventStepDetails
-          values={formValues}
-          onChange={updateForm}
-          artistTitle={artist.title}
-          onNext={handleNext}
-          onBack={handleBack}
-        />
-      )}
-      {currentStep === 2 && (
-        <EventStepPhotos
-          slots={mediaSlots}
-          onSlotsChange={setMediaSlots}
-          onNext={handleNext}
-          onBack={handleBack}
-        />
-      )}
-      {currentStep === 3 && (
-        <EventStepGenerate
-          values={formValues}
-          mediaSlots={mediaSlots}
-          discountRate={discountRate}
-          detailCopy={detailCopy}
-          detailSections={detailSections}
-          isSubmitting={isSubmitting}
-          onDetailCopyChange={setDetailCopy}
-          onDetailSectionsChange={setDetailSections}
-          onSubmit={handleSubmit}
-          onBack={handleBack}
-        />
-      )}
+      <StepContent
+        currentStep={currentStep}
+        formValues={formValues}
+        artist={artist}
+        mediaSlots={mediaSlots}
+        discountRate={discountRate}
+        detailCopy={detailCopy}
+        detailSections={detailSections}
+        isSubmitting={isSubmitting}
+        updateForm={updateForm}
+        onMediaSlotsChange={setMediaSlots}
+        onDetailCopyChange={setDetailCopy}
+        onDetailSectionsChange={setDetailSections}
+        onNext={handleNext}
+        onBack={handleBack}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }

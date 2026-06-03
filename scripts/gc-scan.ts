@@ -98,13 +98,16 @@ function checkReadonlyProps(file: string, lines: string[]): void {
     }
 }
 
+// focus-visible:, focus-within:, has-[:focus-visible]: 는 모두 유효한 키보드 포커스 표시 패턴.
+const FOCUS_INDICATOR = /focus-visible|focus-within/;
+
 function checkHoverFocusVisible(file: string, lines: string[]): void {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (/hover:/.test(line) && !/focus-visible:/.test(line)) {
-            // Check if focus-visible is on nearby lines (same JSX element)
+        if (/hover:/.test(line) && !FOCUS_INDICATOR.test(line)) {
+            // Check if focus indicator is on nearby lines (same JSX element)
             const context = lines.slice(Math.max(0, i - 2), Math.min(lines.length, i + 3)).join(" ");
-            if (!/focus-visible:/.test(context)) {
+            if (!FOCUS_INDICATOR.test(context)) {
                 addViolation(file, i + 1, "hover-focus-visible", "hover: style without matching focus-visible: style");
             }
         }
@@ -146,6 +149,12 @@ function checkUseEffectFetch(file: string, lines: string[]): void {
         // Skip if comment says it's intentional (e.g., real-time subscription)
         const snippet = match[0];
         if (/onAuthStateChange|subscribe|realtime|channel/i.test(snippet)) continue;
+        // CLAUDE.md 데이터 페칭 규칙은 사용자 인터랙션·모달 오픈·배지 폴링·페이지네이션 등 정당한
+        // 클라이언트 페칭을 // @client-reason: 주석으로 허용한다. useEffect 직전 2줄 또는 스니펫에
+        // @client-reason 이 있으면 의도된 클라이언트 페칭으로 간주해 통과(빈 면죄부 방지 위해 사유 필수).
+        // 멀티라인 @client-reason 주석 블록도 인식하도록 useEffect 직전 최대 4줄을 본다.
+        const aboveCtx = lines.slice(Math.max(0, lineNum - 5), lineNum - 1).join("\n");
+        if (/@client-reason/.test(aboveCtx) || /@client-reason/.test(snippet)) continue;
         addViolation(file, lineNum, "no-useeffect-fetch", "useEffect + fetch/supabase for data loading — use Server Component or Server Action instead");
     }
 }

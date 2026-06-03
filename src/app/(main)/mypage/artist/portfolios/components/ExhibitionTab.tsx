@@ -134,6 +134,7 @@ export default function ExhibitionTab({ artistId}: Readonly<ExhibitionTabProps>)
   const [loading, setLoading] = useState(true);
   const didLoad = useRef(false);
 
+  // @client-reason: 탭 전환(내 작품→할인/기획전) 시에만 마운트되는 지연 로드. artistId 는 부모의 클라이언트 useAuth() 에서만 얻을 수 있어 서버 컴포넌트로 이전 불가
   useEffect(() => {
     if (didLoad.current) return;
     didLoad.current = true;

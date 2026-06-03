@@ -22,7 +22,7 @@ export function ArticleCard({ item }: Readonly<{ item: BoardListItem }>): React.
             alt={item.title}
             width={1200}
             height={630}
-            className="h-auto w-full transition-transform duration-300 group-hover:scale-105"
+            className="h-auto w-full transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"
             sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
             unoptimized
           />

@@ -20,7 +20,18 @@ interface Props {
     onCacheUpdate: (data: SlotsCacheData) => void;
 }
 
-export function SlotEditor({ subscriptionId, onUpdated, cache, onCacheUpdate }: Readonly<Props>): React.ReactElement {
+interface SlotEditorState {
+    data: SlotsCacheData | null;
+    selected: Set<string>;
+    loading: boolean;
+    fetchError: string | null;
+    saving: boolean;
+    msg: string | null;
+    handleToggle: (id: string) => void;
+    handleSave: () => Promise<void>;
+}
+
+function useSlotEditor({ subscriptionId, onUpdated, cache, onCacheUpdate }: Readonly<Props>): SlotEditorState {
     const [data, setData] = useState<SlotsCacheData | null>(cache);
     const [selected, setSelected] = useState<Set<string>>(new Set(cache?.currentSlots ?? []));
     const [loading, setLoading] = useState(!cache);
@@ -106,6 +117,12 @@ export function SlotEditor({ subscriptionId, onUpdated, cache, onCacheUpdate }: 
         }
     };
 
+    return { data, selected, loading, fetchError, saving, msg, handleToggle, handleSave };
+}
+
+export function SlotEditor(props: Readonly<Props>): React.ReactElement {
+    const { data, selected, loading, fetchError, saving, msg, handleToggle, handleSave } = useSlotEditor(props);
+
     if (loading) {
         return <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 motion-safe:animate-spin text-zinc-300" aria-hidden="true" /></div>;
     }
@@ -119,22 +136,36 @@ export function SlotEditor({ subscriptionId, onUpdated, cache, onCacheUpdate }: 
 
     const atLimit = selected.size >= data.maxPortfolios;
     return (
+        <SlotEditorBody
+            data={data}
+            selected={selected}
+            atLimit={atLimit}
+            msg={msg}
+            saving={saving}
+            onToggle={handleToggle}
+            onSave={handleSave}
+        />
+    );
+}
+
+interface SlotEditorBodyProps {
+    data: SlotsCacheData;
+    selected: Set<string>;
+    atLimit: boolean;
+    msg: string | null;
+    saving: boolean;
+    onToggle: (id: string) => void;
+    onSave: () => Promise<void>;
+}
+
+function SlotEditorBody({ data, selected, atLimit, msg, saving, onToggle, onSave }: Readonly<SlotEditorBodyProps>): React.ReactElement {
+    return (
         <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
                 <span className="font-medium text-emerald-300">부스트 작품 관리</span>
                 <span className={`${atLimit ? "text-emerald-300" : "text-zinc-300"}`}>{selected.size} / {data.maxPortfolios}</span>
             </div>
-            <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg border border-white/10 bg-black/30 p-2 md:grid-cols-6 lg:grid-cols-8">
-                {data.portfolios.map((p) => (
-                    <PortfolioThumb
-                        key={p.id}
-                        p={p}
-                        selected={selected.has(p.id)}
-                        disabled={atLimit}
-                        onToggle={handleToggle}
-                    />
-                ))}
-            </div>
+            <SlotGrid portfolios={data.portfolios} selected={selected} atLimit={atLimit} onToggle={onToggle} />
             <div className="flex items-center justify-between">
                 <span className="text-xs text-zinc-300" aria-live="polite" aria-atomic="true">
                     {msg ?? "변경 후 저장 클릭"}
@@ -143,12 +174,35 @@ export function SlotEditor({ subscriptionId, onUpdated, cache, onCacheUpdate }: 
                     type="button"
                     disabled={saving}
                     aria-busy={saving}
-                    onClick={() => void handleSave()}
+                    onClick={() => void onSave()}
                     className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white motion-safe:transition-colors hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:bg-emerald-600 disabled:opacity-50"
                 >
                     <Save className="h-4 w-4" /> {saving ? "저장중..." : "저장"}
                 </button>
             </div>
+        </div>
+    );
+}
+
+interface SlotGridProps {
+    portfolios: AdminPortfolioOption[];
+    selected: Set<string>;
+    atLimit: boolean;
+    onToggle: (id: string) => void;
+}
+
+function SlotGrid({ portfolios, selected, atLimit, onToggle }: Readonly<SlotGridProps>): React.ReactElement {
+    return (
+        <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg border border-white/10 bg-black/30 p-2 md:grid-cols-6 lg:grid-cols-8">
+            {portfolios.map((p) => (
+                <PortfolioThumb
+                    key={p.id}
+                    p={p}
+                    selected={selected.has(p.id)}
+                    disabled={atLimit}
+                    onToggle={onToggle}
+                />
+            ))}
         </div>
     );
 }

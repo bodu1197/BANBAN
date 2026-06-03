@@ -167,6 +167,7 @@ function useChatConversation(
     setMessages: (msgs: Message[]) => void,
     setLoading: (v: boolean) => void,
 ): void {
+    // @client-reason: 채팅 모달 오픈(isOpen) 시점에 지연 로드하는 대화방/메시지 초기 페칭 — 모달 오픈 인터랙션 기반 + 채팅 상호작용(Supabase Realtime 구독과 연동)이라 서버 컴포넌트로 이전 불가
     useEffect(() => {
         if (!isOpen) return;
         let cancelled = false;

@@ -1,3 +1,4 @@
+// @client-reason: Next.js Error Boundary 규약상 error.tsx 는 클라이언트 컴포넌트 필수 (reset 핸들러 + 렌더 에러 catch)
 "use client";
 
 import { useEffect } from "react";

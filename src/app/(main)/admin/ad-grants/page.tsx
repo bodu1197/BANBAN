@@ -131,7 +131,7 @@ function FilterBar({ status, onStatusChange, onSearch, onNewGrant }: Readonly<{
                         className={`min-h-[36px] rounded-lg px-3 py-1.5 text-xs font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                             status === f.key
                                 ? "bg-emerald-500/20 text-emerald-300"
-                                : "bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
+                                : "bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white focus-visible:bg-white/10 focus-visible:text-white"
                         }`}
                     >
                         {f.label}

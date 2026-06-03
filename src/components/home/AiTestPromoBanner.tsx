@@ -28,7 +28,7 @@ export function AiTestPromoBanner(): React.ReactElement {
             내 얼굴에 어울리는 반영구 스타일 미리보기
           </p>
         </div>
-        <ChevronRight className="h-5 w-5 flex-shrink-0 motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+        <ChevronRight className="h-5 w-5 flex-shrink-0 motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5 motion-safe:group-focus-visible:translate-x-0.5" aria-hidden="true" />
       </Link>
     </div>
   );

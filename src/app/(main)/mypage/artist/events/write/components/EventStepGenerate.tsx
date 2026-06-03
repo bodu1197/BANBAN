@@ -35,7 +35,9 @@ function buildSectionFormData(
   fd.append("discountRate", String(discountRate));
 
   if (EDIT_SECTIONS.includes(sectionType)) {
+    // eslint-disable-next-line security/detect-object-injection -- sectionType은 DetailSectionType 리터럴 키, MEDIA_TYPE_TO_SLOT 상수 매핑 조회
     const slotIdx = MEDIA_TYPE_TO_SLOT[sectionType];
+    // eslint-disable-next-line security/detect-object-injection -- slotIdx는 상수 매핑에서 나온 숫자 인덱스(0~2)
     const file = slotIdx !== undefined ? mediaSlots[slotIdx]?.file : null;
     if (file) {
       fd.append("image", file);
@@ -84,6 +86,7 @@ async function requestSectionImage(
       sectionType,
       storagePath: data.storagePath,
       previewUrl: data.previewUrl,
+      // eslint-disable-next-line security/detect-object-injection -- sectionType은 DetailSectionType 리터럴 키, altTexts 객체 조회
       altText: copy.altTexts[sectionType] ?? "",
       status: "completed",
       ...(typeof data.thumbnailPath === "string" ? { thumbnailPath: data.thumbnailPath } : {}),
@@ -97,6 +100,119 @@ function sectionBorderClass(status: DetailSectionResult["status"]): string {
   if (status === "failed") return "border-red-300 dark:border-red-800";
   if (status === "completed") return "border-green-300 dark:border-green-800";
   return "border-input";
+}
+
+async function runGenerateCopy(
+  values: EventFormValues,
+  discountRate: number,
+  onDetailCopyChange: (copy: GeneratedDetailCopy) => void,
+): Promise<GeneratedDetailCopy | null> {
+  try {
+    const body = {
+      ...values,
+      discountRate,
+      shopName: values.shopName || "샵",
+    };
+    const res = await fetch("/api/ai/generate-event-copy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const rawText = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      throw new Error(`텍스트 생성 서버 오류 (${res.status})`);
+    }
+    if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "생성 실패");
+    if (!data.content || typeof data.content !== "object" || !("sections" in data.content)) {
+      throw new Error("AI 응답 구조가 올바르지 않습니다");
+    }
+    const copy = data.content as GeneratedDetailCopy;
+    onDetailCopyChange(copy);
+    return copy;
+  } catch (e: unknown) {
+    alert(`텍스트 카피 생성 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
+    return null;
+  }
+}
+
+interface SectionImageContext {
+  values: EventFormValues;
+  discountRate: number;
+  mediaSlots: EventMediaSlot[];
+  detailSections: DetailSectionResult[];
+  onDetailSectionsChange: (sections: DetailSectionResult[]) => void;
+  setGeneratingSection: React.Dispatch<React.SetStateAction<Set<DetailSectionType>>>;
+}
+
+async function runGenerateSectionImage(
+  sectionType: DetailSectionType,
+  copy: GeneratedDetailCopy,
+  ctx: SectionImageContext,
+): Promise<DetailSectionResult | undefined> {
+  ctx.setGeneratingSection((prev) => new Set(prev).add(sectionType));
+
+  ctx.onDetailSectionsChange(
+    ctx.detailSections.map((s) =>
+      s.sectionType === sectionType ? { ...s, status: "generating" as const, error: undefined } : s,
+    ),
+  );
+
+  try {
+    return await requestSectionImage(sectionType, ctx.values, copy, ctx.discountRate, ctx.mediaSlots);
+  } finally {
+    ctx.setGeneratingSection((prev) => {
+      const next = new Set(prev);
+      next.delete(sectionType);
+      return next;
+    });
+  }
+}
+
+function buildFinalSections(
+  results: PromiseSettledResult<DetailSectionResult | undefined>[],
+): DetailSectionResult[] {
+  return results.map((r, i) => {
+    if (r.status === "fulfilled" && r.value) return r.value;
+    return {
+      // eslint-disable-next-line security/detect-object-injection -- i는 results.map 콜백의 숫자 인덱스
+      sectionType: DETAIL_SECTION_TYPES[i],
+      storagePath: "",
+      previewUrl: "",
+      altText: "",
+      status: "failed" as const,
+      error: r.status === "rejected" ? String(r.reason) : "생성 실패",
+    };
+  });
+}
+
+async function runGenerateAll(
+  generateCopy: () => Promise<GeneratedDetailCopy | null>,
+  generateSectionImage: (
+    sectionType: DetailSectionType,
+    copy: GeneratedDetailCopy,
+  ) => Promise<DetailSectionResult | undefined>,
+  onDetailSectionsChange: (sections: DetailSectionResult[]) => void,
+): Promise<void> {
+  const copy = await generateCopy();
+  if (!copy) return;
+
+  const initial: DetailSectionResult[] = DETAIL_SECTION_TYPES.map((type) => ({
+    sectionType: type,
+    storagePath: "",
+    previewUrl: "",
+    altText: "",
+    status: "generating" as const,
+  }));
+  onDetailSectionsChange(initial);
+
+  const results = await Promise.allSettled(
+    DETAIL_SECTION_TYPES.map((type) => generateSectionImage(type, copy)),
+  );
+
+  onDetailSectionsChange(buildFinalSections(results));
 }
 
 interface EventStepGenerateProps {
@@ -133,91 +249,29 @@ export function EventStepGenerate({
   const generateCopy = useCallback(async (): Promise<GeneratedDetailCopy | null> => {
     setIsGeneratingCopy(true);
     try {
-      const body = {
-        ...values,
-        discountRate,
-        shopName: values.shopName || "샵",
-      };
-      const res = await fetch("/api/ai/generate-event-copy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const rawText = await res.text();
-      let data: Record<string, unknown>;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        throw new Error(`텍스트 생성 서버 오류 (${res.status})`);
-      }
-      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "생성 실패");
-      if (!data.content || typeof data.content !== "object" || !("sections" in data.content)) {
-        throw new Error("AI 응답 구조가 올바르지 않습니다");
-      }
-      const copy = data.content as GeneratedDetailCopy;
-      onDetailCopyChange(copy);
-      return copy;
-    } catch (e: unknown) {
-      alert(`텍스트 카피 생성 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);
-      return null;
+      return await runGenerateCopy(values, discountRate, onDetailCopyChange);
     } finally {
       setIsGeneratingCopy(false);
     }
   }, [values, discountRate, onDetailCopyChange]);
 
   const generateSectionImage = useCallback(
-    async (sectionType: DetailSectionType, copy: GeneratedDetailCopy) => {
-      setGeneratingSection((prev) => new Set(prev).add(sectionType));
-
-      onDetailSectionsChange(
-        detailSections.map((s) =>
-          s.sectionType === sectionType ? { ...s, status: "generating" as const, error: undefined } : s,
-        ),
-      );
-
-      try {
-        return await requestSectionImage(sectionType, values, copy, discountRate, mediaSlots);
-      } finally {
-        setGeneratingSection((prev) => {
-          const next = new Set(prev);
-          next.delete(sectionType);
-          return next;
-        });
-      }
-    },
+    (sectionType: DetailSectionType, copy: GeneratedDetailCopy) =>
+      runGenerateSectionImage(sectionType, copy, {
+        values,
+        discountRate,
+        mediaSlots,
+        detailSections,
+        onDetailSectionsChange,
+        setGeneratingSection,
+      }),
     [values, mediaSlots, discountRate, detailSections, onDetailSectionsChange],
   );
 
-  const generateAll = useCallback(async () => {
-    const copy = await generateCopy();
-    if (!copy) return;
-
-    const initial: DetailSectionResult[] = DETAIL_SECTION_TYPES.map((type) => ({
-      sectionType: type,
-      storagePath: "",
-      previewUrl: "",
-      altText: "",
-      status: "generating" as const,
-    }));
-    onDetailSectionsChange(initial);
-
-    const results = await Promise.allSettled(
-      DETAIL_SECTION_TYPES.map((type) => generateSectionImage(type, copy)),
-    );
-
-    const final: DetailSectionResult[] = results.map((r, i) => {
-      if (r.status === "fulfilled" && r.value) return r.value;
-      return {
-        sectionType: DETAIL_SECTION_TYPES[i],
-        storagePath: "",
-        previewUrl: "",
-        altText: "",
-        status: "failed" as const,
-        error: r.status === "rejected" ? String(r.reason) : "생성 실패",
-      };
-    });
-    onDetailSectionsChange(final);
-  }, [generateCopy, generateSectionImage, onDetailSectionsChange]);
+  const generateAll = useCallback(
+    () => runGenerateAll(generateCopy, generateSectionImage, onDetailSectionsChange),
+    [generateCopy, generateSectionImage, onDetailSectionsChange],
+  );
 
   const regenerateSection = useCallback(
     async (sectionType: DetailSectionType) => {
@@ -236,17 +290,52 @@ export function EventStepGenerate({
 
   return (
     <div className="space-y-6">
-      {/* Generate Button */}
+      <GenerateButton
+        isAnyGenerating={isAnyGenerating}
+        hasSections={detailSections.length > 0}
+        onGenerateAll={generateAll}
+      />
+
+      {detailSections.length > 0 && (
+        <ProgressSummary detailSections={detailSections} completedCount={completedCount} />
+      )}
+
+      {detailSections.length > 0 && (
+        <SectionGrid
+          detailSections={detailSections}
+          isAnyGenerating={isAnyGenerating}
+          onRegenerate={regenerateSection}
+        />
+      )}
+
+      <StepNavigation
+        allCompleted={allCompleted}
+        isSubmitting={isSubmitting}
+        onBack={onBack}
+        onSubmit={onSubmit}
+      />
+    </div>
+  );
+}
+
+function GenerateButton({
+  isAnyGenerating,
+  hasSections,
+  onGenerateAll,
+}: Readonly<{
+  isAnyGenerating: boolean;
+  hasSections: boolean;
+  onGenerateAll: () => void;
+}>): React.ReactElement {
+  return (
+    <>
       <button
         type="button"
         disabled={isAnyGenerating}
-        onClick={generateAll}
+        onClick={onGenerateAll}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 py-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
       >
-        <GenerateButtonLabel
-          isAnyGenerating={isAnyGenerating}
-          hasSections={detailSections.length > 0}
-        />
+        <GenerateButtonLabel isAnyGenerating={isAnyGenerating} hasSections={hasSections} />
       </button>
       <p className="text-center text-sm text-foreground/80">
         <span aria-hidden="true">⏱️</span>
@@ -254,58 +343,87 @@ export function EventStepGenerate({
         {" "}
         7개 섹션을 동시에 생성합니다. 최대 3분까지 소요될 수 있어요. 페이지를 닫지 말고 잠시 기다려주세요.
       </p>
+    </>
+  );
+}
 
-      {/* Progress */}
-      {detailSections.length > 0 && (
-        <p className="text-center text-sm text-muted-foreground">
-          {completedCount}/{DETAIL_SECTION_TYPES.length}개 완료
-          {detailSections.some((s) => s.status === "failed") && (
-            <span className="ml-2 text-red-500">
-              ({detailSections.filter((s) => s.status === "failed").length}개 실패)
-            </span>
-          )}
-        </p>
+function ProgressSummary({
+  detailSections,
+  completedCount,
+}: Readonly<{
+  detailSections: DetailSectionResult[];
+  completedCount: number;
+}>): React.ReactElement {
+  return (
+    <p className="text-center text-sm text-muted-foreground">
+      {completedCount}/{DETAIL_SECTION_TYPES.length}개 완료
+      {detailSections.some((s) => s.status === "failed") && (
+        <span className="ml-2 text-red-500">
+          ({detailSections.filter((s) => s.status === "failed").length}개 실패)
+        </span>
       )}
+    </p>
+  );
+}
 
-      {/* Section Grid */}
-      {detailSections.length > 0 && (
-        <div className="space-y-3">
-          {detailSections.map((section) => (
-            <SectionRow
-              key={section.sectionType}
-              section={section}
-              isAnyGenerating={isAnyGenerating}
-              onRegenerate={regenerateSection}
-            />
-          ))}
-        </div>
-      )}
+function SectionGrid({
+  detailSections,
+  isAnyGenerating,
+  onRegenerate,
+}: Readonly<{
+  detailSections: DetailSectionResult[];
+  isAnyGenerating: boolean;
+  onRegenerate: (sectionType: DetailSectionType) => void;
+}>): React.ReactElement {
+  return (
+    <div className="space-y-3">
+      {detailSections.map((section) => (
+        <SectionRow
+          key={section.sectionType}
+          section={section}
+          isAnyGenerating={isAnyGenerating}
+          onRegenerate={onRegenerate}
+        />
+      ))}
+    </div>
+  );
+}
 
-      {/* Navigation */}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex-1 rounded-lg border border-input py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          이전
-        </button>
-        <button
-          type="button"
-          disabled={!allCompleted || isSubmitting}
-          onClick={onSubmit}
-          className="flex-1 rounded-lg bg-brand-primary py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-        >
-          {isSubmitting ? (
-            <span role="status" aria-label="이벤트 등록 중" className="flex items-center justify-center gap-2">
-              <span className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />
-              등록 중...
-            </span>
-          ) : (
-            "등록하기"
-          )}
-        </button>
-      </div>
+function StepNavigation({
+  allCompleted,
+  isSubmitting,
+  onBack,
+  onSubmit,
+}: Readonly<{
+  allCompleted: boolean;
+  isSubmitting: boolean;
+  onBack: () => void;
+  onSubmit: () => void;
+}>): React.ReactElement {
+  return (
+    <div className="flex gap-3">
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex-1 rounded-lg border border-input py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        이전
+      </button>
+      <button
+        type="button"
+        disabled={!allCompleted || isSubmitting}
+        onClick={onSubmit}
+        className="flex-1 rounded-lg bg-brand-primary py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+      >
+        {isSubmitting ? (
+          <span role="status" aria-label="이벤트 등록 중" className="flex items-center justify-center gap-2">
+            <span className="h-4 w-4 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />
+            등록 중...
+          </span>
+        ) : (
+          "등록하기"
+        )}
+      </button>
     </div>
   );
 }
