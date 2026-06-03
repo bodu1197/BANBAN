@@ -277,7 +277,7 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
     const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as ArtistType;
 
     return (
-        <main className="mx-auto min-h-screen max-w-[1024px] bg-background">
+        <div className="mx-auto min-h-screen max-w-[1024px] bg-background">
             <PageJsonLd breadcrumbJsonLd={breadcrumbJsonLd} productJsonLd={productJsonLd} />
             <PortfolioDetailClient
                 portfolio={portfolio}
@@ -302,6 +302,6 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
                     </section>
                 }
             />
-        </main>
+        </div>
     );
 }

@@ -8,7 +8,8 @@ const MODEL = "gpt-4o";
 const SITE_NAME = "반언니";
 const AI_TEMPERATURE = 0.8;
 const AI_MAX_TOKENS = 8192;
-const IMAGE_COUNT = 5; // 커버 1 + 본문 섹션 4
+const SECTION_COUNT = 6; // AI 가 생성하는 본문 섹션 수 — buildPrompt 의 "정확히 N개" 및 섹션 가이드(1..N)와 반드시 일치.
+const IMAGE_COUNT = SECTION_COUNT + 1; // 커버 1(images[0]) + 섹션별 1장(images[1..SECTION_COUNT]) → buildContentMarkdown 의 images[i+1] 가 모든 섹션에 정합.
 const SLUG_MAX_LENGTH = 80;
 const MIN_SECTIONS = 4; // thin-content 거부 하한
 const MIN_BODY_CHARS = 1500;
@@ -67,7 +68,7 @@ function buildPrompt(
     ``,
     `## 분량 요구사항 (위반 시 거부)`,
     `- introduction: 최소 350자 (2~3문단)`,
-    `- sections: 정확히 6개, 각 body 최소 350자 (구체적 정보 포함)`,
+    `- sections: 정확히 ${SECTION_COUNT}개, 각 body 최소 350자 (구체적 정보 포함)`,
     `- conclusion: 최소 250자`,
     `- 전체 최소 3,500자.`,
     ``,
@@ -98,7 +99,7 @@ function buildPrompt(
     `  "introduction": "도입부 2~3문단, 최소 350자. 검색 의도에 즉시 답하며 시작",`,
     `  "sections": [`,
     `    { "heading": "소제목(H2)", "body": "본문 최소 350자(\\n\\n 문단 구분)" }`,
-    `    // 위 형식으로 정확히 6개`,
+    `    // 위 형식으로 정확히 ${SECTION_COUNT}개`,
     `  ],`,
     `  "conclusion": "마무리 2문단, 최소 250자. 반드시 다음 문장을 그대로 포함: '본 콘텐츠는 의료 조언이 아니며, 시술 결과는 개인차가 크므로 시술 전 전문가 상담을 권장합니다.'",`,
     `  "faq": [`,

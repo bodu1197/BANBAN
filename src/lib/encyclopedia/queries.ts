@@ -357,7 +357,7 @@ export async function pickRelatedPortfolioImages(
     }
   }
 
-  const ordinals = ["대표", "두 번째", "세 번째", "네 번째", "다섯 번째"];
+  const ordinals = ["대표", "두 번째", "세 번째", "네 번째", "다섯 번째", "여섯 번째", "일곱 번째"];
   return shuffle(Array.from(byPortfolio.entries()))
     .slice(0, limit)
     .map(([, path], i) => ({

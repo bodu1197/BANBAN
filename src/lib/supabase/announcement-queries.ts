@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { Json } from "@/types/database";
 import { createAdminClient } from "./server";
 
@@ -11,19 +12,30 @@ export interface AnnouncementRow {
 
 const ANNOUNCEMENT_COLUMNS = "id, title, body, is_active, created_at";
 
+/** 공개 활성 공지 캐시 태그 — admin 변경 시 revalidateTag 로 즉시 무효화. */
+export const ANNOUNCEMENTS_CACHE_TAG = "announcements";
+
 function announcementsTable() {
   return createAdminClient().from("announcements");
 }
 
-export async function fetchActiveAnnouncements(limit = 5): Promise<AnnouncementRow[]> {
-  const { data } = await announcementsTable()
-    .select(ANNOUNCEMENT_COLUMNS)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+/**
+ * 공개 활성 공지 — unstable_cache(300s, "announcements" 태그)로 메모이즈.
+ * admin 생성/토글/삭제 시 revalidateTag(ANNOUNCEMENTS_CACHE_TAG) 로 즉시 무효화.
+ */
+export const fetchActiveAnnouncements = unstable_cache(
+  async (limit = 5): Promise<AnnouncementRow[]> => {
+    const { data } = await announcementsTable()
+      .select(ANNOUNCEMENT_COLUMNS)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
-  return (data ?? []) as AnnouncementRow[];
-}
+    return (data ?? []) as AnnouncementRow[];
+  },
+  ["active-announcements"],
+  { revalidate: 300, tags: [ANNOUNCEMENTS_CACHE_TAG] },
+);
 
 export async function fetchAllAnnouncements(limit = 50): Promise<AnnouncementRow[]> {
   const { data } = await announcementsTable()
