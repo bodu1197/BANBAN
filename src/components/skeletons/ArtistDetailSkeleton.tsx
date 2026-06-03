@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/* eslint-disable max-lines-per-function */
+ 
 export default function ArtistDetailSkeleton(): React.ReactElement {
   return (
     <main className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">

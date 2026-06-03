@@ -39,7 +39,7 @@ function ConcealerUpload({ inputRef, onFile, error }: Readonly<{
 
 // ─── Toolbar ───────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line max-lines-per-function -- Toolbar with auto-erase, brush controls, size adjustment, action buttons
+ 
 function ConcealerToolbar({ brushMode, brushSize, onToggleBrush, onSizeChange, onAutoErase, onReset, onDownload, onNewPhoto }: Readonly<{
     brushMode: boolean;
     brushSize: number;

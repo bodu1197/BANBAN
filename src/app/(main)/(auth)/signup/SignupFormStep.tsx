@@ -228,7 +228,7 @@ function EmailSentView({ email, onBack }: Readonly<{ email: string; onBack: () =
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
+ 
 export function SignupFormStep({ formData, setFormData, role, onBack, onComplete }: Readonly<SignupFormStepProps>): React.ReactElement {
   const [isPending, startTransition] = useTransition();
   const [confirmPassword, setConfirmPassword] = useState("");

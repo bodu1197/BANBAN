@@ -247,7 +247,7 @@ function getPeriodLabel(period: Period): string {
 
 // ─── Main ───────────────────────────────────────────────
 
-/* eslint-disable max-lines-per-function */
+ 
 export default function AdminAnalyticsPage(): React.ReactElement {
     const { user, isLoading: authLoading } = useAuth();
     const [period, setPeriod] = useState<Period>("hourly");

@@ -1,6 +1,6 @@
 // @client-reason: Category selection with interactive checkboxes and toggle state
 "use client";
-/* eslint-disable max-lines-per-function */
+ 
 
 import { useState } from "react";
 import { getCategoryDisplayName } from "@/types/portfolio-search";

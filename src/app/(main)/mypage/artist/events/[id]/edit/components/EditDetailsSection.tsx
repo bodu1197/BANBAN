@@ -54,7 +54,7 @@ function TargetAudienceField({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function -- fieldset with 5 shop info inputs in grid layout
+ 
 function ShopInfoFieldset({
   values,
   onChange,
@@ -135,7 +135,7 @@ function ShopInfoFieldset({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function -- form section with period/dates/summary + audience + shop fields
+ 
 export function EditDetailsSection({
   values,
   onChange,

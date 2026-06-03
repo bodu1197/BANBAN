@@ -62,7 +62,7 @@ function RegionSubGrid({ group, localIds, localSido, allLabel, onSelectAll, onTo
   );
 }
 
-/* eslint-disable max-lines-per-function */
+ 
 export function RegionModal({ groups, selectedId, selectedSido, labels, onSelectRegions, onClose }: Readonly<{
   groups: SidoGroup[]; selectedId: string | null; selectedSido: string | null; labels: RegionSelectorLabels;
   onSelectRegions: (id: string | null, sido: string | null) => void; onClose: () => void;

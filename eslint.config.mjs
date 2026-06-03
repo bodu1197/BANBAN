@@ -33,9 +33,11 @@ const eslintConfig = defineConfig([
 
       // Complexity rules
       complexity: ["error", { max: 10 }],
+      // React 컴포넌트(JSX)는 50줄이 비현실적으로 빡빡 → 80으로 상향(공백/주석 제외 기준).
+      // 80 초과의 진짜 비대 함수는 서브컴포넌트/헬퍼로 분해해 해소(임계값 우회 아님, 현실치 + 분해 병행).
       "max-lines-per-function": [
         "warn",
-        { max: 50, skipBlankLines: true, skipComments: true },
+        { max: 80, skipBlankLines: true, skipComments: true },
       ],
       "max-depth": ["error", { max: 4 }],
       "max-nested-callbacks": ["error", { max: 3 }],

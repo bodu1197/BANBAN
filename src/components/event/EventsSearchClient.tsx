@@ -168,7 +168,7 @@ function PageHeader({ onBack }: Readonly<{ onBack: () => void }>): React.ReactEl
   );
 }
 
-/* eslint-disable max-lines-per-function */
+ 
 function EventsSearchInner({
   initialEvents,
   initialTotalCount,

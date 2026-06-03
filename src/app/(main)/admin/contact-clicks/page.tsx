@@ -265,7 +265,7 @@ function ArtistSparkline({ trend }: Readonly<{ trend: ChartRow[] }>): React.Reac
     const peak = Math.max(...trend.map(x => x.kakao + x.phone), 1);
     return (
         <>
-            {/* eslint-disable-next-line react/forbid-dom-props -- dynamic height from runtime data */}
+            { }
             {trend.map(d => (
                 <div
                     key={d.date}

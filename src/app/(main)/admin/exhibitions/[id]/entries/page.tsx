@@ -1,6 +1,6 @@
 // @client-reason: Admin entry management with approve/reject/delete actions and data fetching
 "use client";
-/* eslint-disable max-lines-per-function */
+ 
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";

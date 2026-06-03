@@ -136,7 +136,7 @@ async function saveEvent(
   }
 }
 
-// eslint-disable-next-line max-lines-per-function -- form wrapper with save logic + 3 section components
+ 
 export function EventEditClient({
   event,
   artistTitle,

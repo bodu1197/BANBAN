@@ -43,7 +43,7 @@ function AdvantageInput({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function -- collapsible body with 4 optional field groups
+ 
 function OptionalFieldsBody({
   values,
   onChange,

@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function */
+ 
 // @client-reason: user interaction handlers for page navigation buttons
 'use client';
 

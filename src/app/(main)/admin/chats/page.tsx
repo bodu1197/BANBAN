@@ -98,7 +98,7 @@ function ChatRow({ item, onHide }: Readonly<{
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
+ 
 export default function AdminChatsPage(): React.ReactElement {
   const [conversations, setConversations] = useState<ChatRoomItem[]>([]);
   const [total, setTotal] = useState(0);

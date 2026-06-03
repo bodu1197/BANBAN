@@ -199,7 +199,7 @@ function useResolvedArtists(
 
 // --- Inner component ---
 
-/* eslint-disable max-lines-per-function */
+ 
 function ArtistSearchInner({ initialArtists,
   initialTotalCount,
   regions,

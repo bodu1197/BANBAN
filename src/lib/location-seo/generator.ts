@@ -52,7 +52,7 @@ const SYSTEM_PROMPT = [
   "7. **반드시 valid JSON만 출력**: 다른 텍스트 절대 금지.",
 ].join("\n");
 
-// eslint-disable-next-line max-lines-per-function -- AI 프롬프트 템플릿(문자열 배열, 로직 아님)
+ 
 function buildPrompt(
   target: LocationTarget,
   stats: { artistCount: number; portfolioCount: number },

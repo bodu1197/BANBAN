@@ -35,7 +35,7 @@ interface PortfolioHeaderProps {
   labels?: Partial<PortfolioHeaderLabels>;
 }
 
-// eslint-disable-next-line max-lines-per-function
+ 
 export function PortfolioHeader({
   isLiked,
   onLikeToggle,

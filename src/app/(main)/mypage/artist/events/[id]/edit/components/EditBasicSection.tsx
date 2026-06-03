@@ -5,7 +5,7 @@ import { RETOUCH_TYPES, EVENT_FIELD_LIMITS, type EventFormValues } from "@/compo
 import { INPUT_CLASS, LABEL_CLASS } from "@/components/event-form/form-styles";
 import { calcDiscountRate } from "@/components/portfolio-form/portfolio-helpers";
 
-// eslint-disable-next-line max-lines-per-function -- form section with price inputs + discount badge
+ 
 function PriceFields({
   values,
   onChange,

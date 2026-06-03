@@ -67,7 +67,7 @@ function readAsDataUrl(file: File): Promise<string> {
   });
 }
 
-/* eslint-disable max-lines-per-function */
+ 
 export function ImageUpload({
   maxLength = 5,
   label,

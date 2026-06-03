@@ -137,7 +137,7 @@ function drawBothBrows(
  *   4. Final blend blur
  *   5. Soft-edged elliptical mask → composite onto original
  */
-// eslint-disable-next-line max-lines-per-function -- Multi-pass canvas pipeline, splitting would obscure the sequential flow
+ 
 export function eraseBrowRegion(
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,

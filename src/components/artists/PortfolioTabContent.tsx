@@ -6,7 +6,7 @@ import { Grid3X3, List } from "lucide-react";
 import type { PortfolioWithMedia } from "@/lib/supabase/queries";
 import { PortfolioGallery } from "@/components/portfolio/PortfolioGallery";
 
-/* eslint-disable max-lines-per-function */
+ 
 interface PortfolioTabContentProps {
   portfolios: PortfolioWithMedia[];
   totalCountLabel: string;

@@ -51,7 +51,7 @@ function pickAngle(): string {
   // SonarCloud S2245 회피 — AI prompt 다양성 목적의 비보안 random, 그래도 crypto-backed 사용.
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
-  // eslint-disable-next-line security/detect-object-injection -- numeric index from secureRandomInt range
+   
   return WRITING_ANGLES[buf[0] % WRITING_ANGLES.length];
 }
 

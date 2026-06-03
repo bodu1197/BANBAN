@@ -116,7 +116,7 @@ function LocationStats({
   );
 }
 
-// eslint-disable-next-line max-lines-per-function -- 페이지 오케스트레이터: 구조화데이터 + 커버 + 메타 헤더 + 통계 + 본문 렌더 구조상 길이 불가피
+ 
 export async function renderLocationDetailPage(
   slug: string,
 ): Promise<React.ReactElement> {

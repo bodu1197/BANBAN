@@ -252,7 +252,7 @@ function ProLipTab({ lipEnabled, onToggleLip, lipParams, onLipParamsChange }: Re
 
 // ─── Header Bar ─────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line max-lines-per-function -- Header with view mode toggle buttons
+ 
 function ProHeaderV2({ viewMode, onChangeMode, showViewToggle }: Readonly<{
     viewMode: ViewMode;
     onChangeMode: (mode: ViewMode) => void;
