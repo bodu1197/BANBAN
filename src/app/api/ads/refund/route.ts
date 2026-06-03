@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getUser } from "@/lib/supabase/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { cancelSubscription } from "@/lib/supabase/ad-queries";
 import { refundPointsBestEffort } from "@/lib/supabase/point-queries";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 const IMP_KEY = process.env.PORTONE_IMP_KEY ?? "";
 const IMP_SECRET = process.env.PORTONE_IMP_SECRET ?? "";
@@ -48,17 +49,9 @@ async function cancelPortOnePayment(sub: SubData, reason: string): Promise<void>
     });
 }
 
-/** Verify the requesting user is an admin */
-async function verifyAdmin(userId: string): Promise<boolean> {
-    const supabase = await createClient();
-    const { data: profile } = await supabase
-        .from("profiles").select("is_admin").eq("id", userId).single();
-    return !!(profile && (profile as { is_admin: boolean }).is_admin);
-}
-
-/** Fetch the subscription by ID */
-async function fetchSubscription(subscriptionId: string): Promise<SubData | null> {
-    const supabase = await createClient();
+/** Fetch the subscription by ID (service_role — ad_subscriptions SELECT RLS 가 소유자 제한이라
+ *  관리자가 타 작가 구독을 못 읽어 환불이 항상 404 나던 문제 → requireAdmin 의 auth.supabase 사용). */
+async function fetchSubscription(supabase: SupabaseClient<Database>, subscriptionId: string): Promise<SubData | null> {
     const { data } = await supabase
         .from("ad_subscriptions")
         .select("id, status, imp_uid, merchant_uid, paid_by_cash, paid_by_points, artist:artists!inner(user_id)")
@@ -97,14 +90,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { success: rateLimitOk } = rateLimit({ key: `refund:${ip}`, limit: 5, windowMs: 60_000 });
     if (!rateLimitOk) return rateLimitResponse();
 
-    const user = await getUser();
-    if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    if (!(await verifyAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const body = await request.json() as { subscriptionId: string };
     if (!body.subscriptionId) return NextResponse.json({ error: "missing_subscription_id" }, { status: 400 });
 
-    const sub = await fetchSubscription(body.subscriptionId);
+    const sub = await fetchSubscription(auth.supabase, body.subscriptionId);
     if (!sub) return NextResponse.json({ error: "not_found" }, { status: 404 });
     if (sub.status !== "ACTIVE") return NextResponse.json({ error: "not_active" }, { status: 400 });
 
