@@ -412,7 +412,7 @@ function ReviewsSection({
         </div>
       ) : null}
 
-      {hasReviewsToShow ? (
+      {hasReviewsToShow && (
         <div className="space-y-3">
           {recentReviews.map((r) => (
             <ReviewCard
@@ -431,7 +431,8 @@ function ReviewsSection({
             후기 작성
           </Link>
         </div>
-      ) : isLoggedIn ? (
+      )}
+      {!hasReviewsToShow && isLoggedIn && (
         <div className="space-y-3">
           <div className="rounded-lg border border-dashed border-input p-6 text-center">
             <MessageSquareText className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" aria-hidden />
@@ -446,7 +447,8 @@ function ReviewsSection({
             후기 작성
           </Link>
         </div>
-      ) : (
+      )}
+      {!hasReviewsToShow && !isLoggedIn && (
         <div role="region" className="flex flex-col items-center rounded-xl bg-muted/30 px-6 py-10 text-center" aria-label="로그인 안내">
           <MessageSquareText className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
           <p className="text-base font-semibold">시술 결과가 궁금하다면</p>

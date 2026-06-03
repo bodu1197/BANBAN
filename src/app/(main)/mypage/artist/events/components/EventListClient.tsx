@@ -35,6 +35,21 @@ function isExpiredByDate(endAt: string | null): boolean {
   return endAt < today;
 }
 
+/** 이벤트 카드 파생값(썸네일/상태배지/재게시잠금) — map 콜백 복잡도 분리. */
+function deriveEventCardData(event: EventRow): {
+  heroUrl: string | null;
+  statusInfo: { label: string; className: string };
+  reopenLocked: boolean;
+} {
+  const media = event.event_media ?? [];
+  const hero = media.find((m) => m.media_type === "hero");
+  const heroUrl = hero ? getEventStorageUrl(hero.storage_path) : null;
+  const dateExpired = isExpiredByDate(event.event_end_at);
+  const effectiveStatus = dateExpired && event.status === "published" ? "expired" : event.status;
+  const statusInfo = STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.draft;
+  return { heroUrl, statusInfo, reopenLocked: dateExpired };
+}
+
 export function EventListClient(): React.ReactElement {
   const { artist, isLoading: authLoading } = useAuth();
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -53,6 +68,7 @@ export function EventListClient(): React.ReactElement {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async fetch; setState는 await 이후라 동기 cascade 아님(인증 기반 클라 페치)
     if (artist?.id) fetchEvents(artist.id);
   }, [artist?.id, fetchEvents]);
 
@@ -116,13 +132,7 @@ export function EventListClient(): React.ReactElement {
       ) : (
         <div className="space-y-3">
           {events.map((event) => {
-            const media = event.event_media ?? [];
-            const hero = media.find((m) => m.media_type === "hero");
-            const heroUrl = hero ? getEventStorageUrl(hero.storage_path) : null;
-            const dateExpired = isExpiredByDate(event.event_end_at);
-            const effectiveStatus = dateExpired && event.status === "published" ? "expired" : event.status;
-            const statusInfo = STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.draft;
-            const reopenLocked = dateExpired; // 기간 만료된 이벤트는 재게시 불가 (새로 생성 유도)
+            const { heroUrl, statusInfo, reopenLocked } = deriveEventCardData(event);
 
             return (
               <div

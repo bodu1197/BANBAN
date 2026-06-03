@@ -47,17 +47,19 @@ function buildHeroMedia(url: string | null, title: string): React.ReactElement |
     );
 }
 
+const PORTFOLIO_NOT_FOUND_DESC = "요청하신 포트폴리오를 찾을 수 없습니다.";
+
 export async function generatePortfolioDetailMetadata(id: string): Promise<Metadata> {
     if (isLegacyNumericId(id)) {
         const uuid = await findPortfolioByLegacyId(Number(id));
         if (uuid) permanentRedirect(`/portfolios/${uuid}`);
         return {
             title: "포트폴리오를 찾을 수 없습니다 | 반언니",
-            description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+            description: PORTFOLIO_NOT_FOUND_DESC,
             robots: { index: false, follow: false },
             ...buildPageSeo({
                 title: "포트폴리오를 찾을 수 없습니다",
-                description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+                description: PORTFOLIO_NOT_FOUND_DESC,
                 path: `/portfolios/${id}`,
                 image: null,
             }),
@@ -68,11 +70,11 @@ export async function generatePortfolioDetailMetadata(id: string): Promise<Metad
     if (!portfolio) {
         return {
             title: "포트폴리오를 찾을 수 없습니다 | 반언니",
-            description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+            description: PORTFOLIO_NOT_FOUND_DESC,
             robots: { index: false, follow: false },
             ...buildPageSeo({
                 title: "포트폴리오를 찾을 수 없습니다",
-                description: "요청하신 포트폴리오를 찾을 수 없습니다.",
+                description: PORTFOLIO_NOT_FOUND_DESC,
                 path: `/portfolios/${id}`,
                 image: null,
             }),
@@ -262,10 +264,6 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
     ]);
 
     if (!portfolio) notFound();
-
-    const [shopStats] = await Promise.all([
-        fetchArtistShopStats(portfolio.artist_id),
-    ]);
 
     incrementPortfolioViews(id).catch(() => { /* non-fatal */ });
     portfolio.is_liked = isLiked;
