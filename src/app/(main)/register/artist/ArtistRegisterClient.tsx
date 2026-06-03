@@ -46,6 +46,58 @@ function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, t: 
   return null;
 }
 
+async function uploadProfileImage(artistId: string, file: File): Promise<void> {
+  const profileForm = new globalThis.FormData();
+  profileForm.append("file", file);
+  // 샵 사진 경로는 artistId 기준 + 타임스탬프로 통일 (등록/마이페이지/샵수정 동일 규칙, admin 수정 컨텍스트도 커버).
+  // 매 업로드가 새 URL → 1년 cacheControl + Next 30일 캐시로 인한 stale-cache 회피.
+  const profilePath = `${artistId}/profile_${Date.now()}.webp`;
+  const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
+  const profileJson = await profileRes.json() as { success: boolean };
+  if (!profileJson.success) return;
+  await fetch("/api/artist-media", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artistId, profileImagePath: profilePath }),
+  });
+  // 샵 대표 사진을 user_metadata.avatar_url 에도 동기화 — 헤더/마이페이지가 같은 사진 표시 (ProfileClient 와 동일).
+  // 등록은 이미 완료된 상태라 동기화 실패는 비핵심으로 무시.
+  try {
+    const { getAvatarUrl } = await import("@/lib/supabase/storage-utils");
+    await createClient().auth.updateUser({ data: { avatar_url: getAvatarUrl(profilePath) ?? "" } });
+  } catch {
+    /* avatar_url 동기화 실패 무시 */
+  }
+}
+
+async function uploadShopImages(artistId: string, shopImages: File[]): Promise<void> {
+  for (let i = 0; i < shopImages.length; i++) {
+    const shopForm = new globalThis.FormData();
+    // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
+    shopForm.append("file", shopImages[i]);
+    // 타임스탬프로 cache-busting (샵수정 ArtistEditClient 와 동일 — 재업로드 시 stale-cache 방지).
+    const shopPath = `artists/${artistId}/shop_${i}_${Date.now()}.webp`;
+    const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
+    const shopJson = await shopRes.json() as { success: boolean };
+    if (shopJson.success) {
+      await fetch("/api/artist-media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ artistId, storagePath: shopPath, type: "image", orderIndex: i }),
+      });
+    }
+  }
+}
+
+async function syncArtistCategories(artistId: string, categoryIds: string[]): Promise<void> {
+  if (categoryIds.length === 0) return;
+  await fetch("/api/artist-register", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artistId, categoryIds }),
+  });
+}
+
 interface ArtistRegisterClientProps {
   categories: ArtistFormCategory[];
 }
@@ -146,55 +198,13 @@ export function ArtistRegisterClient({ categories,
 
       // Upload profile image via server API (bypasses storage RLS)
       if (profileImage.length > 0) {
-        const profileForm = new globalThis.FormData();
-        profileForm.append("file", profileImage[0]);
-        // 샵 사진 경로는 artistId 기준 + 타임스탬프로 통일 (등록/마이페이지/샵수정 동일 규칙, admin 수정 컨텍스트도 커버).
-        // 매 업로드가 새 URL → 1년 cacheControl + Next 30일 캐시로 인한 stale-cache 회피.
-        const profilePath = `${artistId}/profile_${Date.now()}.webp`;
-        const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
-        const profileJson = await profileRes.json() as { success: boolean };
-        if (profileJson.success) {
-          await fetch("/api/artist-media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ artistId, profileImagePath: profilePath }),
-          });
-          // 샵 대표 사진을 user_metadata.avatar_url 에도 동기화 — 헤더/마이페이지가 같은 사진 표시 (ProfileClient 와 동일).
-          // 등록은 이미 완료된 상태라 동기화 실패는 비핵심으로 무시.
-          try {
-            const { getAvatarUrl } = await import("@/lib/supabase/storage-utils");
-            await createClient().auth.updateUser({ data: { avatar_url: getAvatarUrl(profilePath) ?? "" } });
-          } catch {
-            /* avatar_url 동기화 실패 무시 */
-          }
-        }
+        await uploadProfileImage(artistId, profileImage[0]);
       }
 
       // Upload shop images via server API (bypasses storage RLS)
-      for (let i = 0; i < shopImages.length; i++) {
-        const shopForm = new globalThis.FormData();
-        // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
-        shopForm.append("file", shopImages[i]);
-        // 타임스탬프로 cache-busting (샵수정 ArtistEditClient 와 동일 — 재업로드 시 stale-cache 방지).
-        const shopPath = `artists/${artistId}/shop_${i}_${Date.now()}.webp`;
-        const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
-        const shopJson = await shopRes.json() as { success: boolean };
-        if (shopJson.success) {
-          await fetch("/api/artist-media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ artistId, storagePath: shopPath, type: "image", orderIndex: i }),
-          });
-        }
-      }
+      await uploadShopImages(artistId, shopImages);
 
-      if (formData.shop_category_ids.length > 0) {
-        await fetch("/api/artist-register", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ artistId, categoryIds: formData.shop_category_ids }),
-        });
-      }
+      await syncArtistCategories(artistId, formData.shop_category_ids);
 
       // 일반 회원이 시술사로 전환된 경우 profiles.role='artist' 동기화.
       // RLS 트리거가 클라이언트 직접 변경을 차단하므로 server API 경유.

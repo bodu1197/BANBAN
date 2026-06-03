@@ -19,13 +19,15 @@ interface ShopHeroBannerProps {
   isLiked?: boolean;
 }
 
-export function ShopHeroBanner({
-  shop,
-  heroImages,
-  reviewCount,
-  avgRating,
-  isLiked = false,
-}: Readonly<ShopHeroBannerProps>): React.ReactElement {
+interface ShopBannerDerived {
+  regionName: string;
+  displayAddress: string;
+  hasIntroduce: boolean;
+  description: string | null;
+  sanitizedDescription: string | null;
+}
+
+function deriveShopBannerData(shop: ArtistWithDetails): ShopBannerDerived {
   const regionName = shop.region?.name ?? "";
   const fullAddress = [shop.address, shop.address_detail].filter(Boolean).join(" ");
   const displayAddress = fullAddress || regionName;
@@ -38,6 +40,19 @@ export function ShopHeroBanner({
   const sanitizedDescription = description && description.includes("<")
     ? sanitizeHtmlServerSide(description)
     : null;
+
+  return { regionName, displayAddress, hasIntroduce, description, sanitizedDescription };
+}
+
+export function ShopHeroBanner({
+  shop,
+  heroImages,
+  reviewCount,
+  avgRating,
+  isLiked = false,
+}: Readonly<ShopHeroBannerProps>): React.ReactElement {
+  const { regionName, displayAddress, hasIntroduce, description, sanitizedDescription } =
+    deriveShopBannerData(shop);
 
   return (
     <section aria-label="샵 정보" className="bg-background">
@@ -95,6 +110,25 @@ function HeroCarousel({
   );
 }
 
+function ShopRating({
+  avgRating, reviewCount,
+}: Readonly<{ avgRating: number; reviewCount: number }>): React.ReactElement {
+  const hasRating = reviewCount > 0 && avgRating > 0;
+  const ratingText = hasRating ? avgRating.toFixed(1) : UNAVAILABLE_PLACEHOLDER;
+  return (
+    <div className="mt-2 inline-flex items-center gap-1 text-sm">
+      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
+      <span
+        className="font-semibold"
+        aria-label={hasRating ? `평점 ${ratingText}` : UNAVAILABLE_RATING_LABEL}
+      >
+        {ratingText}
+      </span>
+      <span className="text-muted-foreground">({reviewCount.toLocaleString()})</span>
+    </div>
+  );
+}
+
 function ShopInfo({
   shop, regionName, displayAddress, avgRating, reviewCount, isLiked,
 }: Readonly<{
@@ -105,8 +139,6 @@ function ShopInfo({
   reviewCount: number;
   isLiked: boolean;
 }>): React.ReactElement {
-  const hasRating = reviewCount > 0 && avgRating > 0;
-  const ratingText = hasRating ? avgRating.toFixed(1) : UNAVAILABLE_PLACEHOLDER;
   return (
     <div className="px-4 pt-4 pb-3">
       <div className="flex items-start justify-between gap-3">
@@ -115,16 +147,7 @@ function ShopInfo({
           <p className="mt-1 text-xs text-muted-foreground">
             반영구 메이크업{regionName ? ` · ${regionName}` : ""}
           </p>
-          <div className="mt-2 inline-flex items-center gap-1 text-sm">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
-            <span
-              className="font-semibold"
-              aria-label={hasRating ? `평점 ${ratingText}` : UNAVAILABLE_RATING_LABEL}
-            >
-              {ratingText}
-            </span>
-            <span className="text-muted-foreground">({reviewCount.toLocaleString()})</span>
-          </div>
+          <ShopRating avgRating={avgRating} reviewCount={reviewCount} />
         </div>
         <ArtistLikeButton
           artistId={shop.id}

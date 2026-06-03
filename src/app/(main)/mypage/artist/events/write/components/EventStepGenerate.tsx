@@ -21,6 +21,84 @@ const MEDIA_TYPE_TO_SLOT: Partial<Record<DetailSectionType, number>> = {
   detail_shop: 2,
 };
 
+function buildSectionFormData(
+  sectionType: DetailSectionType,
+  values: EventFormValues,
+  copy: GeneratedDetailCopy,
+  discountRate: number,
+  mediaSlots: EventMediaSlot[],
+): FormData {
+  const fd = new FormData();
+  fd.append("sectionType", sectionType);
+  fd.append("formData", JSON.stringify(values));
+  fd.append("copyData", JSON.stringify(copy.sections));
+  fd.append("discountRate", String(discountRate));
+
+  if (EDIT_SECTIONS.includes(sectionType)) {
+    const slotIdx = MEDIA_TYPE_TO_SLOT[sectionType];
+    const file = slotIdx !== undefined ? mediaSlots[slotIdx]?.file : null;
+    if (file) {
+      fd.append("image", file);
+    }
+  }
+  return fd;
+}
+
+function failedSection(sectionType: DetailSectionType, error: string): DetailSectionResult {
+  return {
+    sectionType,
+    storagePath: "",
+    previewUrl: "",
+    altText: "",
+    status: "failed",
+    error,
+  };
+}
+
+async function requestSectionImage(
+  sectionType: DetailSectionType,
+  values: EventFormValues,
+  copy: GeneratedDetailCopy,
+  discountRate: number,
+  mediaSlots: EventMediaSlot[],
+): Promise<DetailSectionResult> {
+  try {
+    const fd = buildSectionFormData(sectionType, values, copy, discountRate, mediaSlots);
+    const res = await fetch("/api/ai/generate-event-section-image", {
+      method: "POST",
+      body: fd,
+    });
+    const text = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`이미지 생성 서버 오류 (${res.status})`);
+    }
+    if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "이미지 생성 실패");
+    if (typeof data.storagePath !== "string" || typeof data.previewUrl !== "string") {
+      throw new Error("이미지 데이터가 올바르지 않습니다");
+    }
+
+    return {
+      sectionType,
+      storagePath: data.storagePath,
+      previewUrl: data.previewUrl,
+      altText: copy.altTexts[sectionType] ?? "",
+      status: "completed",
+      ...(typeof data.thumbnailPath === "string" ? { thumbnailPath: data.thumbnailPath } : {}),
+    };
+  } catch (e: unknown) {
+    return failedSection(sectionType, e instanceof Error ? e.message : "생성 실패");
+  }
+}
+
+function sectionBorderClass(status: DetailSectionResult["status"]): string {
+  if (status === "failed") return "border-red-300 dark:border-red-800";
+  if (status === "completed") return "border-green-300 dark:border-green-800";
+  return "border-input";
+}
+
 interface EventStepGenerateProps {
   values: EventFormValues;
   mediaSlots: EventMediaSlot[];
@@ -98,53 +176,7 @@ export function EventStepGenerate({
       );
 
       try {
-        const fd = new FormData();
-        fd.append("sectionType", sectionType);
-        fd.append("formData", JSON.stringify(values));
-        fd.append("copyData", JSON.stringify(copy.sections));
-        fd.append("discountRate", String(discountRate));
-
-        if (EDIT_SECTIONS.includes(sectionType)) {
-          const slotIdx = MEDIA_TYPE_TO_SLOT[sectionType];
-          const file = slotIdx !== undefined ? mediaSlots[slotIdx]?.file : null;
-          if (file) {
-            fd.append("image", file);
-          }
-        }
-
-        const res = await fetch("/api/ai/generate-event-section-image", {
-          method: "POST",
-          body: fd,
-        });
-        const text = await res.text();
-        let data: Record<string, unknown>;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error(`이미지 생성 서버 오류 (${res.status})`);
-        }
-        if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "이미지 생성 실패");
-        if (typeof data.storagePath !== "string" || typeof data.previewUrl !== "string") {
-          throw new Error("이미지 데이터가 올바르지 않습니다");
-        }
-
-        return {
-          sectionType,
-          storagePath: data.storagePath,
-          previewUrl: data.previewUrl,
-          altText: copy.altTexts[sectionType] ?? "",
-          status: "completed" as const,
-          ...(typeof data.thumbnailPath === "string" ? { thumbnailPath: data.thumbnailPath } : {}),
-        };
-      } catch (e: unknown) {
-        return {
-          sectionType,
-          storagePath: "",
-          previewUrl: "",
-          altText: "",
-          status: "failed" as const,
-          error: e instanceof Error ? e.message : "생성 실패",
-        };
+        return await requestSectionImage(sectionType, values, copy, discountRate, mediaSlots);
       } finally {
         setGeneratingSection((prev) => {
           const next = new Set(prev);
@@ -211,16 +243,10 @@ export function EventStepGenerate({
         onClick={generateAll}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 py-4 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
       >
-        {isAnyGenerating ? (
-          <span role="status" aria-label="AI 상세 이미지 생성 중" className="flex items-center gap-2">
-            <span className="h-5 w-5 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />
-            AI 상세 이미지 생성 중...
-          </span>
-        ) : detailSections.length > 0 ? (
-          "전체 다시 생성"
-        ) : (
-          "AI 상세 이미지 자동 생성"
-        )}
+        <GenerateButtonLabel
+          isAnyGenerating={isAnyGenerating}
+          hasSections={detailSections.length > 0}
+        />
       </button>
       <p className="text-center text-sm text-foreground/80">
         <span aria-hidden="true">⏱️</span>
@@ -245,67 +271,12 @@ export function EventStepGenerate({
       {detailSections.length > 0 && (
         <div className="space-y-3">
           {detailSections.map((section) => (
-            <div
+            <SectionRow
               key={section.sectionType}
-              className={`overflow-hidden rounded-lg border transition-colors ${
-                section.status === "failed"
-                  ? "border-red-300 dark:border-red-800"
-                  : section.status === "completed"
-                    ? "border-green-300 dark:border-green-800"
-                    : "border-input"
-              }`}
-            >
-              {/* Section Header */}
-              <div className="flex items-center justify-between bg-muted/30 px-3 py-2">
-                <span className="text-xs font-medium">
-                  {DETAIL_SECTION_LABELS[section.sectionType]}
-                </span>
-                <div className="flex items-center gap-2">
-                  {section.status === "generating" && (
-                    <span className="h-3 w-3 motion-safe:animate-spin rounded-full border border-brand-primary border-t-transparent" />
-                  )}
-                  {section.status === "completed" && (
-                    <span className="text-xs text-green-600 dark:text-green-400">완료</span>
-                  )}
-                  {section.status === "failed" && (
-                    <span className="text-xs text-red-500">{section.error ?? "실패"}</span>
-                  )}
-                  {(section.status === "completed" || section.status === "failed") && !isAnyGenerating && (
-                    <button
-                      type="button"
-                      onClick={() => regenerateSection(section.sectionType)}
-                      className="flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label={`${DETAIL_SECTION_LABELS[section.sectionType]} 다시 생성`}
-                    >
-                      <RefreshCw className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Section Preview */}
-              {section.status === "generating" && (
-                <div className="flex h-40 items-center justify-center bg-muted/10">
-                  <div className="h-6 w-6 motion-safe:animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
-                </div>
-              )}
-              {section.status === "completed" && section.previewUrl && (
-                <div className="relative aspect-[2/3]">
-                  <Image
-                    src={section.previewUrl}
-                    alt={section.altText || DETAIL_SECTION_LABELS[section.sectionType]}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 600px"
-                  />
-                </div>
-              )}
-              {section.status === "failed" && (
-                <div className="flex h-24 items-center justify-center bg-red-50 dark:bg-red-950/20">
-                  <p className="text-sm text-red-500">생성 실패 — 다시 시도해주세요</p>
-                </div>
-              )}
-            </div>
+              section={section}
+              isAnyGenerating={isAnyGenerating}
+              onRegenerate={regenerateSection}
+            />
           ))}
         </div>
       )}
@@ -335,6 +306,113 @@ export function EventStepGenerate({
           )}
         </button>
       </div>
+    </div>
+  );
+}
+
+function GenerateButtonLabel({
+  isAnyGenerating,
+  hasSections,
+}: Readonly<{ isAnyGenerating: boolean; hasSections: boolean }>): React.ReactElement {
+  if (isAnyGenerating) {
+    return (
+      <span role="status" aria-label="AI 상세 이미지 생성 중" className="flex items-center gap-2">
+        <span className="h-5 w-5 motion-safe:animate-spin rounded-full border-2 border-white border-t-transparent" />
+        AI 상세 이미지 생성 중...
+      </span>
+    );
+  }
+  return <>{hasSections ? "전체 다시 생성" : "AI 상세 이미지 자동 생성"}</>;
+}
+
+function SectionHeader({
+  section,
+  isAnyGenerating,
+  onRegenerate,
+}: Readonly<{
+  section: DetailSectionResult;
+  isAnyGenerating: boolean;
+  onRegenerate: (sectionType: DetailSectionType) => void;
+}>): React.ReactElement {
+  const canRegenerate =
+    (section.status === "completed" || section.status === "failed") && !isAnyGenerating;
+  return (
+    <div className="flex items-center justify-between bg-muted/30 px-3 py-2">
+      <span className="text-xs font-medium">{DETAIL_SECTION_LABELS[section.sectionType]}</span>
+      <div className="flex items-center gap-2">
+        {section.status === "generating" && (
+          <span className="h-3 w-3 motion-safe:animate-spin rounded-full border border-brand-primary border-t-transparent" />
+        )}
+        {section.status === "completed" && (
+          <span className="text-xs text-green-600 dark:text-green-400">완료</span>
+        )}
+        {section.status === "failed" && (
+          <span className="text-xs text-red-500">{section.error ?? "실패"}</span>
+        )}
+        {canRegenerate && (
+          <button
+            type="button"
+            onClick={() => onRegenerate(section.sectionType)}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`${DETAIL_SECTION_LABELS[section.sectionType]} 다시 생성`}
+          >
+            <RefreshCw className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionPreview({
+  section,
+}: Readonly<{ section: DetailSectionResult }>): React.ReactElement {
+  return (
+    <>
+      {section.status === "generating" && (
+        <div className="flex h-40 items-center justify-center bg-muted/10">
+          <div className="h-6 w-6 motion-safe:animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+        </div>
+      )}
+      {section.status === "completed" && section.previewUrl && (
+        <div className="relative aspect-[2/3]">
+          <Image
+            src={section.previewUrl}
+            alt={section.altText || DETAIL_SECTION_LABELS[section.sectionType]}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 600px"
+          />
+        </div>
+      )}
+      {section.status === "failed" && (
+        <div className="flex h-24 items-center justify-center bg-red-50 dark:bg-red-950/20">
+          <p className="text-sm text-red-500">생성 실패 — 다시 시도해주세요</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SectionRow({
+  section,
+  isAnyGenerating,
+  onRegenerate,
+}: Readonly<{
+  section: DetailSectionResult;
+  isAnyGenerating: boolean;
+  onRegenerate: (sectionType: DetailSectionType) => void;
+}>): React.ReactElement {
+  return (
+    <div
+      className={`overflow-hidden rounded-lg border transition-colors ${sectionBorderClass(section.status)}`}
+    >
+      <SectionHeader
+        section={section}
+        isAnyGenerating={isAnyGenerating}
+        onRegenerate={onRegenerate}
+      />
+      <SectionPreview section={section} />
     </div>
   );
 }
