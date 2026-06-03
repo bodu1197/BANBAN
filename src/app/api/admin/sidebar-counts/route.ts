@@ -1,16 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase/auth";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { createAdminClient } from "@/lib/supabase/server";
-
-async function isAdmin(userId: string): Promise<boolean> {
-  const supabase = createAdminClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", userId)
-    .single();
-  return !!(data as { is_admin: boolean } | null)?.is_admin;
-}
 
 interface CountResult {
   count: number | null;
@@ -71,9 +61,8 @@ async function getPendingReportCount(): Promise<number> {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!(await isAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const [inquiries, exhibitions, members, dormant, chats, reports] = await Promise.all([
     getInquiryCount(),

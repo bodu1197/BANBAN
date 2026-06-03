@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase/auth";
-import { createAdminClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { fetchAllInquiries, replyToInquiry, updateInquiryStatus } from "@/lib/supabase/inquiry-queries";
 import { notifyUser } from "@/lib/supabase/notification-queries";
 
-async function isAdmin(userId: string): Promise<boolean> {
-  const supabase = createAdminClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", userId)
-    .single();
-  return !!(data as { is_admin: boolean } | null)?.is_admin;
-}
-
 /** GET — 전체 건의사항 목록 */
 export async function GET(): Promise<NextResponse> {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!(await isAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const inquiries = await fetchAllInquiries();
   return NextResponse.json({ inquiries });
@@ -26,9 +14,8 @@ export async function GET(): Promise<NextResponse> {
 
 /** POST — 관리자 답변 */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!(await isAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const body = await request.json() as { id: string; reply: string; imageUrls?: string[] };
   if (!body.id || !body.reply?.trim()) {
@@ -36,7 +23,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // inquiry 소유자(user_id)는 클라이언트가 보낸 값이 아닌 DB 에서 직접 조회 — 잘못된 알림 발송 차단.
-  const supabase = createAdminClient();
+  const supabase = auth.supabase;
   const { data: inquiry } = await supabase
     .from("inquiries")
     .select("user_id")
@@ -62,9 +49,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 /** PATCH — 상태 변경 */
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  const user = await getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (!(await isAdmin(user.id))) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const body = await request.json() as { id: string; status: string };
   if (!body.id || !body.status) {
