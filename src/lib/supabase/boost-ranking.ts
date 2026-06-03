@@ -1,12 +1,19 @@
 import { unstable_cache } from "next/cache";
 import { getActiveAdArtists } from "./ad-queries";
 import type { HomePortfolio } from "./portfolio-common";
-import { secureRandomInt } from "@/lib/random";
+import { secureRandomInt, secureShuffle } from "@/lib/random";
 
 /** 광고 주입 시 "같은 스코프"로 가져올 광고 포폴 최대 개수 (홈/검색 공통).
- *  광고주 수 무제한 → 풀에 모든 활성 광고주의 포폴이 포함되도록 넉넉히(60). injectAdPortfolios
+ *  광고주 수 무제한 → 풀에 윈도우 광고주의 포폴이 모두 포함되도록 넉넉히(60). injectAdPortfolios
  *  가 광고주당 1개만 추려 주입하므로 과다 노출은 없음. */
 export const AD_INJECTION_FETCH_LIMIT = 60;
+
+/** 한 캐시 세대(60s)에 한 섹션에 노출할 광고주 최대 수. 광고주가 이보다 많으면 세대마다
+ *  무작위로 회전(rotation)해 결국 전원이 차례로 상단 노출 — 먼저 낸 광고도 영구 제외되지 않음.
+ *  광고주 ≤ 이 값이면 매 세대 전원 노출(순서만 공평하게 셔플). UX/노출량 조절 시 이 값만 바꾸면 됨.
+ *  주의: window × (광고주당 카테고리 포폴 수) 가 AD_INJECTION_FETCH_LIMIT(60) 를 넘으면 페치에서
+ *  일부 윈도우 광고주가 누락될 수 있음 → 12 로 두면 광고주당 ~5장까지 커버. 키우려면 페치 한도도 함께. */
+export const AD_ROTATION_WINDOW = 12;
 
 /** Cached active ad artist IDs (60s TTL) — 노출 집계(impressions)·추천 reorder 용 */
 export const fetchBoostArtistIds = unstable_cache(
@@ -32,9 +39,12 @@ export interface AdBoostContext {
 export const getAdBoostContext = unstable_cache(
   async (): Promise<AdBoostContext> => {
     const ads = await getActiveAdArtists();
+    // 매 캐시 세대(60s)마다 무작위 셔플 후 윈도우만큼만 노출 → 광고주가 많아도 세대마다 회전하여
+    // 전원이 차례로 상단 노출(먼저 낸 광고도 제외 안 됨). 광고주 ≤ 윈도우면 매번 전원 노출.
+    const rotated = secureShuffle(ads).slice(0, AD_ROTATION_WINDOW);
     return {
-      adArtistIds: ads.map((a) => a.artist_id),
-      slotIds: ads.flatMap((a) => a.portfolio_ids),
+      adArtistIds: rotated.map((a) => a.artist_id),
+      slotIds: rotated.flatMap((a) => a.portfolio_ids),
     };
   },
   ["ad-boost-context"],
