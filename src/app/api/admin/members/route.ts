@@ -100,6 +100,38 @@ async function handlePasswordChange(supabase: SupabaseClient, userId: string, pa
     return {};
 }
 
+/** 비밀번호 변경 처리 (권한 검증 포함). 차단 시 NextResponse 반환, 정상 처리/스킵 시 null. */
+async function processPasswordUpdate(
+    supabase: SupabaseClient, body: MemberPatchBody, currentUserId: string,
+): Promise<NextResponse | null> {
+    if (!body.password) return null;
+
+    // 다른 admin 의 비밀번호 변경 차단 (권한 인플레이션 방지). 본인 또는 비-admin 만 허용.
+    if (body.id !== currentUserId) {
+        const { data: target } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", body.id)
+            .single();
+        if ((target as { is_admin: boolean } | null)?.is_admin) {
+            return NextResponse.json(
+                { error: "다른 관리자의 비밀번호는 변경할 수 없습니다." },
+                { status: 403 },
+            );
+        }
+    }
+    const pwResult = await handlePasswordChange(supabase, body.id, body.password);
+    if (pwResult.error) return NextResponse.json({ error: pwResult.error }, { status: 500 });
+    return null;
+}
+
+/** profiles 수정 후 해당 user 의 artist 페이지 캐시 무효화 (nickname → artists.title 동기화 등) */
+async function revalidateArtistPage(supabase: SupabaseClient, userId: string): Promise<void> {
+    const { data: artistRow } = await supabase.from("artists").select("id").eq("user_id", userId).maybeSingle();
+    const artistId = (artistRow as { id?: string } | null)?.id;
+    if (artistId) revalidatePath(`/artists/${artistId}`);
+}
+
 // ─── Tab Query Builders ──────────────────────────────────
 
 const ARTIST_TYPE_FILTERS: Record<string, string> = {
@@ -229,24 +261,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     const body = await request.json() as MemberPatchBody;
     if (!body.id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
-    if (body.password) {
-        // 다른 admin 의 비밀번호 변경 차단 (권한 인플레이션 방지). 본인 또는 비-admin 만 허용.
-        if (body.id !== auth.userId) {
-            const { data: target } = await supabase
-                .from("profiles")
-                .select("is_admin")
-                .eq("id", body.id)
-                .single();
-            if ((target as { is_admin: boolean } | null)?.is_admin) {
-                return NextResponse.json(
-                    { error: "다른 관리자의 비밀번호는 변경할 수 없습니다." },
-                    { status: 403 },
-                );
-            }
-        }
-        const pwResult = await handlePasswordChange(supabase, body.id, body.password);
-        if (pwResult.error) return NextResponse.json({ error: pwResult.error }, { status: 500 });
-    }
+    const pwResponse = await processPasswordUpdate(supabase, body, auth.userId);
+    if (pwResponse) return pwResponse;
 
     const nicknameError = validateNickname(body.nickname);
     if (nicknameError) return NextResponse.json({ error: nicknameError }, { status: 400 });
@@ -268,11 +284,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // profiles 수정도 artist 페이지에 영향 가능 (nickname → artists.title 트리거 동기화 등)
-    // → 해당 user 의 artist 페이지 캐시 무효화
-    const { data: artistRow } = await supabase.from("artists").select("id").eq("user_id", body.id).maybeSingle();
-    const artistId = (artistRow as { id?: string } | null)?.id;
-    if (artistId) revalidatePath(`/artists/${artistId}`);
+    await revalidateArtistPage(supabase, body.id);
 
     return NextResponse.json({ member: data });
 }

@@ -40,11 +40,14 @@ async function verifyPayment(impUid: string): Promise<V1Payment | null> {
 
 const IMP_UID_REGEX = /^[a-zA-Z0-9_-]+$/;
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-    const user = await getUser();
-    if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+interface VerifyRequestBody {
+    impUid: string;
+    subscriptionId: string;
+    expectedAmount: number;
+}
 
-    const body = await request.json() as { impUid: string; subscriptionId: string; expectedAmount: number };
+/** Validate request body params (presence, imp_uid format, expected amount). Returns error response or null when valid. */
+function validateRequestBody(body: Readonly<VerifyRequestBody>): NextResponse | null {
     const { impUid, subscriptionId, expectedAmount } = body;
 
     if (!impUid || !subscriptionId) {
@@ -56,10 +59,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (typeof expectedAmount !== "number" || expectedAmount < 0 || !Number.isFinite(expectedAmount)) {
         return NextResponse.json({ error: "invalid_expected_amount" }, { status: 400 });
     }
+    return null;
+}
 
-    // 소유권 검증 — 임의 subscriptionId 로 다른 사용자 결제 활성화 차단 (CRITICAL).
-    // subscription.artist_id → artist.user_id 가 현재 user.id 와 일치해야 함.
-    // PostgREST 가 artists!inner 관계를 1:1 인식 시 object, 1:N 인식 시 array 로 반환 — 둘 다 안전 처리.
+/**
+ * 소유권 검증 — 임의 subscriptionId 로 다른 사용자 결제 활성화 차단 (CRITICAL).
+ * subscription.artist_id → artist.user_id 가 현재 user.id 와 일치해야 함.
+ * PostgREST 가 artists!inner 관계를 1:1 인식 시 object, 1:N 인식 시 array 로 반환 — 둘 다 안전 처리.
+ * Returns error response when ownership check fails, otherwise null.
+ */
+async function checkOwnership(subscriptionId: string, userId: string): Promise<NextResponse | null> {
     const supabase = await createClient();
     const { data: sub } = await supabase
         .from("ad_subscriptions")
@@ -72,10 +81,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const artist = (sub as unknown as { artist: { user_id: string } | { user_id: string }[] | null }).artist;
     const subOwnerId = Array.isArray(artist) ? artist[0]?.user_id : artist?.user_id;
     // null/undefined 명시 체크 — 데이터 무결성 이슈 시 fail-closed 동작 보장.
-    if (!subOwnerId || subOwnerId !== user.id) {
+    if (!subOwnerId || subOwnerId !== userId) {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
+    return null;
+}
 
+/** Verify payment via PortOne and check status/amount. Returns error response when invalid, otherwise null. */
+async function validatePayment(impUid: string, expectedAmount: number): Promise<NextResponse | null> {
     const payment = await verifyPayment(impUid);
 
     if (!payment) {
@@ -87,6 +100,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (payment.amount !== expectedAmount) {
         return NextResponse.json({ error: "amount_mismatch" }, { status: 400 });
     }
+    return null;
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+    const body = await request.json() as VerifyRequestBody;
+    const { impUid, subscriptionId, expectedAmount } = body;
+
+    const validationError = validateRequestBody(body);
+    if (validationError) return validationError;
+
+    const ownershipError = await checkOwnership(subscriptionId, user.id);
+    if (ownershipError) return ownershipError;
+
+    const paymentError = await validatePayment(impUid, expectedAmount);
+    if (paymentError) return paymentError;
 
     const subscription = await activateSubscription(subscriptionId, impUid);
     return NextResponse.json({ success: true, subscription });

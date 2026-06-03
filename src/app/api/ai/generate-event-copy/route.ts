@@ -74,7 +74,7 @@ interface GenerateCopyInput {
   artistIntroduction?: string;
 }
 
-function buildUserPrompt(input: GenerateCopyInput): string {
+function buildEventInfoLines(input: GenerateCopyInput): string[] {
   return [
     "# 이벤트 정보",
     `- 카테고리: ${input.category}`,
@@ -87,23 +87,57 @@ function buildUserPrompt(input: GenerateCopyInput): string {
     `- 기간: ${input.eventPeriodText || "상시"}`,
     `- 소개: ${input.procedureSummary}`,
     `- 추천 대상: ${input.targetAudience.join(", ")}`,
-    "",
+  ];
+}
+
+function buildShopInfoLines(input: GenerateCopyInput): string[] {
+  return [
     "# 샵 정보",
     `- 샵명: ${input.shopName}`,
     input.shopRegion ? `- 지역: ${input.shopRegion}` : "",
     input.shopBusinessHours ? `- 영업시간: ${input.shopBusinessHours}` : "",
     input.shopParking ? `- 주차: ${input.shopParking}` : "",
     input.shopBookingMethod ? `- 예약: ${input.shopBookingMethod}` : "",
-    "",
+  ];
+}
+
+function buildProcedureDetailLines(input: GenerateCopyInput): string[] {
+  return [
     input.procedureDuration ? `- 시술 시간: ${input.procedureDuration}` : "",
     input.maintenancePeriod ? `- 유지 기간: ${input.maintenancePeriod}` : "",
     input.procedureAdvantages?.length ? `- 장점: ${input.procedureAdvantages.filter(Boolean).join(", ")}` : "",
     input.precautions ? `- 주의사항: ${input.precautions}` : "",
     input.artistIntroduction ? `- 아티스트 소개: ${input.artistIntroduction}` : "",
+  ];
+}
+
+function buildUserPrompt(input: GenerateCopyInput): string {
+  return [
+    ...buildEventInfoLines(input),
+    "",
+    ...buildShopInfoLines(input),
+    "",
+    ...buildProcedureDetailLines(input),
     "",
     "위 정보로 7개 섹션의 이미지용 텍스트 카피를 JSON으로 생성해주세요.",
     "모든 텍스트는 이미지 안에 렌더링될 것이므로 짧고 임팩트 있게.",
   ].filter(Boolean).join("\n");
+}
+
+async function generateCopyText(apiKey: string, input: GenerateCopyInput): Promise<string | null> {
+  const client = new OpenAI({ apiKey });
+  const completion = await client.chat.completions.create({
+    model: MODEL,
+    response_format: { type: "json_object" },
+    temperature: 0.8,
+    max_tokens: 3000,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: buildUserPrompt(input) },
+    ],
+  });
+
+  return completion.choices[0]?.message?.content ?? null;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -123,19 +157,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "필수 항목이 누락되었습니다" }, { status: 400 });
     }
 
-    const client = new OpenAI({ apiKey });
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      response_format: { type: "json_object" },
-      temperature: 0.8,
-      max_tokens: 3000,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildUserPrompt(input) },
-      ],
-    });
-
-    const text = completion.choices[0]?.message?.content;
+    const text = await generateCopyText(apiKey, input);
     if (!text) {
       return NextResponse.json({ error: "AI 응답이 비어있습니다" }, { status: 500 });
     }
