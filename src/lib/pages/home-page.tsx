@@ -350,8 +350,9 @@ export async function renderHomePage(): Promise<React.ReactElement> {
 
   const organizationJsonLd = getOrganizationJsonLd();
 
+  // (main)/layout.tsx 가 이미 <main id="main-content"> 랜드마크 제공 — 여기선 div 로 중첩 main 회피(WCAG 1.3.1)
   return (
-    <main className="mx-auto w-full max-w-[1024px] overflow-hidden">
+    <div className="mx-auto w-full max-w-[1024px] overflow-hidden">
       {/* SEO/접근성: 페이지 단일 h1 (디자인 영향 없이 스크린리더·검색엔진용) */}
       <h1 className="sr-only">반언니 — 반영구 화장 가격비교 &amp; 아티스트 추천 플랫폼</h1>
       <script
@@ -383,6 +384,6 @@ export async function renderHomePage(): Promise<React.ReactElement> {
           <AsyncHomeBottom />
         </Suspense>
       </ImpressionZone>
-    </main>
+    </div>
   );
 }
