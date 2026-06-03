@@ -210,47 +210,9 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-/**
- * DELETE /api/upload
- * 이미지 삭제
- */
-export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  try {
-    const supabase = await createClient();
-    const userId = await validateAuth(supabase);
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = request.nextUrl;
-    const bucket = searchParams.get("bucket") ?? "portfolios";
-    if (!validateBucket(bucket)) {
-      return NextResponse.json({ success: false, error: INVALID_BUCKET }, { status: 400 });
-    }
-    const rawPath = searchParams.get("path");
-    if (!rawPath) {
-      return NextResponse.json({ success: false, error: "Path is required" }, { status: 400 });
-    }
-    const basePath = sanitizeStoragePath(rawPath);
-    if (!basePath) {
-      return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 });
-    }
-
-    const sizes = Object.keys(IMAGE_SIZES) as ImageSize[];
-    const filesToDelete = sizes.map((size) => `${basePath}/${size}.webp`);
-
-    // Use admin client for Storage delete (bypasses RLS)
-    const adminClient = createAdminClient();
-    const { error: deleteError } = await adminClient.storage
-      .from(bucket)
-      .remove(filesToDelete);
-
-    if (deleteError) {
-      return NextResponse.json({ success: false, error: deleteError.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
-  }
-}
+// NOTE: DELETE 핸들러는 의도적으로 제거됨 (M9 감사).
+// 호출처가 전혀 없는 dead code 였고, 소유권 검증 없이 createAdminClient(RLS 우회)로
+// 임의 경로의 파일을 삭제할 수 있는 IDOR(CWE-639) 취약점이었다.
+// 추후 이미지 삭제가 필요하면 버킷별 소유권 검증을 반드시 포함해 재구현할 것:
+//   avatars/portfolios/before-after → 경로 prefix 의 artistId/userId 를 추출해
+//   artists.user_id == 세션 userId (또는 profiles.id) 로 확인, banners/admin 계열은 requireAdmin().
