@@ -62,19 +62,22 @@ export async function toggleAnnouncementActive(
   id: string,
   isActive: boolean,
 ): Promise<boolean> {
-  const { error } = await announcementsTable()
+  // .select("id") 로 영향 행 수 확인 — 0행(존재X·동시 삭제)이면 false 로 신호(조용한 성공 금지).
+  const { data, error } = await announcementsTable()
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
-  return !error;
+  return !error && (data?.length ?? 0) > 0;
 }
 
 export async function deleteAnnouncement(id: string): Promise<boolean> {
-  const { error } = await announcementsTable()
+  const { data, error } = await announcementsTable()
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
-  return !error;
+  return !error && (data?.length ?? 0) > 0;
 }
 
 /**
