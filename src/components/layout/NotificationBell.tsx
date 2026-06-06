@@ -1,4 +1,4 @@
-// @client-reason: real-time notification subscription and dropdown interaction
+// @client-reason: 알림 드롭다운 상호작용 + 주기적 폴링(클라 상태/이벤트 필요, 서버 컴포넌트 불가)
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -21,36 +21,10 @@ interface Notification {
   created_at: string;
 }
 
-const FALLBACK_POLL_INTERVAL = 60_000;
-
-function handleRealtimeInsert(
-  payload: { new: unknown },
-  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>,
-  setUnreadCount: React.Dispatch<React.SetStateAction<number>>,
-): void {
-  const row = payload.new as Notification;
-  setNotifications((prev) => [row, ...prev].slice(0, 20));
-  setUnreadCount((prev) => prev + 1);
-}
-
-async function subscribeRealtime(
-  userId: string,
-  setNotifications: React.Dispatch<React.SetStateAction<Notification[]>>,
-  setUnreadCount: React.Dispatch<React.SetStateAction<number>>,
-): Promise<() => void> {
-  const { createClient } = await import("@/lib/supabase/client");
-  const supabase = createClient();
-  const channel = supabase
-    .channel(`notifications:${userId}`)
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-      (payload) => { handleRealtimeInsert(payload, setNotifications, setUnreadCount); },
-    )
-    .subscribe();
-
-  return () => { supabase.removeChannel(channel); };
-}
+// 알림은 60초 폴링으로 갱신. realtime(postgres_changes) 구독은 제거했다 — 알림 미사용 상태에서
+// Realtime WAL 폴러(realtime.list_changes)를 상시 깨워 DB 부하 1순위였음. 알림 도입 시
+// notifications 를 publication 에 등록하고 구독을 재추가(또는 폴링 유지) 검토.
+const NOTIFICATION_POLL_INTERVAL = 60_000;
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -105,7 +79,7 @@ async function fetchNotifications(): Promise<{ notifications: Notification[]; un
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- hook return type is inferred
-function useNotifications(userId: string) {
+function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -118,20 +92,9 @@ function useNotifications(userId: string) {
 
   useEffect(() => {
     refresh();
-
-    let cleanupRealtime: (() => void) | undefined;
-
-    subscribeRealtime(userId, setNotifications, setUnreadCount).then((fn) => {
-      cleanupRealtime = fn;
-    });
-
-    const interval = setInterval(refresh, FALLBACK_POLL_INTERVAL);
-
-    return () => {
-      cleanupRealtime?.();
-      clearInterval(interval);
-    };
-  }, [userId, refresh]);
+    const interval = setInterval(refresh, NOTIFICATION_POLL_INTERVAL);
+    return () => { clearInterval(interval); };
+  }, [refresh]);
 
   const markAllRead = useCallback(async () => {
     await fetch("/api/notifications", { method: "PATCH" });
@@ -142,8 +105,8 @@ function useNotifications(userId: string) {
   return { notifications, unreadCount, markAllRead };
 }
 
-export function NotificationBell({ userId }: Readonly<{ userId: string }>): React.ReactElement {
-  const { notifications, unreadCount, markAllRead } = useNotifications(userId);
+export function NotificationBell(): React.ReactElement {
+  const { notifications, unreadCount, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
   function handleOpen(isOpen: boolean): void {
