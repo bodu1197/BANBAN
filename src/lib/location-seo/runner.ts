@@ -8,6 +8,7 @@ import {
   insertLocationSeoPage,
 } from "./generation-queries";
 import { generateLocationPage, buildLocationSlug } from "./generator";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 
 export type LocationRunResult =
   | { ok: true; target: string; slug: string; title: string; remaining: number }
@@ -80,7 +81,8 @@ export async function runLocationSeoGeneration(
   try {
     const result = await generateAndStore(target);
     if (!result.ok) return { ok: false, target: key, error: result.error };
-    revalidatePath("/location"); // 허브 목록 갱신(신규 상세는 ISR 온디맨드 생성)
+    revalidatePath("/location");
+    notifySearchEngines([`/location/${result.slug}`, "/location"]);
     return {
       ok: true,
       target: key,

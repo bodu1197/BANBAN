@@ -5,6 +5,7 @@ import { getUser } from "@/lib/supabase/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { containsProfanity } from "@/lib/utils/profanity-filter";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 
 const COMMUNITY_PATH = "/community";
 const PROFANITY_ERROR = "부적절한 표현이 포함되어 있습니다";
@@ -218,6 +219,7 @@ export async function createPost(formData: FormData): Promise<{
   }
 
   revalidatePath(COMMUNITY_PATH);
+  notifySearchEngines([`${COMMUNITY_PATH}/${data.id}`, COMMUNITY_PATH]);
   return { success: true, postId: data.id };
 }
 
@@ -324,6 +326,7 @@ export async function deletePost(postId: string): Promise<{
   }
 
   revalidatePath(COMMUNITY_PATH);
+  notifySearchEngines(`${COMMUNITY_PATH}/${postId}`, "URL_DELETED");
   redirect(COMMUNITY_PATH);
 }
 
@@ -366,5 +369,6 @@ export async function updatePost(
 
   revalidatePath(COMMUNITY_PATH);
   revalidatePath(`${COMMUNITY_PATH}/${postId}`);
+  notifySearchEngines([`${COMMUNITY_PATH}/${postId}`, COMMUNITY_PATH]);
   return { success: true };
 }

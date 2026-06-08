@@ -3,6 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createEvent, insertEventMedia, insertEventCategories } from "@/lib/supabase/event-queries";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 import type { Database } from "@/types/database";
 
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     revalidateTag("events", { expire: 0 });
     revalidatePath("/");
     revalidatePath("/events");
+    notifySearchEngines([`/events/${id}`, "/events"]);
 
     return NextResponse.json({ id });
   } catch (e: unknown) {

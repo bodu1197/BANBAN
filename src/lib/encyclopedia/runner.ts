@@ -6,6 +6,7 @@ import {
   insertEncyclopediaArticle,
 } from "./queries";
 import { generateEncyclopediaArticle, buildSlug } from "./generator";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 
 export type RunResult =
   | { ok: true; topic_id: number; slug: string; title: string; remaining: number }
@@ -70,6 +71,11 @@ export async function runEncyclopediaGeneration(
       return { ok: false, topic_id: topic.id, error: result.error };
     }
     revalidateTag("encyclopedia", { expire: 0 });
+    notifySearchEngines([
+      `/encyclopedia/${result.slug}`,
+      "/encyclopedia",
+      "/community?tab=beautylab",
+    ]);
     return {
       ok: true,
       topic_id: topic.id,

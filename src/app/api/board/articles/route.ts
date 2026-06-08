@@ -5,6 +5,9 @@ import type { Database } from "@/types/database";
 import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { estimateReadingTime, generateExcerpt, generateMetaDescription } from "@/lib/board/utils";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
+
+type ArticleInsert = Database["public"]["Tables"]["encyclopedia_articles"]["Insert"];
 
 const ENCYCLOPEDIA_CACHE_TAG = "encyclopedia";
 const SLUG_MAX_LENGTH = 80;
@@ -56,20 +59,10 @@ function validateArticleBody(body: ArticleBody): NextResponse | null {
   return null;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireAdmin();
-  if (!auth.ok) return auth.response;
-
-  const body = (await request.json()) as ArticleBody;
-
-  const validationError = validateArticleBody(body);
-  if (validationError) return validationError;
-
+function buildInsertRow(body: ArticleBody, slug: string): ArticleInsert {
   const title = (body.title as string).trim();
   const content = (body.content as string).trim();
-  const slug = await uniqueSlug(auth.supabase, slugify(title));
-
-  const insertRow = {
+  return {
     slug,
     title,
     category: (body.category as string).trim(),
@@ -80,13 +73,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     cover_image_url: body.cover_image_url ?? null,
     cover_image_alt: body.cover_image_alt ?? null,
     inline_images: body.inline_images ?? [],
-    keywords: [],
-    tags: [],
-    faq: [],
+    keywords: [] as string[],
+    tags: [] as string[],
+    faq: [] as Array<{ question: string; answer: string }>,
     reading_time_minutes: estimateReadingTime(content),
     published: body.published ?? true,
     topic_id: null,
   };
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
+
+  const body = (await request.json()) as ArticleBody;
+
+  const validationError = validateArticleBody(body);
+  if (validationError) return validationError;
+
+  const slug = await uniqueSlug(auth.supabase, slugify((body.title as string).trim()));
+  const insertRow = buildInsertRow(body, slug);
 
   const { data, error } = await auth.supabase
     .from("encyclopedia_articles")
@@ -94,8 +100,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     .select("id, slug, title")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error || !data) return NextResponse.json({ error: error?.message ?? "insert failed" }, { status: 500 });
 
   revalidateTag(ENCYCLOPEDIA_CACHE_TAG, { expire: 0 });
+  const savedSlug = (data as Record<string, unknown>).slug;
+  if (typeof savedSlug === "string") {
+    notifySearchEngines([
+      `/encyclopedia/${savedSlug}`,
+      "/encyclopedia",
+      "/community?tab=beautylab",
+    ]);
+  }
   return NextResponse.json({ article: data });
 }

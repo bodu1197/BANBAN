@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateEvent } from "@/lib/supabase/event-queries";
 import { calcDiscountRate } from "@/lib/portfolio/helpers";
 import { EVENT_FIELD_LIMITS } from "@/lib/event/constants";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 import type { Database } from "@/types/database";
 
 type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
@@ -159,6 +160,7 @@ export async function PUT(
     revalidatePath("/");
     revalidatePath("/events");
     revalidatePath(`/events/${id}`);
+    notifySearchEngines([`/events/${id}`, "/events"]);
 
     return NextResponse.json({ success: true });
   } catch (e: unknown) {

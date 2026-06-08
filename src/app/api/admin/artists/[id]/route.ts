@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { isSafeStoragePath } from "@/lib/supabase/storage-utils";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 
 import type { BusinessHoursMap } from "@/types/artist-form";
 
@@ -133,8 +134,8 @@ export async function PATCH(
   const categoryError = await applyCategorySync(auth.supabase, id, body);
   if (categoryError) return categoryError;
 
-  // ISR/CDN 캐시 즉시 무효화 — 인기 100명 prerender + revalidate=120 만으로는 한참 반영 안 됨
   revalidatePath(`/artists/${id}`);
+  notifySearchEngines(`/artists/${id}`);
 
   return NextResponse.json({ success: true });
 }

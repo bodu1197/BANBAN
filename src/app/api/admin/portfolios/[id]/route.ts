@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { notifySearchEngines } from "@/lib/utils/search-notify";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ export async function PATCH(
         await syncCategories(supabase, id, body.categoryIds);
     }
 
+    notifySearchEngines(`/portfolios/${id}`);
     return NextResponse.json({ success: true });
 }
 
@@ -121,5 +123,6 @@ export async function DELETE(
         .eq("id", id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    notifySearchEngines(`/portfolios/${id}`, "URL_DELETED");
     return NextResponse.json({ success: true });
 }
