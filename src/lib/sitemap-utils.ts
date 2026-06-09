@@ -66,7 +66,8 @@ export function xmlResponse(xml: string): Response {
 }
 
 export function calcPageCount(totalItems: number): number {
-  return Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  if (totalItems <= 0) return 0;
+  return Math.ceil(totalItems / ITEMS_PER_PAGE);
 }
 
 export { SITE_URL };

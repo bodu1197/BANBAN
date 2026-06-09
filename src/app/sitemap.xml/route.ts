@@ -52,6 +52,7 @@ export async function GET(): Promise<Response> {
     const contentEntries = await getContentEntries();
 
     for (const { slug, count } of contentEntries) {
+      if (count === 0) continue;
       const pages = calcPageCount(count);
 
       for (let page = 1; page <= pages; page++) {
