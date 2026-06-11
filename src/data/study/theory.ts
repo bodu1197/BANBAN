@@ -18,12 +18,15 @@ export interface TheorySubsection {
 }
 
 export interface TheoryFigure {
-  /** public 기준 이미지 경로 (예: /figures/skull.png) */
+  /** public 기준 이미지 경로 (예: /study/figures/skull.png) */
   src: string
   /** 대체 텍스트(접근성) */
   alt: string
   /** 그림 설명 캡션 */
   caption?: string
+  /** 원본 픽셀 너비/높이(next/image 비율 유지용) */
+  width?: number
+  height?: number
 }
 
 export interface TheoryChapter {
