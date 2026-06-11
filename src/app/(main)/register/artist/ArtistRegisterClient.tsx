@@ -32,7 +32,11 @@ import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/
 import { IntroduceSeoPreview } from "@/components/artist-form/IntroduceSeoPreview";
 import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
 
-function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, t: { required: string }): string | null {
+const JSON_HEADERS = { "Content-Type": "application/json" };
+const ARTIST_MEDIA_API = "/api/artist-media";
+
+function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, hasBanner: boolean, t: { required: string }): string | null {
+  if (!hasBanner) return "대표 배너 이미지를 1장 등록해 주세요.";
   if (!formData.title.trim() || !formData.contact.trim() || !formData.address.trim() ||
       !formData.region_id || !formData.introduce.trim() || !hasProfile) {
     return t.required;
@@ -56,9 +60,9 @@ async function uploadProfileImage(artistId: string, file: File): Promise<void> {
   const profileRes = await fetch(`/api/upload?bucket=avatars&path=${encodeURIComponent(profilePath)}`, { method: "PUT", body: profileForm });
   const profileJson = await profileRes.json() as { success: boolean };
   if (!profileJson.success) return;
-  await fetch("/api/artist-media", {
+  await fetch(ARTIST_MEDIA_API, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ artistId, profileImagePath: profilePath }),
   });
   // 샵 대표 사진을 user_metadata.avatar_url 에도 동기화 — 헤더/마이페이지가 같은 사진 표시 (ProfileClient 와 동일).
@@ -71,6 +75,21 @@ async function uploadProfileImage(artistId: string, file: File): Promise<void> {
   }
 }
 
+async function uploadBannerImage(artistId: string, file: File): Promise<void> {
+  const form = new globalThis.FormData();
+  form.append("file", file);
+  // 대표 배너 1장 — portfolios 버킷 artists/<id>/banner_<ts>.webp (owner-scoped). banner_path 에 저장.
+  const path = `artists/${artistId}/banner_${Date.now()}.webp`;
+  const res = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
+  const json = await res.json() as { success: boolean };
+  if (!json.success) return;
+  await fetch(ARTIST_MEDIA_API, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ artistId, bannerPath: path }),
+  });
+}
+
 async function uploadShopImages(artistId: string, shopImages: File[]): Promise<void> {
   for (let i = 0; i < shopImages.length; i++) {
     const shopForm = new globalThis.FormData();
@@ -81,9 +100,9 @@ async function uploadShopImages(artistId: string, shopImages: File[]): Promise<v
     const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
     const shopJson = await shopRes.json() as { success: boolean };
     if (shopJson.success) {
-      await fetch("/api/artist-media", {
+      await fetch(ARTIST_MEDIA_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
         body: JSON.stringify({ artistId, storagePath: shopPath, type: "image", orderIndex: i }),
       });
     }
@@ -94,7 +113,7 @@ async function syncArtistCategories(artistId: string, categoryIds: string[]): Pr
   if (categoryIds.length === 0) return;
   await fetch("/api/artist-register", {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ artistId, categoryIds }),
   });
 }
@@ -110,6 +129,7 @@ export function ArtistRegisterClient({ categories,
   const { isOpen: isAddressOpen, open: openAddress, close: closeAddress } = useDaumPostcode();
 
   const [formData, setFormData] = useState<ArtistFormData>(INITIAL_FORM_DATA);
+  const [bannerImage, setBannerImage] = useState<File[]>([]);
   const [shopImages, setShopImages] = useState<File[]>([]);
   const [profileImage, setProfileImage] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,7 +172,7 @@ export function ArtistRegisterClient({ categories,
     e.preventDefault();
     if (!user) { router.push("/login"); return; }
 
-    const validationError = validateRegisterForm(formData, profileImage.length > 0, t);
+    const validationError = validateRegisterForm(formData, profileImage.length > 0, bannerImage.length > 0, t);
     if (validationError) {
       globalThis.alert(validationError);
       return;
@@ -168,7 +188,7 @@ export function ArtistRegisterClient({ categories,
 
       const registerRes = await fetch("/api/artist-register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: JSON_HEADERS,
         body: JSON.stringify({
           type_artist: formData.type_artist,
           type_sex: typeSex,
@@ -203,7 +223,12 @@ export function ArtistRegisterClient({ categories,
         await uploadProfileImage(artistId, profileImage[0]);
       }
 
-      // Upload shop images via server API (bypasses storage RLS)
+      // 대표 배너(1장) → banner_path
+      if (bannerImage.length > 0) {
+        await uploadBannerImage(artistId, bannerImage[0]);
+      }
+
+      // 샵 갤러리(0~10장) → artist_media
       await uploadShopImages(artistId, shopImages);
 
       await syncArtistCategories(artistId, formData.shop_category_ids);
@@ -218,7 +243,7 @@ export function ArtistRegisterClient({ categories,
       }
 
       // 신규 아티스트 웰컴 포인트
-      void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "WELCOME_BONUS" }) });
+      void fetch("/api/points/earn", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ reason: "WELCOME_BONUS" }) });
 
       globalThis.alert(t.submitSuccess);
       router.push("/");
@@ -256,13 +281,22 @@ export function ArtistRegisterClient({ categories,
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">{t.shopImages} <span className="text-red-500">*</span></label>
-              <span className="text-xs text-muted-foreground">{shopImages.length} / 5</span>
+              <label className="text-sm font-medium">대표 배너 <span className="text-red-500">*</span></label>
+              <span className="text-xs text-muted-foreground">{bannerImage.length} / 1</span>
             </div>
             <p className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-              ⚠ 권장 사이즈: 1020 × 340px (가로:세로 3:1 비율)
+              ⚠ 샵 상단에 크게 노출되는 대표 이미지 1장. 권장 1020 × 340px (가로:세로 3:1 비율)
             </p>
-            <ImageUpload maxLength={5} label={t.shopImagesHint} onChange={(files) => setShopImages(files.filter((f): f is File => f instanceof File))} cropAspect={3} />
+            <ImageUpload maxLength={1} label="대표 배너 1장을 올려주세요 (3:1 비율로 잘립니다)" onChange={(files) => setBannerImage(files.filter((f): f is File => f instanceof File))} cropAspect={3} />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">샵 갤러리 <span className="text-xs font-normal text-muted-foreground">(선택)</span></label>
+              <span className="text-xs text-muted-foreground">{shopImages.length} / 10</span>
+            </div>
+            <p className="text-xs text-muted-foreground">인테리어·작업 공간·시술 사진 등 추가 사진 (최대 10장)</p>
+            <ImageUpload maxLength={10} label={t.shopImagesHint} onChange={(files) => setShopImages(files.filter((f): f is File => f instanceof File))} cropAspect={3} />
           </div>
 
           <div className="space-y-2">

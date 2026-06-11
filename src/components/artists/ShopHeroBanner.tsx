@@ -113,7 +113,7 @@ function HeroCarousel({
           fill
           className="object-cover"
           sizes="(min-width: 1024px) 1024px, 100vw"
-          preload
+          priority
           fetchPriority="high"
         />
       ) : (

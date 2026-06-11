@@ -28,6 +28,16 @@ const DEFAULT_SHOP_BANNERS = [
   "/images/defaults/shop-banner-2.jpg",
 ];
 
+/** OG/대표 이미지 우선순위: 배너 → 갤러리 첫장 → 프로필 아바타. */
+function resolveArtistOgImage(artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>): string | null {
+  const bannerImage = artist.banner_path ? getArtistMediaUrl(artist.banner_path) : null;
+  const galleryImage = artist.artist_media?.length
+    ? getArtistMediaUrl([...artist.artist_media].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))[0].storage_path)
+    : null;
+  const avatarImage = getAvatarUrl(artist.profile_image_path ?? null);
+  return bannerImage ?? galleryImage ?? avatarImage ?? null;
+}
+
 export async function generateArtistDetailMetadata(id: string): Promise<Metadata> {
   // Legacy numeric ID → 301 redirect to UUID URL
   if (isLegacyNumericId(id)) {
@@ -48,11 +58,7 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
   }
 
   const description = artist.introduce;
-  const galleryImage = artist.artist_media?.length
-    ? getArtistMediaUrl([...artist.artist_media].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))[0].storage_path)
-    : null;
-  const avatarImage = getAvatarUrl(artist.profile_image_path ?? null);
-  const ogImage = galleryImage ?? avatarImage ?? null;
+  const ogImage = resolveArtistOgImage(artist);
 
   return {
     title: artist.title,
@@ -103,6 +109,7 @@ interface BuildArtistJsonLdInput {
   id: string;
   artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>;
   artistGalleryImages: string[];
+  bannerImage: string | null;
   avatarUrl: string | null;
   reviewCount: number;
   ratingAvg: number | undefined;
@@ -110,7 +117,7 @@ interface BuildArtistJsonLdInput {
 }
 
 function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeof getArtistJsonLd>[0] {
-  const { id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg, portfolios } = input;
+  const { id, artist, artistGalleryImages, bannerImage, avatarUrl, reviewCount, ratingAvg, portfolios } = input;
   // 시술 가격(Offer) + 영업시간(OpeningHours) AEO/GEO 스키마 — 추가 페칭 없이 기존 데이터 활용.
   // slice(30): JSON-LD 비대화 방지 캡 — 포폴 최대 50개 페칭 중 대표 30개면 AEO 인용에 충분.
   const offers = portfolios
@@ -120,7 +127,7 @@ function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeo
     name: artist.title,
     description: artist.introduce,
     address: artist.address,
-    image: artistGalleryImages[0] ?? avatarUrl ?? undefined,
+    image: bannerImage ?? artistGalleryImages[0] ?? avatarUrl ?? undefined,
     url: getCanonicalUrl(`/artists/${id}`),
     latitude: artist.lat,
     longitude: artist.lon,
@@ -147,7 +154,10 @@ function buildArtistDetailView(
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
   const artistGalleryImages = extractArtistGalleryImages(artist.artist_media);
   const portfolioImages = extractPortfolioImages(portfolios);
-  const heroImages = artistGalleryImages.length > 0 ? artistGalleryImages : DEFAULT_SHOP_BANNERS;
+  // 대표 배너(banner_path)를 hero 맨 앞에. 레거시(배너 없음)는 기존 갤러리만 — 무회귀.
+  const bannerImage = artist.banner_path ? getArtistMediaUrl(artist.banner_path) : null;
+  const heroSource = bannerImage ? [bannerImage, ...artistGalleryImages] : artistGalleryImages;
+  const heroImages = heroSource.length > 0 ? heroSource : DEFAULT_SHOP_BANNERS;
 
   const reviewCount = reviews.length;
   const ratingAvg = reviewCount > 0
@@ -155,7 +165,7 @@ function buildArtistDetailView(
     : undefined;
 
   const artistJsonLd = getArtistJsonLd(buildArtistJsonLdProps({
-    id, artist, artistGalleryImages, avatarUrl, reviewCount, ratingAvg, portfolios: portfolios ?? [],
+    id, artist, artistGalleryImages, bannerImage, avatarUrl, reviewCount, ratingAvg, portfolios: portfolios ?? [],
   }));
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([

@@ -23,6 +23,7 @@ interface ArtistPatchBody {
   introduce_qa?: unknown;
   description?: string | null;
   profile_image_path?: string | null;
+  banner_path?: string | null;
   lat?: number | null;
   lon?: number | null;
   business_hours?: BusinessHoursMap;
@@ -34,7 +35,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const ALLOWED_ARTIST_FIELDS: ReadonlyArray<keyof ArtistPatchBody> = [
   "type_artist", "title", "contact", "instagram_url", "kakao_url",
   "zipcode", "address", "address_detail", "region_id",
-  "introduce", "introduce_qa", "description", "profile_image_path", "lat", "lon",
+  "introduce", "introduce_qa", "description", "profile_image_path", "banner_path", "lat", "lon",
   "business_hours",
 ];
 
@@ -78,6 +79,9 @@ async function syncCategorizables(
 function validateProfileImagePath(body: ArtistPatchBody): NextResponse | null {
   if (typeof body.profile_image_path === "string" && body.profile_image_path.length > 0 && !isSafeStoragePath(body.profile_image_path)) {
     return NextResponse.json({ error: "profile_image_path 는 스토리지 경로만 허용됩니다." }, { status: 400 });
+  }
+  if (typeof body.banner_path === "string" && body.banner_path.length > 0 && !isSafeStoragePath(body.banner_path)) {
+    return NextResponse.json({ error: "banner_path 는 스토리지 경로만 허용됩니다." }, { status: 400 });
   }
   return null;
 }

@@ -9,6 +9,7 @@ interface PostBody {
   type?: string;
   orderIndex?: number;
   profileImagePath?: string;
+  bannerPath?: string;
 }
 
 /**
@@ -19,6 +20,13 @@ async function handleMediaUpsert(admin: ReturnType<typeof createAdminClient>, bo
     await admin
       .from("artists")
       .update({ profile_image_path: body.profileImagePath })
+      .eq("id", body.artistId);
+  }
+
+  if (body.bannerPath !== undefined) {
+    await admin
+      .from("artists")
+      .update({ banner_path: body.bannerPath })
       .eq("id", body.artistId);
   }
 
@@ -52,6 +60,9 @@ function validatePostBody(body: PostBody): NextResponse | null {
   // 쓰기 경계 검증 — 외부 URL/경로 탈출 주입 차단 (스토리지 경로만 허용).
   if (body.profileImagePath && !isSafeStoragePath(body.profileImagePath)) {
     return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
+  }
+  if (body.bannerPath && !isSafeStoragePath(body.bannerPath)) {
+    return NextResponse.json({ error: "유효하지 않은 배너 경로입니다." }, { status: 400 });
   }
   if (body.storagePath && !isSafeStoragePath(body.storagePath)) {
     return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
