@@ -311,7 +311,7 @@ export function ArtistEditClient({ artist,
   const router = useRouter();
   // admin 모드: 목록 페이지로 / 본인 모드: 마이페이지로
   const backHref = isAdmin ? "/admin/members" : "/mypage";
-  const headerTitle = isAdmin ? "아티스트 샵 수정 (관리자)" : STRINGS.mypage.editArtistProfile;
+  const headerTitle = isAdmin ? "마이숍 수정 (관리자)" : STRINGS.mypage.editArtistProfile;
   const { isOpen: isAddressOpen, open: openAddress, close: closeAddress } = useDaumPostcode();
 
   const [formData, setFormData] = useState<ArtistFormData>(() => {

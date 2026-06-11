@@ -6,8 +6,8 @@ import { ArtistEditClient } from "@/app/(main)/mypage/artist/edit/ArtistEditClie
 import type { ArtistEditClientProps } from "@/app/(main)/mypage/artist/edit/ArtistEditClient";
 
 export const artistEditMetadata: Metadata = {
-  title: "아티스트 정보 수정",
-  description: "아티스트 정보를 수정합니다.",
+  title: "마이숍 정보 수정",
+  description: "마이숍 정보를 수정합니다.",
 };
 
 export async function renderArtistEditPage(): Promise<React.ReactElement> {

@@ -233,7 +233,7 @@ export const STRINGS ={
     "editProfile": "회원정보 수정",
     "artistRegister": "아티스트 등록",
     "viewMyShop": "내 샵 보기",
-    "editArtistProfile": "아티스트 정보 수정",
+    "editArtistProfile": "마이숍 정보 수정",
     "dashboard": "대시보드",
     "portfolioManage": "포트폴리오 업로드",
     "eventManage": "이벤트 등록",
