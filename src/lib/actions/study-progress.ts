@@ -5,7 +5,9 @@
 import { getUser } from "@/lib/supabase/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { studyEntitlement } from "@/lib/study/entitlement";
-import type { SubjectKey } from "@/data/study/questions";
+import { getStudyAnswers, getStudySessionState } from "@/lib/study/queries";
+import { generateExam, analyzeResult, type ExamAnalysis } from "@/lib/study/adaptive";
+import { getQuestionById, type SubjectKey, type Question } from "@/data/study/questions";
 
 interface ActionResult {
   success: boolean;
@@ -16,6 +18,13 @@ const DAILY_GOAL_MIN = 5;
 const DAILY_GOAL_MAX = 200;
 const UNAUTH = "로그인이 필요합니다";
 const LOCKED = "공부방 이용 권한이 없습니다";
+const MOCK_EXAM_SIZE = 15;
+
+interface MockExamData {
+  sessionNo: number;
+  targetDifficulty: number;
+  questions: Question[];
+}
 
 type Admin = ReturnType<typeof createAdminClient>;
 type WriteAuth = { ok: true; userId: string; admin: Admin } | { ok: false; error: string };
@@ -122,4 +131,54 @@ export async function ensureTrialStarted(): Promise<ActionResult> {
   const { error } = await admin.from("study_user_settings")
     .upsert({ user_id: user.id, trial_started_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   return error ? { success: false, error: error.message } : { success: true };
+}
+
+// ── 적응형 모의고사 ──
+// adaptive(generateExam/analyzeResult)·QUESTIONS 를 서버에 가둠(클라 번들 방지). 클라는 결과 props 만 받음.
+
+/** 능력·약점·회차 기반 모의고사 즉석 생성(15문). 쓰기 없음, 권한만 확인. */
+export async function generateMockExam(): Promise<{ ok: true; exam: MockExamData } | { ok: false; error: string }> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { ok: false, error: auth.error };
+  const [answers, session] = await Promise.all([getStudyAnswers(auth.userId), getStudySessionState(auth.userId)]);
+  const exam = generateExam(answers, session, MOCK_EXAM_SIZE);
+  return { ok: true, exam: { sessionNo: exam.sessionNo, targetDifficulty: exam.targetDifficulty, questions: [...exam.questions] } };
+}
+
+/** 모의고사 채점 — 서버에서 정답 대조·분석·기록. 클라가 보낸 선택만 신뢰(본인 진도). */
+export async function submitMockExam(
+  questionIds: string[],
+  selections: (number | null)[],
+  targetDifficulty: number,
+): Promise<{ ok: true; analysis: ExamAnalysis } | { ok: false; error: string }> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  // 원본 questionIds 인덱스로 selection 을 묶어 정렬(일부 id 미해결 시 index 어긋남 방지).
+  const graded = questionIds
+    .map((id, i) => ({ q: getQuestionById(id), sel: selections.at(i) ?? null }))
+    .filter((g): g is { q: Question; sel: number | null } => Boolean(g.q));
+  const questions = graded.map((g) => g.q);
+  const correctById: Record<string, boolean> = Object.fromEntries(graded.map((g) => [g.q.id, g.sel === g.q.answer]));
+  const beforeAnswers = await getStudyAnswers(auth.userId); // 기록 전 = 능력변화 'before'
+  const analysis = analyzeResult(questions, correctById, beforeAnswers);
+
+  if (graded.length > 0) {
+    const { error: aErr } = await auth.admin.from("study_user_answers").insert(
+      graded.map((g) => ({ user_id: auth.userId, question_id: g.q.id, subject: g.q.subject, is_correct: g.sel === g.q.answer, source: "mock" })),
+    );
+    if (aErr) return { ok: false, error: aErr.message };
+  }
+
+  const { data: last } = await auth.admin
+    .from("study_exam_sessions").select("session_no").eq("user_id", auth.userId)
+    .order("session_no", { ascending: false }).limit(1).maybeSingle();
+  const { error } = await auth.admin.from("study_exam_sessions").insert({
+    user_id: auth.userId,
+    session_no: (last?.session_no ?? 0) + 1,
+    score: analysis.score, total: analysis.total, target_difficulty: targetDifficulty,
+    ability_before: analysis.abilityBefore, ability_after: analysis.abilityAfter,
+    question_ids: questionIds,
+  });
+  return error ? { ok: false, error: error.message } : { ok: true, analysis };
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
 import { getStudyAnswers } from "@/lib/study/queries";
@@ -36,6 +36,7 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
+        <StudyChip href="/mypage/study/mock-exam" label="모의고사"><Timer className="h-4 w-4" aria-hidden="true" /></StudyChip>
         <StudyChip href="/mypage/study/stats" label="통계"><BarChart3 className="h-4 w-4" aria-hidden="true" /></StudyChip>
         <StudyChip href="/mypage/study/review" label="복습" badge={review.dueCount}><RotateCcw className="h-4 w-4" aria-hidden="true" /></StudyChip>
         <StudyChip href="/mypage/study/wrong-answers" label="오답노트" badge={stats.wrongQuestionIds.length}><NotebookPen className="h-4 w-4" aria-hidden="true" /></StudyChip>
