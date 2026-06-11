@@ -3129,6 +3129,181 @@ export type Database = {
         }
         Relationships: []
       }
+      study_user_answers: {
+        Row: {
+          created_at: string
+          id: number
+          is_correct: boolean
+          question_id: string
+          solved_at: string
+          source: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          is_correct: boolean
+          question_id: string
+          solved_at?: string
+          source?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          is_correct?: boolean
+          question_id?: string
+          solved_at?: string
+          source?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_user_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_user_bookmarks: {
+        Row: {
+          created_at: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_user_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_exam_sessions: {
+        Row: {
+          ability_after: number
+          ability_before: number
+          created_at: string
+          id: number
+          question_ids: Json
+          score: number
+          session_no: number
+          target_difficulty: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          ability_after: number
+          ability_before: number
+          created_at?: string
+          id?: never
+          question_ids?: Json
+          score: number
+          session_no: number
+          target_difficulty: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          ability_after?: number
+          ability_before?: number
+          created_at?: string
+          id?: never
+          question_ids?: Json
+          score?: number
+          session_no?: number
+          target_difficulty?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_exam_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_checklist_progress: {
+        Row: {
+          checked: boolean
+          item_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked?: boolean
+          item_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked?: boolean
+          item_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_checklist_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_user_settings: {
+        Row: {
+          daily_goal: number
+          onboarded: boolean
+          trial_started_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_goal?: number
+          onboarded?: boolean
+          trial_started_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_goal?: number
+          onboarded?: boolean
+          trial_started_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_user_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
