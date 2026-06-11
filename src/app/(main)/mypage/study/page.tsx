@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers, GraduationCap } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
 import { getStudyAnswers } from "@/lib/study/queries";
@@ -54,6 +54,7 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
             <StudyChip href="/mypage/study/planner" label="플래너"><CalendarDays className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/glossary" label="용어집"><BookText className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/checklist" label="체크리스트"><ListChecks className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/textbook" label="교과서"><GraduationCap className="h-4 w-4" aria-hidden="true" /></StudyChip>
           </div>
         </div>
       </div>

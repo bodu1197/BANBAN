@@ -8,6 +8,7 @@ import { studyEntitlement } from "@/lib/study/entitlement";
 import { getStudyAnswers, getStudySessionState } from "@/lib/study/queries";
 import { generateExam, analyzeResult, type ExamAnalysis } from "@/lib/study/adaptive";
 import { getQuestionById, type SubjectKey, type Question } from "@/data/study/questions";
+import { getPart } from "@/data/study/curriculum";
 
 interface ActionResult {
   success: boolean;
@@ -150,7 +151,7 @@ export async function submitMockExam(
   questionIds: string[],
   selections: (number | null)[],
   targetDifficulty: number,
-): Promise<{ ok: true; analysis: ExamAnalysis } | { ok: false; error: string }> {
+): Promise<{ ok: true; analysis: ExamAnalysis; reviewPartLinks: { id: string; title: string }[] } | { ok: false; error: string }> {
   const auth = await authorizeStudyWrite();
   if (!auth.ok) return { ok: false, error: auth.error };
 
@@ -180,7 +181,10 @@ export async function submitMockExam(
     ability_before: analysis.abilityBefore, ability_after: analysis.abilityAfter,
     question_ids: questionIds,
   });
-  return error ? { ok: false, error: error.message } : { ok: true, analysis };
+  if (error) return { ok: false, error: error.message };
+  // 약점 PART id → 교과서 제목 enrich(서버에서 getPart — 클라가 curriculum 미번들).
+  const reviewPartLinks = analysis.reviewParts.map((id) => ({ id, title: getPart(id)?.title ?? id }));
+  return { ok: true, analysis, reviewPartLinks };
 }
 
 // ── 실기 체크리스트 ──

@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Timer, Clock, Target, Check, X, ChevronRight, RefreshCw, Loader2 } from "lucide-react";
+import { Timer, Clock, Target, Check, X, ChevronRight, RefreshCw, Loader2, GraduationCap } from "lucide-react";
 import { SUBJECT_MAP, type SubjectKey, type Question } from "@/data/study/question-types";
 import type { ExamAnalysis } from "@/lib/study/adaptive";
 import { generateMockExam, submitMockExam } from "@/lib/actions/study-progress";
@@ -53,6 +53,7 @@ export function MockExam({ intro }: Readonly<{ intro: IntroData }>): React.React
   const [selections, setSelections] = useState<(number | null)[]>([]);
   const [idx, setIdx] = useState(0);
   const [analysis, setAnalysis] = useState<ExamAnalysis | null>(null);
+  const [reviewParts, setReviewParts] = useState<{ id: string; title: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +68,7 @@ export function MockExam({ intro }: Readonly<{ intro: IntroData }>): React.React
     setBusy(true);
     try {
       const res = await submitMockExam(ex.questions.map((q) => q.id), selectionsRef.current, ex.targetDifficulty);
-      if (res.ok) { setAnalysis(res.analysis); setPhase("result"); } else setError(res.error);
+      if (res.ok) { setAnalysis(res.analysis); setReviewParts(res.reviewPartLinks); setPhase("result"); } else setError(res.error);
     } catch {
       setError("채점에 실패했습니다. 다시 시도해 주세요.");
     } finally {
@@ -108,7 +109,7 @@ export function MockExam({ intro }: Readonly<{ intro: IntroData }>): React.React
   }
 
   if (phase === "result" && analysis && exam) {
-    return <ResultPhase exam={exam} selections={selections} analysis={analysis} onNext={() => { router.refresh(); setPhase("intro"); }} />;
+    return <ResultPhase exam={exam} selections={selections} analysis={analysis} reviewParts={reviewParts} onNext={() => { router.refresh(); setPhase("intro"); }} />;
   }
   if (phase === "running" && exam) {
     return (
@@ -252,7 +253,7 @@ function RunningPhase({ exam, selections, idx, busy, totalSeconds, onPick, onJum
   );
 }
 
-function ResultPhase({ exam, selections, analysis, onNext }: Readonly<{ exam: MockExamState; selections: (number | null)[]; analysis: ExamAnalysis; onNext: () => void }>): React.ReactElement {
+function ResultPhase({ exam, selections, analysis, reviewParts, onNext }: Readonly<{ exam: MockExamState; selections: (number | null)[]; analysis: ExamAnalysis; reviewParts: { id: string; title: string }[]; onNext: () => void }>): React.ReactElement {
   const a = analysis;
   const scorePct = Math.round(a.rate * 100);
   const deltaPct = abilityPct(a.abilityAfter) - abilityPct(a.abilityBefore);
@@ -308,7 +309,7 @@ function ResultPhase({ exam, selections, analysis, onNext }: Readonly<{ exam: Mo
         </>
       ) : null}
 
-      <WeakSubjects weak={a.weakSubjects} />
+      <WeakSubjects weak={a.weakSubjects} parts={reviewParts} />
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <button type="button" onClick={onNext} className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 ${STUDY_PRIMARY_BTN}`}>
@@ -322,22 +323,40 @@ function ResultPhase({ exam, selections, analysis, onNext }: Readonly<{ exam: Mo
   );
 }
 
-function WeakSubjects({ weak }: Readonly<{ weak: readonly SubjectKey[] }>): React.ReactElement {
-  if (weak.length === 0) {
+function WeakLinkRow({ href, label, icon }: Readonly<{ href: string; label: string; icon?: React.ReactNode }>): React.ReactElement {
+  return (
+    <Link href={href} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors hover:border-brand-primary hover:bg-brand-primary/5 focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      {icon}
+      <span className="flex-1 text-sm font-medium">{label}</span>
+      <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+    </Link>
+  );
+}
+
+function WeakSubjects({ weak, parts }: Readonly<{ weak: readonly SubjectKey[]; parts: { id: string; title: string }[] }>): React.ReactElement {
+  if (weak.length === 0 && parts.length === 0) {
     return <div className="mt-6 rounded-2xl bg-brand-primary/10 p-4 text-center text-sm font-medium text-brand-primary">모든 과목이 합격선을 넘었습니다. 더 어려운 다음 회차에 도전해 보세요.</div>;
   }
   return (
-    <div className="mt-6">
-      <h2 className="mb-1 text-sm font-bold">약점 과목 복습</h2>
-      <p className="mb-3 text-xs text-muted-foreground">합격선 미달 과목입니다. 학습 모드로 다시 풀어보세요.</p>
-      <div className="space-y-2">
-        {weak.map((s) => (
-          <Link key={s} href={`/mypage/study/${s}?mode=learn`} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors hover:border-brand-primary hover:bg-brand-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span className="flex-1 text-sm font-medium">{SUBJECT_MAP[s].label}</span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          </Link>
-        ))}
-      </div>
+    <div className="mt-6 space-y-4">
+      {weak.length > 0 ? (
+        <div>
+          <h2 className="mb-1 text-sm font-bold">약점 과목 복습</h2>
+          <p className="mb-3 text-xs text-muted-foreground">합격선 미달 과목입니다. 학습 모드로 다시 풀어보세요.</p>
+          <div className="space-y-2">
+            {weak.map((s) => <WeakLinkRow key={s} href={`/mypage/study/${s}?mode=learn`} label={SUBJECT_MAP[s].label} />)}
+          </div>
+        </div>
+      ) : null}
+      {parts.length > 0 ? (
+        <div>
+          <h2 className="mb-1 text-sm font-bold">교과서로 복습</h2>
+          <p className="mb-3 text-xs text-muted-foreground">약점 단원의 이론을 교과서에서 확인하세요.</p>
+          <div className="space-y-2">
+            {parts.map((p) => <WeakLinkRow key={p.id} href={`/mypage/study/textbook/${p.id}`} label={p.title} icon={<GraduationCap className="h-4 w-4 shrink-0 text-brand-primary" aria-hidden="true" />} />)}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
