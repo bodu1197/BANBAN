@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
 import { getStudyAnswers } from "@/lib/study/queries";
@@ -49,6 +49,8 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
         <div role="group" aria-label="학습 도구">
           <p className="mb-1.5 text-xs font-semibold text-muted-foreground">학습 도구</p>
           <div className="flex flex-wrap gap-2">
+            <StudyChip href="/mypage/study/search" label="검색"><Search className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/flashcards" label="카드"><Layers className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/planner" label="플래너"><CalendarDays className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/glossary" label="용어집"><BookText className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/checklist" label="체크리스트"><ListChecks className="h-4 w-4" aria-hidden="true" /></StudyChip>
