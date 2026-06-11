@@ -393,6 +393,7 @@ export type Database = {
           introduce: string
           introduce_cn: string | null
           introduce_jp: string | null
+          introduce_qa: Json | null
           is_hide: boolean | null
           kakao_url: string | null
           lat: number | null
@@ -402,6 +403,10 @@ export type Database = {
           portfolio_media_count: number
           profile_image_path: string | null
           region_id: string | null
+          reject_reason: string | null
+          rejected_at: string | null
+          resubmitted_at: string | null
+          reviewed_by: string | null
           status: string
           title: string
           title_cn: string | null
@@ -432,6 +437,7 @@ export type Database = {
           introduce: string
           introduce_cn?: string | null
           introduce_jp?: string | null
+          introduce_qa?: Json | null
           is_hide?: boolean | null
           kakao_url?: string | null
           lat?: number | null
@@ -441,6 +447,10 @@ export type Database = {
           portfolio_media_count?: number
           profile_image_path?: string | null
           region_id?: string | null
+          reject_reason?: string | null
+          rejected_at?: string | null
+          resubmitted_at?: string | null
+          reviewed_by?: string | null
           status?: string
           title: string
           title_cn?: string | null
@@ -471,6 +481,7 @@ export type Database = {
           introduce?: string
           introduce_cn?: string | null
           introduce_jp?: string | null
+          introduce_qa?: Json | null
           is_hide?: boolean | null
           kakao_url?: string | null
           lat?: number | null
@@ -480,6 +491,10 @@ export type Database = {
           portfolio_media_count?: number
           profile_image_path?: string | null
           region_id?: string | null
+          reject_reason?: string | null
+          rejected_at?: string | null
+          resubmitted_at?: string | null
+          reviewed_by?: string | null
           status?: string
           title?: string
           title_cn?: string | null

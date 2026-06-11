@@ -121,7 +121,8 @@ export async function notifyAllArtists(notification: {
   const { data: artists, error: artistError } = await supabase
     .from("artists")
     .select("user_id")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .not("approved_at", "is", null); // 미승인(pending/rejected) 샵은 견적요청 알림 제외 (휴면 포함)
 
   if (artistError || !artists?.length) return;
 

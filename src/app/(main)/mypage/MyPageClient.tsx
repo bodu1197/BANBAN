@@ -33,6 +33,8 @@ import {
   type LikedArtist,
 } from "@/lib/supabase/likes-queries";
 import { AnnouncementsBanner } from "@/components/mypage/AnnouncementsBanner";
+import { ShopStatusBanner } from "@/components/mypage/ShopStatusBanner";
+import { isPublicArtistStatus } from "@/lib/artist-status";
 const DEFAULT_PROFILE_IMAGE = "/images/default_profile.svg";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
@@ -245,10 +247,10 @@ function ArtistWithoutShopView(): React.ReactElement {
   );
 }
 
-function ArtistSection({ artistId }: Readonly<{
-  artistId: string | null;
+function ArtistSection({ artist }: Readonly<{
+  artist: { id: string; status: string; reject_reason: string | null } | null;
 }>): React.ReactElement {
-  if (!artistId) {
+  if (!artist) {
     return (
       <>
         <ArtistShopSetupBanner />
@@ -256,13 +258,22 @@ function ArtistSection({ artistId }: Readonly<{
       </>
     );
   }
-  return <ArtistView artistId={artistId} />;
+  return (
+    <>
+      <ShopStatusBanner status={artist.status} rejectReason={artist.reject_reason} />
+      <ArtistView artistId={artist.id} status={artist.status} />
+    </>
+  );
 }
 
-function ArtistView({ artistId }: Readonly<{
+function ArtistView({ artistId, status }: Readonly<{
   artistId: string;
+  status: string;
 }>): React.ReactElement {
   const d = STRINGS.mypage;
+  // 승인(active)·휴면(dormant)은 공개 페이지, 미승인(pending/rejected)은 본인 전용 비공개 미리보기로.
+  const isPublic = isPublicArtistStatus(status);
+  const viewHref = isPublic ? `/artists/${artistId}` : "/mypage/artist/preview";
   return (
     <>
       {/* Dashboard Cards – items NOT already in Quick Menu */}
@@ -280,11 +291,11 @@ function ArtistView({ artistId }: Readonly<{
           {d.editArtistProfile}
         </Link>
         <Link
-          href={`/artists/${artistId}`}
+          href={viewHref}
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Store className="h-4 w-4" />
-          {d.viewMyShop}
+          {isPublic ? d.viewMyShop : "내 샵 미리보기 (비공개)"}
         </Link>
       </div>
     </>
@@ -404,7 +415,7 @@ export function MyPageClient(): React.ReactElement {
           <AnnouncementsBanner />
         </div>
         {isArtist
-          ? <ArtistSection artistId={artist?.id ?? null} />
+          ? <ArtistSection artist={artist} />
           : <UserView userId={user.id} />}
       </section>
     </div>

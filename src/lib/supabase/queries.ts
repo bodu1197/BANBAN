@@ -198,6 +198,35 @@ export const fetchArtistById = cache(async function fetchArtistById(
 });
 
 /**
+ * 본인 미리보기 전용 — 로그인 사용자가 자기 샵을 status 무관(pending/rejected 포함) 조회.
+ * user_id = userId 로 스코프 + RLS(owner) 이중 보호 → 절대 타인 샵을 반환하지 않음(비공개 노출 차단).
+ */
+export async function fetchOwnArtistForPreview(userId: string): Promise<ArtistWithDetails | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("artists")
+    .select(
+      `
+      *,
+      region:regions(*),
+      artist_media(id, storage_path, type, order_index)
+    `
+    )
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(`Failed to fetch own artist: ${error.message}`);
+    return null;
+  }
+
+  return data;
+}
+
+/**
  * Fetch all regions
  */
 export async function fetchRegions(): Promise<Region[]> {

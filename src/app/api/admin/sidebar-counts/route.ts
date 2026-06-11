@@ -34,6 +34,16 @@ async function getNewMemberCount(): Promise<number> {
   return count ?? 0;
 }
 
+async function getPendingArtistCount(): Promise<number> {
+  const supabase = createAdminClient();
+  const { count } = await supabase
+    .from("artists")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+    .is("deleted_at", null) as CountResult;
+  return count ?? 0;
+}
+
 async function getDormantArtistCount(): Promise<number> {
   const supabase = createAdminClient();
   const { count } = await supabase
@@ -64,7 +74,8 @@ export async function GET(): Promise<NextResponse> {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
 
-  const [inquiries, exhibitions, members, dormant, chats, reports] = await Promise.all([
+  const [pendingShops, inquiries, exhibitions, members, dormant, chats, reports] = await Promise.all([
+    getPendingArtistCount(),
     getInquiryCount(),
     getExhibitionPendingCount(),
     getNewMemberCount(),
@@ -75,6 +86,7 @@ export async function GET(): Promise<NextResponse> {
 
   return NextResponse.json({
     counts: {
+      "/admin/artist-approvals": pendingShops,
       "/admin/inquiries": inquiries,
       "/admin/exhibitions": exhibitions,
       "/admin/members": members,

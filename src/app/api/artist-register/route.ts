@@ -144,7 +144,10 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     is_hide: false,
     likes_count: 0,
     views_count: 0,
-    approved_at: new Date().toISOString(),
+    // 관리자 승인 전까지 비공개(pending). 승인 시점에 status='active'+approved_at 설정(admin 승인 라우트).
+    // approved_at NULL → RLS(artists_select) 와 모든 공개 리스트 게이트가 자동 차단.
+    status: "pending",
+    approved_at: null,
   };
 }
 

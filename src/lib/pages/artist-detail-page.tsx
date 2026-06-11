@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
+import Link from "next/link";
 import { STRINGS } from "@/lib/strings";
 import { isLegacyNumericId, findArtistByLegacyId } from "@/lib/supabase/legacy-redirect";
 import {
   fetchArtistById,
+  fetchOwnArtistForPreview,
   fetchPortfoliosByArtist,
   fetchReviewsByArtist,
   fetchBeforeAfterByArtist,
@@ -129,34 +131,20 @@ function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeo
   };
 }
 
-// eslint-disable-next-line max-lines-per-function
-export async function renderArtistDetailPage(id: string): Promise<React.ReactElement> {
-  // Legacy numeric ID → 301 redirect to UUID URL
-  if (isLegacyNumericId(id)) {
-    const uuid = await findArtistByLegacyId(Number(id));
-    if (uuid) {
-      permanentRedirect(`/artists/${uuid}`);
-    }
-    notFound();
-  }
-
-  const artist = await fetchArtistById(id);
-
-  if (!artist) {
-    notFound();
-  }
-
-  const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos, events] = await Promise.all([
-    fetchPortfoliosByArtist(id, { limit: 50 }),
-    fetchReviewsByArtist(id),
-    getUser().catch(() => null),
-    fetchLikedArtistIds(),
-    fetchBeforeAfterByArtist(id),
-    fetchEventsByArtist(id),
-  ]);
-
+function buildArtistDetailView(
+  id: string,
+  artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>,
+  portfolios: Awaited<ReturnType<typeof fetchPortfoliosByArtist>>["data"],
+  reviews: Awaited<ReturnType<typeof fetchReviewsByArtist>>["data"],
+): {
+  heroImages: string[];
+  portfolioImages: string[];
+  reviewCount: number;
+  ratingAvg: number | undefined;
+  artistJsonLd: ReturnType<typeof getArtistJsonLd>;
+  breadcrumbJsonLd: ReturnType<typeof getBreadcrumbJsonLd>;
+} {
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
-
   const artistGalleryImages = extractArtistGalleryImages(artist.artist_media);
   const portfolioImages = extractPortfolioImages(portfolios);
   const heroImages = artistGalleryImages.length > 0 ? artistGalleryImages : DEFAULT_SHOP_BANNERS;
@@ -176,16 +164,59 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
     { name: artist.title, path: `/artists/${id}` },
   ]);
 
+  return { heroImages, portfolioImages, reviewCount, ratingAvg, artistJsonLd, breadcrumbJsonLd };
+}
+
+function PreviewBanner(): React.ReactElement {
+  return (
+    <div className="sticky top-0 z-[60] flex items-center justify-between gap-2 border-b border-amber-300 bg-amber-50 px-4 py-2.5">
+      <p className="text-sm font-medium text-amber-800">비공개 미리보기 · 관리자 승인 후 공개됩니다</p>
+      <Link
+        href="/mypage"
+        className="shrink-0 text-xs font-semibold text-amber-700 underline transition-colors hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        마이페이지
+      </Link>
+    </div>
+  );
+}
+
+// eslint-disable-next-line max-lines-per-function
+async function renderArtistDetailContent(
+  id: string,
+  artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>,
+  opts?: { isPreview?: boolean },
+): Promise<React.ReactElement> {
+  const isPreview = opts?.isPreview === true;
+
+  const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos, events] = await Promise.all([
+    fetchPortfoliosByArtist(id, { limit: 50 }),
+    fetchReviewsByArtist(id),
+    getUser().catch(() => null),
+    fetchLikedArtistIds(),
+    fetchBeforeAfterByArtist(id),
+    fetchEventsByArtist(id),
+  ]);
+
+  const { heroImages, portfolioImages, reviewCount, ratingAvg, artistJsonLd, breadcrumbJsonLd } =
+    buildArtistDetailView(id, artist, portfolios, reviews);
+
   return (
     <div className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdSafe(artistJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
-      />
+      {isPreview && <PreviewBanner />}
+      {/* 비공개 미리보기에는 JSON-LD 미출력(색인 대상 아님). 공개 페이지만 구조화 데이터 노출. */}
+      {!isPreview && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdSafe(artistJsonLd) }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }}
+          />
+        </>
+      )}
 
       <ArtistTopBar
         shopName={artist.title}
@@ -240,4 +271,36 @@ export async function renderArtistDetailPage(id: string): Promise<React.ReactEle
       />
     </div>
   );
+}
+
+export async function renderArtistDetailPage(id: string): Promise<React.ReactElement> {
+  // Legacy numeric ID → 301 redirect to UUID URL
+  if (isLegacyNumericId(id)) {
+    const uuid = await findArtistByLegacyId(Number(id));
+    if (uuid) {
+      permanentRedirect(`/artists/${uuid}`);
+    }
+    notFound();
+  }
+
+  const artist = await fetchArtistById(id);
+  if (!artist) {
+    notFound();
+  }
+
+  return renderArtistDetailContent(id, artist);
+}
+
+/**
+ * 본인 전용 비공개 미리보기(/mypage/artist/preview).
+ * fetchOwnArtistForPreview 가 user_id 로 스코프 + RLS owner 이중 보호 → 타인 pending/rejected 샵 노출 불가.
+ */
+export async function renderOwnArtistPreviewPage(): Promise<React.ReactElement> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
+  const artist = await fetchOwnArtistForPreview(user.id);
+  if (!artist) redirect("/register/artist");
+
+  return renderArtistDetailContent(artist.id, artist, { isPreview: true });
 }

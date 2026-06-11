@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, Flag, Grid3X3, BookOpen, Sparkles, Gift } from "lucide-react";
+import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, Flag, Grid3X3, BookOpen, Sparkles, Gift, BadgeCheck } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+    { href: "/admin/artist-approvals", icon: <BadgeCheck className="h-5 w-5" />, label: "샵 승인" },
     { href: "/admin/ads-semi", icon: <Crown className="h-5 w-5" />, label: "광고 관리" },
     { href: "/admin/ad-grants", icon: <Gift className="h-5 w-5" />, label: "무료 광고 부여" },
     { href: "/admin/analytics", icon: <BarChart3 className="h-5 w-5" />, label: "접속자 현황" },

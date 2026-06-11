@@ -41,6 +41,7 @@ async function searchPortfoliosByKeyword(
     .or(`sale_ended_at.is.null,sale_ended_at.gte.${now}`)
     .is("artists.deleted_at", null)
     .eq("artists.is_hide", false)
+    .not("artists.approved_at", "is", null) // 미승인(pending/rejected) 샵 포폴 제외 (휴면은 노출 유지)
     .ilike("title", `%${escapeLikePattern(keyword)}%`);
 
   // 광고 주입용: 휴면 샵 광고 제외(status=active) + 광고 회원으로 한정

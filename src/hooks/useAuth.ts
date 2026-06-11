@@ -32,6 +32,8 @@ interface Artist {
   title: string;
   profile_image_path: string | null;
   type_artist: string;
+  status: string;
+  reject_reason: string | null;
 }
 
 type Role = "user" | "artist";
@@ -60,7 +62,8 @@ function sameArtist(a: Artist | null, b: Artist | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
   return a.id === b.id && a.title === b.title
-    && a.profile_image_path === b.profile_image_path && a.type_artist === b.type_artist;
+    && a.profile_image_path === b.profile_image_path && a.type_artist === b.type_artist
+    && a.status === b.status && a.reject_reason === b.reject_reason;
 }
 
 /** Lazily resolve the browser Supabase client (avoids pulling ~200 KB into the initial bundle). */
@@ -91,7 +94,7 @@ export function useAuth(): UseAuthReturn {
         const [{ data: artistData }, { data: profileData }] = await Promise.all([
           supabase
             .from("artists")
-            .select("id, title, profile_image_path, type_artist")
+            .select("id, title, profile_image_path, type_artist, status, reject_reason")
             .eq("user_id", authUser.id)
             .maybeSingle(),
           supabase
@@ -131,7 +134,7 @@ export function useAuth(): UseAuthReturn {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const [{ data: artistData }, { data: profileData }] = await Promise.all([
-      supabase.from("artists").select("id, title, profile_image_path, type_artist").eq("user_id", authUser.id).maybeSingle(),
+      supabase.from("artists").select("id, title, profile_image_path, type_artist, status, reject_reason").eq("user_id", authUser.id).maybeSingle(),
       supabase.from("profiles").select("role, profile_image_path").eq("id", authUser.id).maybeSingle(),
     ]);
     const nextArtist = artistData as Artist | null;

@@ -8,15 +8,15 @@ import type { Database } from "@/types/database";
 
 type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
 
-async function getArtistIdForUser(userId: string): Promise<string | null> {
+async function getArtistForUser(userId: string): Promise<{ id: string; status: string } | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("artists")
-    .select("id")
+    .select("id, status")
     .eq("user_id", userId)
     .is("deleted_at", null)
     .maybeSingle();
-  return data?.id ?? null;
+  return (data as { id: string; status: string } | null) ?? null;
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -26,10 +26,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
     }
 
-    const artistId = await getArtistIdForUser(user.id);
-    if (!artistId) {
+    const artist = await getArtistForUser(user.id);
+    if (!artist) {
       return NextResponse.json({ error: "아티스트 계정이 필요합니다" }, { status: 403 });
     }
+    // 미승인(pending/rejected) 샵은 이벤트 발행 불가 — 공개 이벤트 목록 누출 차단(생성 시점 봉쇄).
+    if (artist.status !== "active") {
+      return NextResponse.json({ error: "샵 승인 후 이벤트를 등록할 수 있습니다" }, { status: 403 });
+    }
+    const artistId = artist.id;
 
     const body = await request.json() as {
       event: Omit<EventInsert, "artist_id">;

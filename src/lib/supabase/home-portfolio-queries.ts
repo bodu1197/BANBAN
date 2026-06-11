@@ -11,6 +11,7 @@ import {
 } from "./portfolio-common";
 import { secureShuffle } from "@/lib/random";
 import { withAdInjection, AD_INJECTION_FETCH_LIMIT } from "./boost-ranking";
+import { isPublicArtistStatus } from "./artist-visibility";
 
 type SupabaseInstance = Awaited<ReturnType<typeof createStaticClient>>;
 
@@ -37,7 +38,8 @@ async function getArtistIdsByType(
 
 function isVisibleArtist(row: PortfolioRowWithType): boolean {
   const artist = row.artist;
-  if (!artist || artist.is_hide || artist.deleted_at || artist.status === "dormant") return false;
+  // 자연 홈 리스트는 active 전용(승인+비휴면). pending/rejected/dormant 모두 제외.
+  if (!artist || artist.is_hide || artist.deleted_at || artist.status !== "active") return false;
   return artist.portfolio_media_count >= 5;
 }
 
@@ -45,7 +47,8 @@ function isVisibleArtist(row: PortfolioRowWithType): boolean {
  *  숨김·삭제·휴면 아티스트는 계속 제외. 광고주 포폴 수가 적어도 노출 보장. */
 function isAdEligibleArtist(row: PortfolioRowWithType): boolean {
   const artist = row.artist;
-  return !!artist && !artist.is_hide && !artist.deleted_at && artist.status !== "dormant";
+  // 광고도 active 전용 — 미디어 ≥5 품질바만 면제, pending/rejected/휴면은 계속 제외.
+  return !!artist && !artist.is_hide && !artist.deleted_at && artist.status === "active";
 }
 
 function deduplicatePortfolios<T extends { artist_id: string; title: string }>(rows: T[]): T[] {
@@ -261,7 +264,7 @@ export async function fetchDiscountPortfolios(options?: {
 
       const rows = deduplicatePortfolios((data ?? []) as PortfolioRowWithType[]);
       const filtered = rows
-        .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at)
+        .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at && isPublicArtistStatus(r.artist.status))
         .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "SEMI_PERMANENT" }));
       const shuffled = secureShuffle(filtered).slice(0, limit);
       return withAdInjection(shuffled, async (adIds) => {
@@ -275,7 +278,7 @@ export async function fetchDiscountPortfolios(options?: {
           .in("artist_id", adIds)
           .limit(AD_INJECTION_FETCH_LIMIT);
         return ((adData ?? []) as PortfolioRowWithType[])
-          .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at)
+          .filter((r) => r.artist && !r.artist.is_hide && !r.artist.deleted_at && isPublicArtistStatus(r.artist.status))
           .map((r) => ({ ...mapPortfolioRow(r), artistType: r.artist?.type_artist ?? "SEMI_PERMANENT" }));
       });
     },

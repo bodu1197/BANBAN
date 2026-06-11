@@ -57,6 +57,7 @@ interface ArtistData {
   business_hours: BusinessHoursMap | null;
   artist_media: ArtistMedia[];
   region: { id: string; name: string } | null;
+  status: string;
 }
 
 export interface ArtistEditClientProps {
@@ -229,7 +230,7 @@ async function saveArtistUpdatesSelf(
 }
 
 async function saveArtistEdits(
-  artist: Readonly<{ id: string; address: string }>,
+  artist: Readonly<{ id: string; address: string; status: string }>,
   formData: ArtistFormData,
   newProfileImage: File[],
   deletedMediaIds: string[],
@@ -241,6 +242,12 @@ async function saveArtistEdits(
 
   const coords = formData.address !== artist.address ? await geocodeAddress(formData.address) : null;
   const updateData = buildArtistUpdateData(formData, coords);
+
+  // 반려(rejected) 상태에서 본인이 수정 저장 → 재신청(pending). DB 트리거가 24h 쿨다운 강제 +
+  // resubmitted_at 자동 기록. (admin 수정은 상태 자동변경 안 함 — 관리자 의도대로 유지)
+  if (!isAdmin && artist.status === "rejected") {
+    updateData.status = "pending";
+  }
 
   if (isAdmin) {
     await saveArtistUpdatesAdmin(artistId, updateData, formData.shop_category_ids);

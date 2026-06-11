@@ -1,5 +1,8 @@
 import { createStaticClient } from "./server";
 
+// 샵 상태 SSOT 는 순수 모듈(@/lib/artist-status)에 위치. 기존 import 경로 호환 위해 re-export.
+export { isPublicArtistStatus, type ArtistStatus } from "@/lib/artist-status";
+
 /** Minimum number of portfolio media for an artist to be visible */
 export const MIN_PORTFOLIO_MEDIA = 5;
 

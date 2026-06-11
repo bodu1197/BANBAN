@@ -71,6 +71,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     .gt("price", 0)
     .is("artists.deleted_at", null)
     .eq("artists.is_hide", false)
+    .not("artists.approved_at", "is", null) // 미승인(pending/rejected) 샵 제외
     .order("likes_count", { ascending: false })
     .limit(SUGGEST_LIMIT);
 
