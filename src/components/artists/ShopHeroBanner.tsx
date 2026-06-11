@@ -3,11 +3,12 @@ import { MapPin, Star } from "lucide-react";
 import type { ArtistWithDetails } from "@/lib/supabase/queries";
 import { ArtistHeroCarouselClient } from "./ArtistHeroCarouselClient";
 import { CollapsibleIntro } from "./CollapsibleIntro";
+import { IntroduceQACards } from "./IntroduceQACards";
 import { ArtistLikeButton } from "./ArtistLikeButton";
 import { STRINGS } from "@/lib/strings";
 import { sanitizeHtmlServerSide } from "@/lib/text-utils";
 import { UNAVAILABLE_PLACEHOLDER, UNAVAILABLE_RATING_LABEL } from "@/lib/ui-placeholders";
-import { parseBusinessHours } from "@/types/artist-form";
+import { parseBusinessHours, parseIntroduceQA } from "@/types/artist-form";
 import { AddressActions } from "./AddressActions";
 import { BusinessHours } from "./BusinessHours";
 
@@ -44,6 +45,30 @@ function deriveShopBannerData(shop: ArtistWithDetails): ShopBannerDerived {
   return { regionName, displayAddress, hasIntroduce, description, sanitizedDescription };
 }
 
+/** introduce_qa(구조화)가 있으면 Q&A 카드, 없으면 기존 평문/레거시 CollapsibleIntro fallback. */
+function ShopIntroSection({ shop, hasIntroduce, description, sanitizedDescription }: Readonly<{
+  shop: ArtistWithDetails;
+  hasIntroduce: boolean;
+  description: string | null;
+  sanitizedDescription: string | null;
+}>): React.ReactElement | null {
+  const qa = parseIntroduceQA(shop.introduce_qa);
+  if (qa && qa.qa.length > 0) {
+    return <IntroduceQACards data={qa} />;
+  }
+  if (hasIntroduce || description) {
+    return (
+      <CollapsibleIntro
+        text={shop.introduce || ""}
+        sanitizedHtml={sanitizedDescription}
+        moreLabel={STRINGS.artist.showMore}
+        lessLabel={STRINGS.artist.showLess}
+      />
+    );
+  }
+  return null;
+}
+
 export function ShopHeroBanner({
   shop,
   heroImages,
@@ -65,14 +90,12 @@ export function ShopHeroBanner({
         reviewCount={reviewCount}
         isLiked={isLiked}
       />
-      {(hasIntroduce || description) ? (
-        <CollapsibleIntro
-          text={shop.introduce || ""}
-          sanitizedHtml={sanitizedDescription}
-          moreLabel={STRINGS.artist.showMore}
-          lessLabel={STRINGS.artist.showLess}
-        />
-      ) : null}
+      <ShopIntroSection
+        shop={shop}
+        hasIntroduce={hasIntroduce}
+        description={description}
+        sanitizedDescription={sanitizedDescription}
+      />
     </section>
   );
 }

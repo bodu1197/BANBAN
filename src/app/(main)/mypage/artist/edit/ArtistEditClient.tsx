@@ -29,8 +29,9 @@ import {
   buildFormLabelsFromDict,
 } from "@/components/artist-form/ArtistFormFields";
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
+import { IntroduceSeoPreview } from "@/components/artist-form/IntroduceSeoPreview";
 import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
-import { parseBusinessHours } from "@/types/artist-form";
+import { parseBusinessHours, parseIntroduceQA } from "@/types/artist-form";
 import type { BusinessHoursMap } from "@/types/artist-form";
 
 interface ArtistMedia {
@@ -52,6 +53,7 @@ interface ArtistData {
   address_detail: string | null;
   region_id: string;
   introduce: string;
+  introduce_qa?: unknown;
   description: string | null;
   profile_image_path: string | null;
   business_hours: BusinessHoursMap | null;
@@ -178,6 +180,7 @@ function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; 
     address: formData.address,
     address_detail: formData.address_detail || null, region_id: formData.region_id,
     introduce: normalizeFancyText(formData.introduce),
+    introduce_qa: formData.introduce_qa,
     description: formData.description ? normalizeFancyText(formData.description) : null,
     business_hours: formData.business_hours,
   };
@@ -284,6 +287,7 @@ export function ArtistEditClient({ artist,
       address_detail: artist.address_detail ?? "",
       region_id: artist.region_id,
       introduce: artist.introduce,
+      introduce_qa: parseIntroduceQA(artist.introduce_qa),
       description: artist.description ?? "",
       shop_category_ids: shopIds,
       bank_holder: "",
@@ -428,9 +432,16 @@ export function ArtistEditClient({ artist,
             <ImageUpload maxLength={1} label={t.profileImageHint} onChange={handleProfileImageChange} defaultImages={existingProfileImage} />
           </div>
 
+          <IntroduceSeoPreview
+            shopName={formData.title}
+            introduce={formData.introduce}
+            region={formData.address}
+            imageCount={existingShopImages.length + newShopImages.length + existingProfileImage.length + newProfileImage.length}
+          />
           <GuidedIntroduce
-            value={formData.introduce}
-            onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
+            initial={formData.introduce_qa}
+            initialText={formData.introduce}
+            onChange={(qa, text) => setFormData((prev) => ({ ...prev, introduce_qa: qa, introduce: text }))}
           />
           <BusinessHoursField
             value={formData.business_hours}

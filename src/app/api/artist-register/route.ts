@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { isHttpUrl } from "@/lib/url-utils";
-import { DAY_KEYS, isDayHours } from "@/types/artist-form";
+import { DAY_KEYS, isDayHours, parseIntroduceQA } from "@/types/artist-form";
 import type { BusinessHoursMap } from "@/types/artist-form";
 import type { Database, Json } from "@/types/database";
 
@@ -19,6 +19,7 @@ interface RegisterBody {
   address_detail: string | null;
   region_id: string;
   introduce: string;
+  introduce_qa?: unknown;
   description: string | null;
   lat: number | null;
   lon: number | null;
@@ -137,6 +138,7 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     address_detail: body.address_detail,
     region_id: body.region_id,
     introduce: body.introduce,
+    introduce_qa: parseIntroduceQA(body.introduce_qa) as unknown as Json,
     description: body.description,
     lat: body.lat,
     lon: body.lon,

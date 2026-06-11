@@ -29,6 +29,7 @@ import {
   buildFormLabelsFromDict,
 } from "@/components/artist-form/ArtistFormFields";
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
+import { IntroduceSeoPreview } from "@/components/artist-form/IntroduceSeoPreview";
 import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
 
 function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, t: { required: string }): string | null {
@@ -180,6 +181,7 @@ export function ArtistRegisterClient({ categories,
           address_detail: formData.address_detail || null,
           region_id: formData.region_id,
           introduce: normalizeFancyText(formData.introduce),
+          introduce_qa: formData.introduce_qa,
           description: formData.description ? normalizeFancyText(formData.description) : null,
           lat: coords?.lat ?? null,
           lon: coords?.lon ?? null,
@@ -271,9 +273,16 @@ export function ArtistRegisterClient({ categories,
             <ImageUpload maxLength={1} label={t.profileImageHint} onChange={(files) => setProfileImage(files.filter((f): f is File => f instanceof File))} />
           </div>
 
+          <IntroduceSeoPreview
+            shopName={formData.title}
+            introduce={formData.introduce}
+            region={formData.address}
+            imageCount={shopImages.length + profileImage.length}
+          />
           <GuidedIntroduce
-            value={formData.introduce}
-            onChange={(v) => setFormData((prev) => ({ ...prev, introduce: v }))}
+            initial={formData.introduce_qa}
+            initialText={formData.introduce}
+            onChange={(qa, text) => setFormData((prev) => ({ ...prev, introduce_qa: qa, introduce: text }))}
           />
           <BusinessHoursField
             value={formData.business_hours}

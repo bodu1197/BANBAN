@@ -7,6 +7,7 @@ import { isSafeStoragePath } from "@/lib/supabase/storage-utils";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
 
 import type { BusinessHoursMap } from "@/types/artist-form";
+import { parseIntroduceQA } from "@/types/artist-form";
 
 interface ArtistPatchBody {
   type_artist?: string;
@@ -19,6 +20,7 @@ interface ArtistPatchBody {
   address_detail?: string | null;
   region_id?: string;
   introduce?: string;
+  introduce_qa?: unknown;
   description?: string | null;
   profile_image_path?: string | null;
   lat?: number | null;
@@ -32,7 +34,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const ALLOWED_ARTIST_FIELDS: ReadonlyArray<keyof ArtistPatchBody> = [
   "type_artist", "title", "contact", "instagram_url", "kakao_url",
   "zipcode", "address", "address_detail", "region_id",
-  "introduce", "description", "profile_image_path", "lat", "lon",
+  "introduce", "introduce_qa", "description", "profile_image_path", "lat", "lon",
   "business_hours",
 ];
 
@@ -87,6 +89,10 @@ async function applyArtistUpdates(
   body: ArtistPatchBody,
 ): Promise<NextResponse | null> {
   const updates = buildArtistUpdates(body);
+  // introduce_qa 는 raw jsonb 주입 방지 — 허용 형식으로 sanitize 후 저장.
+  if (body.introduce_qa !== undefined) {
+    updates.introduce_qa = parseIntroduceQA(body.introduce_qa);
+  }
   if (Object.keys(updates).length > 0) {
     const { error } = await supabase.from("artists").update(updates).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
