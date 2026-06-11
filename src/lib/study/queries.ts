@@ -59,6 +59,17 @@ export async function getStudyBookmarks(userId: string): Promise<string[]> {
   return (data ?? []).map((r) => r.question_id);
 }
 
+/** study_checklist_progress → checked=true 인 item_key 맵({item_key: true}). */
+export async function getStudyChecklist(userId: string): Promise<Record<string, boolean>> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("study_checklist_progress")
+    .select("item_key, checked")
+    .eq("user_id", userId)
+    .eq("checked", true);
+  return Object.fromEntries((data ?? []).map((r) => [r.item_key, true]));
+}
+
 export async function getStudySettings(userId: string): Promise<StudySettings> {
   const supabase = await createClient();
   const { data } = await supabase

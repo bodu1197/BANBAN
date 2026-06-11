@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
 import { getStudyAnswers } from "@/lib/study/queries";
@@ -35,11 +35,25 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
         <SummaryCell label="오늘" value={`${stats.solvedToday}`} />
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
-        <StudyChip href="/mypage/study/mock-exam" label="모의고사"><Timer className="h-4 w-4" aria-hidden="true" /></StudyChip>
-        <StudyChip href="/mypage/study/stats" label="통계"><BarChart3 className="h-4 w-4" aria-hidden="true" /></StudyChip>
-        <StudyChip href="/mypage/study/review" label="복습" badge={review.dueCount}><RotateCcw className="h-4 w-4" aria-hidden="true" /></StudyChip>
-        <StudyChip href="/mypage/study/wrong-answers" label="오답노트" badge={stats.wrongQuestionIds.length}><NotebookPen className="h-4 w-4" aria-hidden="true" /></StudyChip>
+      <div className="mb-5 space-y-3">
+        <div role="group" aria-label="복습·평가">
+          <p className="mb-1.5 text-xs font-semibold text-muted-foreground">복습·평가</p>
+          <div className="flex flex-wrap gap-2">
+            <StudyChip href="/mypage/study/mock-exam" label="모의고사"><Timer className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/stats" label="통계"><BarChart3 className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/review" label="복습" badge={review.dueCount}><RotateCcw className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/wrong-answers" label="오답노트" badge={stats.wrongQuestionIds.length}><NotebookPen className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/bookmarks" label="북마크"><Bookmark className="h-4 w-4" aria-hidden="true" /></StudyChip>
+          </div>
+        </div>
+        <div role="group" aria-label="학습 도구">
+          <p className="mb-1.5 text-xs font-semibold text-muted-foreground">학습 도구</p>
+          <div className="flex flex-wrap gap-2">
+            <StudyChip href="/mypage/study/planner" label="플래너"><CalendarDays className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/glossary" label="용어집"><BookText className="h-4 w-4" aria-hidden="true" /></StudyChip>
+            <StudyChip href="/mypage/study/checklist" label="체크리스트"><ListChecks className="h-4 w-4" aria-hidden="true" /></StudyChip>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3">

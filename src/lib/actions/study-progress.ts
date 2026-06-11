@@ -182,3 +182,24 @@ export async function submitMockExam(
   });
   return error ? { ok: false, error: error.message } : { ok: true, analysis };
 }
+
+// ── 실기 체크리스트 ──
+
+/** 체크리스트 항목 토글(checked upsert). item_key='{group.key}-{index}'. */
+export async function toggleStudyChecklistItem(itemKey: string, checked: boolean): Promise<ActionResult> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { error } = await auth.admin.from("study_checklist_progress").upsert(
+    { user_id: auth.userId, item_key: itemKey, checked, updated_at: new Date().toISOString() },
+    { onConflict: "user_id,item_key" },
+  );
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+/** 체크리스트 전체 초기화(본인 행 삭제). */
+export async function resetStudyChecklist(): Promise<ActionResult> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { error } = await auth.admin.from("study_checklist_progress").delete().eq("user_id", auth.userId);
+  return error ? { success: false, error: error.message } : { success: true };
+}
