@@ -381,6 +381,7 @@ export type Database = {
           bank_account: string | null
           bank_holder: string | null
           bank_name: string | null
+          banner_path: string | null
           business_hours: Json | null
           contact: string
           created_at: string | null
@@ -425,6 +426,7 @@ export type Database = {
           bank_account?: string | null
           bank_holder?: string | null
           bank_name?: string | null
+          banner_path?: string | null
           business_hours?: Json | null
           contact: string
           created_at?: string | null
@@ -469,6 +471,7 @@ export type Database = {
           bank_account?: string | null
           bank_holder?: string | null
           bank_name?: string | null
+          banner_path?: string | null
           business_hours?: Json | null
           contact?: string
           created_at?: string | null
