@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
-import { getStudyProgress } from "@/lib/study/queries";
-import type { SubjectStat } from "@/lib/study/progress";
+import { getStudyAnswers } from "@/lib/study/queries";
+import { computeStats, type SubjectStat } from "@/lib/study/progress";
+import { computeReview } from "@/lib/study/srs";
 import { subjectGlyph } from "@/components/study/subject-icon";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export const dynamic = "force-dynamic";
 export default async function StudyHomePage(): Promise<React.ReactElement> {
   const user = await getUser();
   if (!user) redirect("/login");
-  const stats = await getStudyProgress(user.id);
+  const answers = await getStudyAnswers(user.id);
+  const stats = computeStats(answers);
+  const review = computeReview(answers);
   const statBySubject = new Map(stats.bySubject.map((s) => [s.subject, s]));
 
   return (
@@ -30,6 +33,12 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
         <SummaryCell label="푼 문제" value={`${stats.totalAttempts}`} />
         <SummaryCell label="정답률" value={`${stats.correctRate}%`} />
         <SummaryCell label="오늘" value={`${stats.solvedToday}`} />
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        <StudyChip href="/mypage/study/stats" label="통계"><BarChart3 className="h-4 w-4" aria-hidden="true" /></StudyChip>
+        <StudyChip href="/mypage/study/review" label="복습" badge={review.dueCount}><RotateCcw className="h-4 w-4" aria-hidden="true" /></StudyChip>
+        <StudyChip href="/mypage/study/wrong-answers" label="오답노트" badge={stats.wrongQuestionIds.length}><NotebookPen className="h-4 w-4" aria-hidden="true" /></StudyChip>
       </div>
 
       <div className="space-y-3">
@@ -45,6 +54,22 @@ function SummaryCell({ label, value }: Readonly<{ label: string; value: string }
       <p className="text-lg font-bold tabular-nums text-foreground">{value}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
     </div>
+  );
+}
+
+function StudyChip({ href, label, badge, children }: Readonly<{ href: string; label: string; badge?: number; children: React.ReactNode }>): React.ReactElement {
+  return (
+    <Link
+      href={href}
+      aria-label={badge !== undefined && badge > 0 ? `${label} ${badge}개` : label}
+      className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-brand-primary hover:text-foreground focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {children}
+      {label}
+      {badge !== undefined && badge > 0 ? (
+        <span className="ml-0.5 rounded-full bg-brand-primary px-1.5 text-xs font-bold tabular-nums text-white">{badge}</span>
+      ) : null}
+    </Link>
   );
 }
 

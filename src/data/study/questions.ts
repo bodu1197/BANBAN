@@ -4,42 +4,11 @@
 
 import { GENERATED_QUESTIONS } from './generated-questions'
 import type { Question, SubjectKey, QuestionDifficulty, QuestionType, QuestionSource } from './question-types'
+import { SUBJECTS, SUBJECT_MAP, type SubjectMeta } from './question-types'
 
-// 타입은 question-types.ts(leaf)에 정의 — generated-questions.ts 와의 순환 방지. 재노출로 기존 import 유지.
-export type { Question, SubjectKey, QuestionDifficulty, QuestionType, QuestionSource }
-
-export interface SubjectMeta {
-  key: SubjectKey
-  label: string
-  desc: string
-}
-
-export const SUBJECTS: SubjectMeta[] = [
-  {
-    key: 'hygiene',
-    label: '위생·감염 관리',
-    desc: '멸균법, 의료폐기물, 혈액매개 감염병, 소독제, 개인보호구',
-  },
-  {
-    key: 'law',
-    label: '법규·면허',
-    desc: '문신사법 원칙, 면허·결격사유, 동의·기록, 무면허 시술 금지',
-  },
-  {
-    key: 'ink_material',
-    label: '색소·염료·재료',
-    desc: '색소 안전성, 알레르기, 바늘·카트리지, 보관·관리',
-  },
-  {
-    key: 'anatomy',
-    label: '기초 해부·피부학',
-    desc: '피부 구조와 층, 색소 안착 깊이, 상처 치유, 켈로이드',
-  },
-]
-
-export const SUBJECT_MAP: Record<SubjectKey, SubjectMeta> = Object.fromEntries(
-  SUBJECTS.map((s) => [s.key, s])
-) as Record<SubjectKey, SubjectMeta>
+// 타입·과목메타는 question-types.ts(leaf)에 정의 — 순환 방지 + 클라 번들 경량화. 재노출로 기존 import 유지.
+export type { Question, SubjectKey, QuestionDifficulty, QuestionType, QuestionSource, SubjectMeta }
+export { SUBJECTS, SUBJECT_MAP }
 
 /** 과목 → 약점 복습 시 안내할 교과서 PART id 목록 */
 export const SUBJECT_TO_PARTS: Record<SubjectKey, string[]> = {
