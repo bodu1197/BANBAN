@@ -1,0 +1,125 @@
+"use server";
+
+// 공부방 진도 mutation (Server Action). 패턴: getUser 인증 → studyEntitlement 재검증
+// (layout 게이트 우회 직접호출 차단, defense-in-depth) → createAdminClient(RLS 우회) write.
+import { getUser } from "@/lib/supabase/auth";
+import { createAdminClient } from "@/lib/supabase/server";
+import { studyEntitlement } from "@/lib/study/entitlement";
+import type { SubjectKey } from "@/data/study/questions";
+
+interface ActionResult {
+  success: boolean;
+  error?: string;
+}
+
+const DAILY_GOAL_MIN = 5;
+const DAILY_GOAL_MAX = 200;
+const UNAUTH = "로그인이 필요합니다";
+const LOCKED = "공부방 이용 권한이 없습니다";
+
+type Admin = ReturnType<typeof createAdminClient>;
+type WriteAuth = { ok: true; userId: string; admin: Admin } | { ok: false; error: string };
+
+/** 인증 + 권한(locked 차단). 통과 시 userId + admin client 반환(fail-closed). */
+async function authorizeStudyWrite(): Promise<WriteAuth> {
+  const user = await getUser();
+  if (!user) return { ok: false, error: UNAUTH };
+  const admin = createAdminClient();
+  const [{ data: artist }, { data: settings }] = await Promise.all([
+    admin.from("artists").select("status, approved_at").eq("user_id", user.id).is("deleted_at", null).maybeSingle(),
+    admin.from("study_user_settings").select("trial_started_at").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const trialStartedAt = settings?.trial_started_at ? Date.parse(settings.trial_started_at) : null;
+  const { access } = studyEntitlement(
+    artist ? { status: artist.status, approvedAt: artist.approved_at } : null,
+    trialStartedAt,
+  );
+  if (access === "locked") return { ok: false, error: LOCKED };
+  return { ok: true, userId: user.id, admin };
+}
+
+export async function recordStudyAnswer(questionId: string, subject: SubjectKey, isCorrect: boolean, source = "quiz"): Promise<ActionResult> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { error } = await auth.admin.from("study_user_answers").insert({
+    user_id: auth.userId, question_id: questionId, subject, is_correct: isCorrect, source,
+  });
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+export async function recordStudyAnswersBatch(
+  records: ReadonlyArray<{ questionId: string; subject: SubjectKey; isCorrect: boolean; source?: string }>,
+): Promise<ActionResult> {
+  if (records.length === 0) return { success: true };
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const rows = records.map((r) => ({
+    user_id: auth.userId, question_id: r.questionId, subject: r.subject, is_correct: r.isCorrect, source: r.source ?? "test",
+  }));
+  const { error } = await auth.admin.from("study_user_answers").insert(rows);
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+export async function recordExamSession(input: {
+  questionIds: string[];
+  score: number;
+  total: number;
+  targetDifficulty: number;
+  abilityBefore: number;
+  abilityAfter: number;
+}): Promise<ActionResult> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { data: last } = await auth.admin
+    .from("study_exam_sessions").select("session_no").eq("user_id", auth.userId)
+    .order("session_no", { ascending: false }).limit(1).maybeSingle();
+  const { error } = await auth.admin.from("study_exam_sessions").insert({
+    user_id: auth.userId,
+    session_no: (last?.session_no ?? 0) + 1,
+    score: input.score, total: input.total, target_difficulty: input.targetDifficulty,
+    ability_before: input.abilityBefore, ability_after: input.abilityAfter,
+    question_ids: input.questionIds,
+  });
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+export async function toggleStudyBookmark(questionId: string): Promise<{ success: boolean; bookmarked?: boolean; error?: string }> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { data: existing } = await auth.admin
+    .from("study_user_bookmarks").select("question_id")
+    .eq("user_id", auth.userId).eq("question_id", questionId).maybeSingle();
+  if (existing) {
+    const { error } = await auth.admin.from("study_user_bookmarks").delete().eq("user_id", auth.userId).eq("question_id", questionId);
+    return error ? { success: false, error: error.message } : { success: true, bookmarked: false };
+  }
+  // 더블클릭 경합(동시 insert) → PK 충돌 무시(이미 북마크 = 의도 충족).
+  const { error } = await auth.admin.from("study_user_bookmarks")
+    .upsert({ user_id: auth.userId, question_id: questionId }, { onConflict: "user_id,question_id", ignoreDuplicates: true });
+  return error ? { success: false, error: error.message } : { success: true, bookmarked: true };
+}
+
+export async function setStudyDailyGoal(goal: number): Promise<ActionResult> {
+  const auth = await authorizeStudyWrite();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const clamped = Math.min(DAILY_GOAL_MAX, Math.max(DAILY_GOAL_MIN, Math.round(goal)));
+  const { error } = await auth.admin.from("study_user_settings")
+    .upsert({ user_id: auth.userId, daily_goal: clamped, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  return error ? { success: false, error: error.message } : { success: true };
+}
+
+/** pending 최초 접근 시 7일 체험 시작(1회). 이미 시작됐으면 무변경. layout(P7-3)이 호출.
+ *  권한 게이트 없이 호출 가능 — trial 시작 전엔 entitlement 가 locked 라 닭-달걀 회피. */
+export async function ensureTrialStarted(): Promise<ActionResult> {
+  const user = await getUser();
+  if (!user) return { success: false, error: UNAUTH };
+  const admin = createAdminClient();
+  // pending 샵만 체험 시작. 승인(무제한)·비샵·rejected 는 trial 시계 미설정(상태 오염 방지).
+  const { data: artist } = await admin.from("artists").select("status, approved_at").eq("user_id", user.id).is("deleted_at", null).maybeSingle();
+  if (!artist || artist.approved_at !== null || artist.status !== "pending") return { success: true };
+  const { data: settings } = await admin.from("study_user_settings").select("trial_started_at").eq("user_id", user.id).maybeSingle();
+  if (settings?.trial_started_at) return { success: true };
+  const { error } = await admin.from("study_user_settings")
+    .upsert({ user_id: user.id, trial_started_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  return error ? { success: false, error: error.message } : { success: true };
+}

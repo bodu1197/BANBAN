@@ -84,6 +84,24 @@ const eslintConfig = defineConfig([
       "max-lines-per-function": "off",
     },
   },
+  // 학습 콘텐츠 데이터 파일(문신사 문제은행/교과서). 정적 데이터라
+  // 반복 토픽 태그·선택지 문자열(no-duplicate-string)과 bounded-key 맵 접근
+  // (detect-object-injection)은 규칙 부적합 → 데이터 디렉터리 한정 해제.
+  {
+    files: ["src/data/study/**/*.ts"],
+    rules: {
+      "sonarjs/no-duplicate-string": "off",
+      "security/detect-object-injection": "off",
+    },
+  },
+  // 적응형 출제 엔진(IRT). Record<SubjectKey,number> 구조체를 union key 로 다수 접근 —
+  // bounded(고정 4과목/난이도) key 라 detect-object-injection 은 false positive.
+  {
+    files: ["src/lib/study/adaptive.ts"],
+    rules: {
+      "security/detect-object-injection": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     ".next/**",
