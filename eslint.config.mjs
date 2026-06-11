@@ -102,6 +102,14 @@ const eslintConfig = defineConfig([
       "security/detect-object-injection": "off",
     },
   },
+  // 공부방 UI. array[idx](bounded 루프 인덱스) + Record<union>(선택지 visual state) 접근이 많음 —
+  // user-controlled key 없음(idx/ChoiceVisualState/SubjectKey) → detect-object-injection false positive.
+  {
+    files: ["src/components/study/**/*.tsx"],
+    rules: {
+      "security/detect-object-injection": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     ".next/**",

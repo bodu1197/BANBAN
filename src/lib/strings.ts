@@ -234,6 +234,7 @@ export const STRINGS ={
     "artistRegister": "아티스트 등록",
     "viewMyShop": "내 샵 보기",
     "editArtistProfile": "마이숍 정보 수정",
+    "studyRoom": "문신사 공부방",
     "dashboard": "대시보드",
     "portfolioManage": "포트폴리오 업로드",
     "eventManage": "이벤트 등록",

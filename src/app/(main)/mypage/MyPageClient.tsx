@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   CalendarDays,
   AlertCircle,
+  BookOpen,
 } from "lucide-react";
 import { PointCoinIcon } from "@/components/icons/PointCoinIcon";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,6 +52,7 @@ const userMenuItems: QuickMenuItem[] = [
   { icon: PointCoinIcon, href: "/mypage/points", label: m.pointManage },
   { icon: Heart, href: "/likes", label: m.likedPosts },
   { icon: Star, href: "/mypage/reviews", label: m.myReviews },
+  { icon: BookOpen, href: "/mypage/study", label: m.studyRoom },
   { icon: MessageSquarePlus, href: "/mypage/inquiries", label: m.inquiries },
 ];
 
@@ -59,6 +61,7 @@ const artistMenuItems: QuickMenuItem[] = [
   { icon: Images, href: "/mypage/artist/portfolios", label: m.portfolioManage },
   { icon: Pencil, href: "/mypage/artist/before-after", label: m.beforeAfterManage },
   { icon: GraduationCap, href: "/mypage/artist/courses", label: m.courseManage },
+  { icon: BookOpen, href: "/mypage/study", label: m.studyRoom },
   { icon: ShoppingCart, href: "/mypage/artist/ads/purchase", label: m.adPurchase },
   { icon: BarChart3, href: "/mypage/artist/ads", label: m.adManage },
   { icon: PointCoinIcon, href: "/mypage/points", label: m.pointManage },
