@@ -30,6 +30,7 @@ import {
 } from "@/components/artist-form/ArtistFormFields";
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
 import { IntroduceSeoPreview } from "@/components/artist-form/IntroduceSeoPreview";
+import { ShopBannerPicker } from "@/components/artist-form/ShopBannerPicker";
 import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
 import { parseBusinessHours, parseIntroduceQA } from "@/types/artist-form";
 import type { BusinessHoursMap } from "@/types/artist-form";
@@ -345,7 +346,7 @@ export function ArtistEditClient({ artist,
   const [existingProfileImage, setExistingProfileImage] = useState<Array<{ url: string }>>(() =>
     artist.profile_image_path ? [{ url: getAvatarUrl(artist.profile_image_path) ?? "" }] : []
   );
-  const [existingBannerImage, setExistingBannerImage] = useState<Array<{ url: string }>>(() =>
+  const [existingBannerImage] = useState<Array<{ url: string }>>(() =>
     artist.banner_path ? [{ url: getStorageUrl(artist.banner_path) ?? "" }] : []
   );
   const [newBannerImage, setNewBannerImage] = useState<File[]>([]);
@@ -408,14 +409,6 @@ export function ArtistEditClient({ artist,
     []
   );
 
-  const handleBannerImageChange = useCallback(
-    (files: Array<File | { url: string; id?: string }>) => {
-      setExistingBannerImage(files.filter((f): f is { url: string } => !(f instanceof File)));
-      setNewBannerImage(files.filter((f): f is File => f instanceof File));
-    },
-    []
-  );
-
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     const validationError = validateEditForm(formData, existingShopImages.length, newShopImages.length, existingProfileImage.length, newProfileImage.length, existingBannerImage.length + newBannerImage.length > 0);
@@ -469,10 +462,8 @@ export function ArtistEditClient({ artist,
               <label className="text-sm font-medium">대표 배너 <span className="text-red-500">*</span></label>
               <span className="text-xs text-muted-foreground">{existingBannerImage.length + newBannerImage.length} / 1</span>
             </div>
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-              ⚠ 샵 상단에 크게 노출되는 대표 이미지 1장. 권장 1020 × 340px (가로:세로 3:1 비율)
-            </p>
-            <ImageUpload maxLength={1} label="대표 배너 1장 (3:1 비율로 잘립니다)" onChange={handleBannerImageChange} defaultImages={existingBannerImage} cropAspect={3} />
+            <p className="text-xs text-muted-foreground">샵 상단에 크게 노출되는 대표 이미지 1장 (1020 × 340)</p>
+            <ShopBannerPicker shopName={formData.title} initialUrl={existingBannerImage[0]?.url} onChange={(file) => setNewBannerImage(file ? [file] : [])} />
           </div>
 
           <div className="space-y-2">

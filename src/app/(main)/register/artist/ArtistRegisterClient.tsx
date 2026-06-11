@@ -30,6 +30,7 @@ import {
 } from "@/components/artist-form/ArtistFormFields";
 import { GuidedIntroduce, INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
 import { IntroduceSeoPreview } from "@/components/artist-form/IntroduceSeoPreview";
+import { ShopBannerPicker } from "@/components/artist-form/ShopBannerPicker";
 import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -284,10 +285,8 @@ export function ArtistRegisterClient({ categories,
               <label className="text-sm font-medium">대표 배너 <span className="text-red-500">*</span></label>
               <span className="text-xs text-muted-foreground">{bannerImage.length} / 1</span>
             </div>
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-              ⚠ 샵 상단에 크게 노출되는 대표 이미지 1장. 권장 1020 × 340px (가로:세로 3:1 비율)
-            </p>
-            <ImageUpload maxLength={1} label="대표 배너 1장을 올려주세요 (3:1 비율로 잘립니다)" onChange={(files) => setBannerImage(files.filter((f): f is File => f instanceof File))} cropAspect={3} />
+            <p className="text-xs text-muted-foreground">샵 상단에 크게 노출되는 대표 이미지 1장 (1020 × 340)</p>
+            <ShopBannerPicker shopName={formData.title} onChange={(file) => setBannerImage(file ? [file] : [])} />
           </div>
 
           <div className="space-y-2">
