@@ -25,11 +25,16 @@ function useApprovalList(initial: PendingArtistsResult): {
 
   const load = useCallback(async (page: number, searchTerm: string) => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page) });
-    if (searchTerm) params.set("search", searchTerm);
-    const res = await fetch(`/api/admin/artist-approvals?${params.toString()}`);
-    if (res.ok) setData(await res.json() as PendingArtistsResult);
-    setLoading(false);
+    try {
+      const params = new URLSearchParams({ page: String(page) });
+      if (searchTerm) params.set("search", searchTerm);
+      const res = await fetch(`/api/admin/artist-approvals?${params.toString()}`);
+      if (res.ok) setData(await res.json() as PendingArtistsResult);
+    } catch {
+      /* 네트워크/파싱 오류 — 기존 데이터 유지, 무한 로딩 방지(finally 에서 해제) */
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const setSearch = useCallback((s: string) => { setSearchState(s); void load(1, s); }, [load]);

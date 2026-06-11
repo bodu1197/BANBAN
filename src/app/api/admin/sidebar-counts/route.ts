@@ -46,10 +46,12 @@ async function getPendingArtistCount(): Promise<number> {
 
 async function getDormantArtistCount(): Promise<number> {
   const supabase = createAdminClient();
+  // 휴면은 status='dormant'(artists 에 is_dormant 컬럼 없음 — 기존 버그로 항상 0이던 것 수정).
   const { count } = await supabase
     .from("artists")
     .select("id", { count: "exact", head: true })
-    .eq("is_dormant", true) as CountResult;
+    .eq("status", "dormant")
+    .is("deleted_at", null) as CountResult;
   return count ?? 0;
 }
 

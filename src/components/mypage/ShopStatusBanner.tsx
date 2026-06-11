@@ -20,7 +20,7 @@ export function ShopStatusBanner({ status, rejectReason }: Readonly<ShopStatusBa
           <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
           <div className="min-w-0">
             <p className="font-semibold text-amber-800">샵 승인 대기 중</p>
-            <p className="mt-0.5 text-sm text-amber-700">
+            <p className="mt-0.5 text-sm text-amber-800">
               관리자 검토 후 정식 오픈됩니다. 승인되면 검색·추천에 노출되고 고객이 찾아올 수 있어요.
             </p>
           </div>
