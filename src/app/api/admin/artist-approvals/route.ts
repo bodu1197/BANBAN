@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
-import { fetchPendingArtists } from "@/lib/supabase/artist-approval-queries";
+import { fetchArtistApprovals } from "@/lib/supabase/artist-approval-queries";
 import { notifyUser } from "@/lib/supabase/notification-queries";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
 
@@ -14,9 +14,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const search = (searchParams.get("search") ?? "").trim();
+  const status = searchParams.get("status") === "rejected" ? "rejected" : "pending";
 
   try {
-    const result = await fetchPendingArtists({ page, search });
+    const result = await fetchArtistApprovals({ page, search, status });
     return NextResponse.json(result);
   } catch (e) {
     const message = e instanceof Error ? e.message : "목록 조회 실패";
