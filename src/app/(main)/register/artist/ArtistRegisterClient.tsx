@@ -91,25 +91,6 @@ async function uploadBannerImage(artistId: string, file: File): Promise<void> {
   });
 }
 
-async function uploadShopImages(artistId: string, shopImages: File[]): Promise<void> {
-  for (let i = 0; i < shopImages.length; i++) {
-    const shopForm = new globalThis.FormData();
-    // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
-    shopForm.append("file", shopImages[i]);
-    // 타임스탬프로 cache-busting (샵수정 ArtistEditClient 와 동일 — 재업로드 시 stale-cache 방지).
-    const shopPath = `artists/${artistId}/shop_${i}_${Date.now()}.webp`;
-    const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(shopPath)}`, { method: "PUT", body: shopForm });
-    const shopJson = await shopRes.json() as { success: boolean };
-    if (shopJson.success) {
-      await fetch(ARTIST_MEDIA_API, {
-        method: "POST",
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ artistId, storagePath: shopPath, type: "image", orderIndex: i }),
-      });
-    }
-  }
-}
-
 async function syncArtistCategories(artistId: string, categoryIds: string[]): Promise<void> {
   if (categoryIds.length === 0) return;
   await fetch("/api/artist-register", {
@@ -131,7 +112,6 @@ export function ArtistRegisterClient({ categories,
 
   const [formData, setFormData] = useState<ArtistFormData>(INITIAL_FORM_DATA);
   const [bannerImage, setBannerImage] = useState<File[]>([]);
-  const [shopImages, setShopImages] = useState<File[]>([]);
   const [profileImage, setProfileImage] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -229,9 +209,6 @@ export function ArtistRegisterClient({ categories,
         await uploadBannerImage(artistId, bannerImage[0]);
       }
 
-      // 샵 갤러리(0~10장) → artist_media
-      await uploadShopImages(artistId, shopImages);
-
       await syncArtistCategories(artistId, formData.shop_category_ids);
 
       // 일반 회원이 시술사로 전환된 경우 profiles.role='artist' 동기화.
@@ -291,15 +268,6 @@ export function ArtistRegisterClient({ categories,
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">샵 갤러리 <span className="text-xs font-normal text-muted-foreground">(선택)</span></label>
-              <span className="text-xs text-muted-foreground">{shopImages.length} / 10</span>
-            </div>
-            <p className="text-xs text-muted-foreground">인테리어·작업 공간·시술 사진 등 추가 사진 (최대 10장)</p>
-            <ImageUpload maxLength={10} label={t.shopImagesHint} onChange={(files) => setShopImages(files.filter((f): f is File => f instanceof File))} cropAspect={3} />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
               <label className="text-sm font-medium">{t.profileImage} <span className="text-red-500">*</span></label>
               <span className="text-xs text-muted-foreground">{profileImage.length} / 1</span>
             </div>
@@ -310,7 +278,7 @@ export function ArtistRegisterClient({ categories,
             shopName={formData.title}
             introduce={formData.introduce}
             region={formData.address}
-            imageCount={shopImages.length + profileImage.length}
+            imageCount={profileImage.length}
           />
           <GuidedIntroduce
             initial={formData.introduce_qa}

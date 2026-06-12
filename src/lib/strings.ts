@@ -435,8 +435,6 @@ export const STRINGS ={
     "addressDetailPlaceholder": "상세주소",
     "region": "지역",
     "regionSelect": "지역 카테고리 선택",
-    "shopImages": "샵 메인배너",
-    "shopImagesHint": "권장 사이즈: 1020 × 340px (가로:세로 3:1 비율)",
     "shopBannerSizeError": "배너 이미지는 1020×340px (가로:세로 3:1 비율)로 업로드해주세요.\n현재 이미지: {width}×{height}px",
     "profileImage": "샵 대표 사진",
     "profileImageHint": "샵 로고·시그니처 또는 본인 사진을 올려주세요. (회원 가입 사진과 별개로 샵 대표 이미지로 표시됩니다)",

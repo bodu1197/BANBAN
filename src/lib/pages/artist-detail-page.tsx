@@ -150,10 +150,11 @@ function buildArtistDetailView(
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
   const artistGalleryImages = extractArtistGalleryImages(artist.artist_media);
   const portfolioImages = extractPortfolioImages(portfolios);
-  // 대표 배너(banner_path)를 hero 맨 앞에. 배너·갤러리 둘 다 없으면 빈 배열 →
-  // ShopHeroBanner 의 HeroCarousel 이 '이미지 없음' placeholder 표시(반언니 제공 디폴트 배너 폐지 — 미완성 샵 노출).
+  // 샵갤러리 폐지: hero 는 대표 배너(banner_path) 1장만. 배너 없으면 빈 배열 →
+  // ShopHeroBanner 의 HeroCarousel 이 '이미지 없음' placeholder 표시(미완성 샵 노출 → 배너 업로드 압박).
+  // (기존 갤러리는 migration 20260613000200 으로 첫 이미지가 banner_path 로 이관됨.)
   const bannerImage = artist.banner_path ? getArtistMediaUrl(artist.banner_path) : null;
-  const heroImages = bannerImage ? [bannerImage, ...artistGalleryImages] : artistGalleryImages;
+  const heroImages = bannerImage ? [bannerImage] : [];
 
   const reviewCount = reviews.length;
   const ratingAvg = reviewCount > 0

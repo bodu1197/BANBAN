@@ -5,15 +5,12 @@ import { isSafeStoragePath } from "@/lib/supabase/storage-utils";
 
 interface PostBody {
   artistId: string;
-  storagePath?: string;
-  type?: string;
-  orderIndex?: number;
   profileImagePath?: string;
   bannerPath?: string;
 }
 
 /**
- * Update profile image and/or insert artist_media row
+ * Update profile image and/or banner path. (샵갤러리(artist_media) 업로드는 폐지 — 배너로 일원화.)
  */
 async function handleMediaUpsert(admin: ReturnType<typeof createAdminClient>, body: PostBody): Promise<NextResponse | null> {
   if (body.profileImagePath !== undefined) {
@@ -28,21 +25,6 @@ async function handleMediaUpsert(admin: ReturnType<typeof createAdminClient>, bo
       .from("artists")
       .update({ banner_path: body.bannerPath })
       .eq("id", body.artistId);
-  }
-
-  if (body.storagePath) {
-    const { error: mediaError } = await admin
-      .from("artist_media")
-      .insert({
-        artist_id: body.artistId,
-        storage_path: body.storagePath,
-        type: (body.type ?? "image") as "image" | "video",
-        order_index: body.orderIndex ?? 0,
-      });
-
-    if (mediaError) {
-      return NextResponse.json({ error: mediaError.message }, { status: 500 });
-    }
   }
 
   return null;
@@ -63,9 +45,6 @@ function validatePostBody(body: PostBody): NextResponse | null {
   }
   if (body.bannerPath && !isSafeStoragePath(body.bannerPath)) {
     return NextResponse.json({ error: "유효하지 않은 배너 경로입니다." }, { status: 400 });
-  }
-  if (body.storagePath && !isSafeStoragePath(body.storagePath)) {
-    return NextResponse.json({ error: "유효하지 않은 이미지 경로입니다." }, { status: 400 });
   }
 
   return null;

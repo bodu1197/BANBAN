@@ -74,10 +74,6 @@ export interface ArtistEditClientProps {
 
 // --- Helper functions ---
 
-function mediaEndpoint(isAdmin: boolean): string {
-  return isAdmin ? "/api/admin/artist-media" : "/api/artist-media";
-}
-
 async function patchArtistProfileImage(artistId: string, path: string, isAdmin: boolean): Promise<void> {
   if (isAdmin) {
     const res = await fetch(`/api/admin/artists/${artistId}`, {
@@ -143,43 +139,6 @@ async function uploadBannerImage(artistId: string, file: File, isAdmin: boolean)
   await patchArtistBanner(artistId, path, isAdmin);
 }
 
-async function deleteArtistMedia(artistId: string, mediaIds: string[], isAdmin: boolean): Promise<void> {
-  const res = await fetch(mediaEndpoint(isAdmin), {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId, mediaIds }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({})) as { error?: string };
-    throw new Error(err.error ?? "갤러리 삭제 실패");
-  }
-}
-
-async function uploadShopImages(artistId: string, newImages: File[], startIndex: number, isAdmin: boolean): Promise<void> {
-  for (let i = 0; i < newImages.length; i++) {
-    const shopForm = new globalThis.FormData();
-    // eslint-disable-next-line security/detect-object-injection -- iterating within array bounds
-    shopForm.append("file", newImages[i]);
-    const path = `artists/${artistId}/shop_${startIndex + i}_${Date.now()}.webp`;
-    const shopRes = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: shopForm });
-    if (!shopRes.ok) {
-      const err = await shopRes.json().catch(() => ({})) as { error?: string };
-      throw new Error(err.error ?? "이미지 업로드 실패");
-    }
-    const shopJson = await shopRes.json() as { success: boolean };
-    if (!shopJson.success) throw new Error("이미지 업로드 실패");
-    const mediaRes = await fetch(mediaEndpoint(isAdmin), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ artistId, storagePath: path, type: "image", orderIndex: startIndex + i }),
-    });
-    if (!mediaRes.ok) {
-      const err = await mediaRes.json().catch(() => ({})) as { error?: string };
-      throw new Error(err.error ?? "갤러리 추가 실패");
-    }
-  }
-}
-
 function hasRequiredFields(formData: ArtistFormData, hasHeroImage: boolean, hasProfileImage: boolean): boolean {
   const requiredTexts = [formData.title, formData.contact, formData.address, formData.introduce];
   return requiredTexts.every((v) => v.trim().length > 0) &&
@@ -188,16 +147,13 @@ function hasRequiredFields(formData: ArtistFormData, hasHeroImage: boolean, hasP
 
 function validateEditForm(
   formData: ArtistFormData,
-  existingShopCount: number,
-  newShopCount: number,
   existingProfileCount: number,
   newProfileCount: number,
   hasBanner: boolean,
 ): string | null {
-  // hero 가 비지 않도록 대표배너 또는 갤러리 중 하나는 필요(레거시 갤러리만 있는 샵도 통과).
-  const hasHeroImage = hasBanner || existingShopCount + newShopCount > 0;
-  if (!hasHeroImage) return "대표 배너 또는 갤러리 사진을 1장 이상 등록해 주세요.";
-  if (!hasRequiredFields(formData, hasHeroImage, existingProfileCount + newProfileCount > 0)) {
+  // 샵갤러리 폐지 → 대표 배너(banner_path) 필수.
+  if (!hasBanner) return "대표 배너 이미지를 1장 등록해 주세요.";
+  if (!hasRequiredFields(formData, hasBanner, existingProfileCount + newProfileCount > 0)) {
     return STRINGS.artistRegister.required;
   }
   const introduceLen = formData.introduce.trim().length;
@@ -275,9 +231,6 @@ async function saveArtistEdits(
   formData: ArtistFormData,
   newProfileImage: File[],
   newBannerImage: File[],
-  deletedMediaIds: string[],
-  newShopImages: File[],
-  existingShopCount: number,
   isAdmin: boolean,
 ): Promise<void> {
   const artistId = artist.id;
@@ -299,8 +252,6 @@ async function saveArtistEdits(
 
   if (newProfileImage.length > 0) await uploadProfileImage(artistId, newProfileImage[0], isAdmin);
   if (newBannerImage.length > 0) await uploadBannerImage(artistId, newBannerImage[0], isAdmin);
-  if (deletedMediaIds.length > 0) await deleteArtistMedia(artistId, deletedMediaIds, isAdmin);
-  if (newShopImages.length > 0) await uploadShopImages(artistId, newShopImages, existingShopCount, isAdmin);
 }
 
 export function ArtistEditClient({ artist,
@@ -337,12 +288,6 @@ export function ArtistEditClient({ artist,
     };
   });
 
-  const [existingShopImages, setExistingShopImages] = useState<Array<{ url: string; id: string }>>(() =>
-    artist.artist_media
-      .filter((m) => m.type === "image")
-      .sort((a, b) => a.order_index - b.order_index)
-      .map((m) => ({ url: getStorageUrl(m.storage_path) ?? "", id: m.id }))
-  );
   const [existingProfileImage, setExistingProfileImage] = useState<Array<{ url: string }>>(() =>
     artist.profile_image_path ? [{ url: getAvatarUrl(artist.profile_image_path) ?? "" }] : []
   );
@@ -350,9 +295,7 @@ export function ArtistEditClient({ artist,
     artist.banner_path ? [{ url: getStorageUrl(artist.banner_path) ?? "" }] : []
   );
   const [newBannerImage, setNewBannerImage] = useState<File[]>([]);
-  const [newShopImages, setNewShopImages] = useState<File[]>([]);
   const [newProfileImage, setNewProfileImage] = useState<File[]>([]);
-  const [deletedMediaIds, setDeletedMediaIds] = useState<string[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -388,19 +331,6 @@ export function ArtistEditClient({ artist,
     }
   };
 
-  const handleShopImagesChange = useCallback(
-    (files: Array<File | { url: string; id?: string }>) => {
-      const existingImgs = files.filter((f): f is { url: string; id?: string } => !(f instanceof File));
-      const newFiles = files.filter((f): f is File => f instanceof File);
-      const currentExistingIds = existingImgs.map((img) => img.id).filter(Boolean) as string[];
-      const removedIds = existingShopImages.filter((img) => !currentExistingIds.includes(img.id)).map((img) => img.id);
-      if (removedIds.length > 0) setDeletedMediaIds((prev) => [...prev, ...removedIds]);
-      setExistingShopImages(existingImgs as Array<{ url: string; id: string }>);
-      setNewShopImages(newFiles);
-    },
-    [existingShopImages]
-  );
-
   const handleProfileImageChange = useCallback(
     (files: Array<File | { url: string; id?: string }>) => {
       setExistingProfileImage(files.filter((f): f is { url: string } => !(f instanceof File)));
@@ -411,7 +341,7 @@ export function ArtistEditClient({ artist,
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    const validationError = validateEditForm(formData, existingShopImages.length, newShopImages.length, existingProfileImage.length, newProfileImage.length, existingBannerImage.length + newBannerImage.length > 0);
+    const validationError = validateEditForm(formData, existingProfileImage.length, newProfileImage.length, existingBannerImage.length + newBannerImage.length > 0);
     if (validationError) {
       globalThis.alert(validationError);
       return;
@@ -419,7 +349,7 @@ export function ArtistEditClient({ artist,
 
     setIsSubmitting(true);
     try {
-      await saveArtistEdits(artist, formData, newProfileImage, newBannerImage, deletedMediaIds, newShopImages, existingShopImages.length, isAdmin);
+      await saveArtistEdits(artist, formData, newProfileImage, newBannerImage, isAdmin);
       // ISR/CDN 캐시 즉시 무효화 — 인기 아티스트는 정적 prerender + revalidate 만으로는 한참 반영 안 됨
       // 실패해도 저장은 이미 성공이므로 silent 처리 (다음 revalidate 시점에 자연스레 갱신)
       await revalidateArtistPage(artist.id).catch((err: unknown) => {
@@ -468,15 +398,6 @@ export function ArtistEditClient({ artist,
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">샵 갤러리 <span className="text-xs font-normal text-muted-foreground">(선택)</span></label>
-              <span className="text-xs text-muted-foreground">{existingShopImages.length + newShopImages.length} / 10</span>
-            </div>
-            <p className="text-xs text-muted-foreground">인테리어·작업 공간·시술 사진 등 추가 사진 (최대 10장)</p>
-            <ImageUpload maxLength={10} label={t.shopImagesHint} onChange={handleShopImagesChange} defaultImages={existingShopImages} cropAspect={3} />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
               <label className="text-sm font-medium">{t.profileImage} <span className="text-red-500">*</span></label>
               <span className="text-xs text-muted-foreground">{existingProfileImage.length + newProfileImage.length} / 1</span>
             </div>
@@ -487,7 +408,7 @@ export function ArtistEditClient({ artist,
             shopName={formData.title}
             introduce={formData.introduce}
             region={formData.address}
-            imageCount={existingShopImages.length + newShopImages.length + existingProfileImage.length + newProfileImage.length}
+            imageCount={existingProfileImage.length + newProfileImage.length}
           />
           <GuidedIntroduce
             initial={formData.introduce_qa}
