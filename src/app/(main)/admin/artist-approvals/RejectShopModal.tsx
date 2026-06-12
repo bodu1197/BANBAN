@@ -59,7 +59,51 @@ function ReasonChips({ selected, onToggle }: Readonly<{ selected: string[]; onTo
   );
 }
 
-// 상태 초기화는 부모가 key={target.id} 로 리마운트 → useEffect 불필요.
+function ReasonNote({ note, onChange, charCount, overLimit }: Readonly<{
+  note: string; onChange: (v: string) => void; charCount: number; overLimit: boolean;
+}>): React.ReactElement {
+  return (
+    <div>
+      <label htmlFor="reject-note" className="mb-1 block text-xs font-semibold text-zinc-400">추가 안내 (선택)</label>
+      <textarea
+        id="reject-note"
+        value={note}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        placeholder="구체적인 개선 방법을 적어주면 신청자가 빠르게 보완할 수 있어요."
+        className="w-full resize-none rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <p className={`mt-1 text-right text-[11px] tabular-nums ${overLimit ? "text-red-400" : "text-zinc-500"}`}>{charCount}/{MAX_REASON_LEN}</p>
+    </div>
+  );
+}
+
+function RejectActions({ submitting, canSubmit, onCancel, onSubmit }: Readonly<{
+  submitting: boolean; canSubmit: boolean; onCancel: () => void; onSubmit: () => void;
+}>): React.ReactElement {
+  return (
+    <DialogFooter>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={submitting}
+        className="inline-flex h-10 items-center justify-center rounded-lg border border-white/15 px-4 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      >
+        취소
+      </button>
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={!canSubmit}
+        className="inline-flex h-10 items-center justify-center rounded-lg bg-red-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-600 focus-visible:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+      >
+        {submitting ? "처리 중…" : "반려하기"}
+      </button>
+    </DialogFooter>
+  );
+}
+
+// 안정 마운트 controlled 패턴(닫기 시 reset) — Radix Dialog 표준 사용.
 export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
   shop: RejectTarget | null;
   onClose: () => void;
@@ -73,6 +117,23 @@ export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
   const reason = buildReason(selected, note);
   const overLimit = reason.length > MAX_REASON_LEN;
   const canSubmit = reason.trim().length > 0 && !overLimit && !submitting;
+
+  function reset(): void {
+    setSelected([]);
+    setNote("");
+    setError(null);
+    setSubmitting(false);
+  }
+
+  function close(): void {
+    reset();
+    onClose();
+  }
+
+  // 안정 마운트 controlled 패턴 — Esc/백드롭 닫기 시 호출(제출 중엔 무시).
+  function handleOpenChange(open: boolean): void {
+    if (!open && !submitting) close();
+  }
 
   function toggle(r: string): void {
     setSelected((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
@@ -89,14 +150,22 @@ export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
     }
     setSubmitting(true);
     setError(null);
-    const ok = await onConfirm(reason);
+    let ok = false;
+    try {
+      ok = await onConfirm(reason);
+    } catch {
+      // 네트워크 오류 등으로 onConfirm 이 reject → 버튼 고착 방지(submitting 해제 후 복구)
+      setSubmitting(false);
+      setError("네트워크 오류로 반려에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    if (ok) { close(); return; }
     setSubmitting(false);
-    if (ok) onClose();
-    else setError("반려 처리에 실패했습니다. 이미 처리되었을 수 있습니다.");
+    setError("반려 처리에 실패했습니다. 이미 처리되었을 수 있습니다.");
   }
 
   return (
-    <Dialog open={shop !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={shop !== null} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-zinc-900 text-white sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-white">{shop ? `'${shop.title}' 샵 반려` : "샵 반려"}</DialogTitle>
@@ -106,40 +175,11 @@ export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
         </DialogHeader>
 
         <ReasonChips selected={selected} onToggle={toggle} />
-
-        <div>
-          <label htmlFor="reject-note" className="mb-1 block text-xs font-semibold text-zinc-400">추가 안내 (선택)</label>
-          <textarea
-            id="reject-note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            placeholder="구체적인 개선 방법을 적어주면 신청자가 빠르게 보완할 수 있어요."
-            className="w-full resize-none rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-          <p className={`mt-1 text-right text-[11px] tabular-nums ${overLimit ? "text-red-400" : "text-zinc-500"}`}>{reason.length}/{MAX_REASON_LEN}</p>
-        </div>
+        <ReasonNote note={note} onChange={setNote} charCount={reason.length} overLimit={overLimit} />
 
         {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
 
-        <DialogFooter>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-white/15 px-4 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            onClick={() => void submit()}
-            disabled={!canSubmit}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-red-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-600 focus-visible:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-          >
-            {submitting ? "처리 중…" : "반려하기"}
-          </button>
-        </DialogFooter>
+        <RejectActions submitting={submitting} canSubmit={canSubmit} onCancel={close} onSubmit={() => void submit()} />
       </DialogContent>
     </Dialog>
   );

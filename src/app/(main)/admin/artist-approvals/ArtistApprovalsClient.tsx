@@ -195,7 +195,6 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: PendingAr
         : <ApprovalTable artists={data.artists} onRefetch={refetch} onRequestReject={(a) => setRejectTarget({ id: a.id, title: a.title })} />}
       <AdminPagination currentPage={data.page} total={data.total} limit={data.limit} onPageChange={setPage} />
       <RejectShopModal
-        key={rejectTarget?.id ?? "none"}
         shop={rejectTarget}
         onClose={() => setRejectTarget(null)}
         onConfirm={handleConfirmReject}
