@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers, GraduationCap, ChevronRight } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers, GraduationCap, ChevronRight, Newspaper } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
 import { getStudyAnswers } from "@/lib/study/queries";
@@ -9,7 +9,9 @@ import { computeStats, type SubjectStat } from "@/lib/study/progress";
 import { computeReview } from "@/lib/study/srs";
 import { daysUntilExam } from "@/lib/study/exam";
 import { CURRICULUM } from "@/data/study/curriculum";
+import { getPublishedNews } from "@/lib/study-news/store";
 import { subjectGlyph } from "@/components/study/subject-icon";
+import { StudyNewsRow } from "@/components/study/StudyNewsRow";
 
 export const metadata: Metadata = {
   title: "문신사 공부방",
@@ -21,7 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function StudyHomePage(): Promise<React.ReactElement> {
   const user = await getUser();
   if (!user) redirect("/login");
-  const answers = await getStudyAnswers(user.id);
+  const [answers, news] = await Promise.all([getStudyAnswers(user.id), getPublishedNews(5)]);
   const stats = computeStats(answers);
   const review = computeReview(answers);
   const statBySubject = new Map(stats.bySubject.map((s) => [s.subject, s]));
@@ -82,6 +84,18 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
           </div>
         </div>
       </div>
+
+      {news.length > 0 ? (
+        <section aria-label="최신 뉴스" className="mb-5">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 text-sm font-bold"><Newspaper className="h-4 w-4 text-brand-primary" aria-hidden="true" /> 최신 뉴스</h2>
+            <Link href="/study-news" className="text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">전체 보기 →</Link>
+          </div>
+          <ul className="space-y-2">
+            {news.map((n) => <StudyNewsRow key={n.slug} item={n} compact />)}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="space-y-3">
         {SUBJECTS.map((s) => <SubjectCard key={s.key} subject={s} stat={statBySubject.get(s.key)} />)}
