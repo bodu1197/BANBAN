@@ -24,11 +24,6 @@ import { getUser } from "@/lib/supabase/auth";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import { parseBusinessHours } from "@/types/artist-form";
 
-const DEFAULT_SHOP_BANNERS = [
-  "/images/defaults/shop-banner-1.jpg",
-  "/images/defaults/shop-banner-2.jpg",
-];
-
 /** OG/대표 이미지 우선순위: 배너 → 갤러리 첫장 → 프로필 아바타. */
 function resolveArtistOgImage(artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>): string | null {
   const bannerImage = artist.banner_path ? getArtistMediaUrl(artist.banner_path) : null;
@@ -155,10 +150,10 @@ function buildArtistDetailView(
   const avatarUrl = getAvatarUrl(artist.profile_image_path ?? null);
   const artistGalleryImages = extractArtistGalleryImages(artist.artist_media);
   const portfolioImages = extractPortfolioImages(portfolios);
-  // 대표 배너(banner_path)를 hero 맨 앞에. 레거시(배너 없음)는 기존 갤러리만 — 무회귀.
+  // 대표 배너(banner_path)를 hero 맨 앞에. 배너·갤러리 둘 다 없으면 빈 배열 →
+  // ShopHeroBanner 의 HeroCarousel 이 '이미지 없음' placeholder 표시(반언니 제공 디폴트 배너 폐지 — 미완성 샵 노출).
   const bannerImage = artist.banner_path ? getArtistMediaUrl(artist.banner_path) : null;
-  const heroSource = bannerImage ? [bannerImage, ...artistGalleryImages] : artistGalleryImages;
-  const heroImages = heroSource.length > 0 ? heroSource : DEFAULT_SHOP_BANNERS;
+  const heroImages = bannerImage ? [bannerImage, ...artistGalleryImages] : artistGalleryImages;
 
   const reviewCount = reviews.length;
   const ratingAvg = reviewCount > 0
