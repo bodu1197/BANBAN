@@ -6,6 +6,7 @@ import { isLegacyNumericId, findArtistByLegacyId } from "@/lib/supabase/legacy-r
 import {
   fetchArtistById,
   fetchOwnArtistForPreview,
+  fetchArtistForAdminPreview,
   fetchPortfoliosByArtist,
   fetchReviewsByArtist,
   fetchBeforeAfterByArtist,
@@ -177,15 +178,21 @@ function buildArtistDetailView(
   return { heroImages, portfolioImages, reviewCount, ratingAvg, artistJsonLd, breadcrumbJsonLd };
 }
 
-function PreviewBanner(): React.ReactElement {
+interface PreviewConfig {
+  message: string;
+  backHref: string;
+  backLabel: string;
+}
+
+function PreviewBanner({ message, backHref, backLabel }: Readonly<PreviewConfig>): React.ReactElement {
   return (
     <div className="sticky top-0 z-[60] flex items-center justify-between gap-2 border-b border-amber-300 bg-amber-50 px-4 py-2.5">
-      <p className="text-sm font-medium text-amber-800">비공개 미리보기 · 관리자 승인 후 공개됩니다</p>
+      <p className="text-sm font-medium text-amber-800">{message}</p>
       <Link
-        href="/mypage"
+        href={backHref}
         className="shrink-0 text-xs font-semibold text-amber-700 underline transition-colors hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        마이페이지
+        {backLabel}
       </Link>
     </div>
   );
@@ -195,9 +202,10 @@ function PreviewBanner(): React.ReactElement {
 async function renderArtistDetailContent(
   id: string,
   artist: NonNullable<Awaited<ReturnType<typeof fetchArtistById>>>,
-  opts?: { isPreview?: boolean },
+  opts?: { preview?: PreviewConfig },
 ): Promise<React.ReactElement> {
-  const isPreview = opts?.isPreview === true;
+  const preview = opts?.preview;
+  const isPreview = preview !== undefined;
 
   const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos, events] = await Promise.all([
     fetchPortfoliosByArtist(id, { limit: 50 }),
@@ -213,7 +221,7 @@ async function renderArtistDetailContent(
 
   return (
     <div className="mx-auto w-full max-w-[1024px] pb-20 md:pb-0">
-      {isPreview && <PreviewBanner />}
+      {preview && <PreviewBanner {...preview} />}
       {/* 비공개 미리보기에는 JSON-LD 미출력(색인 대상 아님). 공개 페이지만 구조화 데이터 노출. */}
       {!isPreview && (
         <>
@@ -312,5 +320,25 @@ export async function renderOwnArtistPreviewPage(): Promise<React.ReactElement> 
   const artist = await fetchOwnArtistForPreview(user.id);
   if (!artist) redirect("/register/artist");
 
-  return renderArtistDetailContent(artist.id, artist, { isPreview: true });
+  return renderArtistDetailContent(artist.id, artist, {
+    preview: { message: "비공개 미리보기 · 관리자 승인 후 공개됩니다", backHref: "/mypage", backLabel: "마이페이지" },
+  });
+}
+
+/**
+ * 관리자 검수 미리보기(/admin-shop-preview/[id]).
+ * fetchArtistForAdminPreview 가 status 무관 단건 조회 → pending/rejected 샵도 전체 렌더.
+ * 호출 라우트가 isCurrentUserAdmin 게이트(미관리자 notFound) 선행 → 비공개 샵 노출 차단.
+ */
+export async function renderAdminArtistPreviewPage(id: string): Promise<React.ReactElement> {
+  const artist = await fetchArtistForAdminPreview(id);
+  if (!artist) notFound();
+
+  return renderArtistDetailContent(artist.id, artist, {
+    preview: {
+      message: "관리자 검수 미리보기 · 승인 전 비공개 상태입니다",
+      backHref: "/admin/artist-approvals",
+      backLabel: "승인 대기 목록",
+    },
+  });
 }

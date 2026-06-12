@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { BadgeCheck, XCircle, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, XCircle, RefreshCw, Eye } from "lucide-react";
 
 import {
   AdminSearchBar,
@@ -12,6 +13,7 @@ import {
   AdminPageHeader,
 } from "@/components/admin/admin-shared";
 import type { PendingArtistItem, PendingArtistsResult } from "@/lib/supabase/artist-approval-queries";
+import { RejectShopModal, type RejectTarget } from "./RejectShopModal";
 
 // ─── Data Hook (인터랙션 기반 페칭 — useEffect 미사용) ──────
 
@@ -71,6 +73,8 @@ function formatDate(v: string | null): string {
   return new Date(v).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" });
 }
 
+const ACTION_BTN = "flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 // ─── Table Row ──────────────────────────────────────────
 
 function ApprovalRow({ artist, onApprove, onReject }: Readonly<{
@@ -89,7 +93,7 @@ function ApprovalRow({ artist, onApprove, onReject }: Readonly<{
         </div>
         <div className="mt-0.5 text-xs text-zinc-500">{artist.nickname}</div>
         {artist.prevRejectReason && (
-          <div className="mt-1 text-[11px] text-red-400">이전 반려: {artist.prevRejectReason}</div>
+          <div className="mt-1 whitespace-pre-line text-[11px] text-red-400">이전 반려: {artist.prevRejectReason}</div>
         )}
       </td>
       <td className="px-3 py-3 text-sm text-zinc-400">{artist.contact}</td>
@@ -99,14 +103,23 @@ function ApprovalRow({ artist, onApprove, onReject }: Readonly<{
       </td>
       <td className="px-3 py-3 text-sm text-zinc-400">{formatDate(artist.createdAt)}</td>
       <td className="px-3 py-3">
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
+          <Link
+            href={`/admin-shop-preview/${artist.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${artist.title} 샵 미리보기 (새 탭에서 열림)`}
+            className={`${ACTION_BTN} text-sky-400 hover:bg-sky-500/10 focus-visible:bg-sky-500/10`}
+          >
+            <Eye className="h-3.5 w-3.5" aria-hidden="true" /> 샵 보기
+          </Link>
           <button type="button" onClick={onApprove} aria-label={`${artist.title} 샵 승인`}
-            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-green-400 transition-colors hover:bg-green-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-green-500/10">
-            <BadgeCheck className="h-3.5 w-3.5" /> 승인
+            className={`${ACTION_BTN} text-green-400 hover:bg-green-500/10 focus-visible:bg-green-500/10`}>
+            <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" /> 승인
           </button>
           <button type="button" onClick={onReject} aria-label={`${artist.title} 샵 반려`}
-            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-400 transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-red-500/10">
-            <XCircle className="h-3.5 w-3.5" /> 반려
+            className={`${ACTION_BTN} text-red-400 hover:bg-red-500/10 focus-visible:bg-red-500/10`}>
+            <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> 반려
           </button>
         </div>
       </td>
@@ -116,24 +129,14 @@ function ApprovalRow({ artist, onApprove, onReject }: Readonly<{
 
 // ─── Table ──────────────────────────────────────────────
 
-function ApprovalTable({ artists, onRefetch }: Readonly<{
-  artists: PendingArtistItem[]; onRefetch: () => void;
+function ApprovalTable({ artists, onRefetch, onRequestReject }: Readonly<{
+  artists: PendingArtistItem[]; onRefetch: () => void; onRequestReject: (a: PendingArtistItem) => void;
 }>): React.ReactElement {
   const handleApprove = async (a: PendingArtistItem): Promise<void> => {
     if (!globalThis.confirm(`"${a.title}" 샵을 승인하시겠습니까? 승인 즉시 검색·추천에 노출됩니다.`)) return;
     const ok = await approveArtist(a.id);
     if (ok) onRefetch();
     else globalThis.alert("승인에 실패했습니다. 이미 처리되었을 수 있습니다.");
-  };
-
-  const handleReject = async (a: PendingArtistItem): Promise<void> => {
-    const reason = globalThis.prompt(`"${a.title}" 샵을 반려합니다. 반려 사유를 입력해주세요. (신청자에게 전달됩니다)`);
-    if (reason === null) return; // 취소
-    const trimmed = reason.trim();
-    if (!trimmed) { globalThis.alert("반려 사유를 입력해주세요."); return; }
-    const ok = await rejectArtist(a.id, trimmed);
-    if (ok) onRefetch();
-    else globalThis.alert("반려에 실패했습니다. 이미 처리되었을 수 있습니다.");
   };
 
   if (artists.length === 0) {
@@ -159,7 +162,7 @@ function ApprovalTable({ artists, onRefetch }: Readonly<{
               key={a.id}
               artist={a}
               onApprove={() => void handleApprove(a)}
-              onReject={() => void handleReject(a)}
+              onReject={() => onRequestReject(a)}
             />
           ))}
         </tbody>
@@ -172,17 +175,31 @@ function ApprovalTable({ artists, onRefetch }: Readonly<{
 
 export function ArtistApprovalsClient({ initial }: Readonly<{ initial: PendingArtistsResult }>): React.ReactElement {
   const { data, loading, search, setSearch, setPage, refetch } = useApprovalList(initial);
+  const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null);
+
+  const handleConfirmReject = useCallback(async (reason: string): Promise<boolean> => {
+    if (!rejectTarget) return false;
+    const ok = await rejectArtist(rejectTarget.id, reason);
+    if (ok) refetch();
+    return ok;
+  }, [rejectTarget, refetch]);
 
   return (
     <div className="space-y-4 p-4 lg:p-6">
       <AdminPageHeader title="샵 승인 대기" count={data.total} />
-      <p className="text-xs text-zinc-500">신규 등록 샵은 관리자 승인 후 정식 오픈됩니다. 승인 시 검색·추천 노출 + 즉시 색인, 반려 시 사유가 신청자에게 전달됩니다.</p>
+      <p className="text-xs text-zinc-500">신규 등록 샵은 관리자 승인 후 정식 오픈됩니다. <b className="text-sky-400">샵 보기</b>로 꾸밈(배너·포트폴리오·소개)을 검수한 뒤 승인 시 검색·추천 노출 + 즉시 색인, 반려 시 선택한 사유가 신청자에게 전달됩니다.</p>
       <AdminSearchBar onSearch={setSearch} placeholder="샵명 검색..." accentColor="purple" />
       <AdminSearchResetBadge search={search} onReset={() => setSearch("")} accentColor="purple" />
       {loading
         ? <AdminLoadingSpinner accentColor="purple" />
-        : <ApprovalTable artists={data.artists} onRefetch={refetch} />}
+        : <ApprovalTable artists={data.artists} onRefetch={refetch} onRequestReject={(a) => setRejectTarget({ id: a.id, title: a.title })} />}
       <AdminPagination currentPage={data.page} total={data.total} limit={data.limit} onPageChange={setPage} />
+      <RejectShopModal
+        key={rejectTarget?.id ?? "none"}
+        shop={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onConfirm={handleConfirmReject}
+      />
     </div>
   );
 }

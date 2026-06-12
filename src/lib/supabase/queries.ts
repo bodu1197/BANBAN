@@ -10,7 +10,7 @@
  */
 
 import { cache } from "react";
-import { createClient } from "./server";
+import { createClient, createAdminClient } from "./server";
 import { getStorageUrl } from "./storage-utils";
 import type { Artist, Database, Portfolio, PortfolioMedia, Region, Review } from "@/types/database";
 
@@ -220,6 +220,35 @@ export async function fetchOwnArtistForPreview(userId: string): Promise<ArtistWi
   if (error) {
     // eslint-disable-next-line no-console
     console.error(`Failed to fetch own artist: ${error.message}`);
+    return null;
+  }
+
+  return data;
+}
+
+/**
+ * 관리자 검수 전용 — id 로 status 무관(pending/rejected/active) 단건 조회. createAdminClient(service_role).
+ * 호출 라우트가 isCurrentUserAdmin 게이트(미관리자 notFound) 선행 → 타인 비공개 샵 노출 차단.
+ */
+export async function fetchArtistForAdminPreview(id: string): Promise<ArtistWithDetails | null> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase
+    .from("artists")
+    .select(
+      `
+      *,
+      region:regions(*),
+      artist_media(id, storage_path, type, order_index)
+    `
+    )
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(`Failed to fetch artist for admin preview: ${error.message}`);
     return null;
   }
 
