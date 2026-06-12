@@ -438,12 +438,13 @@ export function NewGrantModal({ onClose, onGranted }: Readonly<{
 
     const handleArtistSelect = (a: ArtistOption | null): void => { setArtist(a); setSelectedSlots(new Set()); };
 
+    // z-[110]: admin 쉘(admin-layout-shell.tsx, fixed inset-0 z-[100] 불투명)보다 위여야 모달이 보임. z-50 금지.
     return (
         <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-grant-title"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div ref={dialogRef} className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
