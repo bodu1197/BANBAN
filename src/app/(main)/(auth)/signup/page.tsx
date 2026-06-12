@@ -9,6 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default createAuthPage(
-  { title: STRINGS.auth.signupTitle, requireGuest: true, className: "py-8 md:py-16" },
+  { title: STRINGS.auth.signupTitle, requireGuest: true, className: "py-8 md:py-16", studyPromo: true },
   () => <SignupWizard />,
 );

@@ -9,6 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default createAuthPage(
-  { title: STRINGS.auth.loginTitle, requireGuest: true },
+  { title: STRINGS.auth.loginTitle, requireGuest: true, studyPromo: true },
   () => <LoginForm />,
 );
