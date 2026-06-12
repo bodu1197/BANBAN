@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Clock, XCircle, ChevronRight } from "lucide-react";
+import { DraftReviewBanner } from "./DraftReviewBanner";
 
 interface ShopStatusBannerProps {
   status: string;
@@ -8,11 +9,16 @@ interface ShopStatusBannerProps {
 
 /**
  * 마이페이지 상단 샵 상태 배너.
+ * - draft: 작성 중 + '등록 승인 신청' 버튼(배너+포폴10 충족 시 pending)
  * - pending: 승인 대기 안내 (amber — 등록폼 경고 톤과 일치)
  * - rejected: 반려 사유 + 재신청 CTA (destructive 토큰 — ArtistShopSetupBanner 와 일치)
  * - active/dormant: 표시 없음(null)
  */
 export function ShopStatusBanner({ status, rejectReason }: Readonly<ShopStatusBannerProps>): React.ReactElement | null {
+  if (status === "draft") {
+    return <DraftReviewBanner />;
+  }
+
   if (status === "pending") {
     return (
       <div className="bg-background px-4 pt-4">

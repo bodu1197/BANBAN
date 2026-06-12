@@ -16,6 +16,7 @@ import { FullPageSpinner } from "@/components/ui/full-page-spinner";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { INITIAL_FORM_DATA, geocodeAddress } from "@/types/artist-form";
 import { addressToRegionKey } from "@/lib/regions";
+import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 import { normalizeFancyText } from "@/lib/normalize-text";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import {
@@ -223,8 +224,9 @@ export function ArtistRegisterClient({ categories,
       // 신규 아티스트 웰컴 포인트
       void fetch("/api/points/earn", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ reason: "WELCOME_BONUS" }) });
 
-      globalThis.alert(t.submitSuccess);
-      router.push("/");
+      // draft 상태로 저장됨 — 마이페이지에서 배너+포폴10 채우고 '등록 승인 신청' 안내.
+      globalThis.alert(`샵 정보가 저장되었습니다.\n마이페이지에서 대표 배너와 작품(포트폴리오) ${REQUIRED_PORTFOLIOS}개를 채운 뒤 '등록 승인 신청'을 눌러주세요.`);
+      router.push("/mypage");
     } catch (error: unknown) {
       // eslint-disable-next-line no-console
       console.error("Registration error:", error);
