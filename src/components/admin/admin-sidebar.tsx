@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, Flag, Grid3X3, BookOpen, Sparkles, Gift, BadgeCheck } from "lucide-react";
+import { Crown, UserCog, Images, LayoutDashboard, ImageIcon, Ticket, Coins, Megaphone, BarChart3, GraduationCap, UserX, MessageSquare, ExternalLink, Home, PhoneCall, Flag, Grid3X3, BookOpen, Sparkles, Gift, BadgeCheck, Newspaper } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
     { href: "/admin/inquiries", icon: <MessageSquare className="h-5 w-5" />, label: "건의사항" },
     { href: "/admin/contact-clicks", icon: <PhoneCall className="h-5 w-5" />, label: "연락 클릭 현황" },
     { href: "/admin/encyclopedia", icon: <BookOpen className="h-5 w-5" />, label: "백과사전 크론" },
+    { href: "/admin/study-news", icon: <Newspaper className="h-5 w-5" />, label: "공부방 뉴스" },
     { href: "/admin/sim-stats", icon: <Sparkles className="h-5 w-5" />, label: "시뮬레이션 통계" },
     // { href: "/admin/chats", icon: <MessagesSquare className="h-5 w-5" />, label: "채팅 모니터링" },
 ];
