@@ -223,7 +223,7 @@ function ResultView({ subject, total, correctCount, scorePct, ordered, selected,
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <RefreshCw className="h-4 w-4" aria-hidden="true" /> 다시 풀기
           </button>
-          <Link href="/mypage/study"
+          <Link href="/mypage/study/learn"
             className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             과목 목록
           </Link>

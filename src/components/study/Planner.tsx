@@ -76,7 +76,7 @@ export function Planner({ dDay, solvedToday, dailyGoal, week }: Readonly<{ dDay:
         </div>
       </div>
 
-      <Link href="/mypage/study" className={`inline-flex w-full items-center justify-center gap-1.5 px-5 py-3 ${STUDY_PRIMARY_BTN}`}>
+      <Link href="/mypage/study/learn" className={`inline-flex w-full items-center justify-center gap-1.5 px-5 py-3 ${STUDY_PRIMARY_BTN}`}>
         지금 학습하기 <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     </div>

@@ -53,7 +53,7 @@ function BookmarksEmpty(): React.ReactElement {
         <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-brand-primary/10 text-brand-primary"><Bookmark className="h-6 w-6" aria-hidden="true" /></span>
         <p className="mt-3 font-semibold">아직 북마크한 문제가 없습니다</p>
         <p className="mt-1 text-sm text-muted-foreground">문제 풀이 중 북마크 버튼으로 저장하세요.</p>
-        <Link href="/mypage/study" className={`mt-5 inline-block px-5 py-2.5 ${STUDY_PRIMARY_BTN}`}>과목별 학습 가기</Link>
+        <Link href="/mypage/study/learn" className={`mt-5 inline-block px-5 py-2.5 ${STUDY_PRIMARY_BTN}`}>과목별 학습 가기</Link>
       </div>
     </div>
   );

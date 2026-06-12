@@ -5,13 +5,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft, Home } from "lucide-react";
 
-const STUDY_HOME = "/mypage/study";
+const STUDY_HOME = "/mypage/study/learn"; // 학습 허브(실제 학습 화면) — 하위 페이지의 "학습 홈" 복귀 지점
+const STUDY_LANDING = "/mypage/study"; // 공부방 메인 랜딩(입구)
 
 // 공부방 상단 보조 내비 — 딥링크 진입 시 사이트 이탈 방지(history 없으면 학습홈 폴백).
 export function StudyNav(): React.ReactElement {
   const pathname = usePathname();
   const router = useRouter();
-  const isHome = pathname === STUDY_HOME;
+  // 랜딩/허브(최상위 2화면)에선 마이페이지로 이탈, 그 외 하위 페이지에선 학습 허브로 복귀.
+  const atTop = pathname === STUDY_HOME || pathname === STUDY_LANDING;
 
   function goBack(): void {
     if (globalThis.history.length > 1) router.back();
@@ -25,8 +27,8 @@ export function StudyNav(): React.ReactElement {
       <button type="button" onClick={goBack} aria-label="이전 페이지로" className={`${linkClass} cursor-pointer`}>
         <ChevronLeft className="h-4 w-4" aria-hidden="true" /> 뒤로
       </button>
-      <Link href={isHome ? "/mypage" : STUDY_HOME} className={linkClass}>
-        <Home className="h-4 w-4" aria-hidden="true" /> {isHome ? "마이페이지" : "학습 홈"}
+      <Link href={atTop ? "/mypage" : STUDY_HOME} className={linkClass}>
+        <Home className="h-4 w-4" aria-hidden="true" /> {atTop ? "마이페이지" : "학습 홈"}
       </Link>
     </nav>
   );

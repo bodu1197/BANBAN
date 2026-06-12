@@ -33,7 +33,7 @@ export function Review({ info, dueQuestions }: Readonly<{ info: ReviewInfo; dueQ
           <span className="inline-grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><RefreshCw className="h-6 w-6" aria-hidden="true" /></span>
           <p className="mt-3 font-semibold">지금 복습할 문제가 없습니다</p>
           <p className="mt-1 text-sm text-muted-foreground">{reviewEmptySub(info)}</p>
-          <Link href="/mypage/study" className={`mt-5 inline-block px-5 py-2.5 ${STUDY_PRIMARY_BTN}`}>과목별 학습 가기</Link>
+          <Link href="/mypage/study/learn" className={`mt-5 inline-block px-5 py-2.5 ${STUDY_PRIMARY_BTN}`}>과목별 학습 가기</Link>
         </div>
       </div>
     );
