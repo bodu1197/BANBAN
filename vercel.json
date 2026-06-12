@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/location-seo-generate",
       "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/cron/collect-study-news",
+      "schedule": "0 22 * * *"
     }
   ],
   "routes": [

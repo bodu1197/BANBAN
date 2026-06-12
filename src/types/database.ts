@@ -3129,6 +3129,60 @@ export type Database = {
         }
         Relationships: []
       }
+      study_news_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: number
+          published_at: string | null
+          published_by: string | null
+          relevance: number | null
+          slug: string
+          source_domain: string
+          source_name: string
+          source_url: string
+          status: string
+          summary: string
+          tier: number
+          title: string
+          url_hash: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: never
+          published_at?: string | null
+          published_by?: string | null
+          relevance?: number | null
+          slug: string
+          source_domain: string
+          source_name: string
+          source_url: string
+          status?: string
+          summary: string
+          tier: number
+          title: string
+          url_hash: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: never
+          published_at?: string | null
+          published_by?: string | null
+          relevance?: number | null
+          slug?: string
+          source_domain?: string
+          source_name?: string
+          source_url?: string
+          status?: string
+          summary?: string
+          tier?: number
+          title?: string
+          url_hash?: string
+        }
+        Relationships: []
+      }
       study_user_answers: {
         Row: {
           created_at: string

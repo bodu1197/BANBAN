@@ -110,6 +110,16 @@ const eslintConfig = defineConfig([
       "security/detect-object-injection": "off",
     },
   },
+  // 자동뉴스 CMS(nunsinpass 충실 포팅): RSS 정규식 파서(동적 태그 RegExp)·동시성 array 인덱스·
+  // 외부데이터 방어적 파싱/AI 응답 검증의 본질적 분기(cyclomatic↑). cognitive-complexity(15)는 유지.
+  {
+    files: ["src/lib/study-news/**/*.ts"],
+    rules: {
+      complexity: "off",
+      "security/detect-object-injection": "off",
+      "security/detect-non-literal-regexp": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     ".next/**",
