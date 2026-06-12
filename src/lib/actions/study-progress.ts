@@ -30,20 +30,25 @@ interface MockExamData {
 type Admin = ReturnType<typeof createAdminClient>;
 type WriteAuth = { ok: true; userId: string; admin: Admin } | { ok: false; error: string };
 
-/** 인증 + 권한(locked 차단). 통과 시 userId + admin client 반환(fail-closed). */
+/** 인증 + 권한(locked 차단). 통과 시 userId + admin client 반환(fail-closed).
+ *  체험 폐지 → 승인 + 완성도(배너 + 포폴) 충족 샵만 통과(layout 게이트와 동일 기준). */
 async function authorizeStudyWrite(): Promise<WriteAuth> {
   const user = await getUser();
   if (!user) return { ok: false, error: UNAUTH };
   const admin = createAdminClient();
-  const [{ data: artist }, { data: settings }] = await Promise.all([
-    admin.from("artists").select("status, approved_at").eq("user_id", user.id).is("deleted_at", null).maybeSingle(),
-    admin.from("study_user_settings").select("trial_started_at").eq("user_id", user.id).maybeSingle(),
-  ]);
-  const trialStartedAt = settings?.trial_started_at ? Date.parse(settings.trial_started_at) : null;
-  const { access } = studyEntitlement(
-    artist ? { status: artist.status, approvedAt: artist.approved_at } : null,
-    trialStartedAt,
-  );
+  const { data: artist } = await admin
+    .from("artists").select("id, status, approved_at, banner_path")
+    .eq("user_id", user.id).is("deleted_at", null).maybeSingle();
+  if (!artist) return { ok: false, error: LOCKED };
+  const { count } = await admin
+    .from("portfolios").select("id", { count: "exact", head: true })
+    .eq("artist_id", artist.id).is("deleted_at", null);
+  const { access } = studyEntitlement({
+    status: artist.status,
+    approvedAt: artist.approved_at,
+    hasBanner: artist.banner_path !== null && artist.banner_path !== "",
+    portfolioCount: count ?? 0,
+  });
   if (access === "locked") return { ok: false, error: LOCKED };
   return { ok: true, userId: user.id, admin };
 }
@@ -115,22 +120,6 @@ export async function setStudyDailyGoal(goal: number): Promise<ActionResult> {
   const clamped = Math.min(DAILY_GOAL_MAX, Math.max(DAILY_GOAL_MIN, Math.round(goal)));
   const { error } = await auth.admin.from("study_user_settings")
     .upsert({ user_id: auth.userId, daily_goal: clamped, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  return error ? { success: false, error: error.message } : { success: true };
-}
-
-/** pending 최초 접근 시 7일 체험 시작(1회). 이미 시작됐으면 무변경. layout(P7-3)이 호출.
- *  권한 게이트 없이 호출 가능 — trial 시작 전엔 entitlement 가 locked 라 닭-달걀 회피. */
-export async function ensureTrialStarted(): Promise<ActionResult> {
-  const user = await getUser();
-  if (!user) return { success: false, error: UNAUTH };
-  const admin = createAdminClient();
-  // pending 샵만 체험 시작. 승인(무제한)·비샵·rejected 는 trial 시계 미설정(상태 오염 방지).
-  const { data: artist } = await admin.from("artists").select("status, approved_at").eq("user_id", user.id).is("deleted_at", null).maybeSingle();
-  if (!artist || artist.approved_at !== null || artist.status !== "pending") return { success: true };
-  const { data: settings } = await admin.from("study_user_settings").select("trial_started_at").eq("user_id", user.id).maybeSingle();
-  if (settings?.trial_started_at) return { success: true };
-  const { error } = await admin.from("study_user_settings")
-    .upsert({ user_id: user.id, trial_started_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   return error ? { success: false, error: error.message } : { success: true };
 }
 

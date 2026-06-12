@@ -8,7 +8,6 @@ import type { SessionState } from "@/lib/study/adaptive";
 export interface StudySettings {
   dailyGoal: number;
   onboarded: boolean;
-  trialStartedAt: number | null;
 }
 
 const DEFAULT_GOAL = 20;
@@ -74,13 +73,12 @@ export async function getStudySettings(userId: string): Promise<StudySettings> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("study_user_settings")
-    .select("daily_goal, onboarded, trial_started_at")
+    .select("daily_goal, onboarded")
     .eq("user_id", userId)
     .maybeSingle();
-  if (!data) return { dailyGoal: DEFAULT_GOAL, onboarded: false, trialStartedAt: null };
+  if (!data) return { dailyGoal: DEFAULT_GOAL, onboarded: false };
   return {
     dailyGoal: data.daily_goal,
     onboarded: data.onboarded,
-    trialStartedAt: data.trial_started_at ? Date.parse(data.trial_started_at) : null,
   };
 }
