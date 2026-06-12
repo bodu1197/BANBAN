@@ -25,12 +25,27 @@ import {
 import type { PortfolioFormValues } from "@/components/portfolio-form";
 import { submitExhibitionEntry } from "@/lib/actions/exhibition-entries";
 import { revalidatePortfolioPages } from "@/lib/actions/portfolios";
+
+// File → base64(데이터URL 접두 제거) — AI 설명 생성용 이미지 전송.
+function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (): void => {
+            const r = reader.result;
+            resolve(typeof r === "string" ? (r.split(",")[1] ?? "") : "");
+        };
+        reader.onerror = (): void => reject(new Error("파일 읽기 실패"));
+        reader.readAsDataURL(file);
+    });
+}
+
 export default function PortfolioWriteClient(): React.ReactElement {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { artist, isArtist, isLoading: authLoading } = useAuth();
 
     const [submitting, setSubmitting] = useState(false);
+    const [aiDescribing, setAiDescribing] = useState(false);
     const [formValues, setFormValues] = useState<PortfolioFormValues>({
         title: "", description: "", price: "", priceOrigin: "", isEvent: false, isPermanentDiscount: false, saleEndedAt: "", youtubeUrl: "",
     });
@@ -53,6 +68,28 @@ export default function PortfolioWriteClient(): React.ReactElement {
     function handleImageFiles(files: File[]): void {
         setImages(files);
         setImagePreviews(files.map((f) => URL.createObjectURL(f)));
+    }
+
+    async function handleAiDescribe(): Promise<void> {
+        const image = images[0]; // 체크 후 접근 사이 state 변동 방지 — 캡처.
+        if (!image) { alert("작품 사진을 먼저 업로드해주세요."); return; }
+        setAiDescribing(true);
+        try {
+            const imageBase64 = await fileToBase64(image);
+            const res = await fetch("/api/ai/analyze-portfolio-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageBase64, mimeType: image.type }),
+            });
+            if (!res.ok) { alert("AI 설명 생성에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
+            const data = await res.json() as { description?: string };
+            const desc = data.description;
+            if (desc) setFormValues((prev) => ({ ...prev, description: desc }));
+        } catch {
+            alert("AI 설명 생성 중 오류가 발생했습니다.");
+        } finally {
+            setAiDescribing(false);
+        }
     }
 
     function selectCategory(id: string): void {
@@ -169,6 +206,8 @@ export default function PortfolioWriteClient(): React.ReactElement {
                     onValuesChange={(patch): void => setFormValues((prev) => ({ ...prev, ...patch }))}
                     selectedExhibitionIds={selectedExhibitions}
                     onToggleExhibition={toggleExhibition}
+                    onAiDescribe={() => void handleAiDescribe()}
+                    aiDescribing={aiDescribing}
                 />
 
                 {/* 작품 사진 업로드 — 포트폴리오 1개당 1장 */}

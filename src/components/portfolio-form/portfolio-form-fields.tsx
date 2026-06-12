@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import type { PortfolioFormValues } from "./types";
@@ -106,19 +107,36 @@ export function PriceFields({ price, priceOrigin, onPriceChange, onPriceOriginCh
  *  ⚠️ DB 트리거(migration 20260613000100 enforce_portfolio_create_rules)의 200 과 반드시 동기화. */
 export const MIN_DESCRIPTION_LEN = 200;
 
-export function DescriptionField({ value, onChange }: Readonly<{
+export function DescriptionField({ value, onChange, onAiDescribe, aiDescribing }: Readonly<{
     value: string;
     onChange: (v: string) => void;
+    onAiDescribe?: () => void;
+    aiDescribing?: boolean;
 }>): React.ReactElement {
     const len = value.trim().length;
     const reached = len >= MIN_DESCRIPTION_LEN;
     return (
         <div>
-            <label className={LABEL_CLASS}>
-                작품 설명글 <span className="text-destructive">*</span>{" "}
-                <span className="text-xs font-normal text-muted-foreground">(최소 {MIN_DESCRIPTION_LEN}자)</span>
-            </label>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label htmlFor="portfolio-description" className="text-sm font-medium">
+                    작품 설명글 <span className="text-destructive">*</span>{" "}
+                    <span className="text-xs font-normal text-muted-foreground">(최소 {MIN_DESCRIPTION_LEN}자)</span>
+                </label>
+                {onAiDescribe ? (
+                    <button
+                        type="button"
+                        onClick={onAiDescribe}
+                        disabled={aiDescribing}
+                        aria-busy={aiDescribing ?? false}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-brand-primary/40 px-2.5 py-1 text-xs font-medium text-brand-primary transition-colors hover:bg-brand-primary/10 focus-visible:bg-brand-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                        {aiDescribing ? "생성 중…" : "AI로 설명 생성"}
+                    </button>
+                ) : null}
+            </div>
             <textarea
+                id="portfolio-description"
                 value={value}
                 onChange={(e): void => onChange(e.target.value)}
                 rows={6}
@@ -211,12 +229,14 @@ export function ExhibitionSelector({ selectedIds, onToggle }: Readonly<{
 
 /** Renders all standard portfolio form fields in order */
 export function PortfolioFormFields({
-    values, onValuesChange, selectedExhibitionIds, onToggleExhibition,
+    values, onValuesChange, selectedExhibitionIds, onToggleExhibition, onAiDescribe, aiDescribing,
 }: Readonly<{
     values: PortfolioFormValues;
     onValuesChange: (patch: Partial<PortfolioFormValues>) => void;
     selectedExhibitionIds?: Set<string>;
     onToggleExhibition?: (id: string) => void;
+    onAiDescribe?: () => void;
+    aiDescribing?: boolean;
 }>): React.ReactElement {
     return (
         <>
@@ -241,7 +261,12 @@ export function PortfolioFormFields({
                 onPriceChange={(price): void => onValuesChange({ price })}
                 onPriceOriginChange={(priceOrigin): void => onValuesChange({ priceOrigin })}
             />
-            <DescriptionField value={values.description} onChange={(description): void => onValuesChange({ description })} />
+            <DescriptionField
+                value={values.description}
+                onChange={(description): void => onValuesChange({ description })}
+                onAiDescribe={onAiDescribe}
+                aiDescribing={aiDescribing}
+            />
         </>
     );
 }
