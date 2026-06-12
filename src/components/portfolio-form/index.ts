@@ -1,5 +1,5 @@
 export { CategorySection } from "./category-selector";
-export { PortfolioFormFields } from "./portfolio-form-fields";
+export { PortfolioFormFields, MIN_DESCRIPTION_LEN } from "./portfolio-form-fields";
 export { ExistingMediaGrid, ImageUploadSection, YouTubeUrlInput, extractYouTubeId } from "./media-upload";
 export type { MediaItem, PortfolioFormValues } from "./types";
 export {

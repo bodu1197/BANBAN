@@ -20,6 +20,7 @@ import {
     calcDiscountRate,
     insertMediaRowsWithEmbedding,
     insertCategorizables,
+    MIN_DESCRIPTION_LEN,
 } from "@/components/portfolio-form";
 import type { PortfolioFormValues } from "@/components/portfolio-form";
 import { submitExhibitionEntry } from "@/lib/actions/exhibition-entries";
@@ -111,12 +112,20 @@ export default function PortfolioWriteClient(): React.ReactElement {
         return portfolio.id;
     }
 
+    function validateForm(): string | null {
+        if (selectedCategories.size === 0) return "대표 분류를 1개 이상 선택해주세요.";
+        if (!formValues.title.trim()) return "제목을 입력해주세요.";
+        if (images.length !== 1) return "작품 사진은 1장만 등록해주세요. (포트폴리오 1개당 사진 1장)";
+        if (formValues.description.trim().length < MIN_DESCRIPTION_LEN) {
+            return `작품 설명은 ${MIN_DESCRIPTION_LEN}자 이상 입력해주세요. (작성이 어려우면 'AI로 설명 생성' 이용)`;
+        }
+        return null;
+    }
+
     async function handleSubmit(e: FormEvent): Promise<void> {
         e.preventDefault();
-        if (selectedCategories.size === 0) {
-            alert("대표 분류를 1개 이상 선택해주세요.");
-            return;
-        }
+        const validationError = validateForm();
+        if (validationError) { alert(validationError); return; }
         setSubmitting(true);
         try {
             const newPortfolioId = await createPortfolio();
@@ -162,8 +171,8 @@ export default function PortfolioWriteClient(): React.ReactElement {
                     onToggleExhibition={toggleExhibition}
                 />
 
-                {/* 작품 사진 업로드 */}
-                <ImageUploadSection previews={imagePreviews} files={images} onFilesChange={handleImageFiles} />
+                {/* 작품 사진 업로드 — 포트폴리오 1개당 1장 */}
+                <ImageUploadSection previews={imagePreviews} files={images} onFilesChange={handleImageFiles} maxFiles={1} label="작품 사진 (1장)" />
 
                 {/* YouTube 영상 URL */}
                 <YouTubeUrlInput value={formValues.youtubeUrl} onChange={(url): void => setFormValues((prev) => ({ ...prev, youtubeUrl: url }))} />

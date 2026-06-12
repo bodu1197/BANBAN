@@ -44,16 +44,21 @@ export function ExistingMediaGrid({ media, deletedIds, onDelete }: Readonly<{
 
 // --- Image upload section with individual delete ---
 
-export function ImageUploadSection({ files, previews, onFilesChange, label }: Readonly<{
+export function ImageUploadSection({ files, previews, onFilesChange, label, maxFiles }: Readonly<{
     files: File[];
     previews: string[];
     onFilesChange: (files: File[]) => void;
     label?: string;
+    /** 업로드 가능한 최대 사진 수. 미지정=무제한. 포트폴리오는 1장(작품당 1사진 규칙). */
+    maxFiles?: number;
 }>): React.ReactElement {
+    const max = maxFiles ?? Number.POSITIVE_INFINITY;
+    const atLimit = files.length >= max;
+
     function handleAdd(e: ChangeEvent<HTMLInputElement>): void {
         const added = Array.from(e.target.files ?? []);
         if (added.length === 0) return;
-        onFilesChange([...files, ...added]);
+        onFilesChange([...files, ...added].slice(0, max)); // max 초과분 잘라 1장 규칙 강제
         e.target.value = "";
     }
 
@@ -78,11 +83,16 @@ export function ImageUploadSection({ files, previews, onFilesChange, label }: Re
                         </button>
                     </div>
                 ))}
-                <label className="flex items-center justify-center w-20 h-20 border-2 border-dashed border-border rounded-md cursor-pointer hover:border-brand-primary focus-visible:border-brand-primary focus-within:border-brand-primary transition-colors bg-muted">
-                    <span className="text-2xl text-muted-foreground">+</span>
-                    <input type="file" accept="image/*" multiple onChange={handleAdd} className="sr-only" />
-                </label>
+                {atLimit ? null : (
+                    <label className="flex items-center justify-center w-20 h-20 border-2 border-dashed border-border rounded-md cursor-pointer hover:border-brand-primary focus-visible:border-brand-primary focus-within:border-brand-primary transition-colors bg-muted">
+                        <span className="text-2xl text-muted-foreground">+</span>
+                        <input type="file" accept="image/*" multiple={max > 1} onChange={handleAdd} className="sr-only" />
+                    </label>
+                )}
             </div>
+            {atLimit && Number.isFinite(max) ? (
+                <p role="status" className="mt-1.5 text-xs text-muted-foreground">사진 {max}장 등록 완료 — 최대 {max}장까지 가능합니다.</p>
+            ) : null}
         </div>
     );
 }

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getStorageUrl } from "@/lib/supabase/storage-utils";
 import type { PortfolioFormValues } from "./types";
 
-const INPUT_CLASS = "w-full px-3 py-2.5 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+const INPUT_CLASS = "w-full px-3 py-2.5 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const LABEL_CLASS = "block text-sm font-medium mb-1.5";
 
 export function TitleField({ value, onChange }: Readonly<{
@@ -102,14 +102,35 @@ export function PriceFields({ price, priceOrigin, onPriceChange, onPriceOriginCh
     );
 }
 
+/** 작품 설명 최소 글자수 — 직접 작성 시 충실한 설명 강제(AI 자동생성도 이 이상 산출).
+ *  ⚠️ DB 트리거(migration 20260613000100 enforce_portfolio_create_rules)의 200 과 반드시 동기화. */
+export const MIN_DESCRIPTION_LEN = 200;
+
 export function DescriptionField({ value, onChange }: Readonly<{
     value: string;
     onChange: (v: string) => void;
 }>): React.ReactElement {
+    const len = value.trim().length;
+    const reached = len >= MIN_DESCRIPTION_LEN;
     return (
         <div>
-            <label className={LABEL_CLASS}>작품 설명글 <span className="text-destructive">*</span></label>
-            <textarea value={value} onChange={(e): void => onChange(e.target.value)} rows={6} required className={`${INPUT_CLASS} resize-y`} />
+            <label className={LABEL_CLASS}>
+                작품 설명글 <span className="text-destructive">*</span>{" "}
+                <span className="text-xs font-normal text-muted-foreground">(최소 {MIN_DESCRIPTION_LEN}자)</span>
+            </label>
+            <textarea
+                value={value}
+                onChange={(e): void => onChange(e.target.value)}
+                rows={6}
+                required
+                aria-invalid={!reached}
+                aria-describedby="desc-counter"
+                placeholder="시술 부위·스타일·특징 등 작품을 충실히 설명해주세요. 작성이 어려우면 'AI로 설명 생성'을 이용하세요."
+                className={`${INPUT_CLASS} resize-y`}
+            />
+            <p id="desc-counter" className={`mt-1 text-right text-xs tabular-nums ${reached ? "text-muted-foreground" : "text-destructive"}`}>
+                {reached ? `${len}/${MIN_DESCRIPTION_LEN}자 (충족)` : `${len}/${MIN_DESCRIPTION_LEN}자 · ${MIN_DESCRIPTION_LEN - len}자 더 필요`}
+            </p>
         </div>
     );
 }
