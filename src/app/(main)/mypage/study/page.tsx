@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers, GraduationCap } from "lucide-react";
+import { BookOpenCheck, Pencil, BarChart3, RotateCcw, NotebookPen, Timer, Bookmark, CalendarDays, BookText, ListChecks, Search, Layers, GraduationCap, ChevronRight } from "lucide-react";
 import { getUser } from "@/lib/supabase/auth";
 import { SUBJECTS, getSubjectCount, type SubjectMeta } from "@/data/study/questions";
 import { getStudyAnswers } from "@/lib/study/queries";
 import { computeStats, type SubjectStat } from "@/lib/study/progress";
 import { computeReview } from "@/lib/study/srs";
+import { daysUntilExam } from "@/lib/study/exam";
+import { CURRICULUM } from "@/data/study/curriculum";
 import { subjectGlyph } from "@/components/study/subject-icon";
 
 export const metadata: Metadata = {
@@ -23,11 +25,34 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
   const stats = computeStats(answers);
   const review = computeReview(answers);
   const statBySubject = new Map(stats.bySubject.map((s) => [s.subject, s]));
+  const dDay = daysUntilExam();
 
   return (
     <div className="py-5">
       <h1 className="mb-1 text-xl font-bold">문신사 공부방</h1>
-      <p className="mb-4 text-sm text-muted-foreground">과목을 선택해 문제를 풀어보세요.</p>
+      <p className="mb-4 text-sm text-muted-foreground">이론부터 시험까지, 합격 한 곳에서.</p>
+
+      {/* D-Day 배너 (텍스트는 풀 흰색 — brand-primary 위 AA 대비 확보; 투명도는 장식 아이콘만) */}
+      <section aria-label="국가시험 일정" className="mb-4 flex items-center justify-between rounded-2xl bg-brand-primary px-5 py-4 text-white">
+        <div>
+          <p className="text-xs text-white">첫 국가시험까지</p>
+          <p className="text-2xl font-bold tabular-nums">D-{dDay}</p>
+        </div>
+        <div className="text-right">
+          <CalendarDays className="ml-auto h-7 w-7 text-white/80" aria-hidden="true" />
+          <p className="mt-0.5 text-[11px] text-white">2027.12 시행 예정</p>
+        </div>
+      </section>
+
+      {/* 교과서 전면 진입 */}
+      <Link href="/mypage/study/textbook" className="mb-5 flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-brand-primary focus-visible:border-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-primary/10 text-brand-primary"><GraduationCap className="h-6 w-6" aria-hidden="true" /></span>
+        <div className="min-w-0 flex-1">
+          <p className="font-bold">교과서로 이론부터</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">국가시험 범위를 {CURRICULUM.length}개 단원으로 정리했어요.</p>
+        </div>
+        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </Link>
 
       <div className="mb-5 grid grid-cols-3 gap-2.5">
         <SummaryCell label="푼 문제" value={`${stats.totalAttempts}`} />
@@ -54,7 +79,6 @@ export default async function StudyHomePage(): Promise<React.ReactElement> {
             <StudyChip href="/mypage/study/planner" label="플래너"><CalendarDays className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/glossary" label="용어집"><BookText className="h-4 w-4" aria-hidden="true" /></StudyChip>
             <StudyChip href="/mypage/study/checklist" label="체크리스트"><ListChecks className="h-4 w-4" aria-hidden="true" /></StudyChip>
-            <StudyChip href="/mypage/study/textbook" label="교과서"><GraduationCap className="h-4 w-4" aria-hidden="true" /></StudyChip>
           </div>
         </div>
       </div>
