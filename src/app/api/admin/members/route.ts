@@ -89,12 +89,18 @@ function buildMemberUpdates(body: MemberPatchBody): Record<string, unknown> {
     return updates;
 }
 
+/** Supabase auth 사용자 부재(소셜리스·이미 삭제됨) 판정 — 정상으로 취급할 케이스.
+ *  메시지 문자열에만 의존하면 버전에 따라 깨지므로 status(404)도 함께 본다. */
+function isAuthUserMissing(error: { status?: number; message: string }): boolean {
+    return error.status === 404 || error.message.toLowerCase().includes("not found");
+}
+
 async function handlePasswordChange(supabase: SupabaseClient, userId: string, password: string): Promise<{ error?: string }> {
     const hashed = await bcrypt.hash(password, 12);
     const { error: dbError } = await supabase.from("profiles").update({ password: hashed }).eq("id", userId);
     if (dbError) return { error: `DB: ${dbError.message}` };
     const { error: authError } = await supabase.auth.admin.updateUserById(userId, { password });
-    if (authError && !authError.message.includes("not found")) {
+    if (authError && !isAuthUserMissing(authError)) {
         return { error: `Auth: ${authError.message}` };
     }
     return {};
@@ -325,16 +331,26 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
         );
     }
 
-    // Hard delete: profiles row 삭제 → CASCADE 정책이 의존 데이터 일괄 정리
+    // 1) auth.users 먼저 삭제 — 실패를 조용히 삼키면 로그인 계정이 남아 재로그인 시 profile 이
+    //    자동 재생성(찌꺼기)된다. 먼저 지우고 실패 시 즉시 중단(부분 삭제 방지)해 재시도가 깨끗하도록.
+    //    "not found"(socialless·이미 삭제됨)만 정상으로 취급.
+    const { error: authError } = await supabase.auth.admin.deleteUser(body.id);
+    if (authError && !isAuthUserMissing(authError)) {
+        return NextResponse.json(
+            { error: `로그인 계정(auth) 삭제 실패 — 재시도하세요: ${authError.message}` },
+            { status: 500 },
+        );
+    }
+
+    // 2) profiles row 삭제 → 모든 FK 가 ON DELETE CASCADE 이므로 의존 데이터(artists/포트폴리오/리뷰/
+    //    게시글/댓글/견적/채팅/포인트 등)가 빠짐없이 연쇄 삭제된다.
+    //    (20260613000400 마이그레이션으로 기존 SET NULL 9개를 CASCADE 로 전환 — 작성자=null 찌꺼기 제거)
     const { error: profileError } = await supabase
         .from("profiles")
         .delete()
         .eq("id", body.id);
 
     if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
-
-    // auth.users 도 함께 삭제 (socialless 사용자는 auth row 없을 수 있음 — silent)
-    await supabase.auth.admin.deleteUser(body.id).catch(() => {/* auth row 부재 가능 */});
 
     return NextResponse.json({ success: true });
 }

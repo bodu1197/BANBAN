@@ -298,7 +298,7 @@ function MemberEditPanel({ member, onSaved, onDeleted, onCancel }: Readonly<{
     };
 
     const handleDelete = async (): Promise<void> => {
-        if (!globalThis.confirm(`"${member.nickname}" 회원을 삭제하시겠습니까?`)) return;
+        if (!globalThis.confirm(`"${member.nickname}" 회원을 영구 삭제합니다.\n이 회원이 작성한 리뷰·게시글·댓글·견적·채팅과 로그인 계정까지 모두 함께 삭제되며 되돌릴 수 없습니다.\n계속하시겠습니까?`)) return;
         const res = await fetch("/api/admin/members", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: member.id }) });
         if (res.ok) { onDeleted(); return; }
         const err = await res.json() as { error?: string };
