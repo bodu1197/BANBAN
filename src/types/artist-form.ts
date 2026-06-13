@@ -171,15 +171,21 @@ export const BANK_OPTIONS = [
   "제주은행",
 ];
 
+// /api/geocode 응답 계약 — 클라(geocodeAddress)와 서버 라우트가 공유해 drift 를 막는다.
+export interface GeocodeResult {
+  lat: number | null;
+  lon: number | null;
+}
+
+// 동일 출처 서버 프록시(/api/geocode) 경유 — 클라에서 외부 지오코더(카카오 등) 직접 호출은 CSP(connect-src)에 막힌다.
+// 클라이언트에서만 호출(register/edit 폼). 서버 호출용 아님(상대경로라 서버에서 쓰면 안 됨).
 export async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=kr&limit=1`,
-      { headers: { "User-Agent": "Banunni/1.0 (howtattoo@banunni.com)" } },
-    );
-    const data = await response.json();
-    if (data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+    const response = await fetch(`/api/geocode?address=${encodeURIComponent(address)}`);
+    if (!response.ok) return null;
+    const data = await response.json() as GeocodeResult;
+    if (data.lat !== null && data.lon !== null) {
+      return { lat: data.lat, lon: data.lon };
     }
   } catch { /* Continue without coordinates */ }
   return null;
