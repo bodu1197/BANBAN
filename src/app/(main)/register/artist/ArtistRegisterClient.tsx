@@ -37,12 +37,25 @@ import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField"
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const ARTIST_MEDIA_API = "/api/artist-media";
 
-function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, hasBanner: boolean, t: { required: string }): string | null {
+// STRINGS 에서 파생 — 라벨 키가 바뀌면 타입 에러로 drift 를 잡는다(단일 진실 소스).
+type ValidateLabels = Pick<typeof STRINGS.artistRegister, "artistName" | "phone" | "address" | "region" | "profileImage">;
+
+// 받침 유무로 목적격 조사(을/를) 선택 — 한국어 전용 서비스라 '을(를)' 병기 대신 자연스러운 한 글자.
+function eulReul(word: string): "을" | "를" {
+  const code = word.charCodeAt(word.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return "을"; // 비한글로 끝나면 '을' 기본
+  return (code - 0xac00) % 28 === 0 ? "를" : "을";
+}
+
+function validateRegisterForm(formData: ArtistFormData, hasProfile: boolean, hasBanner: boolean, t: ValidateLabels): string | null {
+  // 어느 항목이 비었는지 정확히 알려준다 — 두루뭉술한 "필수 항목입니다" 는 사용자를 막히게 한다.
+  if (!formData.title.trim()) return `'${t.artistName}'${eulReul(t.artistName)} 입력해 주세요.`;
+  if (!formData.contact.trim()) return `'${t.phone}'${eulReul(t.phone)} 입력해 주세요.`;
+  if (!formData.address.trim()) return `'${t.address}'${eulReul(t.address)} 입력해 주세요.`;
+  if (!formData.region_id) return `'${t.region}' 정보가 없습니다. 주소를 '검색' 버튼으로 다시 선택하면 지역이 자동 설정됩니다.`;
   if (!hasBanner) return "대표 배너 이미지를 1장 등록해 주세요.";
-  if (!formData.title.trim() || !formData.contact.trim() || !formData.address.trim() ||
-      !formData.region_id || !formData.introduce.trim() || !hasProfile) {
-    return t.required;
-  }
+  if (!hasProfile) return `'${t.profileImage}'${eulReul(t.profileImage)} 1장 등록해 주세요.`;
+  if (!formData.introduce.trim()) return "소개글을 작성해 주세요.";
   const introduceLen = formData.introduce.trim().length;
   if (introduceLen < INTRODUCE_MIN_LENGTH) {
     return `소개글을 ${String(INTRODUCE_MIN_LENGTH)}자 이상 작성해 주세요. (현재 ${String(introduceLen)}자)`;
