@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { Lock, BookOpen } from "lucide-react";
+import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 
 /** 공부방 잠금 안내(종용). 상황별 CTA·문구:
- *  - 샵 없음: 등록 유도. 승인됨+미완성: 완성만 하면 해제(재검수 불필요). 미승인: 완성 후 검수. */
+ *  - 샵 없음: 등록 유도. 승인됨+미완성: 완성만 하면 해제. 미공개: 완성 후 자동공개되면 해제. */
 export function StudyLockedView({ hasShop, approved }: Readonly<{ hasShop: boolean; approved?: boolean }>): React.ReactElement {
   const cta = hasShop
     ? { href: "/mypage", label: "샵 완성하러 가기" }
     : { href: "/register/artist", label: "샵 등록하기" };
+  const need = `대표 배너 1장 + 작품(포트폴리오) ${String(REQUIRED_PORTFOLIOS)}개`;
   let message: string;
   if (!hasShop) {
-    message = "문신사 공부방은 샵을 등록한 회원이 이용할 수 있어요. 샵을 등록하고 대표 배너 1장 + 작품(포트폴리오) 10개를 채워 검수를 통과하면 이용할 수 있습니다.";
+    message = `문신사 공부방은 샵을 등록한 회원이 이용할 수 있어요. 샵을 등록하고 ${need}를 채워 공개되면 바로 이용할 수 있습니다.`;
   } else if (approved) {
-    message = "공부방을 다시 이용하려면 샵을 완성해 주세요. 대표 배너 1장 + 작품(포트폴리오) 10개를 채우면 바로 열립니다.";
+    message = `공부방을 다시 이용하려면 샵을 완성해 주세요. ${need}를 채우면 바로 열립니다.`;
   } else {
-    message = "문신사 공부방은 검수를 통과한 샵만 제한 없이 이용할 수 있어요. 대표 배너 1장 + 작품(포트폴리오) 10개를 채우고 '등록 승인 신청'으로 검수를 받으면 열립니다.";
+    message = `문신사 공부방은 공개된 샵만 제한 없이 이용할 수 있어요. ${need}를 채우면 샵이 자동 공개되고 공부방도 바로 열립니다.`;
   }
 
   return (

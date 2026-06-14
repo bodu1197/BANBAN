@@ -22,12 +22,12 @@ function ProgressHint({ reachedGate, reachedMin, minRequired }: Readonly<{
   reachedGate: boolean; reachedMin: boolean; minRequired: number;
 }>): React.ReactElement {
   if (reachedGate) {
-    return <p className="mt-2 text-xs font-medium text-emerald-600">공개 기준({REQUIRED_PORTFOLIOS}개)을 충족했어요! ‘완료’를 누르면 샵이 바로 공개됩니다.</p>;
+    return <p className="mt-2 text-xs font-medium text-emerald-600">공개 준비 완료! ‘완료’를 누르면 샵이 바로 공개됩니다.</p>;
   }
   if (reachedMin) {
     return <p className="mt-2 text-xs text-muted-foreground">‘완료’를 눌러 진행할 수 있어요. 더 채우면 바로 공개까지 됩니다.</p>;
   }
-  return <p className="mt-2 text-xs text-muted-foreground">최소 {minRequired}개를 등록하면 다음으로 진행할 수 있어요.</p>;
+  return <p className="mt-2 text-xs text-muted-foreground">작품을 {minRequired}개 이상 등록하면 바로 공개할 수 있어요.</p>;
 }
 
 export function PortfolioStep({
@@ -83,17 +83,18 @@ export function PortfolioStep({
       <div className="rounded-xl border border-brand-primary/30 bg-brand-primary/5 p-4">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">
-            작품 등록 <span className="text-brand-primary">{count}</span>
-            <span className="text-muted-foreground"> / 최소 {minRequired}개</span>
+            등록한 작품 <span className="text-brand-primary">{count}</span>개
           </p>
-          <span className="text-xs text-muted-foreground tabular-nums">공개 기준 {count}/{REQUIRED_PORTFOLIOS}</span>
+          <span className={`text-xs font-medium tabular-nums ${count >= REQUIRED_PORTFOLIOS ? "text-emerald-600" : "text-muted-foreground"}`}>
+            {count >= REQUIRED_PORTFOLIOS ? "공개 가능 ✓" : `작품 ${REQUIRED_PORTFOLIOS}개면 공개`}
+          </span>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={REQUIRED_PORTFOLIOS} aria-valuenow={Math.min(count, REQUIRED_PORTFOLIOS)} aria-label="작품 등록 진행률">
           <div className="h-full rounded-full bg-brand-primary transition-all duration-300" style={{ width: `${progressPct}%` }} />
         </div>
         <p className="mt-2 flex items-start gap-1.5 text-xs text-brand-primary">
           <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>작품을 많이 올릴수록 상담 문의가 비례해서 늘어나요. 최소 {minRequired}개부터 시작해 {REQUIRED_PORTFOLIOS}개까지 채우면 샵이 바로 공개됩니다.</span>
+          <span>작품은 {REQUIRED_PORTFOLIOS}개만 올려도 바로 공개돼요. 많이 올릴수록 상담 문의가 비례해서 늘어나니 꾸준히 추가해 주세요.</span>
         </p>
         <ProgressHint reachedGate={reachedGate} reachedMin={reachedMin} minRequired={minRequired} />
       </div>

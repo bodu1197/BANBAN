@@ -15,10 +15,10 @@ export interface ShopPublishResult {
 }
 
 /**
- * 작성 중(draft) 샵의 즉시 공개 — 대표 배너 + 포트폴리오 10개 충족 시 draft→active 로 바로 전환.
+ * 작성 중(draft) 샵의 즉시 공개 — 대표 배너 + 포트폴리오 REQUIRED_PORTFOLIOS개 충족 시 draft→active 로 바로 전환.
  *
- * 사전 관리자 승인 폐지(2026-06-14 결정): 온보딩이 충분히 빡센(배너+포폴10) 자격 게이트라 사람 승인 없이
- * 즉시 공개하고, 관리자는 사후 점검/테이크다운으로 전환. reviewed_by 는 NULL 로 남겨 사후 점검 큐
+ * 사전 관리자 승인 폐지(2026-06-14): 자격 게이트(배너+포폴 REQUIRED_PORTFOLIOS개, 2026-06-15 1개로 하향)
+ * 충족 시 사람 승인 없이 즉시 공개하고, 관리자는 사후 점검/테이크다운으로 전환. reviewed_by 는 NULL 로 남겨 사후 점검 큐
  * (/admin/artist-approvals)에 '점검 필요'로 노출된다.
  *
  * 미달이면 ok=false + 현재 충족 현황 반환(클라가 안내·리다이렉트). 모든 write 는 createAdminClient(RLS 우회).

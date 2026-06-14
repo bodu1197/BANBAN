@@ -13,6 +13,7 @@ import {
   AdminPageHeader,
 } from "@/components/admin/admin-shared";
 import type { ArtistApprovalItem, ArtistApprovalsResult, ApprovalStatus } from "@/lib/supabase/artist-approval-queries";
+import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 import { RejectShopModal, type RejectTarget } from "./RejectShopModal";
 
 // ─── Data Hook (인터랙션 기반 페칭 — useEffect 미사용) ──────
@@ -273,7 +274,7 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
     <div className="space-y-4 p-4 lg:p-6">
       <AdminPageHeader title="샵 점검 관리" count={data.total} />
       <p className="text-xs text-zinc-500">
-        샵은 등록 기준(배너+작품 10개) 충족 시 <b className="text-sky-400">자동 공개</b>됩니다. 여기서 사후로 점검하세요. {" "}
+        샵은 등록 기준(배너+작품 {REQUIRED_PORTFOLIOS}개) 충족 시 <b className="text-sky-400">자동 공개</b>됩니다. 여기서 사후로 점검하세요. {" "}
         <b className="text-sky-400">점검 필요</b>는 새로 공개된 샵 — <b className="text-green-400">확인</b>(이상 없음) 또는 <b className="text-amber-300">숨김</b>(테이크다운),
         <b className="text-zinc-300"> 숨김됨</b>은 <b className="text-sky-400">복구</b> 가능합니다. <b className="text-sky-400">샵 보기</b>로 실제 데이터를 확인하세요.
       </p>

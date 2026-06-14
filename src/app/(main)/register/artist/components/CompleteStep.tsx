@@ -8,7 +8,7 @@ import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 export function CompleteStep({
   published, portfolioCount,
 }: Readonly<{
-  /** 배너+포폴 10개 충족으로 즉시 공개(draft→active) 되었는지. */
+  /** 배너+포폴(REQUIRED_PORTFOLIOS개) 충족으로 즉시 공개(draft→active) 되었는지. */
   published: boolean;
   portfolioCount: number;
 }>): React.ReactElement {
@@ -27,8 +27,8 @@ export function CompleteStep({
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-foreground">샵이 바로 공개되었어요! 🎉</h2>
           <p className="text-sm text-muted-foreground">
-            대표 배너와 작품 {REQUIRED_PORTFOLIOS}개를 모두 채워 <span className="font-semibold text-brand-primary">즉시 공개</span>되었습니다.<br />
-            지금부터 검색·추천에 노출되고 고객이 찾아올 수 있어요.
+            대표 배너와 작품을 등록해 <span className="font-semibold text-brand-primary">즉시 공개</span>되었습니다.<br />
+            지금부터 검색·추천에 노출되고 고객이 찾아올 수 있어요. 작품을 더 올릴수록 상담 문의가 늘어납니다.
           </p>
         </div>
       ) : (
@@ -36,8 +36,8 @@ export function CompleteStep({
           <h2 className="text-xl font-bold text-foreground">샵이 등록되었어요!</h2>
           <p className="text-sm text-muted-foreground">
             지금까지 작품 {portfolioCount}개를 등록했어요.<br />
-            작품을 <span className="font-semibold text-brand-primary">{remaining}개</span> 더 채우면(총 {REQUIRED_PORTFOLIOS}개)
-            <span className="font-semibold text-brand-primary"> 바로 공개</span>되고, 작품이 많을수록 상담 문의도 비례해서 늘어납니다.
+            대표 배너 + 작품 {REQUIRED_PORTFOLIOS}개{remaining > 0 ? `(${remaining}개 더)` : ""}를 채우면
+            <span className="font-semibold text-brand-primary"> 바로 공개</span>됩니다. 작품이 많을수록 상담 문의도 비례해서 늘어나요.
           </p>
         </div>
       )}

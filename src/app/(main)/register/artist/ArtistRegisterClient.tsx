@@ -29,8 +29,8 @@ import { CompleteStep } from "./components/CompleteStep";
 import { WizardFooter } from "./components/WizardFooter";
 import { registerShop } from "./components/register-helpers";
 
-/** 논스톱 등록에서 다음 단계로 진행하기 위한 최소 작품 수(사용자 결정). 자동공개 기준(10)과 별개. */
-const MIN_ONBOARDING_PORTFOLIOS = 3;
+/** 논스톱 등록에서 다음 단계로 진행하기 위한 최소 작품 수. 2026-06-15: 3 → 1(작품 1개면 진행·공개). */
+const MIN_ONBOARDING_PORTFOLIOS = 1;
 
 const WIZARD_STEPS: readonly OnboardingStep[] = [
   { id: 1, label: "샵정보" },
