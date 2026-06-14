@@ -34,13 +34,13 @@ export function WizardFooter({
         ) : null}
 
         {step === 1 ? (
-          <Button type="button" onClick={onNext} className={PRIMARY_BTN}>
-            다음
+          <Button type="button" onClick={onNext} disabled={isProcessing} aria-busy={isProcessing} className={PRIMARY_BTN}>
+            {isProcessing ? "확인 중…" : "다음"}
           </Button>
         ) : null}
 
         {step === 2 ? (
-          <Button type="button" onClick={onCreate} disabled={isProcessing} className={PRIMARY_BTN}>
+          <Button type="button" onClick={onCreate} disabled={isProcessing} aria-busy={isProcessing} className={PRIMARY_BTN}>
             {isProcessing ? "샵 생성 중…" : "다음 (샵 생성)"}
           </Button>
         ) : null}
@@ -50,6 +50,7 @@ export function WizardFooter({
             type="button"
             onClick={onFinish}
             disabled={isProcessing || portfolioCount < minRequired}
+            aria-busy={isProcessing}
             className={`${PRIMARY_BTN} disabled:cursor-not-allowed disabled:opacity-50`}
           >
             {finishLabel(isProcessing, portfolioCount, minRequired)}

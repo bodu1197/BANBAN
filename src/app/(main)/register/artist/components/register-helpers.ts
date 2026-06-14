@@ -57,8 +57,10 @@ async function syncArtistCategories(artistId: string, categoryIds: string[]): Pr
   });
 }
 
-function buildRegisterBody(formData: ArtistFormData, lat: number | null, lon: number | null): string {
+function buildRegisterBody(formData: ArtistFormData, coords: { lat: number; lon: number } | null): string {
   const isMale = formData.shop_category_ids.includes(MALE_ARTIST_CAT);
+  const lat = coords?.lat ?? null;
+  const lon = coords?.lon ?? null;
   return JSON.stringify({
     type_artist: formData.type_artist,
     type_sex: isMale ? "MALE" : "FEMALE",
@@ -82,7 +84,14 @@ function buildRegisterBody(formData: ArtistFormData, lat: number | null, lon: nu
 export type ShopRegistrationResult =
   | { status: "created"; artistId: string }
   | { status: "exists" }
+  | { status: "duplicate_name" }
   | { status: "error" };
+
+/** 409 응답 분류 — duplicate_name(중복 이름) vs exists(이미 등록). */
+async function classifyConflict(res: Response): Promise<"duplicate_name" | "exists"> {
+  const errBody = await res.json().catch(() => ({})) as { error?: string };
+  return errBody.error === "duplicate_name" ? "duplicate_name" : "exists";
+}
 
 export async function registerShop(args: Readonly<{
   formData: ArtistFormData;
@@ -95,9 +104,9 @@ export async function registerShop(args: Readonly<{
   const registerRes = await fetch("/api/artist-register", {
     method: "POST",
     headers: JSON_HEADERS,
-    body: buildRegisterBody(formData, coords?.lat ?? null, coords?.lon ?? null),
+    body: buildRegisterBody(formData, coords),
   });
-  if (registerRes.status === 409) return { status: "exists" };
+  if (registerRes.status === 409) return { status: await classifyConflict(registerRes) };
   if (!registerRes.ok) return { status: "error" };
 
   const { artistId } = await registerRes.json() as { artistId: string };

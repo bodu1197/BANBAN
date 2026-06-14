@@ -35,6 +35,9 @@ import { BusinessHoursField } from "@/components/artist-form/BusinessHoursField"
 import { parseBusinessHours, parseIntroduceQA } from "@/types/artist-form";
 import type { BusinessHoursMap } from "@/types/artist-form";
 
+// 샵 이름 중복(유니크 인덱스) 에러를 저장 경로 → 호출부로 전달하는 센티넬. 오타 방지 위해 단일 상수.
+const DUP_SHOP_NAME = "DUPLICATE_SHOP_NAME";
+
 interface ArtistMedia {
   id: string;
   storage_path: string;
@@ -204,6 +207,7 @@ async function saveArtistUpdatesAdmin(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as { error?: string };
+    if (res.status === 409) throw new Error(DUP_SHOP_NAME); // 샵 이름 중복
     throw new Error(err.error ?? "admin update 실패");
   }
 }
@@ -215,7 +219,13 @@ async function saveArtistUpdatesSelf(
 ): Promise<void> {
   const supabase = createClient();
   const { error: artistError } = await supabase.from("artists").update(updateData).eq("id", artistId);
-  if (artistError) throw artistError;
+  if (artistError) {
+    // 샵 이름 유니크 인덱스 위반 → 센티넬로 던져 호출부가 친절 메시지 표시.
+    if (artistError.code === "23505" && (artistError.message ?? "").includes("title")) {
+      throw new Error(DUP_SHOP_NAME);
+    }
+    throw artistError;
+  }
   await updateArtistCategoriesSelf(artistId, shopCategoryIds);
 
   // DB 트리거가 profiles.nickname 을 artists.title 로 자동 동기화하지만,
@@ -362,7 +372,8 @@ export function ArtistEditClient({ artist,
     } catch (error: unknown) {
       // eslint-disable-next-line no-console
       console.error("Update error:", error);
-      globalThis.alert(STRINGS.common.error);
+      const isDup = error instanceof Error && error.message === DUP_SHOP_NAME;
+      globalThis.alert(isDup ? "이미 사용 중인 샵 이름이에요. 다른 이름을 입력해 주세요." : STRINGS.common.error);
     } finally {
       setIsSubmitting(false);
     }

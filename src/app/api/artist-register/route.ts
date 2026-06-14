@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { escapeIlike } from "@/lib/supabase/queries";
 import { isHttpUrl } from "@/lib/url-utils";
 import { DAY_KEYS, isDayHours, parseIntroduceQA } from "@/types/artist-form";
 import type { BusinessHoursMap } from "@/types/artist-form";
@@ -124,12 +125,30 @@ async function requireAuth(): Promise<{ user: { id: string }; error?: NextRespon
   return { user };
 }
 
+/**
+ * 동일 샵 이름 존재 여부(대소문자·앞뒤공백 무시, 비삭제 샵 대상). 등록 사전 검사 + 이름 가용성 GET 공용.
+ * 현재는 이 사전 검사가 '활성 차단'(친절 메시지). DB 유니크 인덱스(artists_title_unique_idx, lower(btrim(title)))는
+ * 기존 중복 정리 후 적용 예정 — 적용되면 동시요청 레이스까지 막는 최종 방어선(아래 23505 처리)이 된다.
+ * 저장 title 은 trim 되므로(buildArtistRow) 대소문자 무시 정확일치로 충분.
+ */
+async function isTitleTaken(admin: SupabaseClient<Database>, title: string): Promise<boolean> {
+  const normalized = title.trim();
+  if (!normalized) return false;
+  const { data } = await admin
+    .from("artists")
+    .select("id")
+    .ilike("title", escapeIlike(normalized)) // 와일드카드 이스케이프 → 대소문자 무시 '정확 일치'
+    .is("deleted_at", null)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
 function buildArtistRow(userId: string, body: RegisterBody): Database["public"]["Tables"]["artists"]["Insert"] {
   return {
     user_id: userId,
     type_artist: body.type_artist,
     type_sex: body.type_sex,
-    title: body.title,
+    title: body.title.trim(),
     contact: body.contact,
     instagram_url: body.instagram_url,
     kakao_url: body.kakao_url,
@@ -151,6 +170,17 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     status: "draft",
     approved_at: null,
   };
+}
+
+/** GET /api/artist-register?name=... — 샵 이름 가용성(중복 여부) 사전 확인. 위저드 1단계 빠른 실패용. */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+
+  const name = request.nextUrl.searchParams.get("name") ?? "";
+  const admin = createAdminClient();
+  const taken = await isTitleTaken(admin, name);
+  return NextResponse.json({ available: !taken });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -178,6 +208,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
+  // 동일 샵 이름 차단 — 같은 이름 무한 생성(계정별 1샵 우회) 방지. 사전 검사(친절 메시지).
+  if (await isTitleTaken(admin, body.title)) {
+    return NextResponse.json({ error: "duplicate_name" }, { status: 409 });
+  }
+
   const { data: artist, error: insertError } = await admin
     .from("artists")
     .insert(buildArtistRow(auth.user.id, body))
@@ -186,7 +221,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (insertError) {
     if (insertError.code === "23505") {
-      return NextResponse.json({ error: "already_registered" }, { status: 409 });
+      // title 유니크 인덱스 위반 → 중복 이름, 그 외(user_id) → 이미 등록(동시요청 레이스).
+      const isTitleConflict = (insertError.message ?? "").includes("title");
+      return NextResponse.json({ error: isTitleConflict ? "duplicate_name" : "already_registered" }, { status: 409 });
     }
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }

@@ -99,7 +99,13 @@ async function applyArtistUpdates(
   }
   if (Object.keys(updates).length > 0) {
     const { error } = await supabase.from("artists").update(updates).eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      // 샵 이름 유니크 인덱스(artists_title_unique_idx) 위반 → 친절한 중복 안내.
+      if (error.code === "23505" && (error.message ?? "").includes("title")) {
+        return NextResponse.json({ error: "이미 사용 중인 샵 이름입니다." }, { status: 409 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
   return null;
 }

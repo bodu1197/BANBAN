@@ -112,9 +112,23 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
     if (data) setFormData((prev) => ({ ...prev, region_id: data.id as string }));
   };
 
-  function goToImages(): void {
+  async function goToImages(): Promise<void> {
     const error = validateShopInfo(formData, t);
     if (error) { globalThis.alert(error); return; }
+    // 샵 이름 중복 사전 확인 — 이미지 업로드 전에 빠르게 막는다(최종 차단은 등록 POST).
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/artist-register?name=${encodeURIComponent(formData.title.trim())}`);
+      const data = await res.json().catch(() => ({ available: true })) as { available?: boolean };
+      if (data.available === false) {
+        globalThis.alert("이미 사용 중인 샵 이름이에요. 다른 이름을 입력해 주세요.");
+        return;
+      }
+    } catch {
+      /* 네트워크 오류 시 통과 — 등록 단계에서 최종 차단됨 */
+    } finally {
+      setIsProcessing(false);
+    }
     setStep(2);
   }
 
@@ -129,6 +143,11 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
       if (result.status === "exists") {
         globalThis.alert("이미 아티스트로 등록되어 있습니다.");
         router.push("/mypage");
+        return;
+      }
+      if (result.status === "duplicate_name") {
+        globalThis.alert("이미 사용 중인 샵 이름이에요. 1단계로 돌아가 다른 이름을 입력해 주세요.");
+        setStep(1);
         return;
       }
       if (result.status === "error") {
@@ -226,7 +245,7 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
         portfolioCount={portfolioCount}
         minRequired={MIN_ONBOARDING_PORTFOLIOS}
         onPrev={() => setStep(1)}
-        onNext={goToImages}
+        onNext={() => void goToImages()}
         onCreate={() => void createShopAndContinue()}
         onFinish={() => void finishOnboarding()}
       />
