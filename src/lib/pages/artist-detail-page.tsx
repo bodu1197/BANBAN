@@ -47,7 +47,7 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
 
   const artist = await fetchArtistById(id);
 
-  // 휴면(status=dormant)·미승인(approved_at NULL)·삭제·미존재 → 깨끗한 HTTP 404.
+  // status≠active(작성중·휴면 등)·숨김(is_hide=true, 테이크다운)·삭제·미존재 → 깨끗한 HTTP 404.
   // 200+noindex(soft 404)는 구글 크롤 감점 → notFound()로 정상 404 신호를 보낸다.
   if (!artist) {
     notFound();

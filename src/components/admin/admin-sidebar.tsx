@@ -15,7 +15,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { href: "/admin/artist-approvals", icon: <BadgeCheck className="h-5 w-5" />, label: "샵 승인" },
+    { href: "/admin/artist-approvals", icon: <BadgeCheck className="h-5 w-5" />, label: "샵 점검" },
     { href: "/admin/ads-semi", icon: <Crown className="h-5 w-5" />, label: "광고 관리" },
     { href: "/admin/ad-grants", icon: <Gift className="h-5 w-5" />, label: "무료 광고 부여" },
     { href: "/admin/analytics", icon: <BarChart3 className="h-5 w-5" />, label: "접속자 현황" },

@@ -7,6 +7,9 @@ import { fetchArtistApprovals } from "@/lib/supabase/artist-approval-queries";
 import { notifyUser } from "@/lib/supabase/notification-queries";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
 
+// 알림 발송에 필요한 소유자/제목 컬럼 — 상태 변경 후 select 에 공통 사용.
+const OWNER_SELECT = "id, user_id, title";
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
@@ -24,6 +27,81 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+// ── 사후 점검 액션 (자동공개 전환 후) ──────────────────────────
+
+/** 점검 완료(이상 없음) — reviewed_by 만 채워 큐에서 내린다. 공개 상태 유지. */
+async function confirmArtist(
+  supabase: SupabaseClient, adminId: string, id: string,
+): Promise<NextResponse> {
+  const { data: updated, error } = await supabase
+    .from("artists")
+    .update({ reviewed_by: adminId })
+    .eq("id", id)
+    .eq("status", "active")
+    .is("reviewed_by", null)
+    .select("id");
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated?.length) return NextResponse.json({ error: "not_unreviewed_or_already_changed" }, { status: 409 });
+  return NextResponse.json({ success: true });
+}
+
+/** 테이크다운 — is_hide=true 로 즉시 비공개. 본인 알림 + 검색엔진 재크롤(소거) + 캐시 무효화. */
+async function takedownArtist(
+  supabase: SupabaseClient, adminId: string, id: string,
+): Promise<NextResponse> {
+  const { data: updated, error } = await supabase
+    .from("artists")
+    .update({ is_hide: true, reviewed_by: adminId })
+    .eq("id", id)
+    .eq("is_hide", false)
+    .select(OWNER_SELECT);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated?.length) return NextResponse.json({ error: "already_hidden_or_not_found" }, { status: 409 });
+
+  const a = updated[0] as { id: string; user_id: string; title: string };
+  await notifyUser(a.user_id, {
+    type: "SHOP_HIDDEN",
+    title: "샵 비공개 처리 안내",
+    body: `'${a.title}' 샵이 관리자 점검으로 비공개 처리되었습니다. 문의는 고객센터로 연락해 주세요.`,
+    data: { artistId: a.id },
+  });
+  notifySearchEngines([`/artists/${a.id}`], "URL_DELETED"); // 비공개 → 색인 소거 신호.
+  revalidatePath("/");
+  revalidatePath(`/artists/${a.id}`);
+  return NextResponse.json({ success: true });
+}
+
+/**
+ * 복구 — is_hide=false 로 다시 공개. 본인 알림 + 재색인 + 캐시 무효화.
+ * adminId 불필요(reviewed_by 는 테이크다운 때 이미 기록됨 — 복구는 상태 토글만).
+ */
+async function restoreArtist(
+  supabase: SupabaseClient, id: string,
+): Promise<NextResponse> {
+  const { data: updated, error } = await supabase
+    .from("artists")
+    .update({ is_hide: false })
+    .eq("id", id)
+    .eq("is_hide", true)
+    .select(OWNER_SELECT);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated?.length) return NextResponse.json({ error: "not_hidden_or_not_found" }, { status: 409 });
+
+  const a = updated[0] as { id: string; user_id: string; title: string };
+  await notifyUser(a.user_id, {
+    type: "SHOP_APPROVED",
+    title: "샵 공개 복구 안내",
+    body: `'${a.title}' 샵이 다시 공개되었습니다. 검색·추천에 노출됩니다.`,
+    data: { artistId: a.id },
+  });
+  notifySearchEngines([`/artists/${a.id}`]);
+  revalidatePath("/");
+  revalidatePath(`/artists/${a.id}`);
+  return NextResponse.json({ success: true });
+}
+
+// ── 레거시 승인/반려 (사전승인 시절 pending 샵 잔여분 처리용) ──
+
 async function approveArtist(
   supabase: SupabaseClient, adminId: string, id: string,
 ): Promise<NextResponse> {
@@ -37,21 +115,19 @@ async function approveArtist(
       rejected_at: null,
     })
     .eq("id", id)
-    .eq("status", "pending") // pending 0행이면 동시변경/이미처리 → 409
-    .select("id, user_id, title");
+    .eq("status", "pending")
+    .select(OWNER_SELECT);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!updated?.length) return NextResponse.json({ error: "not_pending_or_already_changed" }, { status: 409 });
 
   const a = updated[0] as { id: string; user_id: string; title: string };
-  // 인앱 알림(+Swing2App 푸시). notifyUser 내부에서 fire-and-forget.
   await notifyUser(a.user_id, {
     type: "SHOP_APPROVED",
     title: "샵 승인 완료 🎉",
     body: `'${a.title}' 샵이 승인되어 정식 오픈되었습니다. 이제 검색·추천에 노출됩니다.`,
     data: { artistId: a.id },
   });
-  // 승인 시점에만 즉시 색인 요청(등록 시점은 pending=비공개라 soft-404 위험).
   notifySearchEngines([`/artists/${a.id}`]);
   revalidatePath("/");
   revalidatePath(`/artists/${a.id}`);
@@ -60,8 +136,12 @@ async function approveArtist(
 }
 
 async function rejectArtist(
-  supabase: SupabaseClient, adminId: string, id: string, reason: string,
+  supabase: SupabaseClient, adminId: string, id: string, rawReason: string,
 ): Promise<NextResponse> {
+  const reason = rawReason.trim();
+  if (!reason) return NextResponse.json({ error: "반려 사유를 입력해주세요" }, { status: 400 });
+  if (reason.length > 500) return NextResponse.json({ error: "반려 사유는 500자 이하" }, { status: 400 });
+
   const { data: updated, error } = await supabase
     .from("artists")
     .update({
@@ -72,7 +152,7 @@ async function rejectArtist(
     })
     .eq("id", id)
     .eq("status", "pending")
-    .select("id, user_id, title");
+    .select(OWNER_SELECT);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!updated?.length) return NextResponse.json({ error: "not_pending_or_already_changed" }, { status: 409 });
@@ -95,14 +175,10 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   const body = await request.json() as { id?: string; action?: string; reason?: string };
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  if (body.action === "approve") {
-    return approveArtist(auth.supabase, auth.userId, body.id);
-  }
-  if (body.action === "reject") {
-    const reason = (body.reason ?? "").trim();
-    if (!reason) return NextResponse.json({ error: "반려 사유를 입력해주세요" }, { status: 400 });
-    if (reason.length > 500) return NextResponse.json({ error: "반려 사유는 500자 이하" }, { status: 400 });
-    return rejectArtist(auth.supabase, auth.userId, body.id, reason);
-  }
+  if (body.action === "confirm") return confirmArtist(auth.supabase, auth.userId, body.id);
+  if (body.action === "takedown") return takedownArtist(auth.supabase, auth.userId, body.id);
+  if (body.action === "restore") return restoreArtist(auth.supabase, body.id);
+  if (body.action === "approve") return approveArtist(auth.supabase, auth.userId, body.id);
+  if (body.action === "reject") return rejectArtist(auth.supabase, auth.userId, body.id, body.reason ?? "");
   return NextResponse.json({ error: "invalid action" }, { status: 400 });
 }

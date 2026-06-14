@@ -5,8 +5,14 @@ import { escapeIlike } from "./queries";
 
 export const APPROVALS_PAGE_SIZE = 20;
 
-/** 승인 워크플로 상태. pending=승인 대기, rejected=반려됨. 단일 목록에서 각 줄의 상태 표시에 사용. */
-export type ApprovalStatus = "pending" | "rejected";
+/**
+ * 사후 점검 큐 상태(사전승인 폐지 후):
+ * - published : 자동 공개됨(active) + 아직 관리자 점검 전(reviewed_by NULL) → '점검 필요'
+ * - hidden    : 관리자가 테이크다운(is_hide=true) → '복구' 가능
+ * - pending   : (레거시) 사전승인 시절 승인 대기 — 승인/반려 가능
+ * - rejected  : (레거시) 반려됨 — 추적용
+ */
+export type ApprovalStatus = "published" | "hidden" | "pending" | "rejected";
 
 export interface ArtistApprovalItem {
   id: string;
@@ -18,7 +24,8 @@ export interface ArtistApprovalItem {
   introduce: string;
   profileImagePath: string | null;
   createdAt: string;
-  status: ApprovalStatus; // 줄 단위 현재 상태 — 뱃지/액션 분기
+  approvedAt: string | null;
+  status: ApprovalStatus; // 줄 단위 파생 상태 — 뱃지/액션 분기
   isResubmit: boolean;
   prevRejectReason: string | null;
   rejectedAt: string | null; // 반려 시각 (rejected 일 때만, 그 외 null)
@@ -35,6 +42,15 @@ interface ArtistApprovalRow {
   id: string; user_id: string; title: string; contact: string; address: string;
   introduce: string; profile_image_path: string | null; created_at: string; status: string;
   resubmitted_at: string | null; reject_reason: string | null; rejected_at: string | null;
+  is_hide: boolean; reviewed_by: string | null; approved_at: string | null;
+}
+
+/** 줄 단위 파생 상태 — 숨김이 최우선, 그다음 레거시 상태, 나머지(공개 미점검)는 published. */
+function deriveStatus(row: ArtistApprovalRow): ApprovalStatus {
+  if (row.is_hide) return "hidden";
+  if (row.status === "rejected") return "rejected";
+  if (row.status === "pending") return "pending";
+  return "published";
 }
 
 async function fetchNicknameMap(supabase: SupabaseClient, ids: string[]): Promise<Map<string, string>> {
@@ -47,8 +63,11 @@ async function fetchNicknameMap(supabase: SupabaseClient, ids: string[]): Promis
   return map;
 }
 
+// 점검 큐 필터: 공개됨(active)+미점검(reviewed_by NULL)+노출중(is_hide false) 또는 숨김됨 또는 레거시(pending/rejected).
+const QUEUE_OR_FILTER = "and(status.eq.active,reviewed_by.is.null,is_hide.eq.false),is_hide.eq.true,status.eq.pending,status.eq.rejected";
+
 /**
- * 승인 워크플로 샵 단일 목록(승인 대기 + 반려됨) — 각 항목의 status 로 상태 표시.
+ * 사후 점검 큐 단일 목록(점검 필요 + 숨김됨 + 레거시 pending/rejected) — 각 항목의 status 로 상태 표시.
  * 서버 컴포넌트(초기 로딩)와 API 라우트(검색/페이지네이션) 공용.
  * createAdminClient(service_role) 사용 — 호출부(AdminLayout/requireAdmin)에서 관리자 검증 선행.
  */
@@ -62,20 +81,17 @@ export async function fetchArtistApprovals(
   let query = supabase
     .from("artists")
     .select(
-      "id, user_id, title, contact, address, introduce, profile_image_path, created_at, status, resubmitted_at, reject_reason, rejected_at",
+      "id, user_id, title, contact, address, introduce, profile_image_path, created_at, status, resubmitted_at, reject_reason, rejected_at, is_hide, reviewed_by, approved_at",
       { count: "exact" },
     )
-    .in("status", ["pending", "rejected"])
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .or(QUEUE_OR_FILTER);
 
   if (opts.search) query = query.ilike("title", `%${escapeIlike(opts.search)}%`);
 
-  // 승인 대기(pending)를 먼저, 그다음 반려됨(rejected) — 'pending' < 'rejected'. 각 그룹 내 오래된 신청순(FIFO).
-  // supabase-js 는 .order() 체인을 '누적'한다 → (status, created_at) 다중 정렬키.
-  // (exhibitions/hero-banners route 와 동일한 검증된 패턴. 뒤 .order() 가 앞을 덮어쓰지 않음.)
+  // 최근 등록 순(신규 공개분을 먼저 점검).
   query = query
-    .order("status", { ascending: true })
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .range(offset, offset + APPROVALS_PAGE_SIZE - 1);
 
   const { data, count, error } = await query;
@@ -87,8 +103,8 @@ export async function fetchArtistApprovals(
   const items: ArtistApprovalItem[] = artists.map((a) => ({
     id: a.id, userId: a.user_id, title: a.title, nickname: nicknameMap.get(a.user_id) ?? "알 수 없음",
     contact: a.contact, address: a.address, introduce: a.introduce,
-    profileImagePath: a.profile_image_path, createdAt: a.created_at,
-    status: a.status === "rejected" ? "rejected" : "pending",
+    profileImagePath: a.profile_image_path, createdAt: a.created_at, approvedAt: a.approved_at,
+    status: deriveStatus(a),
     isResubmit: a.resubmitted_at !== null, prevRejectReason: a.reject_reason,
     rejectedAt: a.rejected_at,
   }));

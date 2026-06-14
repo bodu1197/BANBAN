@@ -20,7 +20,7 @@ import { addressToRegionKey } from "@/lib/regions";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import { useArtistFormHandlers, useArtistCategories, buildFormLabelsFromDict, DaumPostcodeModal } from "@/components/artist-form/ArtistFormFields";
 import { INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
-import { requestShopReview } from "@/lib/actions/shop-review";
+import { publishShop } from "@/lib/actions/shop-review";
 import { OnboardingStepper, type OnboardingStep } from "./components/OnboardingStepper";
 import { ShopInfoStep } from "./components/ShopInfoStep";
 import { ImagesStep } from "./components/ImagesStep";
@@ -29,7 +29,7 @@ import { CompleteStep } from "./components/CompleteStep";
 import { WizardFooter } from "./components/WizardFooter";
 import { registerShop } from "./components/register-helpers";
 
-/** 논스톱 등록에서 다음 단계로 진행하기 위한 최소 작품 수(사용자 결정). 검수 신청 기준(10)과 별개. */
+/** 논스톱 등록에서 다음 단계로 진행하기 위한 최소 작품 수(사용자 결정). 자동공개 기준(10)과 별개. */
 const MIN_ONBOARDING_PORTFOLIOS = 3;
 
 const WIZARD_STEPS: readonly OnboardingStep[] = [
@@ -84,7 +84,7 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
   const [createdArtistId, setCreatedArtistId] = useState<string | null>(null);
   const [addedPreviews, setAddedPreviews] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [published, setPublished] = useState(false);
 
   const t = STRINGS.artistRegister;
   const { handleInputChange, handleBlurNormalize, handleCheckboxChange } = useArtistFormHandlers(setFormData);
@@ -149,9 +149,9 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
   async function finishOnboarding(): Promise<void> {
     setIsProcessing(true);
     try {
-      // 배너+포폴10 충족 시 draft→pending 자동 전환. 미달이면 ok=false(무해, draft 유지).
-      const result = await requestShopReview().catch(() => null);
-      setReviewSubmitted(result?.ok ?? false);
+      // 배너+포폴10 충족 시 draft→active 즉시 공개(사전승인 폐지). 미달이면 ok=false(무해, draft 유지).
+      const result = await publishShop().catch(() => null);
+      setPublished(result?.ok ?? false);
     } finally {
       setIsProcessing(false);
     }
@@ -216,7 +216,7 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
         ) : null}
 
         {step === 4 ? (
-          <CompleteStep reviewSubmitted={reviewSubmitted} portfolioCount={portfolioCount} />
+          <CompleteStep published={published} portfolioCount={portfolioCount} />
         ) : null}
       </div>
 

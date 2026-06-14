@@ -184,6 +184,7 @@ export const fetchArtistById = cache(async function fetchArtistById(
     )
     .eq("id", id)
     .is("deleted_at", null)
+    .eq("is_hide", false) // 테이크다운(is_hide=true) 샵은 상세 페이지도 비공개(404). 목록 게이트와 일치.
     .eq("status", "active")
     .single();
 
