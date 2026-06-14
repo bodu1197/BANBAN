@@ -1,11 +1,11 @@
 /**
  * 샵(artists) 상태 SSOT — 클라이언트/서버 양쪽에서 import 가능한 순수 모듈(서버 의존성 없음).
  *
- * 상태 의미:
- * - draft    : 등록 후 작성 중 (approved_at NULL, 비공개) — 배너+포폴10 채우고 '등록 승인 신청'해야 pending
- * - pending  : 검수 신청 완료, 관리자 승인 대기 (approved_at NULL, 비공개)
- * - active   : 승인 완료, 정식 공개
- * - rejected : 관리자 반려 (approved_at NULL, 비공개) — 수정 후 재신청 가능
+ * 상태 의미(2026-06 사전승인 폐지 → 자동공개):
+ * - draft    : 등록 후 작성 중 (approved_at NULL, 비공개) — 배너+포폴 REQUIRED_PORTFOLIOS개 채우면 publishShop 으로 즉시 active
+ * - active   : 공개 완료(자동공개), 정식 노출
+ * - rejected : (레거시) 관리자 반려 — 수정 후 재신청 가능
+ * - pending  : (레거시) 사전승인 시절 승인 대기 잔존분
  * - dormant  : 90일 미접속/포폴 0 자동 휴면 (approved_at NOT NULL, 공개 유지·로그인 시 자동 active)
  *
  * 노출 게이트 두 기준(의도된 분리):

@@ -165,7 +165,7 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     is_hide: false,
     likes_count: 0,
     views_count: 0,
-    // 등록 직후 '작성 중(draft)' — 비공개. 배너+포폴10 채우고 '지금 공개하기'(publishShop)하면 즉시 active 공개(사전승인 폐지).
+    // 등록 직후 '작성 중(draft)' — 비공개. 배너+포폴 REQUIRED_PORTFOLIOS개 채우고 '지금 공개하기'(publishShop)하면 즉시 active 공개(사전승인 폐지).
     // approved_at NULL → RLS(artists_select) 와 모든 공개 리스트 게이트가 자동 차단(비공개 유지).
     status: "draft",
     approved_at: null,
