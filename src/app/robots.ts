@@ -19,7 +19,7 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   // 비공개 경로 — 모든 봇 공통 차단
-  const disallow = ["/admin", "/admin/*", "/api", "/api/*", "/mypage", "/mypage/*", "/reset-password"];
+  const disallow = ["/admin", "/admin/*", "/api", "/api/*", "/mypage", "/mypage/*", "/register", "/register/*", "/reset-password"];
   // AI 답변/생성 엔진 + 한국 검색 봇 명시 허용 (AEO/GEO) — 차단 시 해당 엔진에서 영구 미인용.
   const aiBots = [
     "GPTBot", "OAI-SearchBot", "ChatGPT-User", // OpenAI
