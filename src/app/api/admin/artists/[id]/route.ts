@@ -48,6 +48,8 @@ function buildArtistUpdates(body: ArtistPatchBody): Record<string, unknown> {
       updates[key] = body[key];
     }
   }
+  // 샵 이름은 등록 경로(buildArtistRow)와 동일하게 trim — isTitleTaken 사전검사·유니크 인덱스와 정합.
+  if (typeof updates.title === "string") updates.title = updates.title.trim();
   return updates;
 }
 

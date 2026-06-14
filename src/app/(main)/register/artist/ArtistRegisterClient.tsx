@@ -6,7 +6,7 @@
 /* eslint-disable max-lines-per-function */
 import { STRINGS } from "@/lib/strings";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -100,6 +100,14 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
       router.push("/mypage");
     }
   }, [authLoading, user, hasShop, createdArtistId, router]);
+
+  // 위저드 이탈/완료(언마운트) 시 누적된 작품 미리보기 blob URL 일괄 해제(메모리 누수 방지).
+  // ref 로 최신 목록 추적 + [] deps → 썸네일 표시 중엔 살아있고 언마운트에서만 revoke.
+  const addedPreviewsRef = useRef<string[]>([]);
+  addedPreviewsRef.current = addedPreviews;
+  useEffect(() => () => {
+    addedPreviewsRef.current.forEach((u) => { if (u.startsWith("blob:")) URL.revokeObjectURL(u); });
+  }, []);
 
   const handleAddressSearch = async (): Promise<void> => {
     const result = await openAddress();

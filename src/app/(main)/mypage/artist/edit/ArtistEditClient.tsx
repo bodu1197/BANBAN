@@ -171,7 +171,7 @@ function validateEditForm(
 
 function buildArtistUpdateData(formData: ArtistFormData, coords: { lat: number; lon: number } | null): Record<string, unknown> {
   const data: Record<string, unknown> = {
-    type_artist: formData.type_artist, title: normalizeFancyText(formData.title),
+    type_artist: formData.type_artist, title: normalizeFancyText(formData.title).trim(),
     contact: formData.contact, instagram_url: formData.instagram_url || null,
     kakao_url: formData.kakao_url || null, zipcode: formData.zipcode,
     address: formData.address,
