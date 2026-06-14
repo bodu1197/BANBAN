@@ -8,31 +8,20 @@ import { StudyLockedView } from "@/components/study/StudyLockedView";
 // 인증·1인 데이터 게이트 → 항상 동적.
 export const dynamic = "force-dynamic";
 
-/** artists 완성도(status/approved_at/배너/포폴수) → 공부방 접근 권한. 체험 폐지: 승인+완성만 무제한. */
+/** artists 공개 여부(approved_at) → 공부방 접근. '오픈된 샵 = 무조건 무제한'(2026-06-15). */
 async function resolveStudyAccess(userId: string): Promise<{ access: StudyAccess; hasShop: boolean; approved: boolean }> {
   const admin = createAdminClient();
   const { data: artist } = await admin
     .from("artists")
-    .select("id, status, approved_at, banner_path")
+    .select("approved_at")
     .eq("user_id", userId)
     .is("deleted_at", null)
     .maybeSingle();
 
   if (!artist) return { access: studyEntitlement(null).access, hasShop: false, approved: false };
 
-  const { count } = await admin
-    .from("portfolios")
-    .select("id", { count: "exact", head: true })
-    .eq("artist_id", artist.id)
-    .is("deleted_at", null);
-
-  const gate = studyEntitlement({
-    status: artist.status,
-    approvedAt: artist.approved_at,
-    hasBanner: artist.banner_path !== null && artist.banner_path !== "",
-    portfolioCount: count ?? 0,
-  });
-  return { access: gate.access, hasShop: true, approved: artist.approved_at !== null };
+  const approved = artist.approved_at !== null;
+  return { access: studyEntitlement({ approvedAt: artist.approved_at }).access, hasShop: true, approved };
 }
 
 export default async function StudyLayout({ children }: Readonly<{ children: React.ReactNode }>): Promise<React.ReactElement> {

@@ -31,24 +31,16 @@ type Admin = ReturnType<typeof createAdminClient>;
 type WriteAuth = { ok: true; userId: string; admin: Admin } | { ok: false; error: string };
 
 /** 인증 + 권한(locked 차단). 통과 시 userId + admin client 반환(fail-closed).
- *  체험 폐지 → 승인 + 완성도(배너 + 포폴) 충족 샵만 통과(layout 게이트와 동일 기준). */
+ *  '오픈된 샵(approved_at != null) = 무조건 통과'(layout 게이트와 동일 기준, 2026-06-15). */
 async function authorizeStudyWrite(): Promise<WriteAuth> {
   const user = await getUser();
   if (!user) return { ok: false, error: UNAUTH };
   const admin = createAdminClient();
   const { data: artist } = await admin
-    .from("artists").select("id, status, approved_at, banner_path")
+    .from("artists").select("approved_at")
     .eq("user_id", user.id).is("deleted_at", null).maybeSingle();
   if (!artist) return { ok: false, error: LOCKED };
-  const { count } = await admin
-    .from("portfolios").select("id", { count: "exact", head: true })
-    .eq("artist_id", artist.id).is("deleted_at", null);
-  const { access } = studyEntitlement({
-    status: artist.status,
-    approvedAt: artist.approved_at,
-    hasBanner: artist.banner_path !== null && artist.banner_path !== "",
-    portfolioCount: count ?? 0,
-  });
+  const { access } = studyEntitlement({ approvedAt: artist.approved_at });
   if (access === "locked") return { ok: false, error: LOCKED };
   return { ok: true, userId: user.id, admin };
 }

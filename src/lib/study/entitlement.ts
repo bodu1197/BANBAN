@@ -1,7 +1,6 @@
-// 공부방 접근 권한 판정(순수, fail-closed). 게이트 결정(LOCKED):
-//   승인(approved_at!=null) + 완성도(대표 배너 + 포트폴리오 REQUIRED_PORTFOLIOS개) = 무제한 / 그 외 = 잠금.
-// 7일 무료 체험 폐지 — 공부방을 '미끼'로 샵 완성·공개를 종용(미완성/미공개 샵은 잠금).
-import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
+// 공부방 접근 권한 판정(순수, fail-closed).
+// 2026-06-15 결정: '오픈(공개)된 샵' 운영자는 무조건 무제한. 공개 = approved_at != null(active/dormant).
+// (이전엔 배너+포폴 완성도까지 요구 → 자동공개 도입으로 단순화: 공개됐으면 곧 완성된 샵.)
 
 export type StudyAccess = "unlimited" | "locked";
 
@@ -10,21 +9,15 @@ export interface StudyEntitlement {
 }
 
 export interface StudyArtistGate {
-  status: string | null;
+  /** 공개 승인 시각(approved_at). null=미공개(draft/없음) → 잠금. */
   approvedAt: string | null;
-  /** 대표 배너 보유 여부(banner_path). */
-  hasBanner: boolean;
-  /** 비삭제 포트폴리오 개수. */
-  portfolioCount: number;
 }
 
 /**
- * 공부방 권한 판정(순수).
- * @param artist artists 완성도 게이트(status·approved_at·배너·포폴수). null=샵 없음 → 잠금.
+ * 공부방 권한 판정(순수). 오픈된(공개된) 샵이면 무제한, 그 외 잠금.
+ * @param artist null=샵 없음 → 잠금.
  */
 export function studyEntitlement(artist: Readonly<StudyArtistGate> | null): StudyEntitlement {
   if (!artist) return { access: "locked" };
-  const complete = artist.hasBanner && artist.portfolioCount >= REQUIRED_PORTFOLIOS;
-  if (artist.approvedAt !== null && complete) return { access: "unlimited" };
-  return { access: "locked" };
+  return { access: artist.approvedAt !== null ? "unlimited" : "locked" };
 }
