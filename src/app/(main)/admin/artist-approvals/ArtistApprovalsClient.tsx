@@ -94,16 +94,18 @@ function ApprovalTableHead({ labels }: Readonly<{ labels: readonly string[] }>):
 
 const BADGE_CLASS = "inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold";
 
-function badgeStyle(status: ApprovalStatus): { label: string; cls: string } {
-  if (status === "published") return { label: "점검 필요", cls: "bg-sky-500/15 text-sky-300" };
-  if (status === "hidden") return { label: "숨김됨", cls: "bg-zinc-500/15 text-zinc-300" };
-  if (status === "pending") return { label: "승인 대기", cls: "bg-amber-500/15 text-amber-300" };
-  return { label: "반려됨", cls: "bg-red-500/15 text-red-300" };
-}
+// Record<ApprovalStatus, …> — 새 상태 추가 시 누락을 컴파일 타임에 강제.
+const STATUS_BADGE: Record<ApprovalStatus, { label: string; cls: string }> = {
+  published: { label: "점검 필요", cls: "bg-sky-500/15 text-sky-300" },
+  active: { label: "공개중", cls: "bg-emerald-500/15 text-emerald-300" },
+  hidden: { label: "숨김됨", cls: "bg-zinc-500/15 text-zinc-300" },
+  pending: { label: "승인 대기", cls: "bg-amber-500/15 text-amber-300" },
+  rejected: { label: "반려됨", cls: "bg-red-500/15 text-red-300" },
+};
 
-// 줄 단위 상태 뱃지: 점검 필요 / 숨김됨 / 승인 대기(레거시) / 반려됨 (+ 재신청 표식).
+// 줄 단위 상태 뱃지: 점검 필요 / 공개중 / 숨김됨 / 승인 대기(레거시) / 반려됨 (+ 재신청 표식).
 function StatusBadge({ artist }: Readonly<{ artist: ArtistApprovalItem }>): React.ReactElement {
-  const { label, cls } = badgeStyle(artist.status);
+  const { label, cls } = STATUS_BADGE[artist.status];
   return (
     <span className="inline-flex items-center gap-1">
       <span className={`${BADGE_CLASS} ${cls}`}>{label}</span>
@@ -149,6 +151,16 @@ interface RowActionHandlers {
   onReject: () => void;
 }
 
+// 숨김(테이크다운) 버튼 — 점검 필요/공개중 양쪽에서 재사용. 클릭 시 사유 입력 모달이 열린다.
+function TakedownButton({ title, onClick }: Readonly<{ title: string; onClick: () => void }>): React.ReactElement {
+  return (
+    <button type="button" onClick={onClick} aria-label={`${title} 샵 숨김(테이크다운)`}
+      className={`${ACTION_BTN} text-amber-400 hover:bg-amber-500/10 focus-visible:bg-amber-500/10`}>
+      <EyeOff className="h-3.5 w-3.5" aria-hidden="true" /> 숨김
+    </button>
+  );
+}
+
 function RowActions({ artist, h }: Readonly<{ artist: ArtistApprovalItem; h: RowActionHandlers }>): React.ReactElement {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -159,12 +171,10 @@ function RowActions({ artist, h }: Readonly<{ artist: ArtistApprovalItem; h: Row
             className={`${ACTION_BTN} text-green-400 hover:bg-green-500/10 focus-visible:bg-green-500/10`}>
             <Check className="h-3.5 w-3.5" aria-hidden="true" /> 확인
           </button>
-          <button type="button" onClick={h.onTakedown} aria-label={`${artist.title} 샵 숨김(테이크다운)`}
-            className={`${ACTION_BTN} text-amber-400 hover:bg-amber-500/10 focus-visible:bg-amber-500/10`}>
-            <EyeOff className="h-3.5 w-3.5" aria-hidden="true" /> 숨김
-          </button>
+          <TakedownButton title={artist.title} onClick={h.onTakedown} />
         </>
       ) : null}
+      {artist.status === "active" ? <TakedownButton title={artist.title} onClick={h.onTakedown} /> : null}
       {artist.status === "hidden" ? (
         <button type="button" onClick={h.onRestore} aria-label={`${artist.title} 샵 복구`}
           className={`${ACTION_BTN} text-sky-400 hover:bg-sky-500/10 focus-visible:bg-sky-500/10`}>
@@ -288,9 +298,10 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
     <div className="space-y-4 p-4 lg:p-6">
       <AdminPageHeader title="샵 점검 관리" count={data.total} />
       <p className="text-xs text-zinc-500">
-        샵은 등록 기준(배너+작품 {REQUIRED_PORTFOLIOS}개) 충족 시 <b className="text-sky-400">자동 공개</b>됩니다. 여기서 사후로 점검하세요. {" "}
-        <b className="text-sky-400">점검 필요</b>는 새로 공개된 샵 — <b className="text-green-400">확인</b>(이상 없음) 또는 <b className="text-amber-300">숨김</b>(테이크다운),
-        <b className="text-zinc-300"> 숨김됨</b>은 <b className="text-sky-400">복구</b> 가능합니다. <b className="text-sky-400">샵 보기</b>로 실제 데이터를 확인하세요.
+        샵은 등록 기준(배너+작품 {REQUIRED_PORTFOLIOS}개) 충족 시 <b className="text-sky-400">자동 공개</b>됩니다. 여기서 사후로 점검·관리하세요. {" "}
+        <b className="text-sky-400">점검 필요</b>는 새로 공개된 샵 — <b className="text-green-400">확인</b>(이상 없음) 또는 <b className="text-amber-300">숨김</b>. {" "}
+        <b className="text-emerald-300">공개중</b>인 샵도 문제가 있으면 <b className="text-amber-300">숨김</b>(사유 입력 필수 → 운영자에게 전달)으로 언제든 비공개 처리할 수 있고, {" "}
+        <b className="text-zinc-300">숨김됨</b>은 <b className="text-sky-400">복구</b> 가능합니다. <b className="text-sky-400">샵 보기</b>로 실제 데이터를 확인하세요.
       </p>
 
       <AdminSearchBar onSearch={setSearch} placeholder="샵명 검색..." accentColor="purple" />

@@ -7,12 +7,13 @@ export const APPROVALS_PAGE_SIZE = 20;
 
 /**
  * 사후 점검 큐 상태(사전승인 폐지 후):
- * - published : 자동 공개됨(active) + 아직 관리자 점검 전(reviewed_by NULL) → '점검 필요'
+ * - published : 자동 공개됨(active) + 아직 관리자 점검 전(reviewed_by NULL) → '점검 필요' (확인/숨김)
+ * - active    : 공개중(active) + 점검 완료(reviewed_by 있음) → '공개중' (언제든 사유 입력 후 숨김 가능)
  * - hidden    : 관리자가 테이크다운(is_hide=true) → '복구' 가능
  * - pending   : (레거시) 사전승인 시절 승인 대기 — 승인/반려 가능
  * - rejected  : (레거시) 반려됨 — 추적용
  */
-export type ApprovalStatus = "published" | "hidden" | "pending" | "rejected";
+export type ApprovalStatus = "published" | "active" | "hidden" | "pending" | "rejected";
 
 export interface ArtistApprovalItem {
   id: string;
@@ -45,12 +46,13 @@ interface ArtistApprovalRow {
   is_hide: boolean; reviewed_by: string | null; approved_at: string | null;
 }
 
-/** 줄 단위 파생 상태 — 숨김이 최우선, 그다음 레거시 상태, 나머지(공개 미점검)는 published. */
+/** 줄 단위 파생 상태 — 숨김이 최우선, 그다음 레거시 상태, 공개 active 는 점검 여부로 published/active 구분. */
 function deriveStatus(row: ArtistApprovalRow): ApprovalStatus {
   if (row.is_hide) return "hidden";
   if (row.status === "rejected") return "rejected";
   if (row.status === "pending") return "pending";
-  return "published";
+  // 여기 도달 = 공개중(active, is_hide=false). 아직 점검 안 했으면 '점검 필요', 점검했으면 '공개중'.
+  return row.reviewed_by === null ? "published" : "active";
 }
 
 async function fetchNicknameMap(supabase: SupabaseClient, ids: string[]): Promise<Map<string, string>> {
@@ -63,8 +65,8 @@ async function fetchNicknameMap(supabase: SupabaseClient, ids: string[]): Promis
   return map;
 }
 
-// 점검 큐 필터: 공개됨(active)+미점검(reviewed_by NULL)+노출중(is_hide false) 또는 숨김됨 또는 레거시(pending/rejected).
-const QUEUE_OR_FILTER = "and(status.eq.active,reviewed_by.is.null,is_hide.eq.false),is_hide.eq.true,status.eq.pending,status.eq.rejected";
+// 점검 큐 필터: 공개중(active+노출중) 전부(점검 여부 무관 — 언제든 숨김 가능해야 함) 또는 숨김됨 또는 레거시(pending/rejected).
+const QUEUE_OR_FILTER = "and(status.eq.active,is_hide.eq.false),is_hide.eq.true,status.eq.pending,status.eq.rejected";
 
 /**
  * 사후 점검 큐 단일 목록(점검 필요 + 숨김됨 + 레거시 pending/rejected) — 각 항목의 status 로 상태 표시.
@@ -89,8 +91,10 @@ export async function fetchArtistApprovals(
 
   if (opts.search) query = query.ilike("title", `%${escapeIlike(opts.search)}%`);
 
-  // 최근 등록 순(신규 공개분을 먼저 점검).
+  // 공개중(is_hide=false) 먼저, 숨김된 샵은 뒤로 — 관리(점검/숨김) 대상 active 샵을 위에서 바로 보게.
+  // 그 안에서는 최근 등록 순.
   query = query
+    .order("is_hide", { ascending: true })
     .order("created_at", { ascending: false })
     .range(offset, offset + APPROVALS_PAGE_SIZE - 1);
 

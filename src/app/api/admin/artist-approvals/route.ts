@@ -58,6 +58,7 @@ async function takedownArtist(
     .update({ is_hide: true, reviewed_by: adminId, reject_reason: reason, resubmitted_at: null })
     .eq("id", id)
     .eq("is_hide", false)
+    .eq("status", "active") // 공개중(active) 샵만 테이크다운 — 큐 노출 범위와 일치(pending/draft 등 직접호출 차단).
     .select(OWNER_SELECT);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!updated?.length) return NextResponse.json({ error: "already_hidden_or_not_found" }, { status: 409 });
