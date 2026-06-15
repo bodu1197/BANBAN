@@ -158,24 +158,6 @@ function resolveTabs(
   return { tabs, initialTab };
 }
 
-// 탭 패널 — 탭이 둘 이상이면 tabpanel(탭바와 연결), 하나뿐이면 단독 region. activeTab 은 항상 노출 탭 안.
-function TabPanel({ activeTab, hasTabs, soleLabel, children }: Readonly<{
-  activeTab: ShopTabId; hasTabs: boolean; soleLabel: string; children: React.ReactNode;
-}>): React.ReactElement {
-  return (
-    <section
-      id={`tabpanel-${activeTab}`}
-      role={hasTabs ? "tabpanel" : "region"}
-      aria-labelledby={hasTabs ? `tab-${activeTab}` : undefined}
-      aria-label={hasTabs ? undefined : soleLabel}
-      tabIndex={0}
-      className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-    >
-      {children}
-    </section>
-  );
-}
-
 export function ShopBlogClient({
   hero,
   data,
@@ -213,16 +195,20 @@ export function ShopBlogClient({
     }
   }, [activeTab]);
 
-  // 노출 탭이 하나뿐이면(예: 포폴만 있는 샵) 탭바는 군더더기 → 숨기고 콘텐츠를 바로 보여준다.
-  const showTabs = tabs.length > 1;
-
+  // 탭바는 항상 표시(탭 이름 유지) — 빈 탭만 숨기고, 탭이 하나여도 그 이름은 남긴다.
   return (
     <>
       {hero}
-      {showTabs ? <ShopTabsNav ref={tablistRef} activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} /> : null}
-      <TabPanel activeTab={activeTab} hasTabs={showTabs} soleLabel={tabs[0]?.label ?? ""}>
+      <ShopTabsNav ref={tablistRef} activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} />
+      <section
+        id={`tabpanel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        tabIndex={0}
+        className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
         {renderActivePanel({ activeTab, data, labels, artistId, isLoggedIn })}
-      </TabPanel>
+      </section>
     </>
   );
 }
