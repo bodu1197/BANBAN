@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { createAdminClient } from "@/lib/supabase/server";
+import { ACTION_REQUIRED_OR_FILTER } from "@/lib/supabase/artist-approval-queries";
 
 interface CountResult {
   count: number | null;
@@ -34,14 +35,15 @@ async function getNewMemberCount(): Promise<number> {
   return count ?? 0;
 }
 
-// 사후 점검 '조치 필요' 배지 카운트 — 미점검 공개(active+reviewed_by NULL) + 레거시 승인 대기(pending)만.
-// 숨김됨/반려됨은 조치 완료분이라 배지에서 제외(목록 페이지엔 복구/추적용으로 노출 — 의도된 차이).
+// 사후 점검 '조치 필요' 배지 카운트 — 미점검 공개 + 레거시 승인 대기 + 재검토 요청.
+// 조건은 ACTION_REQUIRED_OR_FILTER(artist-approval-queries) 단일 소스 재사용(큐 정렬과 의미 동기화).
+// 일반 숨김됨(요청 없음)/반려됨은 조치 완료분이라 제외(목록엔 복구/추적용 노출 — 의도된 차이).
 async function getPendingArtistCount(): Promise<number> {
   const supabase = createAdminClient();
   const { count } = await supabase
     .from("artists")
     .select("id", { count: "exact", head: true })
-    .or("and(status.eq.active,reviewed_by.is.null,is_hide.eq.false),status.eq.pending")
+    .or(ACTION_REQUIRED_OR_FILTER)
     .is("deleted_at", null) as CountResult;
   return count ?? 0;
 }

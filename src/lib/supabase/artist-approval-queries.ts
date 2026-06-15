@@ -68,6 +68,12 @@ async function fetchNicknameMap(supabase: SupabaseClient, ids: string[]): Promis
 // 점검 큐 필터: 공개중(active+노출중) 전부(점검 여부 무관 — 언제든 숨김 가능해야 함) 또는 숨김됨 또는 레거시(pending/rejected).
 const QUEUE_OR_FILTER = "and(status.eq.active,is_hide.eq.false),is_hide.eq.true,status.eq.pending,status.eq.rejected";
 
+// '조치 필요'(관리자 액션 대기) 필터 — 사이드바 카운트 배지와 의미를 맞추는 단일 소스(중복 정의 방지).
+// 미점검 공개(active+reviewed_by NULL) + 레거시 승인 대기(pending) + 재검토 요청(숨김+resubmitted_at).
+// 목록(QUEUE_OR_FILTER)은 이보다 넓게 '관리 가능한 모든 샵'을 보여주되, 여기 잡히는 항목은 정렬상 상단에 온다.
+export const ACTION_REQUIRED_OR_FILTER =
+  "and(status.eq.active,reviewed_by.is.null,is_hide.eq.false),status.eq.pending,and(is_hide.eq.true,resubmitted_at.not.is.null)";
+
 /**
  * 사후 점검 큐 단일 목록(점검 필요 + 숨김됨 + 레거시 pending/rejected) — 각 항목의 status 로 상태 표시.
  * 서버 컴포넌트(초기 로딩)와 API 라우트(검색/페이지네이션) 공용.
@@ -91,9 +97,11 @@ export async function fetchArtistApprovals(
 
   if (opts.search) query = query.ilike("title", `%${escapeIlike(opts.search)}%`);
 
-  // 공개중(is_hide=false) 먼저, 숨김된 샵은 뒤로 — 관리(점검/숨김) 대상 active 샵을 위에서 바로 보게.
-  // 그 안에서는 최근 등록 순.
+  // 정렬 우선순위: ① 재검토 요청(resubmitted_at 있음 — 운영자가 수정 후 대기, 가장 시급)을 최상단으로,
+  // ② 공개중(is_hide=false) 관리 대상, ③ 일반 숨김됨은 뒤로. 각 그룹 내 최근순.
+  // resubmitted_at NOT NULL 을 먼저(내림차순·nulls last) → 재검토 요청이 1페이지 맨 위에 뜬다.
   query = query
+    .order("resubmitted_at", { ascending: false, nullsFirst: false })
     .order("is_hide", { ascending: true })
     .order("created_at", { ascending: false })
     .range(offset, offset + APPROVALS_PAGE_SIZE - 1);

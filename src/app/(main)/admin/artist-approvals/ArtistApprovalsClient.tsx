@@ -299,6 +299,7 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
       <AdminPageHeader title="샵 점검 관리" count={data.total} />
       <p className="text-xs text-zinc-500">
         샵은 등록 기준(배너+작품 {REQUIRED_PORTFOLIOS}개) 충족 시 <b className="text-sky-400">자동 공개</b>됩니다. 여기서 사후로 점검·관리하세요. {" "}
+        <b className="text-amber-300">재검토 요청됨</b>(운영자가 숨김 후 수정·재요청)은 <b>맨 위에</b> 표시됩니다 — 확인 후 <b className="text-sky-400">복구</b>하세요. {" "}
         <b className="text-sky-400">점검 필요</b>는 새로 공개된 샵 — <b className="text-green-400">확인</b>(이상 없음) 또는 <b className="text-amber-300">숨김</b>. {" "}
         <b className="text-emerald-300">공개중</b>인 샵도 문제가 있으면 <b className="text-amber-300">숨김</b>(사유 입력 필수 → 운영자에게 전달)으로 언제든 비공개 처리할 수 있고, {" "}
         <b className="text-zinc-300">숨김됨</b>은 <b className="text-sky-400">복구</b> 가능합니다. <b className="text-sky-400">샵 보기</b>로 실제 데이터를 확인하세요.
