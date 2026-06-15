@@ -18,14 +18,12 @@ import {
 } from "@/components/portfolio-form";
 import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 
-function ProgressHint({ reachedGate, reachedMin, minRequired }: Readonly<{
-  reachedGate: boolean; reachedMin: boolean; minRequired: number;
+// 완료=즉시 공개(minRequired === REQUIRED_PORTFOLIOS)라 게이트 도달/미도달 2상태만 존재.
+function ProgressHint({ reachedGate, minRequired }: Readonly<{
+  reachedGate: boolean; minRequired: number;
 }>): React.ReactElement {
   if (reachedGate) {
     return <p className="mt-2 text-xs font-medium text-emerald-600">공개 준비 완료! ‘완료’를 누르면 샵이 바로 공개됩니다.</p>;
-  }
-  if (reachedMin) {
-    return <p className="mt-2 text-xs text-muted-foreground">‘완료’를 눌러 진행할 수 있어요. 더 채우면 바로 공개까지 됩니다.</p>;
   }
   return <p className="mt-2 text-xs text-muted-foreground">작품을 {minRequired}개 이상 등록하면 바로 공개할 수 있어요.</p>;
 }
@@ -75,7 +73,6 @@ export function PortfolioStep({
   }
 
   const count = addedPreviews.length;
-  const reachedMin = count >= minRequired;
   const reachedGate = count >= REQUIRED_PORTFOLIOS;
   const isSemiPermanent = typeArtist === "SEMI_PERMANENT";
   const progressPct = Math.min(100, (count / REQUIRED_PORTFOLIOS) * 100);
@@ -97,9 +94,9 @@ export function PortfolioStep({
         </div>
         <p className="mt-2 flex items-start gap-1.5 text-xs text-brand-primary">
           <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>작품은 {REQUIRED_PORTFOLIOS}개만 올려도 바로 공개돼요. 많이 올릴수록 상담 문의가 비례해서 늘어나니 꾸준히 추가해 주세요.</span>
+          <span>작품 {REQUIRED_PORTFOLIOS}개를 채우면 바로 공개돼요. 많이 올릴수록 상담 문의가 비례해서 늘어나니 꾸준히 추가해 주세요.</span>
         </p>
-        <ProgressHint reachedGate={reachedGate} reachedMin={reachedMin} minRequired={minRequired} />
+        <ProgressHint reachedGate={reachedGate} minRequired={minRequired} />
       </div>
 
       {/* 등록 완료된 작품 — 항상 보이는 라벨로 '등록됨'을 명확히 인지시킴 */}

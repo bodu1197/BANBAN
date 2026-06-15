@@ -19,9 +19,10 @@ export const ARTIST_STATUSES: readonly ArtistStatus[] = ["draft", "pending", "ac
 
 /**
  * 자동공개(및 공부방 무제한) 게이트에 필요한 최소 포트폴리오 수. (server action·client 공용)
- * 2026-06-15: 10 → 1 로 하향(사용자 결정) — 배너 + 작품 1개면 즉시 공개. '완성도' 기준이라 공부방 해금과 정렬 유지.
+ * 2026-06-15: 1 → 5 로 상향(사용자 결정) — 홍보 장소를 제공받으려면 최소한의 성의(작품 5개)가 필요.
+ * 공개 목록 노출 기준 MIN_PORTFOLIO_MEDIA(=5, artist-visibility)와 정렬 → '합격 = 목록 노출' 일치.
  */
-export const REQUIRED_PORTFOLIOS = 1;
+export const REQUIRED_PORTFOLIOS = 5;
 
 /**
  * 공개 노출 가능한 상태(승인 완료 = active 또는 dormant). draft/pending/rejected 는 외부 비공개.

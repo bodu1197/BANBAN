@@ -21,6 +21,7 @@ import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import { useArtistFormHandlers, useArtistCategories, buildFormLabelsFromDict, DaumPostcodeModal } from "@/components/artist-form/ArtistFormFields";
 import { INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
 import { publishShop } from "@/lib/actions/shop-review";
+import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 import { OnboardingStepper, type OnboardingStep } from "./components/OnboardingStepper";
 import { ShopInfoStep } from "./components/ShopInfoStep";
 import { ImagesStep } from "./components/ImagesStep";
@@ -29,8 +30,9 @@ import { CompleteStep } from "./components/CompleteStep";
 import { WizardFooter } from "./components/WizardFooter";
 import { registerShop } from "./components/register-helpers";
 
-/** 논스톱 등록에서 다음 단계로 진행하기 위한 최소 작품 수. 2026-06-15: 3 → 1(작품 1개면 진행·공개). */
-const MIN_ONBOARDING_PORTFOLIOS = 1;
+/** 논스톱 등록 완료(=즉시 공개) 최소 작품 수. 위저드 완료 = 즉시 공개이므로 합격 게이트와 동일하게 유지
+ *  (REQUIRED_PORTFOLIOS 단일 소스 재사용 — 드리프트 방지). 2026-06-15: 1 → 5 상향. */
+const MIN_ONBOARDING_PORTFOLIOS = REQUIRED_PORTFOLIOS;
 
 const WIZARD_STEPS: readonly OnboardingStep[] = [
   { id: 1, label: "샵정보" },
@@ -176,7 +178,7 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
   async function finishOnboarding(): Promise<void> {
     setIsProcessing(true);
     try {
-      // 배너+포폴10 충족 시 draft→active 즉시 공개(사전승인 폐지). 미달이면 ok=false(무해, draft 유지).
+      // 배너+포폴 REQUIRED_PORTFOLIOS개 충족 시 draft→active 즉시 공개(사전승인 폐지). 미달이면 ok=false(무해, draft 유지).
       const result = await publishShop().catch(() => null);
       setPublished(result?.ok ?? false);
     } finally {
