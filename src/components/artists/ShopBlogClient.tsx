@@ -23,6 +23,9 @@ function isShopTabId(value: string | null): value is ShopTabId {
   return value !== null && VALID_TABS.has(value as ShopTabId);
 }
 
+// 모든 탭이 비었을 때(예: 미리보기 draft) 남길 앵커 탭 + 기본 탭 폴백. 공개 샵은 포폴 ≥5라 항상 채워짐.
+const ANCHOR_TAB_ID: ShopTabId = "portfolio";
+
 export interface ShopBlogData {
   events: EventCardData[];
   portfolios: PortfolioWithMedia[];
@@ -134,6 +137,45 @@ function renderActivePanel(props: Readonly<PanelProps>): React.ReactNode {
   );
 }
 
+type ShopTab = { id: ShopTabId; label: string; count: number };
+
+// 노출 탭(데이터>0)과 기본 탭 계산 — 컴포넌트 복잡도 분리.
+// 빈 탭은 숨겨(빈 페이지 방지), 전부 비면 포트폴리오를 앵커로. 기본 탭은 URL 지정(데이터 있을 때만) 아니면 첫 노출 탭.
+function resolveTabs(
+  counts: ShopBlogCounts, labels: ShopBlogLabels, tabParam: string | null,
+): { tabs: ReadonlyArray<ShopTab>; initialTab: ShopTabId } {
+  const allTabs: ReadonlyArray<ShopTab> = [
+    { id: "events", label: labels.events, count: counts.events },
+    { id: "portfolio", label: labels.portfolio, count: counts.portfolios },
+    { id: "beforeAfter", label: labels.beforeAfter, count: counts.beforeAfter },
+    { id: "reviews", label: labels.reviews, count: counts.reviews },
+  ];
+  const nonEmpty = allTabs.filter((t) => t.count > 0);
+  const tabs = nonEmpty.length > 0 ? nonEmpty : allTabs.filter((t) => t.id === ANCHOR_TAB_ID);
+  const firstTabId: ShopTabId = tabs[0]?.id ?? ANCHOR_TAB_ID;
+  const initialTab: ShopTabId =
+    isShopTabId(tabParam) && tabs.some((t) => t.id === tabParam) ? tabParam : firstTabId;
+  return { tabs, initialTab };
+}
+
+// 탭 패널 — 탭이 둘 이상이면 tabpanel(탭바와 연결), 하나뿐이면 단독 region. activeTab 은 항상 노출 탭 안.
+function TabPanel({ activeTab, hasTabs, soleLabel, children }: Readonly<{
+  activeTab: ShopTabId; hasTabs: boolean; soleLabel: string; children: React.ReactNode;
+}>): React.ReactElement {
+  return (
+    <section
+      id={`tabpanel-${activeTab}`}
+      role={hasTabs ? "tabpanel" : "region"}
+      aria-labelledby={hasTabs ? `tab-${activeTab}` : undefined}
+      aria-label={hasTabs ? undefined : soleLabel}
+      tabIndex={0}
+      className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      {children}
+    </section>
+  );
+}
+
 export function ShopBlogClient({
   hero,
   data,
@@ -144,7 +186,7 @@ export function ShopBlogClient({
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: ShopTabId = isShopTabId(tabParam) ? tabParam : "events";
+  const { tabs, initialTab } = resolveTabs(counts, labels, tabParam);
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
   const tablistRef = useRef<HTMLDivElement>(null);
   const scrollToTopOnNextRenderRef = useRef(false);
@@ -171,26 +213,16 @@ export function ShopBlogClient({
     }
   }, [activeTab]);
 
-  const tabs: ReadonlyArray<{ id: ShopTabId; label: string; count?: number }> = [
-    { id: "events", label: labels.events, count: counts.events },
-    { id: "portfolio", label: labels.portfolio, count: counts.portfolios },
-    { id: "beforeAfter", label: labels.beforeAfter, count: counts.beforeAfter },
-    { id: "reviews", label: labels.reviews, count: counts.reviews },
-  ];
+  // 노출 탭이 하나뿐이면(예: 포폴만 있는 샵) 탭바는 군더더기 → 숨기고 콘텐츠를 바로 보여준다.
+  const showTabs = tabs.length > 1;
 
   return (
     <>
       {hero}
-      <ShopTabsNav ref={tablistRef} activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} />
-      <section
-        id={`tabpanel-${activeTab}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${activeTab}`}
-        tabIndex={0}
-        className="min-h-[calc(100vh-7rem)] px-4 py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
+      {showTabs ? <ShopTabsNav ref={tablistRef} activeTab={activeTab} onTabClick={handleTabClick} tabs={tabs} /> : null}
+      <TabPanel activeTab={activeTab} hasTabs={showTabs} soleLabel={tabs[0]?.label ?? ""}>
         {renderActivePanel({ activeTab, data, labels, artistId, isLoggedIn })}
-      </section>
+      </TabPanel>
     </>
   );
 }
