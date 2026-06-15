@@ -1,20 +1,30 @@
 import Link from "next/link";
 import { Clock, XCircle, ChevronRight } from "lucide-react";
 import { DraftReviewBanner } from "./DraftReviewBanner";
+import { HiddenShopBanner } from "./HiddenShopBanner";
 
 interface ShopStatusBannerProps {
   status: string;
   rejectReason: string | null;
+  /** 관리자 테이크다운 여부 — status 와 무관하게 최우선 분기(숨김 샵은 status='active'). */
+  isHide: boolean;
+  /** 숨김 샵의 재검토 요청 여부(resubmitted_at 존재). */
+  reReviewRequested: boolean;
 }
 
 /**
  * 마이페이지 상단 샵 상태 배너.
+ * - hidden(is_hide): 비공개 처리 안내 + 사유 + 수정/재검토 요청 (최우선)
  * - draft: 작성 중 + '지금 공개하기' 버튼(배너+포폴 REQUIRED_PORTFOLIOS개 충족 시 즉시 active 공개 — 사전승인 폐지)
  * - pending: (레거시) 승인 대기 안내 (amber — 등록폼 경고 톤과 일치)
  * - rejected: (레거시) 반려 사유 + 재신청 CTA (destructive 토큰 — ArtistShopSetupBanner 와 일치)
  * - active/dormant: 표시 없음(null)
  */
-export function ShopStatusBanner({ status, rejectReason }: Readonly<ShopStatusBannerProps>): React.ReactElement | null {
+export function ShopStatusBanner({ status, rejectReason, isHide, reReviewRequested }: Readonly<ShopStatusBannerProps>): React.ReactElement | null {
+  if (isHide) {
+    return <HiddenShopBanner reason={rejectReason} reReviewRequested={reReviewRequested} />;
+  }
+
   if (status === "draft") {
     return <DraftReviewBanner />;
   }

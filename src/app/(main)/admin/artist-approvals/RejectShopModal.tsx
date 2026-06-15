@@ -78,9 +78,14 @@ function ReasonNote({ note, onChange, charCount, overLimit }: Readonly<{
   );
 }
 
-function RejectActions({ submitting, canSubmit, onCancel, onSubmit }: Readonly<{
-  submitting: boolean; canSubmit: boolean; onCancel: () => void; onSubmit: () => void;
+function RejectActions({ submitting, canSubmit, onCancel, onSubmit, submitLabel, submitAccent }: Readonly<{
+  submitting: boolean; canSubmit: boolean; onCancel: () => void; onSubmit: () => void; submitLabel: string;
+  submitAccent: "red" | "amber";
 }>): React.ReactElement {
+  // 반려=red(부정/삭제), 비공개(테이크다운)=amber(일시 숨김·복구 가능) — 큐의 '숨김' 버튼 색과 일치.
+  const accent = submitAccent === "amber"
+    ? "bg-amber-500 hover:bg-amber-600 focus-visible:bg-amber-600"
+    : "bg-red-500 hover:bg-red-600 focus-visible:bg-red-600";
   return (
     <DialogFooter>
       <button
@@ -95,19 +100,24 @@ function RejectActions({ submitting, canSubmit, onCancel, onSubmit }: Readonly<{
         type="button"
         onClick={onSubmit}
         disabled={!canSubmit}
-        className="inline-flex h-10 items-center justify-center rounded-lg bg-red-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-600 focus-visible:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+        className={`inline-flex h-10 items-center justify-center rounded-lg ${accent} px-4 text-sm font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50`}
       >
-        {submitting ? "처리 중…" : "반려하기"}
+        {submitting ? "처리 중…" : submitLabel}
       </button>
     </DialogFooter>
   );
 }
 
 // 안정 마운트 controlled 패턴(닫기 시 reset) — Radix Dialog 표준 사용.
-export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
+// 반려/비공개(테이크다운) 공용 — heading/description/submitLabel 로 문구만 바꿔 재사용.
+export function RejectShopModal({ shop, onClose, onConfirm, heading = "샵 반려", description, submitLabel = "반려하기", submitAccent = "red" }: Readonly<{
   shop: RejectTarget | null;
   onClose: () => void;
   onConfirm: (reason: string) => Promise<boolean>;
+  heading?: string;
+  description?: string;
+  submitLabel?: string;
+  submitAccent?: "red" | "amber";
 }>): React.ReactElement {
   const [selected, setSelected] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -156,21 +166,21 @@ export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
     } catch {
       // 네트워크 오류 등으로 onConfirm 이 reject → 버튼 고착 방지(submitting 해제 후 복구)
       setSubmitting(false);
-      setError("네트워크 오류로 반려에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      setError("네트워크 오류로 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
     if (ok) { close(); return; }
     setSubmitting(false);
-    setError("반려 처리에 실패했습니다. 이미 처리되었을 수 있습니다.");
+    setError("처리에 실패했습니다. 이미 처리되었을 수 있습니다.");
   }
 
   return (
     <Dialog open={shop !== null} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-zinc-900 text-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-white">{shop ? `'${shop.title}' 샵 반려` : "샵 반려"}</DialogTitle>
+          <DialogTitle className="text-white">{shop ? `'${shop.title}' ${heading}` : heading}</DialogTitle>
           <DialogDescription className="text-zinc-400">
-            해당하는 사유를 선택하거나 직접 작성하세요. 선택한 내용은 신청자에게 그대로 전달되어 샵 개선에 사용됩니다.
+            {description ?? "해당하는 사유를 선택하거나 직접 작성하세요. 선택한 내용은 운영자에게 그대로 전달되어 샵 개선에 사용됩니다."}
           </DialogDescription>
         </DialogHeader>
 
@@ -179,7 +189,7 @@ export function RejectShopModal({ shop, onClose, onConfirm }: Readonly<{
 
         {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
 
-        <RejectActions submitting={submitting} canSubmit={canSubmit} onCancel={close} onSubmit={() => void submit()} />
+        <RejectActions submitting={submitting} canSubmit={canSubmit} onCancel={close} onSubmit={() => void submit()} submitLabel={submitLabel} submitAccent={submitAccent} />
       </DialogContent>
     </Dialog>
   );

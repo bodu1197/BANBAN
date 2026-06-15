@@ -45,13 +45,17 @@ async function confirmArtist(
   return NextResponse.json({ success: true });
 }
 
-/** 테이크다운 — is_hide=true 로 즉시 비공개. 본인 알림 + 검색엔진 재크롤(소거) + 캐시 무효화. */
+/** 테이크다운 — is_hide=true 로 즉시 비공개 + 사유 기록(reject_reason). 본인 알림(사유 포함) + 색인 소거. */
 async function takedownArtist(
-  supabase: SupabaseClient, adminId: string, id: string,
+  supabase: SupabaseClient, adminId: string, id: string, rawReason: string,
 ): Promise<NextResponse> {
+  const reason = rawReason.trim();
+  if (!reason) return NextResponse.json({ error: "비공개 사유를 입력해주세요" }, { status: 400 });
+  if (reason.length > 500) return NextResponse.json({ error: "사유는 500자 이하" }, { status: 400 });
+
   const { data: updated, error } = await supabase
     .from("artists")
-    .update({ is_hide: true, reviewed_by: adminId })
+    .update({ is_hide: true, reviewed_by: adminId, reject_reason: reason, resubmitted_at: null })
     .eq("id", id)
     .eq("is_hide", false)
     .select(OWNER_SELECT);
@@ -62,8 +66,8 @@ async function takedownArtist(
   await notifyUser(a.user_id, {
     type: "SHOP_HIDDEN",
     title: "샵 비공개 처리 안내",
-    body: `'${a.title}' 샵이 관리자 점검으로 비공개 처리되었습니다. 문의는 고객센터로 연락해 주세요.`,
-    data: { artistId: a.id },
+    body: `'${a.title}' 샵이 관리자 점검으로 비공개 처리되었습니다. 사유: ${reason} — 마이페이지에서 수정 후 '재검토 요청'을 눌러주세요.`,
+    data: { artistId: a.id, reason },
   });
   notifySearchEngines([`/artists/${a.id}`], "URL_DELETED"); // 비공개 → 색인 소거 신호.
   revalidatePath("/");
@@ -72,7 +76,7 @@ async function takedownArtist(
 }
 
 /**
- * 복구 — is_hide=false 로 다시 공개. 본인 알림 + 재색인 + 캐시 무효화.
+ * 복구 — is_hide=false 로 다시 공개 + 사유/재검토요청 흔적 클리어. 본인 알림 + 재색인 + 캐시 무효화.
  * adminId 불필요(reviewed_by 는 테이크다운 때 이미 기록됨 — 복구는 상태 토글만).
  */
 async function restoreArtist(
@@ -80,7 +84,7 @@ async function restoreArtist(
 ): Promise<NextResponse> {
   const { data: updated, error } = await supabase
     .from("artists")
-    .update({ is_hide: false })
+    .update({ is_hide: false, reject_reason: null, resubmitted_at: null })
     .eq("id", id)
     .eq("is_hide", true)
     .select(OWNER_SELECT);
@@ -176,7 +180,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   if (body.action === "confirm") return confirmArtist(auth.supabase, auth.userId, body.id);
-  if (body.action === "takedown") return takedownArtist(auth.supabase, auth.userId, body.id);
+  if (body.action === "takedown") return takedownArtist(auth.supabase, auth.userId, body.id, body.reason ?? "");
   if (body.action === "restore") return restoreArtist(auth.supabase, body.id);
   if (body.action === "approve") return approveArtist(auth.supabase, auth.userId, body.id);
   if (body.action === "reject") return rejectArtist(auth.supabase, auth.userId, body.id, body.reason ?? "");

@@ -13,7 +13,7 @@ async function resolveStudyAccess(userId: string): Promise<{ access: StudyAccess
   const admin = createAdminClient();
   const { data: artist } = await admin
     .from("artists")
-    .select("approved_at")
+    .select("approved_at, is_hide")
     .eq("user_id", userId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -21,7 +21,7 @@ async function resolveStudyAccess(userId: string): Promise<{ access: StudyAccess
   if (!artist) return { access: studyEntitlement(null).access, hasShop: false, approved: false };
 
   const approved = artist.approved_at !== null;
-  return { access: studyEntitlement({ approvedAt: artist.approved_at }).access, hasShop: true, approved };
+  return { access: studyEntitlement({ approvedAt: artist.approved_at, isHide: artist.is_hide === true }).access, hasShop: true, approved };
 }
 
 export default async function StudyLayout({ children }: Readonly<{ children: React.ReactNode }>): Promise<React.ReactElement> {

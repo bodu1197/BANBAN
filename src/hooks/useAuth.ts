@@ -34,6 +34,10 @@ interface Artist {
   type_artist: string;
   status: string;
   reject_reason: string | null;
+  /** 관리자 테이크다운 여부 — 마이페이지 숨김 안내/재검토 요청 분기. */
+  is_hide: boolean;
+  /** 재검토 요청 시각(숨김 샵). null=요청 전. */
+  resubmitted_at: string | null;
 }
 
 type Role = "user" | "artist";
@@ -58,12 +62,18 @@ function normalizeRole(raw: unknown): Role {
 }
 
 /** 두 artist 가 동일한지(참조 유지 판단용) — 변경 없을 때 setState 가 prev 를 그대로 반환해 리렌더 회피. */
+function sameArtistFields(a: Artist, b: Artist): boolean {
+  return a.id === b.id && a.title === b.title
+    && a.profile_image_path === b.profile_image_path && a.type_artist === b.type_artist;
+}
+function sameArtistState(a: Artist, b: Artist): boolean {
+  return a.status === b.status && a.reject_reason === b.reject_reason
+    && a.is_hide === b.is_hide && a.resubmitted_at === b.resubmitted_at;
+}
 function sameArtist(a: Artist | null, b: Artist | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return a.id === b.id && a.title === b.title
-    && a.profile_image_path === b.profile_image_path && a.type_artist === b.type_artist
-    && a.status === b.status && a.reject_reason === b.reject_reason;
+  return sameArtistFields(a, b) && sameArtistState(a, b);
 }
 
 /** Lazily resolve the browser Supabase client (avoids pulling ~200 KB into the initial bundle). */
@@ -94,7 +104,7 @@ export function useAuth(): UseAuthReturn {
         const [{ data: artistData }, { data: profileData }] = await Promise.all([
           supabase
             .from("artists")
-            .select("id, title, profile_image_path, type_artist, status, reject_reason")
+            .select("id, title, profile_image_path, type_artist, status, reject_reason, is_hide, resubmitted_at")
             .eq("user_id", authUser.id)
             .maybeSingle(),
           supabase
@@ -134,7 +144,7 @@ export function useAuth(): UseAuthReturn {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const [{ data: artistData }, { data: profileData }] = await Promise.all([
-      supabase.from("artists").select("id, title, profile_image_path, type_artist, status, reject_reason").eq("user_id", authUser.id).maybeSingle(),
+      supabase.from("artists").select("id, title, profile_image_path, type_artist, status, reject_reason, is_hide, resubmitted_at").eq("user_id", authUser.id).maybeSingle(),
       supabase.from("profiles").select("role, profile_image_path").eq("id", authUser.id).maybeSingle(),
     ]);
     const nextArtist = artistData as Artist | null;

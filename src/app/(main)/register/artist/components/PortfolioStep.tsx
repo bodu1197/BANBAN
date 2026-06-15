@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp, CheckCircle2 } from "lucide-react";
 import {
   CategorySection,
   PortfolioFormFields,
@@ -61,6 +61,9 @@ export function PortfolioStep({
       void fetch("/api/points/earn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: "PORTFOLIO_UPLOAD", referenceId: newId }) }).catch(() => { /* best-effort */ });
       onAdded(previewUrl); // 부모가 썸네일 보관(여기선 revoke 하지 않음)
       pf.resetForm();
+      // 등록 성공을 확실히 인지시키고 다음 행동(더 올리기)을 안내 — 폼이 조용히 비워지는 '멘붕' 방지.
+      const total = addedPreviews.length + 1;
+      alert(`작품(포트폴리오)이 등록되었어요! 지금까지 ${String(total)}개\n\n홍보 노출 최적화를 위해 작품을 더 올려주세요. 작품이 많을수록 상담 문의가 비례해서 늘어납니다.`);
     } catch (err: unknown) {
       const msg = err instanceof Error && err.message === "CATEGORY_REQUIRED"
         ? "대표 분류를 1개 이상 선택해주세요."
@@ -99,15 +102,20 @@ export function PortfolioStep({
         <ProgressHint reachedGate={reachedGate} reachedMin={reachedMin} minRequired={minRequired} />
       </div>
 
-      {/* 추가된 작품 썸네일 */}
+      {/* 등록 완료된 작품 — 항상 보이는 라벨로 '등록됨'을 명확히 인지시킴 */}
       {count > 0 ? (
-        <div className="flex flex-wrap gap-2" aria-label="등록한 작품 미리보기">
-          {addedPreviews.map((src, idx) => (
-            <div key={src} className="relative h-16 w-16 overflow-hidden rounded-md border border-border">
-              <Image src={src} alt={`등록한 작품 ${idx + 1}`} fill sizes="64px" unoptimized className="object-cover" />
-              <span className="absolute bottom-0 right-0 rounded-tl bg-brand-primary px-1 text-[10px] font-semibold leading-tight text-white">{idx + 1}</span>
-            </div>
-          ))}
+        <div className="space-y-2" role="status">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> 등록 완료된 작품 {count}개
+          </p>
+          <div className="flex flex-wrap gap-2" aria-label="등록한 작품 미리보기">
+            {addedPreviews.map((src, idx) => (
+              <div key={src} className="relative h-16 w-16 overflow-hidden rounded-md border border-emerald-500/40">
+                <Image src={src} alt={`등록한 작품 ${idx + 1}`} fill sizes="64px" unoptimized className="object-cover" />
+                <span className="absolute bottom-0 right-0 rounded-tl bg-emerald-600 px-1 text-[10px] font-semibold leading-tight text-white">{idx + 1}</span>
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
 

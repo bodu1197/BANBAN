@@ -251,7 +251,7 @@ function ArtistWithoutShopView(): React.ReactElement {
 }
 
 function ArtistSection({ artist }: Readonly<{
-  artist: { id: string; status: string; reject_reason: string | null } | null;
+  artist: { id: string; status: string; reject_reason: string | null; is_hide: boolean; resubmitted_at: string | null } | null;
 }>): React.ReactElement {
   if (!artist) {
     return (
@@ -263,7 +263,7 @@ function ArtistSection({ artist }: Readonly<{
   }
   return (
     <>
-      <ShopStatusBanner status={artist.status} rejectReason={artist.reject_reason} />
+      <ShopStatusBanner status={artist.status} rejectReason={artist.reject_reason} isHide={artist.is_hide} reReviewRequested={artist.resubmitted_at !== null} />
       <ArtistView artistId={artist.id} status={artist.status} />
     </>
   );

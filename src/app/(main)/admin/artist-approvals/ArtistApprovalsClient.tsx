@@ -112,6 +112,11 @@ function StatusBadge({ artist }: Readonly<{ artist: ArtistApprovalItem }>): Reac
           <RefreshCw className="h-2.5 w-2.5" aria-hidden="true" /> 재신청
         </span>
       ) : null}
+      {artist.status === "hidden" && artist.isResubmit ? (
+        <span className={`${BADGE_CLASS} bg-amber-500/15 text-amber-300`}>
+          <RefreshCw className="h-2.5 w-2.5" aria-hidden="true" /> 재검토 요청됨
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -127,6 +132,9 @@ function RejectNote({ artist }: Readonly<{ artist: ArtistApprovalItem }>): React
   }
   if (artist.status === "pending" && artist.isResubmit && artist.prevRejectReason) {
     return <div className="mt-1 whitespace-pre-line text-[11px] text-red-400">이전 반려: {artist.prevRejectReason}</div>;
+  }
+  if (artist.status === "hidden" && artist.prevRejectReason) {
+    return <div className="mt-1 whitespace-pre-line text-[11px] text-amber-400">비공개 사유: {artist.prevRejectReason}</div>;
   }
   return null;
 }
@@ -205,8 +213,10 @@ function ApprovalRow({ artist, h }: Readonly<{ artist: ArtistApprovalItem; h: Ro
 
 // ─── Table ──────────────────────────────────────────────
 
-function ApprovalTable({ artists, onRefetch, onRequestReject }: Readonly<{
-  artists: ArtistApprovalItem[]; onRefetch: () => void; onRequestReject: (a: ArtistApprovalItem) => void;
+function ApprovalTable({ artists, onRefetch, onRequestReject, onRequestTakedown }: Readonly<{
+  artists: ArtistApprovalItem[]; onRefetch: () => void;
+  onRequestReject: (a: ArtistApprovalItem) => void;
+  onRequestTakedown: (a: ArtistApprovalItem) => void;
 }>): React.ReactElement {
   const run = async (ok: Promise<boolean>, failMsg = FAIL_MSG): Promise<void> => {
     if (await ok) onRefetch();
@@ -215,10 +225,6 @@ function ApprovalTable({ artists, onRefetch, onRequestReject }: Readonly<{
   const handleConfirm = (a: ArtistApprovalItem): void => {
     if (!globalThis.confirm(`"${a.title}" 샵을 점검 완료(이상 없음) 처리할까요?`)) return;
     void run(patchAction(a.id, "confirm"));
-  };
-  const handleTakedown = (a: ArtistApprovalItem): void => {
-    if (!globalThis.confirm(`"${a.title}" 샵을 비공개(테이크다운) 처리할까요?\n즉시 검색·목록에서 숨겨지고 본인에게 알림이 갑니다.`)) return;
-    void run(patchAction(a.id, "takedown"));
   };
   const handleRestore = (a: ArtistApprovalItem): void => {
     if (!globalThis.confirm(`"${a.title}" 샵을 다시 공개할까요?`)) return;
@@ -244,7 +250,7 @@ function ApprovalTable({ artists, onRefetch, onRequestReject }: Readonly<{
               artist={a}
               h={{
                 onConfirm: () => handleConfirm(a),
-                onTakedown: () => handleTakedown(a),
+                onTakedown: () => onRequestTakedown(a),
                 onRestore: () => handleRestore(a),
                 onApprove: () => handleApprove(a),
                 onReject: () => onRequestReject(a),
@@ -262,6 +268,7 @@ function ApprovalTable({ artists, onRefetch, onRequestReject }: Readonly<{
 export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApprovalsResult }>): React.ReactElement {
   const { data, loading, search, setSearch, setPage, refetch } = useApprovalList(initial);
   const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null);
+  const [takedownTarget, setTakedownTarget] = useState<RejectTarget | null>(null);
 
   const handleConfirmReject = useCallback(async (reason: string): Promise<boolean> => {
     if (!rejectTarget) return false;
@@ -269,6 +276,13 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
     if (ok) refetch();
     return ok;
   }, [rejectTarget, refetch]);
+
+  const handleConfirmTakedown = useCallback(async (reason: string): Promise<boolean> => {
+    if (!takedownTarget) return false;
+    const ok = await patchAction(takedownTarget.id, "takedown", reason);
+    if (ok) refetch();
+    return ok;
+  }, [takedownTarget, refetch]);
 
   return (
     <div className="space-y-4 p-4 lg:p-6">
@@ -284,7 +298,12 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
 
       {loading
         ? <AdminLoadingSpinner accentColor="purple" />
-        : <ApprovalTable artists={data.artists} onRefetch={refetch} onRequestReject={(a) => setRejectTarget({ id: a.id, title: a.title })} />}
+        : <ApprovalTable
+            artists={data.artists}
+            onRefetch={refetch}
+            onRequestReject={(a) => setRejectTarget({ id: a.id, title: a.title })}
+            onRequestTakedown={(a) => setTakedownTarget({ id: a.id, title: a.title })}
+          />}
 
       <AdminPagination currentPage={data.page} total={data.total} limit={data.limit} onPageChange={setPage} />
 
@@ -292,6 +311,15 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
         shop={rejectTarget}
         onClose={() => setRejectTarget(null)}
         onConfirm={handleConfirmReject}
+      />
+      <RejectShopModal
+        shop={takedownTarget}
+        onClose={() => setTakedownTarget(null)}
+        onConfirm={handleConfirmTakedown}
+        heading="샵 비공개 처리"
+        description="비공개(숨김) 사유를 선택하거나 작성하세요. 운영자에게 전달되어 수정·재검토 요청에 사용됩니다."
+        submitLabel="비공개 처리"
+        submitAccent="amber"
       />
     </div>
   );

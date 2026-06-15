@@ -37,10 +37,10 @@ async function authorizeStudyWrite(): Promise<WriteAuth> {
   if (!user) return { ok: false, error: UNAUTH };
   const admin = createAdminClient();
   const { data: artist } = await admin
-    .from("artists").select("approved_at")
+    .from("artists").select("approved_at, is_hide")
     .eq("user_id", user.id).is("deleted_at", null).maybeSingle();
   if (!artist) return { ok: false, error: LOCKED };
-  const { access } = studyEntitlement({ approvedAt: artist.approved_at });
+  const { access } = studyEntitlement({ approvedAt: artist.approved_at, isHide: artist.is_hide === true });
   if (access === "locked") return { ok: false, error: LOCKED };
   return { ok: true, userId: user.id, admin };
 }
