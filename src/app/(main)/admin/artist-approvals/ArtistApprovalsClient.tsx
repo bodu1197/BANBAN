@@ -12,24 +12,25 @@ import {
   AdminLoadingSpinner,
   AdminPageHeader,
 } from "@/components/admin/admin-shared";
-import type { ArtistApprovalItem, ArtistApprovalsResult, ApprovalStatus } from "@/lib/supabase/artist-approval-queries";
+import type { ArtistApprovalItem, ArtistApprovalsResult, ApprovalStatus, QueueFilter } from "@/lib/supabase/artist-approval-queries";
 import { REQUIRED_PORTFOLIOS } from "@/lib/artist-status";
 import { RejectShopModal, type RejectTarget } from "./RejectShopModal";
 
 // ─── Data Hook (인터랙션 기반 페칭 — useEffect 미사용) ──────
 
 function useApprovalList(initial: ArtistApprovalsResult): {
-  data: ArtistApprovalsResult; loading: boolean; search: string;
-  setSearch: (s: string) => void; setPage: (p: number) => void; refetch: () => void;
+  data: ArtistApprovalsResult; loading: boolean; search: string; filter: QueueFilter;
+  setSearch: (s: string) => void; setPage: (p: number) => void; setFilter: (f: QueueFilter) => void; refetch: () => void;
 } {
   const [data, setData] = useState<ArtistApprovalsResult>(initial);
   const [loading, setLoading] = useState(false);
   const [search, setSearchState] = useState("");
+  const [filter, setFilterState] = useState<QueueFilter>("all");
 
-  const load = useCallback(async (page: number, searchTerm: string) => {
+  const load = useCallback(async (page: number, searchTerm: string, filterVal: QueueFilter) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page) });
+      const params = new URLSearchParams({ page: String(page), filter: filterVal });
       if (searchTerm) params.set("search", searchTerm);
       const res = await fetch(`/api/admin/artist-approvals?${params.toString()}`);
       if (res.ok) setData(await res.json() as ArtistApprovalsResult);
@@ -40,11 +41,12 @@ function useApprovalList(initial: ArtistApprovalsResult): {
     }
   }, []);
 
-  const setSearch = useCallback((s: string) => { setSearchState(s); void load(1, s); }, [load]);
-  const setPage = useCallback((p: number) => { void load(p, search); }, [load, search]);
-  const refetch = useCallback(() => { void load(data.page, search); }, [load, data.page, search]);
+  const setSearch = useCallback((s: string) => { setSearchState(s); void load(1, s, filter); }, [load, filter]);
+  const setPage = useCallback((p: number) => { void load(p, search, filter); }, [load, search, filter]);
+  const setFilter = useCallback((f: QueueFilter) => { setFilterState(f); void load(1, search, f); }, [load, search]);
+  const refetch = useCallback(() => { void load(data.page, search, filter); }, [load, data.page, search, filter]);
 
-  return { data, loading, search, setSearch, setPage, refetch };
+  return { data, loading, search, filter, setSearch, setPage, setFilter, refetch };
 }
 
 // ─── Actions ────────────────────────────────────────────
@@ -147,6 +149,7 @@ interface RowActionHandlers {
   onConfirm: () => void;
   onTakedown: () => void;
   onRestore: () => void;
+  onRejectReReview: () => void;
   onApprove: () => void;
   onReject: () => void;
 }
@@ -176,10 +179,18 @@ function RowActions({ artist, h }: Readonly<{ artist: ArtistApprovalItem; h: Row
       ) : null}
       {artist.status === "active" ? <TakedownButton title={artist.title} onClick={h.onTakedown} /> : null}
       {artist.status === "hidden" ? (
-        <button type="button" onClick={h.onRestore} aria-label={`${artist.title} 샵 복구`}
-          className={`${ACTION_BTN} text-sky-400 hover:bg-sky-500/10 focus-visible:bg-sky-500/10`}>
-          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> 복구
-        </button>
+        <>
+          <button type="button" onClick={h.onRestore} aria-label={`${artist.title} 샵 ${artist.isResubmit ? "합격 복구" : "복구"}`}
+            className={`${ACTION_BTN} text-sky-400 hover:bg-sky-500/10 focus-visible:bg-sky-500/10`}>
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> {artist.isResubmit ? "합격(복구)" : "복구"}
+          </button>
+          {artist.isResubmit ? (
+            <button type="button" onClick={h.onRejectReReview} aria-label={`${artist.title} 재검토 불합격`}
+              className={`${ACTION_BTN} text-red-400 hover:bg-red-500/10 focus-visible:bg-red-500/10`}>
+              <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> 불합격
+            </button>
+          ) : null}
+        </>
       ) : null}
       {artist.status === "pending" ? (
         <>
@@ -223,10 +234,11 @@ function ApprovalRow({ artist, h }: Readonly<{ artist: ArtistApprovalItem; h: Ro
 
 // ─── Table ──────────────────────────────────────────────
 
-function ApprovalTable({ artists, onRefetch, onRequestReject, onRequestTakedown }: Readonly<{
+function ApprovalTable({ artists, onRefetch, onRequestReject, onRequestTakedown, onRequestRejectReReview }: Readonly<{
   artists: ArtistApprovalItem[]; onRefetch: () => void;
   onRequestReject: (a: ArtistApprovalItem) => void;
   onRequestTakedown: (a: ArtistApprovalItem) => void;
+  onRequestRejectReReview: (a: ArtistApprovalItem) => void;
 }>): React.ReactElement {
   const run = async (ok: Promise<boolean>, failMsg = FAIL_MSG): Promise<void> => {
     if (await ok) onRefetch();
@@ -246,7 +258,7 @@ function ApprovalTable({ artists, onRefetch, onRequestReject, onRequestTakedown 
   };
 
   if (artists.length === 0) {
-    return <p className="py-12 text-center text-sm text-zinc-500">점검할 샵이 없습니다.</p>;
+    return <p className="py-12 text-center text-sm text-zinc-500">조건에 맞는 샵이 없습니다.</p>;
   }
 
   return (
@@ -262,6 +274,7 @@ function ApprovalTable({ artists, onRefetch, onRequestReject, onRequestTakedown 
                 onConfirm: () => handleConfirm(a),
                 onTakedown: () => onRequestTakedown(a),
                 onRestore: () => handleRestore(a),
+                onRejectReReview: () => onRequestRejectReReview(a),
                 onApprove: () => handleApprove(a),
                 onReject: () => onRequestReject(a),
               }}
@@ -273,12 +286,54 @@ function ApprovalTable({ artists, onRefetch, onRequestReject, onRequestTakedown 
   );
 }
 
+// ─── Filter Tabs (상태별 빠른 찾기) ─────────────────────────
+
+const FILTER_TABS: readonly { key: QueueFilter; label: string }[] = [
+  { key: "all", label: "전체" },
+  { key: "rereview", label: "재검토 요청" },
+  { key: "published", label: "점검 필요" },
+  { key: "active", label: "공개중" },
+  { key: "hidden", label: "숨김중" },
+];
+
+function FilterTabs({ filter, counts, onSelect }: Readonly<{
+  filter: QueueFilter; counts: Record<QueueFilter, number>; onSelect: (f: QueueFilter) => void;
+}>): React.ReactElement {
+  // 토글 버튼 그룹(aria-pressed) — tablist 의 화살표키 내비 요구 없이 각 버튼이 독립 포커스·동작.
+  return (
+    <div role="group" aria-label="샵 상태 필터" className="flex flex-wrap gap-1.5">
+      {FILTER_TABS.map((t) => {
+        const on = filter === t.key;
+        return (
+          <button
+            key={t.key}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onSelect(t.key)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              on
+                ? "bg-brand-primary text-white"
+                : "border border-white/15 text-zinc-300 hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:text-white"
+            }`}
+          >
+            {t.label}
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums ${on ? "bg-white/20" : "bg-white/15 text-zinc-300"}`}>
+              {counts[t.key]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main ───────────────────────────────────────────────
 
 export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApprovalsResult }>): React.ReactElement {
-  const { data, loading, search, setSearch, setPage, refetch } = useApprovalList(initial);
+  const { data, loading, search, filter, setSearch, setPage, setFilter, refetch } = useApprovalList(initial);
   const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null);
   const [takedownTarget, setTakedownTarget] = useState<RejectTarget | null>(null);
+  const [reReviewTarget, setReReviewTarget] = useState<RejectTarget | null>(null);
 
   const handleConfirmReject = useCallback(async (reason: string): Promise<boolean> => {
     if (!rejectTarget) return false;
@@ -294,16 +349,25 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
     return ok;
   }, [takedownTarget, refetch]);
 
+  const handleConfirmReReviewReject = useCallback(async (reason: string): Promise<boolean> => {
+    if (!reReviewTarget) return false;
+    const ok = await patchAction(reReviewTarget.id, "reject_rereview", reason);
+    if (ok) refetch();
+    return ok;
+  }, [reReviewTarget, refetch]);
+
   return (
     <div className="space-y-4 p-4 lg:p-6">
       <AdminPageHeader title="샵 점검 관리" count={data.total} />
       <p className="text-xs text-zinc-500">
         샵은 등록 기준(배너+작품 {REQUIRED_PORTFOLIOS}개) 충족 시 <b className="text-sky-400">자동 공개</b>됩니다. 여기서 사후로 점검·관리하세요. {" "}
-        <b className="text-amber-300">재검토 요청됨</b>(운영자가 숨김 후 수정·재요청)은 <b>맨 위에</b> 표시됩니다 — 확인 후 <b className="text-sky-400">복구</b>하세요. {" "}
+        <b className="text-amber-300">재검토 요청됨</b>(운영자가 숨김 후 수정·재요청)은 <b>맨 위에</b> 표시됩니다 — 확인 후 <b className="text-sky-400">합격(복구)</b> 또는 <b className="text-red-400">불합격</b>(사유 통보·숨김 유지) 처리하세요. {" "}
         <b className="text-sky-400">점검 필요</b>는 새로 공개된 샵 — <b className="text-green-400">확인</b>(이상 없음) 또는 <b className="text-amber-300">숨김</b>. {" "}
         <b className="text-emerald-300">공개중</b>인 샵도 문제가 있으면 <b className="text-amber-300">숨김</b>(사유 입력 필수 → 운영자에게 전달)으로 언제든 비공개 처리할 수 있고, {" "}
         <b className="text-zinc-300">숨김됨</b>은 <b className="text-sky-400">복구</b> 가능합니다. <b className="text-sky-400">샵 보기</b>로 실제 데이터를 확인하세요.
       </p>
+
+      <FilterTabs filter={filter} counts={data.tabCounts} onSelect={setFilter} />
 
       <AdminSearchBar onSearch={setSearch} placeholder="샵명 검색..." accentColor="purple" />
       <AdminSearchResetBadge search={search} onReset={() => setSearch("")} accentColor="purple" />
@@ -315,6 +379,7 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
             onRefetch={refetch}
             onRequestReject={(a) => setRejectTarget({ id: a.id, title: a.title })}
             onRequestTakedown={(a) => setTakedownTarget({ id: a.id, title: a.title })}
+            onRequestRejectReReview={(a) => setReReviewTarget({ id: a.id, title: a.title })}
           />}
 
       <AdminPagination currentPage={data.page} total={data.total} limit={data.limit} onPageChange={setPage} />
@@ -332,6 +397,15 @@ export function ArtistApprovalsClient({ initial }: Readonly<{ initial: ArtistApp
         description="비공개(숨김) 사유를 선택하거나 작성하세요. 운영자에게 전달되어 수정·재검토 요청에 사용됩니다."
         submitLabel="비공개 처리"
         submitAccent="amber"
+      />
+      <RejectShopModal
+        shop={reReviewTarget}
+        onClose={() => setReReviewTarget(null)}
+        onConfirm={handleConfirmReReviewReject}
+        heading="재검토 불합격"
+        description="아직 공개 기준에 미달하는 사유를 선택하거나 작성하세요. 운영자에게 전달되며, 샵은 비공개로 유지됩니다. 운영자가 수정 후 다시 재검토를 요청할 수 있습니다."
+        submitLabel="불합격 처리"
+        submitAccent="red"
       />
     </div>
   );

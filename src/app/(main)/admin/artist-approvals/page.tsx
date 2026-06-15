@@ -9,6 +9,6 @@ export const metadata: Metadata = { title: "샵 점검 관리 | 관리자", robo
 
 export default async function Page(): Promise<React.ReactElement> {
   // Server-First: 초기 1페이지(승인 대기+반려 단일 목록)를 서버에서 페칭 → 클라이언트는 검색/페이지네이션/액션 시에만 재페칭.
-  const initial = await fetchArtistApprovals({ page: 1, search: "" });
+  const initial = await fetchArtistApprovals({ page: 1, search: "", filter: "all" });
   return <ArtistApprovalsClient initial={initial} />;
 }

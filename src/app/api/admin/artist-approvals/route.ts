@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
-import { fetchArtistApprovals } from "@/lib/supabase/artist-approval-queries";
+import { fetchArtistApprovals, isQueueFilter } from "@/lib/supabase/artist-approval-queries";
 import { notifyUser } from "@/lib/supabase/notification-queries";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
 
@@ -17,9 +17,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = request.nextUrl;
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const search = (searchParams.get("search") ?? "").trim();
+  const filterRaw = searchParams.get("filter") ?? "all";
+  const filter = isQueueFilter(filterRaw) ? filterRaw : "all";
 
   try {
-    const result = await fetchArtistApprovals({ page, search });
+    const result = await fetchArtistApprovals({ page, search, filter });
     return NextResponse.json(result);
   } catch (e) {
     const message = e instanceof Error ? e.message : "목록 조회 실패";
@@ -105,6 +107,38 @@ async function restoreArtist(
   return NextResponse.json({ success: true });
 }
 
+/**
+ * 재검토 불합격 — 운영자가 수정·재요청했으나 아직 공개 기준 미달. 숨김 유지(is_hide=true) +
+ * 새 사유 기록 + 재검토요청 해제(resubmitted_at=null). 본인 알림(사유 포함) → 다시 수정 후 재요청 가능.
+ * 재검토 요청 상태(is_hide=true AND resubmitted_at 있음)에서만 동작.
+ */
+async function rejectReReviewArtist(
+  supabase: SupabaseClient, adminId: string, id: string, rawReason: string,
+): Promise<NextResponse> {
+  const reason = rawReason.trim();
+  if (!reason) return NextResponse.json({ error: "불합격 사유를 입력해주세요" }, { status: 400 });
+  if (reason.length > 500) return NextResponse.json({ error: "사유는 500자 이하" }, { status: 400 });
+
+  const { data: updated, error } = await supabase
+    .from("artists")
+    .update({ reject_reason: reason, resubmitted_at: null, reviewed_by: adminId })
+    .eq("id", id)
+    .eq("is_hide", true)
+    .not("resubmitted_at", "is", null) // 재검토 요청 상태에서만 — 일반 숨김/공개 샵엔 미적용
+    .select(OWNER_SELECT);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated?.length) return NextResponse.json({ error: "no_pending_rereview" }, { status: 409 });
+
+  const a = updated[0] as { id: string; user_id: string; title: string };
+  await notifyUser(a.user_id, {
+    type: "SHOP_HIDDEN",
+    title: "재검토 결과 안내",
+    body: `'${a.title}' 샵이 재검토 결과 아직 공개 기준에 미달하여 비공개가 유지됩니다. 사유: ${reason} — 수정 후 다시 '재검토 요청'을 눌러주세요.`,
+    data: { artistId: a.id, reason },
+  });
+  return NextResponse.json({ success: true });
+}
+
 // ── 레거시 승인/반려 (사전승인 시절 pending 샵 잔여분 처리용) ──
 
 async function approveArtist(
@@ -173,6 +207,21 @@ async function rejectArtist(
   return NextResponse.json({ success: true });
 }
 
+// 액션 디스패치 — PATCH 복잡도 분리. supabase/adminId/id 공통, reason 은 사유형 액션만 사용.
+function dispatchArtistAction(
+  supabase: SupabaseClient, adminId: string, id: string, action: string, reason: string,
+): Promise<NextResponse> {
+  switch (action) {
+    case "confirm": return confirmArtist(supabase, adminId, id);
+    case "takedown": return takedownArtist(supabase, adminId, id, reason);
+    case "restore": return restoreArtist(supabase, id);
+    case "reject_rereview": return rejectReReviewArtist(supabase, adminId, id, reason);
+    case "approve": return approveArtist(supabase, adminId, id);
+    case "reject": return rejectArtist(supabase, adminId, id, reason);
+    default: return Promise.resolve(NextResponse.json({ error: "invalid action" }, { status: 400 }));
+  }
+}
+
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
   const auth = await requireAdmin();
   if (!auth.ok) return auth.response;
@@ -180,10 +229,5 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   const body = await request.json() as { id?: string; action?: string; reason?: string };
   if (!body.id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  if (body.action === "confirm") return confirmArtist(auth.supabase, auth.userId, body.id);
-  if (body.action === "takedown") return takedownArtist(auth.supabase, auth.userId, body.id, body.reason ?? "");
-  if (body.action === "restore") return restoreArtist(auth.supabase, body.id);
-  if (body.action === "approve") return approveArtist(auth.supabase, auth.userId, body.id);
-  if (body.action === "reject") return rejectArtist(auth.supabase, auth.userId, body.id, body.reason ?? "");
-  return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  return dispatchArtistAction(auth.supabase, auth.userId, body.id, body.action ?? "", body.reason ?? "");
 }

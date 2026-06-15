@@ -15,6 +15,13 @@ export const APPROVALS_PAGE_SIZE = 20;
  */
 export type ApprovalStatus = "published" | "active" | "hidden" | "pending" | "rejected";
 
+/** 상단 상태 필터 탭 — 76개 한 목록에서 특정 상태 샵을 바로 찾기 위함. */
+export type QueueFilter = "all" | "rereview" | "published" | "active" | "hidden";
+export const QUEUE_FILTERS: readonly QueueFilter[] = ["all", "rereview", "published", "active", "hidden"];
+export function isQueueFilter(v: string): v is QueueFilter {
+  return (QUEUE_FILTERS as readonly string[]).includes(v);
+}
+
 export interface ArtistApprovalItem {
   id: string;
   userId: string;
@@ -37,6 +44,8 @@ export interface ArtistApprovalsResult {
   total: number;
   page: number;
   limit: number;
+  /** 탭별 건수(검색어 반영) — 상단 필터 탭 배지. */
+  tabCounts: Record<QueueFilter, number>;
 }
 
 interface ArtistApprovalRow {
@@ -68,19 +77,47 @@ async function fetchNicknameMap(supabase: SupabaseClient, ids: string[]): Promis
 // 점검 큐 필터: 공개중(active+노출중) 전부(점검 여부 무관 — 언제든 숨김 가능해야 함) 또는 숨김됨 또는 레거시(pending/rejected).
 const QUEUE_OR_FILTER = "and(status.eq.active,is_hide.eq.false),is_hide.eq.true,status.eq.pending,status.eq.rejected";
 
+// 탭별 PostgREST .or() 필터 — 각 탭이 해당 상태 샵만 보여준다(전체는 QUEUE_OR_FILTER 그대로).
+// switch(객체 인덱싱 회피 — security/detect-object-injection).
+//  rereview : 숨김 + 재검토 요청(resubmitted_at 있음) — 합격(복구)/불합격 판정 대상
+//  published: 공개중 + 미점검(reviewed_by NULL) — '점검 필요'
+//  active   : 공개중 + 점검 완료(reviewed_by 있음) — '공개중'
+//  hidden   : 숨김 + 재검토 요청 없음 — '숨김중'
+// ※ 레거시 pending/rejected 는 전용 탭 없이 '전체'에서만 노출(자동공개 도입 후 신규 발생 없음 — 의도된 비대칭).
+function queueFilterOr(filter: QueueFilter): string {
+  switch (filter) {
+    case "rereview": return "and(is_hide.eq.true,resubmitted_at.not.is.null)";
+    case "published": return "and(status.eq.active,reviewed_by.is.null,is_hide.eq.false)";
+    case "active": return "and(status.eq.active,reviewed_by.not.is.null,is_hide.eq.false)";
+    case "hidden": return "and(is_hide.eq.true,resubmitted_at.is.null)";
+    default: return QUEUE_OR_FILTER; // all
+  }
+}
+
 // '조치 필요'(관리자 액션 대기) 필터 — 사이드바 카운트 배지와 의미를 맞추는 단일 소스(중복 정의 방지).
 // 미점검 공개(active+reviewed_by NULL) + 레거시 승인 대기(pending) + 재검토 요청(숨김+resubmitted_at).
 // 목록(QUEUE_OR_FILTER)은 이보다 넓게 '관리 가능한 모든 샵'을 보여주되, 여기 잡히는 항목은 정렬상 상단에 온다.
 export const ACTION_REQUIRED_OR_FILTER =
   "and(status.eq.active,reviewed_by.is.null,is_hide.eq.false),status.eq.pending,and(is_hide.eq.true,resubmitted_at.not.is.null)";
 
+/** 탭별 건수 — 각 탭의 .or() 필터로 head count(검색어 반영). 관리자 전용·소규모라 병렬 5쿼리 허용. */
+async function fetchTabCounts(supabase: SupabaseClient, search: string): Promise<Record<QueueFilter, number>> {
+  const entries = await Promise.all(QUEUE_FILTERS.map(async (f) => {
+    let q = supabase.from("artists").select("id", { count: "exact", head: true }).is("deleted_at", null).or(queueFilterOr(f));
+    if (search) q = q.ilike("title", `%${escapeIlike(search)}%`);
+    const { count } = await q;
+    return [f, count ?? 0] as const;
+  }));
+  return Object.fromEntries(entries) as Record<QueueFilter, number>;
+}
+
 /**
- * 사후 점검 큐 단일 목록(점검 필요 + 숨김됨 + 레거시 pending/rejected) — 각 항목의 status 로 상태 표시.
- * 서버 컴포넌트(초기 로딩)와 API 라우트(검색/페이지네이션) 공용.
+ * 사후 점검 큐 — 선택한 탭(filter) 상태의 샵만 목록 + 탭별 건수. 각 항목의 status 로 상태 표시.
+ * 서버 컴포넌트(초기 로딩)와 API 라우트(검색/페이지네이션/탭) 공용.
  * createAdminClient(service_role) 사용 — 호출부(AdminLayout/requireAdmin)에서 관리자 검증 선행.
  */
 export async function fetchArtistApprovals(
-  opts: { page: number; search: string },
+  opts: { page: number; search: string; filter: QueueFilter },
 ): Promise<ArtistApprovalsResult> {
   const supabase = createAdminClient();
   const page = Math.max(1, opts.page);
@@ -93,7 +130,7 @@ export async function fetchArtistApprovals(
       { count: "exact" },
     )
     .is("deleted_at", null)
-    .or(QUEUE_OR_FILTER);
+    .or(queueFilterOr(opts.filter));
 
   if (opts.search) query = query.ilike("title", `%${escapeIlike(opts.search)}%`);
 
@@ -106,7 +143,9 @@ export async function fetchArtistApprovals(
     .order("created_at", { ascending: false })
     .range(offset, offset + APPROVALS_PAGE_SIZE - 1);
 
-  const { data, count, error } = await query;
+  // 목록 쿼리와 탭별 카운트는 독립 → 병렬 실행(순차 대비 지연 단축).
+  const [listResult, tabCounts] = await Promise.all([query, fetchTabCounts(supabase, opts.search)]);
+  const { data, count, error } = listResult;
   if (error) throw new Error(error.message);
 
   const artists = (data ?? []) as ArtistApprovalRow[];
@@ -121,5 +160,5 @@ export async function fetchArtistApprovals(
     rejectedAt: a.rejected_at,
   }));
 
-  return { artists: items, total: count ?? 0, page, limit: APPROVALS_PAGE_SIZE };
+  return { artists: items, total: count ?? 0, page, limit: APPROVALS_PAGE_SIZE, tabCounts };
 }
