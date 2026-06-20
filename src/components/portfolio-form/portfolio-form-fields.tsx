@@ -103,9 +103,9 @@ export function PriceFields({ price, priceOrigin, onPriceChange, onPriceOriginCh
     );
 }
 
-/** 작품 설명 최소 글자수 — 직접 작성 시 충실한 설명 강제(AI 자동생성도 이 이상 산출).
- *  ⚠️ DB 트리거(migration 20260613000100 enforce_portfolio_create_rules)의 200 과 반드시 동기화. */
-export const MIN_DESCRIPTION_LEN = 200;
+/** 작품 설명 최소 글자수 — 직접 작성 시 최소한의 설명 보장(AI 자동생성은 더 길게 산출).
+ *  ⚠️ DB 트리거(migration 20260620000000 lower_portfolio_description_min)의 50 과 반드시 동기화. */
+export const MIN_DESCRIPTION_LEN = 50;
 
 export function DescriptionField({ value, onChange, onAiDescribe, aiDescribing }: Readonly<{
     value: string;
