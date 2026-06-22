@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { buildPageSeo, getBreadcrumbJsonLd, getCourseJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd, getCourseJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import { fetchCourseById, type CourseDetail } from "@/lib/supabase/course-queries";
 import { CourseDetailClient } from "@/components/course/CourseDetailClient";
 
@@ -21,7 +21,7 @@ export async function generateCourseDetailMetadata(id: string): Promise<Metadata
     }
 
     const title = `${course.title} - ${course.artistName}`;
-    const description = course.description?.slice(0, 160) ?? `${course.category} 반영구 수강 — ${course.artistName} 직강. 커리큘럼, 가격, 일정을 확인하세요.`;
+    const description = descriptionOrFallback(course.description, `${course.category} 반영구 수강 — ${course.artistName} 직강. 커리큘럼, 가격, 일정을 확인하세요.`, 160);
     const firstImage = course.images[0]?.imageUrl ?? null;
 
     return {
@@ -49,7 +49,7 @@ export async function renderCourseDetailPage(id: string): Promise<React.ReactEle
 
     const courseJsonLd = getCourseJsonLd({
         name: course.title,
-        description: course.description?.slice(0, 500) ?? `${course.category} 반영구 수강`,
+        description: descriptionOrFallback(course.description, `${course.category} 반영구 수강`, 500),
         url: getCanonicalUrl(`/courses/${id}`),
         providerName: course.artistName,
         providerUrl: getCanonicalUrl(`/artists/${course.artistId}`),

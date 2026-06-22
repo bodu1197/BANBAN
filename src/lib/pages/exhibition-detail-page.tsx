@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { STRINGS } from "@/lib/strings";
-import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import {
   fetchExhibitionById,
   fetchExhibitionEntries,
@@ -19,7 +19,7 @@ interface ArtistRow { id: string }
 export async function generateExhibitionDetailMetadata(id: string): Promise<Metadata> {
   const exhibition = await fetchExhibitionById(id);
   const title = exhibition?.title ?? STRINGS.pages.exhibition;
-  const description = exhibition?.subtitle ?? STRINGS.pages.exhibitionDesc;
+  const description = descriptionOrFallback(exhibition?.subtitle, STRINGS.pages.exhibitionDesc);
   const bannerImage = exhibition?.image_path ? getStorageUrl(exhibition.image_path) : null;
   return {
     title,
@@ -115,7 +115,7 @@ export async function renderExhibitionDetailPage(id: string): Promise<React.Reac
   const eventJsonLd = exhibition.start_at
     ? getEventJsonLd({
         name: exhibition.title,
-        description: exhibition.subtitle ?? "",
+        description: descriptionOrFallback(exhibition.subtitle, STRINGS.pages.exhibitionDesc),
         startDate: exhibition.start_at,
         endDate: exhibition.end_at,
         url: getCanonicalUrl(`/exhibition/${id}`),

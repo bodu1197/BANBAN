@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { buildPageSeo, getBreadcrumbJsonLd, getProductJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd, getProductJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import { isLegacyNumericId, findPortfolioByLegacyId } from "@/lib/supabase/legacy-redirect";
 import {
     fetchPortfolioById,
@@ -82,7 +82,7 @@ export async function generatePortfolioDetailMetadata(id: string): Promise<Metad
     }
 
     const title = portfolio.title;
-    const description = portfolio.description?.slice(0, 160) || `${portfolio.artist.title} 반영구 작품 — 가격, 시술 정보, 후기를 확인하세요.`;
+    const description = descriptionOrFallback(portfolio.description, `${portfolio.artist.title} 반영구 작품 — 가격, 시술 정보, 후기를 확인하세요.`, 160);
     const firstImage = getStorageUrl(portfolio.portfolio_media?.[0]?.storage_path ?? null);
 
     return {
@@ -197,7 +197,7 @@ function buildJsonLd(
         .filter((u): u is string => Boolean(u));
     const product = getProductJsonLd({
         name: portfolio.title,
-        description: portfolio.description?.slice(0, 500) ?? `${portfolio.artist.title} 반영구 작품`,
+        description: descriptionOrFallback(portfolio.description, `${portfolio.artist.title} 반영구 작품`, 500),
         image: productImages,
         url: getCanonicalUrl(`/portfolios/${id}`),
         price: portfolio.price,
@@ -273,7 +273,9 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
 
     const { breadcrumb: breadcrumbJsonLd, product: productJsonLd } = buildJsonLd(id, portfolio);
     const parsedDescription = parseDescriptionText(portfolio.description);
-    const descriptionHtml = parsedDescription || STRINGS.portfolio.noDescription;
+    // 공백/줄바꿈만 있는 설명(레거시·편집 경로)은 parsedDescription 이 truthy("   "/"<br />") 라
+    // `|| fallback` 을 누수시킨다 → raw trim 으로 실제 내용 유무를 판정해 fallback 노출.
+    const descriptionHtml = portfolio.description?.trim() ? parsedDescription : STRINGS.portfolio.noDescription;
     const artistType = (portfolio.artist.type_artist ?? "SEMI_PERMANENT") as ArtistType;
 
     return (

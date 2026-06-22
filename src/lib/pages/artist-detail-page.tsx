@@ -19,7 +19,7 @@ import { ArtistTopBar } from "@/components/artists/ArtistTopBar";
 import { ShopHeroBanner } from "@/components/artists/ShopHeroBanner";
 import { ShopBlogClient } from "@/components/artists/ShopBlogClient";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
-import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import { getUser } from "@/lib/supabase/auth";
 import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import { parseBusinessHours } from "@/types/artist-form";
@@ -53,7 +53,7 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
     notFound();
   }
 
-  const description = artist.introduce;
+  const description = descriptionOrFallback(artist.introduce, `${artist.title} 반영구·타투 샵 — 작품, 가격, 후기를 확인하세요.`);
   const ogImage = resolveArtistOgImage(artist);
 
   return {
@@ -121,7 +121,7 @@ function buildArtistJsonLdProps(input: BuildArtistJsonLdInput): Parameters<typeo
     .slice(0, 30);
   return {
     name: artist.title,
-    description: artist.introduce,
+    description: descriptionOrFallback(artist.introduce, `${artist.title} 반영구·타투 샵`),
     address: artist.address,
     image: bannerImage ?? artistGalleryImages[0] ?? avatarUrl ?? undefined,
     url: getCanonicalUrl(`/artists/${id}`),

@@ -16,9 +16,13 @@ export function CollapsibleIntro({
   sanitizedHtml,
   moreLabel,
   lessLabel,
-}: Readonly<CollapsibleIntroProps>): React.ReactElement {
+}: Readonly<CollapsibleIntroProps>): React.ReactElement | null {
   const [expanded, setExpanded] = useState(false);
-  const hasHtml = sanitizedHtml && sanitizedHtml.length > 0;
+  // 태그를 제거한 실제 보이는 텍스트가 있을 때만 HTML 렌더 — "<p></p>"·"<p>   </p>" 같은
+  // 시각적 공백 HTML(레거시 description)이 truthy 로 새어 빈 블록이 그려지는 것을 막는다.
+  const hasHtml = sanitizedHtml && sanitizedHtml.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim().length > 0;
+  // 보일 내용이 전혀 없으면(공백 HTML + 빈 평문) 빈 블록과 동작 없는 '더보기' 버튼만 남으므로 렌더 생략.
+  if (!hasHtml && text.trim().length === 0) return null;
 
   return (
     <div className="border-y border-border/50 bg-background px-4 py-4">

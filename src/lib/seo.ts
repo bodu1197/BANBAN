@@ -25,6 +25,31 @@ export function getAlternates(path: string = ""): { canonical: string } {
 }
 
 /**
+ * 공백/빈 문자열 description 을 fallback 으로 치환(SEO meta·JSON-LD description 공용 가드).
+ * 이 모듈의 buildPageSeo / getXJsonLd 빌더들이 쓰는 description 을 채우는 호출부 가드라 seo.ts 에 둔다.
+ * `value` 가 trim 후 비어 있으면 fallback, 아니면 trim 한 값을 `max`(양수) 길이로 캡(미지정 시 원본).
+ * `x || fallback`(공백 문자열=truthy 누수)·`x ?? fallback`(빈 문자열 누수) 가드의 함정을 한 곳에서 차단한다.
+ */
+export function descriptionOrFallback(
+  value: string | null | undefined,
+  fallback: string,
+  max?: number,
+): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return fallback;
+  return max === undefined ? trimmed : trimmed.slice(0, max);
+}
+
+/**
+ * JSON-LD 빌더 공용: 빈/공백 description 을 출력에서 생략한다(빈 description 프로퍼티 = 무효 구조화 데이터).
+ * 호출부 descriptionOrFallback 가드의 2차 방어선 — 빌더 자체가 절대 빈 description 을 내보내지 않게 보장.
+ */
+function applyDescription(jsonLd: Record<string, unknown>, description: string): void {
+  const trimmed = description.trim();
+  if (trimmed) jsonLd.description = trimmed;
+}
+
+/**
  * Generate JSON-LD WebSite schema
  */
 export function getWebsiteJsonLd(): Record<string, unknown> {
@@ -131,7 +156,6 @@ export function getArtistJsonLd(artist: Readonly<ArtistJsonLdInput>): Record<str
     "@type": "LocalBusiness",
     "@id": artist.url,
     name: artist.name,
-    description: artist.description,
     url: artist.url,
     address: {
       "@type": "PostalAddress",
@@ -139,6 +163,8 @@ export function getArtistJsonLd(artist: Readonly<ArtistJsonLdInput>): Record<str
       addressCountry: "KR",
     },
   };
+
+  applyDescription(jsonLd, artist.description);
 
   if (artist.image) {
     jsonLd.image = artist.image;
@@ -240,9 +266,9 @@ export function getProductJsonLd(input: Readonly<ProductJsonLdInput>): Record<st
     "@context": SCHEMA_CONTEXT,
     "@type": "Product",
     name: input.name,
-    description: input.description,
     url: input.url,
   };
+  applyDescription(jsonLd, input.description);
   if (input.image.length > 0) jsonLd.image = input.image;
   if (input.category) jsonLd.category = input.category;
   if (input.brandName) {
@@ -276,7 +302,6 @@ export function getEventJsonLd(input: Readonly<EventJsonLdInput>): Record<string
     "@context": SCHEMA_CONTEXT,
     "@type": "Event",
     name: input.name,
-    description: input.description,
     startDate: input.startDate,
     url: input.url,
     eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
@@ -291,6 +316,7 @@ export function getEventJsonLd(input: Readonly<EventJsonLdInput>): Record<string
       url: input.organizerUrl ?? SITE_URL,
     },
   };
+  applyDescription(jsonLd, input.description);
   if (input.endDate) jsonLd.endDate = input.endDate;
   if (input.image) jsonLd.image = input.image;
   return jsonLd;
@@ -310,7 +336,6 @@ export function getCourseJsonLd(input: Readonly<CourseJsonLdInput>): Record<stri
     "@context": SCHEMA_CONTEXT,
     "@type": "Course",
     name: input.name,
-    description: input.description,
     url: input.url,
     provider: {
       "@type": "Organization",
@@ -318,6 +343,7 @@ export function getCourseJsonLd(input: Readonly<CourseJsonLdInput>): Record<stri
       url: input.providerUrl ?? SITE_URL,
     },
   };
+  applyDescription(jsonLd, input.description);
   if (input.image) jsonLd.image = input.image;
   return jsonLd;
 }

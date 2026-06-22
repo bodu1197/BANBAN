@@ -12,14 +12,15 @@ import { EventDetailClient } from "@/components/event/EventDetailClient";
 import { EventHeroBanner } from "@/components/event/EventHeroBanner";
 import { EventShopCard } from "@/components/event/EventShopCard";
 import { RecommendedEventCard } from "@/components/event/RecommendedEventCard";
-import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import { getEventStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { isDetailCopy, isLegacyContent } from "@/lib/event-content-types";
 import { getUser } from "@/lib/supabase/auth";
 
 function extractSeoDescription(aiRaw: unknown, fallback: string): string {
-  if (isDetailCopy(aiRaw)) return aiRaw.seoDescription ?? fallback;
-  if (isLegacyContent(aiRaw)) return aiRaw.seoDescription ?? fallback;
+  // AI 생성 seoDescription 은 검증 없이 JSONB 에 저장되어 ""/공백일 수 있음 → trim 후 fallback.
+  if (isDetailCopy(aiRaw)) return descriptionOrFallback(aiRaw.seoDescription, fallback);
+  if (isLegacyContent(aiRaw)) return descriptionOrFallback(aiRaw.seoDescription, fallback);
   return fallback;
 }
 
