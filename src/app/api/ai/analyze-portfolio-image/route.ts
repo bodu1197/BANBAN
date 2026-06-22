@@ -74,6 +74,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if ("error" in parsed) return parsed.error;
 
     const description = await describeImage(apiKey, parsed.dataUrl);
+    // 50자 가드는 AI 생성 품질 게이트(프롬프트 200~400자 미달=생성 실패 신호)일 뿐,
+    // 사용자 수동 입력에는 글자수 최소 제한이 없음 — 별개 기준이라 동기화 대상 아님.
     if (!description || description.length < 50) {
       return NextResponse.json({ error: "설명 생성에 실패했습니다. 다시 시도해주세요." }, { status: 502 });
     }

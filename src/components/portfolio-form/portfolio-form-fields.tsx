@@ -103,24 +103,17 @@ export function PriceFields({ price, priceOrigin, onPriceChange, onPriceOriginCh
     );
 }
 
-/** 작품 설명 최소 글자수 — 직접 작성 시 최소한의 설명 보장(AI 자동생성은 더 길게 산출).
- *  ⚠️ DB 트리거(migration 20260620000000 lower_portfolio_description_min)의 50 과 반드시 동기화. */
-export const MIN_DESCRIPTION_LEN = 50;
-
 export function DescriptionField({ value, onChange, onAiDescribe, aiDescribing }: Readonly<{
     value: string;
     onChange: (v: string) => void;
     onAiDescribe?: () => void;
     aiDescribing?: boolean;
 }>): React.ReactElement {
-    const len = value.trim().length;
-    const reached = len >= MIN_DESCRIPTION_LEN;
     return (
         <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
                 <label htmlFor="portfolio-description" className="text-sm font-medium">
-                    작품 설명글 <span className="text-destructive">*</span>{" "}
-                    <span className="text-xs font-normal text-muted-foreground">(최소 {MIN_DESCRIPTION_LEN}자)</span>
+                    작품 설명글 <span className="text-destructive">*</span>
                 </label>
                 {onAiDescribe ? (
                     <button
@@ -141,14 +134,9 @@ export function DescriptionField({ value, onChange, onAiDescribe, aiDescribing }
                 onChange={(e): void => onChange(e.target.value)}
                 rows={6}
                 required
-                aria-invalid={!reached}
-                aria-describedby="desc-counter"
-                placeholder="시술 부위·스타일·특징 등 작품을 충실히 설명해주세요. 작성이 어려우면 'AI로 설명 생성'을 이용하세요."
+                placeholder="시술 부위·스타일·특징 등 작품을 자유롭게 설명해주세요. 작성이 어려우면 'AI로 설명 생성'을 이용하세요."
                 className={`${INPUT_CLASS} resize-y`}
             />
-            <p id="desc-counter" className={`mt-1 text-right text-xs tabular-nums ${reached ? "text-muted-foreground" : "text-destructive"}`}>
-                {reached ? `${len}/${MIN_DESCRIPTION_LEN}자 (충족)` : `${len}/${MIN_DESCRIPTION_LEN}자 · ${MIN_DESCRIPTION_LEN - len}자 더 필요`}
-            </p>
         </div>
     );
 }

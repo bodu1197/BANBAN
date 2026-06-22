@@ -15,7 +15,6 @@ import {
 import { calcDiscountRate } from "@/lib/portfolio/helpers";
 import { createClient } from "@/lib/supabase/client";
 import { submitExhibitionEntry } from "@/lib/actions/exhibition-entries";
-import { MIN_DESCRIPTION_LEN } from "./portfolio-form-fields";
 import type { PortfolioFormValues } from "./types";
 
 /** 새 작품 폼의 초기값 — 작성/위저드 양쪽에서 동일 초기 상태 + '추가 후 리셋'에 재사용. */
@@ -66,9 +65,8 @@ export function validatePortfolioForm(args: Readonly<{
   if (categoryCount === 0) return "대표 분류를 1개 이상 선택해주세요.";
   if (!formValues.title.trim()) return "제목을 입력해주세요.";
   if (imageCount !== 1) return "작품 사진은 1장만 등록해주세요. (포트폴리오 1개당 사진 1장)";
-  if (formValues.description.trim().length < MIN_DESCRIPTION_LEN) {
-    return `작품 설명은 ${MIN_DESCRIPTION_LEN}자 이상 입력해주세요. (작성이 어려우면 'AI로 설명 생성' 이용)`;
-  }
+  // 작품 설명: 글자수 최소 제한 없음(1자도 허용). 단 제목과 동일하게 빈 값은 거부(필수 입력).
+  if (!formValues.description.trim()) return "작품 설명을 입력해주세요.";
   return null;
 }
 
