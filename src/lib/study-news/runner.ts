@@ -1,7 +1,7 @@
 // 뉴스 자동수집 오케스트레이션(서버 전용). cron 라우트가 호출.
 // 흐름: 후보 수집 → 기존 url_hash 제외 → AI 요약 → tier 분기(공식 자동게시/언론 초안) → upsert → 캐시 무효화 + 색인 통지.
 import "server-only";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { collectCandidates, type Candidate } from "@/lib/study-news/collect";
 import { summarizeNews } from "@/lib/study-news/summarize";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -11,6 +11,7 @@ import { STUDY_NEWS_CACHE_TAG } from "@/lib/study-news/store";
 const MAX_NEW_PER_RUN = 10; // 1회 처리 상한(비용·시간 보호)
 const MIN_RELEVANCE = 5; // 관련도 미만이면 폐기
 const AI_CONCURRENCY = 2; // OpenAI 동시 요약 제한(레이트리밋·비용)
+const STALE_DRAFT_DAYS = 3; // 검토 미승인 draft 자동 반려 기한(일)
 
 interface NewsInsert {
   slug: string;
@@ -33,6 +34,7 @@ export interface CollectResult {
   inserted: number;
   published: number;
   drafted: number;
+  autoRejected: number;
   reason?: string;
 }
 
@@ -73,11 +75,30 @@ async function buildRow(c: Candidate): Promise<NewsInsert | null> {
   };
 }
 
-export async function runStudyNewsCollect(): Promise<CollectResult> {
-  const candidates = await collectCandidates();
-  if (candidates.length === 0) return { ok: true, collected: 0, inserted: 0, published: 0, drafted: 0 };
+/** 등록 후 STALE_DRAFT_DAYS 일이 지나도록 승인(published)되지 않은 draft 를 자동 반려.
+ *  tier1(공식)은 수집 즉시 published 라 대상 아님 — 검토 대기(주로 tier2 언론) draft 만 해당.
+ *  반환: 이번에 반려된 건수. */
+async function rejectStaleDrafts(admin: ReturnType<typeof createAdminClient>): Promise<number> {
+  const cutoff = new Date(Date.now() - STALE_DRAFT_DAYS * 86_400_000).toISOString();
+  const { data, error } = await admin
+    .from("study_news_items")
+    .update({ status: "rejected" })
+    .eq("status", "draft")
+    .lt("created_at", cutoff)
+    .select("slug");
+  if (error) return 0;
+  const count = data?.length ?? 0;
+  if (count > 0) revalidatePath("/admin/study-news"); // 검토 큐에서 즉시 제거
+  return count;
+}
 
+export async function runStudyNewsCollect(): Promise<CollectResult> {
   const admin = createAdminClient();
+  const autoRejected = await rejectStaleDrafts(admin); // 3일 경과 미승인 draft 자동 반려
+
+  const candidates = await collectCandidates();
+  if (candidates.length === 0) return { ok: true, collected: 0, inserted: 0, published: 0, drafted: 0, autoRejected };
+
   const { data: existing } = await admin
     .from("study_news_items")
     .select("url_hash")
@@ -85,14 +106,14 @@ export async function runStudyNewsCollect(): Promise<CollectResult> {
   const known = new Set((existing ?? []).map((r) => r.url_hash));
 
   const fresh = candidates.filter((c) => !known.has(c.urlHash)).slice(0, MAX_NEW_PER_RUN);
-  if (fresh.length === 0) return { ok: true, collected: candidates.length, inserted: 0, published: 0, drafted: 0 };
+  if (fresh.length === 0) return { ok: true, collected: candidates.length, inserted: 0, published: 0, drafted: 0, autoRejected };
 
   const built = await mapWithConcurrency(fresh, AI_CONCURRENCY, buildRow);
   const rows = built.filter((r): r is NewsInsert => r !== null);
-  if (rows.length === 0) return { ok: true, collected: candidates.length, inserted: 0, published: 0, drafted: 0 };
+  if (rows.length === 0) return { ok: true, collected: candidates.length, inserted: 0, published: 0, drafted: 0, autoRejected };
 
   const { error } = await admin.from("study_news_items").upsert(rows, { onConflict: "url_hash", ignoreDuplicates: true });
-  if (error) return { ok: false, collected: candidates.length, inserted: 0, published: 0, drafted: 0, reason: error.message };
+  if (error) return { ok: false, collected: candidates.length, inserted: 0, published: 0, drafted: 0, autoRejected, reason: error.message };
 
   revalidateTag(STUDY_NEWS_CACHE_TAG, { expire: 0 });
   const publishedRows = rows.filter((r) => r.status === "published");
@@ -106,5 +127,6 @@ export async function runStudyNewsCollect(): Promise<CollectResult> {
     inserted: rows.length,
     published: publishedRows.length,
     drafted: rows.length - publishedRows.length,
+    autoRejected,
   };
 }
