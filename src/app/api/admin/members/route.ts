@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { escapeIlike } from "@/lib/supabase/queries";
+import type { ArtistStatus } from "@/lib/artist-status";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -150,7 +151,7 @@ function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, li
         const filter = ARTIST_TYPE_FILTERS.semi_permanent;
         return supabase
             .from("profiles")
-            .select(`${PROFILE_COLUMNS}, artists!inner(id, type_artist, title)`, { count: "exact" })
+            .select(`${PROFILE_COLUMNS}, artists!inner(id, type_artist, title, status, is_hide)`, { count: "exact" })
             .is("deleted_at", null)
             .eq("is_admin", false)
             .or(filter, { referencedTable: "artists" })
@@ -161,7 +162,7 @@ function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, li
     if (tab === "admin") {
         return supabase
             .from("profiles")
-            .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist, title)`, { count: "exact" })
+            .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist, title, status, is_hide)`, { count: "exact" })
             .is("deleted_at", null)
             .eq("is_admin", true)
             .order(sort.column, { ascending: sort.ascending })
@@ -171,24 +172,26 @@ function buildTabQuery(supabase: SupabaseClient, tab: string, offset: number, li
     // "all" tab
     return supabase
         .from("profiles")
-        .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist, title)`, { count: "exact" })
+        .select(`${PROFILE_COLUMNS}, artists!left(id, type_artist, title, status, is_hide)`, { count: "exact" })
         .is("deleted_at", null)
         .order(sort.column, { ascending: sort.ascending })
         .range(offset, offset + limit - 1);
 }
 
-interface ArtistRow { id?: string; type_artist?: string; title?: string }
+interface ArtistRow { id?: string; type_artist?: string; title?: string; status?: ArtistStatus; is_hide?: boolean | null }
 
-interface ArtistInfo { type_artist: string | null; artist_id: string | null; shop_name: string | null }
+interface ArtistInfo { type_artist: string | null; artist_id: string | null; shop_name: string | null; artist_status: ArtistStatus | null; is_hide: boolean | null }
 
 /** PostgREST 가 profiles ↔ artists 관계를 1:1 로 인식하면 object, 1:N 이면 array 로 반환.
  *  두 경우 모두 안전하게 첫 row 추출. */
 function extractArtistInfo(artists: ArtistRow | ArtistRow[] | null | undefined): ArtistInfo {
-    const first = Array.isArray(artists) ? artists[0] : artists;
+    const first: ArtistRow = (Array.isArray(artists) ? artists[0] : artists) ?? {};
     return {
-        type_artist: first?.type_artist ?? null,
-        artist_id: first?.id ?? null,
-        shop_name: first?.title ?? null,
+        type_artist: first.type_artist ?? null,
+        artist_id: first.id ?? null,
+        shop_name: first.title ?? null,
+        artist_status: first.status ?? null,
+        is_hide: first.is_hide ?? null,
     };
 }
 
@@ -212,6 +215,8 @@ async function fetchGeneralMembers(
         type_artist: null,
         artist_id: null,
         shop_name: null,
+        artist_status: null,
+        is_hide: null,
     }));
 
     return NextResponse.json({ members, total, page: Math.floor(offset / limit) + 1, limit });
@@ -234,8 +239,8 @@ async function fetchStandardMembers(
 
     const members = (data ?? []).map((row) => {
         const { artists, ...profile } = row as Record<string, unknown> & { artists?: ArtistRow | ArtistRow[] | null };
-        const { type_artist, artist_id, shop_name } = extractArtistInfo(artists);
-        return { ...profile, type_artist, artist_id, shop_name };
+        const { type_artist, artist_id, shop_name, artist_status, is_hide } = extractArtistInfo(artists);
+        return { ...profile, type_artist, artist_id, shop_name, artist_status, is_hide };
     });
 
     return NextResponse.json({ members, total: count ?? 0, page, limit, loginStats: stats });

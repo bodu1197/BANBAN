@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Save, Shield, ShieldOff, Trash2, ArrowUpDown, Users, Store, Pencil, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminSearchBar, AdminPagination, AdminSearchResetBadge, AdminLoadingSpinner, AdminErrorState, AdminPageHeader } from "@/components/admin/admin-shared";
+import type { ArtistStatus } from "@/lib/artist-status";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -23,6 +24,8 @@ interface Member {
     type_artist: string | null;
     artist_id: string | null;
     shop_name: string | null;
+    artist_status: ArtistStatus | null;
+    is_hide: boolean | null;
     language: string;
     last_login_at: string | null;
     created_at: string;
@@ -55,8 +58,13 @@ const SOCIAL_LABELS: Record<string, string> = {
     NONE: "일반", KAKAO: "카카오", GOOGLE: "구글", APPLE: "애플",
 };
 
-const ARTIST_TYPE_LABELS: Record<string, string> = {
-    SEMI_PERMANENT: "반영구",
+// 반영구 아티스트 샵 진행 단계 → 배지 라벨/색. 'active' 만 완성·공개된 샵, 나머지는 생성 과정 중.
+const ARTIST_STAGE: Record<ArtistStatus, { label: string; cls: string }> = {
+    active: { label: "반영구", cls: "bg-pink-500/20 text-pink-300" },
+    draft: { label: "반영구 · 생성중", cls: "bg-sky-500/20 text-sky-300" },
+    pending: { label: "반영구 · 검수대기", cls: "bg-amber-500/20 text-amber-300" },
+    rejected: { label: "반영구 · 반려", cls: "bg-red-500/20 text-red-300" },
+    dormant: { label: "반영구 · 휴면", cls: "bg-zinc-500/20 text-zinc-300" },
 };
 
 const TAB_LIST: { key: MemberTab; label: string }[] = [
@@ -411,6 +419,21 @@ function MemberNameCell({ member }: Readonly<{ member: Member }>): React.ReactEl
     return <span>{member.nickname}</span>;
 }
 
+// ─── ArtistTypeBadge ────────────────────────────────────
+
+function ArtistTypeBadge({ member }: Readonly<{ member: Member }>): React.ReactElement {
+    const stage = ARTIST_STAGE[member.artist_status ?? "active"];
+    // 공개(active) 상태인데 숨김 처리(takedown)된 경우 → 라이브 샵이 아님을 명시
+    const hidden = member.artist_status === "active" && member.is_hide === true;
+    const label = hidden ? "반영구 · 숨김" : stage.label;
+    const cls = hidden ? "bg-zinc-500/20 text-zinc-300" : stage.cls;
+    return (
+        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
+            {label}
+        </span>
+    );
+}
+
 // ─── MemberBadges ───────────────────────────────────────
 
 function MemberBadges({ member }: Readonly<{ member: Member }>): React.ReactElement {
@@ -420,9 +443,7 @@ function MemberBadges({ member }: Readonly<{ member: Member }>): React.ReactElem
                 <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">관리자</span>
             )}
             {member.type_artist ? (
-                <span className="rounded-full bg-pink-500/20 px-1.5 py-0.5 text-[10px] font-medium text-pink-400">
-                    {ARTIST_TYPE_LABELS[member.type_artist] ?? member.type_artist}
-                </span>
+                <ArtistTypeBadge member={member} />
             ) : (
                 <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] text-zinc-400">일반</span>
             )}
