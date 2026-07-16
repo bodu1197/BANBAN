@@ -9,6 +9,7 @@ import { toCategoryType } from "@/types/portfolio-search";
 import type { CategoryItem } from "@/types/portfolio-search";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { optimizeImage } from "@/lib/utils/image-optimizer";
+import { requestPortfolioIndexPing } from "@/lib/portfolio/ping-index";
 
 // --- Category fetching ---
 
@@ -179,4 +180,6 @@ export async function savePortfolio(portfolioId: string, payload: SavePayload): 
     if (error) throw error;
     if (payload.deletedMediaIds.length > 0) await supabase.from("portfolio_media").delete().in("id", payload.deletedMediaIds);
     await syncCategories(supabase, portfolioId, payload.categoryIds);
+    // 수정된 작품 상세를 서버 route 통해 재색인 요청(비차단).
+    requestPortfolioIndexPing(portfolioId);
 }

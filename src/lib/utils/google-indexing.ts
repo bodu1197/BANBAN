@@ -5,6 +5,8 @@ import { PUBLIC_ENV, SERVER_ENV } from "@/lib/config/env";
 
 const INDEXING_ENDPOINT =
   "https://indexing.googleapis.com/v3/urlNotifications:publish";
+// index-now.ts 와 동일한 상한 — awaited 호출부(ping route)가 무한 대기하지 않도록.
+const TIMEOUT_MS = 10_000;
 
 export type IndexingType = "URL_UPDATED" | "URL_DELETED";
 
@@ -55,7 +57,13 @@ export async function notifyGoogleIndex(
     const client = getJWTClient();
     if (!client) return false;
 
-    const res = await client.getAccessToken();
+    // 토큰 취득도 네트워크 왕복(OAuth) — awaited 호출부가 여기서 무한 대기하지 않도록 상한.
+    const res = await Promise.race([
+      client.getAccessToken(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("token timeout")), TIMEOUT_MS);
+      }),
+    ]);
     if (!res.token) return false;
 
     const base = PUBLIC_ENV.SITE_URL.replace(/\/$/, "");
@@ -68,6 +76,7 @@ export async function notifyGoogleIndex(
         Authorization: `Bearer ${res.token}`,
       },
       body: JSON.stringify({ url: `${base}${path}`, type }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
     if (!response.ok) {

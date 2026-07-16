@@ -15,6 +15,7 @@ import {
 import { calcDiscountRate } from "@/lib/portfolio/helpers";
 import { createClient } from "@/lib/supabase/client";
 import { submitExhibitionEntry } from "@/lib/actions/exhibition-entries";
+import { requestPortfolioIndexPing } from "@/lib/portfolio/ping-index";
 import type { PortfolioFormValues } from "./types";
 
 /** 새 작품 폼의 초기값 — 작성/위저드 양쪽에서 동일 초기 상태 + '추가 후 리셋'에 재사용. */
@@ -115,5 +116,7 @@ export async function createPortfolioRecord(args: Readonly<CreatePortfolioArgs>)
   if (formValues.isEvent && exhibitionIds.length > 0) {
     await Promise.all(exhibitionIds.map((exId) => submitExhibitionEntry(exId, portfolio.id)));
   }
+  // 서버 route 가 인증·공개 게이트 검증 후 색인 요청(비차단 keepalive fetch).
+  requestPortfolioIndexPing(portfolio.id);
   return portfolio.id;
 }
