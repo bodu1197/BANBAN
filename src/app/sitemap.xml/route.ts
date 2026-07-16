@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { countPublicPortfolios } from "@/lib/supabase/portfolio-listing-queries";
 import {
   SITE_URL,
   buildSitemapIndexEntry,
@@ -15,10 +16,11 @@ interface ContentEntry {
 async function getContentEntries(): Promise<ContentEntry[]> {
   const supabase = createAdminClient();
 
-  const [artists, portfolios, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews] =
+  const [artists, portfoliosCount, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews] =
     await Promise.all([
       supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "active"),
-      supabase.from("portfolios").select("*", { count: "exact", head: true }),
+      // 포폴 개수는 본문(fetchPublicPortfolioSitemapRows)과 동일 anon client·동일 술어 → 인덱스 페이지수 = 실제 출력.
+      countPublicPortfolios(),
       supabase.from("exhibitions").select("*", { count: "exact", head: true }),
       supabase.from("courses").select("*", { count: "exact", head: true }),
       supabase.from("posts").select("*", { count: "exact", head: true }),
@@ -29,7 +31,7 @@ async function getContentEntries(): Promise<ContentEntry[]> {
 
   return [
     { slug: "artists", count: artists.count ?? 0 },
-    { slug: "portfolios", count: portfolios.count ?? 0 },
+    { slug: "portfolios", count: portfoliosCount },
     { slug: "exhibitions", count: exhibitions.count ?? 0 },
     { slug: "courses", count: courses.count ?? 0 },
     { slug: "community", count: posts.count ?? 0 },

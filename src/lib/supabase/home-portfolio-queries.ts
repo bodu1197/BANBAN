@@ -66,7 +66,7 @@ function deduplicatePortfolios<T extends { artist_id: string; title: string }>(r
 // 노출 자격이 있는 포폴만 가져온다. withAdInjection 이 이를 상단에 주입.
 
 /** 일반 스코프(카테고리 비지정) 광고 포폴 — 자연 목록과 동일 base + modifier(정렬) 재사용 */
-async function fetchAdPortfoliosGeneric(
+export async function fetchAdPortfoliosGeneric(
   supabase: SupabaseInstance,
   adArtistIds: string[],
   modifier: PortfolioQueryModifier,
