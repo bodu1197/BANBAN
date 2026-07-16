@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createStaticClient } from "./server";
-import { MIN_PORTFOLIO_MEDIA } from "./artist-visibility";
+import { filterPublicPortfolios } from "./portfolio-visibility";
 import { ITEMS_PER_PAGE } from "@/lib/sitemap-utils";
 import { withAdInjection } from "./boost-ranking";
 import { fetchAdPortfoliosGeneric } from "./home-portfolio-queries";
@@ -21,36 +21,6 @@ const SELECT_PUBLIC = `
 /** page 파라미터 정규화 SSOT — 비수치(abc)·비정수(2.5)·음수·0 을 모두 1 이상 정수로. */
 export function normalizePage(value: unknown): number {
   return Math.max(1, Math.trunc(Number(value)) || 1);
-}
-
-/**
- * 공개 포폴 술어 SSOT — 목록/사이트맵/카운트가 **반드시 이 함수를 공유**한다.
- * 사이트맵 URL = 목록에서 링크되는 URL = 공개 상세, 세 집합이 일치해야 크롤이 색인으로 이어진다.
- *
- * 공개 정의: 승인 완료(approved_at NOT NULL = active/dormant) + 미숨김 + 미삭제 아티스트,
- * 미디어 ≥ MIN_PORTFOLIO_MEDIA, 삭제 안 된 유가(price>0) 포폴.
- *
- * ⚠️ 모든 호출부는 select 에 `artist:artists!inner(...)` 임베드를 포함해야 한다 —
- * 없으면 아래 artist.* 필터가 부모(portfolios)를 못 걸러 비공개 포폴이 조용히 노출된다(A01).
- * (참고: 광고 부스트는 media≥5 를 면제하므로 filterPublicPortfolios 가 아니라
- *  fetchAdPortfoliosGeneric 의 isAdEligibleArtist 로 별도 처리된다.)
- */
-export function filterPublicPortfolios<
-  T extends {
-    is(column: string, value: null): T;
-    not(column: string, operator: "is", value: null): T;
-    eq(column: string, value: boolean): T;
-    gt(column: string, value: number): T;
-    gte(column: string, value: number): T;
-  },
->(query: T): T {
-  return query
-    .is("deleted_at", null)
-    .gt("price", 0)
-    .not("artist.approved_at", "is", null)
-    .eq("artist.is_hide", false)
-    .is("artist.deleted_at", null)
-    .gte("artist.portfolio_media_count", MIN_PORTFOLIO_MEDIA);
 }
 
 export interface PublicPortfolioPage {

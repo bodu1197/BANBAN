@@ -38,7 +38,9 @@ export default function ArtistPortfolioCard({
 
     return (
         <li className={`border rounded-lg overflow-hidden mb-3 ${expired ? "border-amber-400/50 bg-amber-50/30" : "border-border bg-card"}`}>
-            <Link href={`/portfolios/${portfolio.id}`} className="flex gap-4 p-3">
+            {/* 관리 목록 카드 본문 → 편집. 공개 상세(/portfolios/[id])는 비공개(미승인·미디어<5·price0·
+                숨김) 작품에서 공개 게이트로 404 이고, 카드엔 공개여부 판정 데이터가 없어 관리(편집)로 링크. */}
+            <Link href={`/mypage/artist/portfolios/edit/${portfolio.id}`} className="flex gap-4 p-3">
                 <div className="relative">
                     <PortfolioThumbnail src={imgSrc} alt={imgAlt} />
                     {expired ? <div className="absolute inset-0 bg-black/30 rounded-md" /> : null}

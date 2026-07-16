@@ -15,6 +15,7 @@ import { RecommendedEventCard } from "@/components/event/RecommendedEventCard";
 import { buildPageSeo, getBreadcrumbJsonLd, getEventJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import { getEventStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { isDetailCopy, isLegacyContent } from "@/lib/event-content-types";
+import { isEventExpiredByDate } from "@/lib/event-expiry";
 import { getUser } from "@/lib/supabase/auth";
 
 function extractSeoDescription(aiRaw: unknown, fallback: string): string {
@@ -26,7 +27,8 @@ function extractSeoDescription(aiRaw: unknown, fallback: string): string {
 
 export async function generateEventMetadata(id: string): Promise<Metadata> {
   const event = await fetchEventById(id);
-  if (!event) {
+  // 공개 상세는 published 만 노출 — draft/종료(ended)/삭제는 not-found 처리(색인 제외).
+  if (!event || event.status !== "published") {
     return {
       title: "이벤트를 찾을 수 없습니다 | 반언니",
       description: "요청하신 이벤트를 찾을 수 없습니다. 다른 이벤트를 확인해보세요.",
@@ -45,6 +47,11 @@ export async function generateEventMetadata(id: string): Promise<Metadata> {
   const heroMedia = detailHero ?? event.event_media?.[0];
   const heroImage = heroMedia ? getEventStorageUrl(heroMedia.storage_path) : null;
 
+  // 만료된 이벤트(event_end_at 경과)는 페이지·내부 링크는 유지하되 색인만 제외한다.
+  // events 는 사이트맵에 없어(포폴/아티스트만 등록) noindex 가 유일한 색인 차단 수단.
+  // 경계는 목록과 동일한 isEventExpiredByDate(날짜 UTC 단위) 공유 — 목록/상세 갈림 방지.
+  const isExpired = isEventExpiredByDate(event.event_end_at);
+
   return {
     title: `${event.title} | 반언니`,
     description,
@@ -54,6 +61,8 @@ export async function generateEventMetadata(id: string): Promise<Metadata> {
       path: `/events/${id}`,
       image: heroImage,
     }),
+    // buildPageSeo 뒤에 두어 만료 noindex 가 최종 반영되도록(현재 buildPageSeo 는 robots 미반환).
+    ...(isExpired ? { robots: { index: false } } : {}),
   };
 }
 
@@ -96,7 +105,7 @@ function RecommendedSkeleton(): React.ReactElement {
 // eslint-disable-next-line max-lines-per-function -- page orchestrator fetching parallel data + building hero banner + shop data
 export async function renderEventDetailPage(id: string): Promise<React.ReactElement | null> {
   const event = await fetchEventById(id);
-  if (!event) return null;
+  if (!event || event.status !== "published") return null;
 
   void incrementEventViews(id);
 

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "./server";
+import { filterPublicPortfolios } from "./portfolio-visibility";
 import { getStorageUrl } from "./storage-utils";
 import type { Artist, Portfolio, PortfolioMedia, Region } from "@/types/database";
 import { secureShuffle } from "@/lib/random";
@@ -104,23 +105,26 @@ export const fetchPortfolioById = cache(async function fetchPortfolioById(
 ): Promise<PortfolioDetails | null> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("portfolios")
-    .select(`
-      *,
-      portfolio_media(*),
-      artist:artists(*, region:regions(*))
-    `)
+  // 공개 술어 게이트(목록·사이트맵·ping 과 동일 filterPublicPortfolios) — 비공개(미승인·price0·
+  // 미디어<5·숨김/삭제 아티스트) 포폴 상세가 200+색인되던 구멍 차단. 미통과면 null → 호출부가 notFound(404).
+  const { data, error } = await filterPublicPortfolios(
+    supabase
+      .from("portfolios")
+      .select(`
+        *,
+        portfolio_media(*),
+        artist:artists!inner(*, region:regions(*))
+      `),
+  )
     .eq("id", id)
-    .is("deleted_at", null)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === "PGRST116") return null;
     // eslint-disable-next-line no-console
     console.error(`Failed to fetch portfolio: ${error.message}`);
     return null;
   }
+  if (!data) return null;
 
   const portfolio = data as unknown as PortfolioDetails;
 

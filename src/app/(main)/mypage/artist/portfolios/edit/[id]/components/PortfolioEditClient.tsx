@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { requestPortfolioIndexPing } from "@/lib/portfolio/ping-index";
 import { FullPageSpinner } from "@/components/ui/full-page-spinner";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CategoryItem } from "@/types/portfolio-search";
@@ -292,6 +293,8 @@ export default function PortfolioEditClient({
         try {
             const ok = await deletePortfolioById(createClient(), portfolioId);
             if (!ok) throw new Error("삭제 실패");
+            // 삭제된 작품 색인 제거 요청(keepalive — 직후 router.push 이탈에도 전송 보장).
+            requestPortfolioIndexPing(portfolioId);
             const effectiveArtistId = artist?.id ?? portfolioArtistId;
             await revalidatePortfolioPages(effectiveArtistId).catch((err: unknown) => {
                 // eslint-disable-next-line no-console

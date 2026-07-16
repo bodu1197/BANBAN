@@ -156,7 +156,10 @@ export function EventEditClient({
     setIsSaving(true);
     try {
       await saveEvent(event.id, values, artistTitle);
-      router.push(`/events/${event.id}`);
+      alert("수정되었습니다.");
+      // 저장 후 소유자 목록으로 — draft/종료 이벤트는 공개 상세가 published 게이트로 404 라
+      // 포폴 편집과 동일하게 관리 목록으로 보낸다.
+      router.push("/mypage/artist/events");
       router.refresh();
     } catch (e: unknown) {
       alert(`수정 실패: ${e instanceof Error ? e.message : "알 수 없는 오류"}`);

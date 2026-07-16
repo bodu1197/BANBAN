@@ -77,6 +77,9 @@ const EVENT_CARD_SELECT_INNER =
 
 // === Public queries ===
 
+// id 로 이벤트 로드(미삭제) — 공개 상태(status) 게이트는 여기서 걸지 않는다: 이 함수는 공개 상세와
+// 소유자 편집 페이지가 공유하므로 published 로 좁히면 소유자가 draft/종료 이벤트를 편집할 수 없다.
+// 공개 노출용 published 게이트는 호출부(event-detail-page)에서 적용한다.
 export const fetchEventById = cache(async function fetchEventById(
   id: string,
 ): Promise<EventWithDetails | null> {
@@ -86,7 +89,7 @@ export const fetchEventById = cache(async function fetchEventById(
     .select("*, event_media(*), artist:artists(*, region:regions(*))")
     .eq("id", id)
     .is("deleted_at", null)
-    .single();
+    .maybeSingle();
 
   if (!data) return null;
 
@@ -113,8 +116,9 @@ function escapeLikePattern(input: string): string {
 }
 
 /**
- * 오늘 날짜 (YYYY-MM-DD). event_end_at 비교용.
+ * 오늘 날짜 (YYYY-MM-DD). event_end_at 비교용. (SQL 측 만료 술어)
  * 만료 정책: event_end_at IS NULL (만료 없음) 또는 event_end_at >= 오늘 → 노출.
+ * JS 측 쌍둥이는 event-expiry.ts `isEventExpiredByDate`(동일 규칙) — 함께 바꿔야 정합.
  */
 export function getActiveEventFilter(): string {
   const today = new Date().toISOString().slice(0, 10);

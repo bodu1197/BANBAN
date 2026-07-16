@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { getEventStorageUrl } from "@/lib/supabase/storage-utils";
+import { isEventExpiredByDate } from "@/lib/event-expiry";
 
 interface EventRow {
   id: string;
@@ -29,37 +30,34 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   expired: { label: "이벤트 종료(기간만료)", className: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
 };
 
-function isExpiredByDate(endAt: string | null): boolean {
-  if (!endAt) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return endAt < today;
-}
-
-/** 이벤트 카드 파생값(썸네일/상태배지/재게시잠금) — map 콜백 복잡도 분리. */
+/** 이벤트 카드 파생값(썸네일/상태배지/재게시잠금/카드링크) — map 콜백 복잡도 분리. */
 function deriveEventCardData(event: EventRow): {
   heroUrl: string | null;
   statusInfo: { label: string; className: string };
   reopenLocked: boolean;
+  cardHref: string;
 } {
   const media = event.event_media ?? [];
   const hero = media.find((m) => m.media_type === "hero");
   const heroUrl = hero ? getEventStorageUrl(hero.storage_path) : null;
-  const dateExpired = isExpiredByDate(event.event_end_at);
+  const dateExpired = isEventExpiredByDate(event.event_end_at);
   const effectiveStatus = dateExpired && event.status === "published" ? "expired" : event.status;
   // eslint-disable-next-line security/detect-object-injection -- STATUS_LABELS 상수 키 조회(상태 문자열), ?? 폴백으로 미정의 키도 안전
   const statusInfo = STATUS_LABELS[effectiveStatus] ?? STATUS_LABELS.draft;
-  return { heroUrl, statusInfo, reopenLocked: dateExpired };
+  // published 만 공개 상세로(그 외는 published 게이트로 404) — draft/종료는 편집으로 링크해 관리.
+  const cardHref = event.status === "published" ? `/events/${event.id}` : `/mypage/artist/events/${event.id}/edit`;
+  return { heroUrl, statusInfo, reopenLocked: dateExpired, cardHref };
 }
 
 /** 이벤트 썸네일(히어로 이미지 또는 플레이스홀더 SVG). */
 function EventThumbnail({
-  eventId,
+  href,
   title,
   heroUrl,
-}: Readonly<{ eventId: string; title: string; heroUrl: string | null }>): React.ReactElement {
+}: Readonly<{ href: string; title: string; heroUrl: string | null }>): React.ReactElement {
   return (
     <Link
-      href={`/events/${eventId}`}
+      href={href}
       className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted"
     >
       {heroUrl ? (
@@ -128,10 +126,10 @@ function EventCard({
   onStatusToggle: (id: string, currentStatus: string) => void;
   onDelete: (id: string) => void;
 }>): React.ReactElement {
-  const { heroUrl, statusInfo, reopenLocked } = deriveEventCardData(event);
+  const { heroUrl, statusInfo, reopenLocked, cardHref } = deriveEventCardData(event);
   return (
     <div className="flex gap-3 rounded-lg border border-input p-3">
-      <EventThumbnail eventId={event.id} title={event.title} heroUrl={heroUrl} />
+      <EventThumbnail href={cardHref} title={event.title} heroUrl={heroUrl} />
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center gap-2">
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusInfo.className}`}>
@@ -141,7 +139,7 @@ function EventCard({
             <span className="text-xs font-bold text-red-700 dark:text-red-400">{event.discount_rate}%</span>
           )}
         </div>
-        <Link href={`/events/${event.id}`} className="block rounded focus-visible:ring-2 focus-visible:ring-ring">
+        <Link href={cardHref} className="block rounded focus-visible:ring-2 focus-visible:ring-ring">
           <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
         </Link>
         <p className="text-xs text-muted-foreground">

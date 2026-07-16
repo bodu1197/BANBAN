@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { requestPortfolioIndexPing } from "@/lib/portfolio/ping-index";
 import {
     type PortfolioRow,
     type HomePortfolio,
@@ -93,6 +94,8 @@ async function handlePortfolioDelete(
     if (!confirm("정말 삭제하시겠습니까?")) return;
     try {
         await deletePortfolio(portfolio.id);
+        // 삭제된 작품을 검색엔진에서 제거 요청 — route 가 소유권 확인 후 URL_DELETED 로 자동 판단.
+        requestPortfolioIndexPing(portfolio.id);
         alert("삭제되었습니다.");
         queryClient.invalidateQueries({ queryKey: ["portfolios", "owned"] });
     } catch (error: unknown) {
