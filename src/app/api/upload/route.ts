@@ -27,7 +27,7 @@ interface UploadResult {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const INTERNAL_SERVER_ERROR = "Internal server error";
 const INVALID_BUCKET = "Invalid bucket";
-const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media", "banners"]);
+const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media", "banners", "chat"]);
 
 function validateBucket(bucket: string): boolean {
   return ALLOWED_BUCKETS.has(bucket);
