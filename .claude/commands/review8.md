@@ -2,9 +2,29 @@
 description: 8-전문가 병렬 리뷰 (Security / SEO / Performance / UX / Maintainability / Quality / Architecture / Type Safety)
 ---
 
-# /review8 — 8-Expert Parallel Review
+# /review8 — 8-Perspective Review
 
-**목표**: 8명 도메인 전문가 서브에이전트를 **한 메시지 안에서 병렬 실행**해서 diff를 리뷰 → 결과 종합 → 유저에게 보고.
+**목표**: 8개 도메인 관점으로 diff를 리뷰 → 결과 종합 → 유저에게 보고.
+
+## 🔒 비용 규약 (2026-07-25) — 아래 8개 섹션보다 우선
+
+**서브에이전트는 8명이 아니라 4명이다. `model` 을 반드시 명시한다.**
+
+| | |
+| --- | --- |
+| 에이전트 수 | **4개** — 8관점을 2개씩 묶는다 (①Security+Type ②Performance+Architecture ③UX+SEO ④Quality+Maintainability) |
+| `model` | **생략 금지.** 안 적으면 세션 모델(최상위)을 상속한다 |
+| 모델 선택 | 돈·권한·RLS·마이그레이션·DB쿼리·보안설정 = `opus` / UI·문서·린트 = `sonnet` / **애매하면 opus** / haiku 금지 |
+
+**왜 4명인가**: 관점을 묶으면 한 렌즈로는 안 보이는 **결합 결함**이 드러난다 —
+"추정치를 쓴다(성능)" × "그 추정치로 페이지 링크를 만든다(구조)" = 없는 페이지 링크 → 404.
+2026-07-25 실측에서 8명으로 쪼갠 라운드가 놓친 회귀를 4명 묶음이 잡았다.
+
+**왜 model 을 적어야 하나**: 2026-07-25 한 세션에서 model 미지정 서브에이전트 12개가
+**~706,000 토큰**을 태워 주간 한도 75%를 소진했다.
+
+> 아래 "8개 Agent" 서술은 옛 버전이다. 카테고리 8개는 유지하되 **띄우는 에이전트는 4개**다.
+> 전체 규칙은 `~/.claude/CLAUDE.md` 4절(모든 프로젝트 공통) 참조.
 
 ## 입력 해석 (`$ARGUMENTS`)
 

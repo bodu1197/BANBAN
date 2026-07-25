@@ -43,19 +43,22 @@ if (/\b(rejected|failed to push|error:)\b/i.test(stderr)) success = false;
 if (!success) process.exit(0);
 
 const reminder = [
-    "🔍 자동 8-리뷰어 트리거",
+    "🔍 푸시 후 리뷰 확인",
     "",
     "방금 git push 가 성공했습니다.",
-    "프로젝트 정책: 푸시 직후 /review8 을 자동으로 실행합니다.",
     "",
-    "다음을 지금 바로 수행하세요:",
+    "⚠️ **먼저 중복인지부터 판정하라 — 대개 여기서 끝난다.**",
+    "방금 올린 커밋을 push 전에 이미 리뷰했다면, 다시 리뷰하는 건 같은 걸 두 번 보는 순수 낭비다",
+    "(2026-07-25: 이 무조건 재리뷰 지시가 리뷰 비용을 정확히 2배로 만들고 있었다).",
+    "이미 리뷰했으면 **아무것도 하지 말고 종료하라.**",
+    "",
+    "미리뷰 커밋이 섞여 올라간 경우에만 아래를 수행한다:",
     "1. `git log -1 --format=%H` 로 방금 푸시된 커밋 SHA 확인",
-    "2. `.claude/commands/review8.md` 의 지시대로 8개 Agent 를 단일 메시지에 병렬 실행 (Security / SEO / Performance / UX / Maintainability / Quality / Architecture / Type Safety)",
-    "3. 각 에이전트는 subagent_type=Explore, thoroughness=medium",
-    "4. 스코프는 `HEAD~1..HEAD` (방금 푸시된 커밋)",
-    "5. 결과 종합 후 유저에게 발견사항 보고. AUTO-FIX 가능 항목은 적용 여부 물어봄.",
-    "",
-    "이 리뷰는 필수입니다. 스킵하지 마세요.",
+    "2. `.claude/commands/review8.md` 의 지시대로 리뷰 — **에이전트는 4개**(8개 아님. 8관점을 2개씩 묶는다: ①Security+Type ②Performance+Architecture ③UX+SEO ④Quality+Maintainability)",
+    "3. `subagent_type=Explore` + **`model` 명시 필수** (돈·권한·RLS·마이그레이션·DB쿼리·보안설정=opus / UI·문서·린트=sonnet / 애매하면 opus / haiku 금지)",
+    "   ※ model 을 안 적으면 세션 모델(최상위)을 상속한다 — 2026-07-25 미지정 12개가 ~706k 토큰 소모.",
+    "4. 스코프는 미리뷰 커밋 범위만",
+    "5. 발견사항이 있으면 유저에게 보고.",
 ].join("\n");
 
 const out = {
