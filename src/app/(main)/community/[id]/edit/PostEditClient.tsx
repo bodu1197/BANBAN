@@ -46,8 +46,8 @@ function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, on
       ) : (
         <button type="button" onClick={onPickFile} disabled={uploading}
           className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-brand-primary hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <ImagePlus className="h-5 w-5" />
-          {uploading ? "업로드 중..." : "이미지 선택"}
+          <ImagePlus className="h-5 w-5" aria-hidden="true" />
+          <span aria-live="polite">{uploading ? "업로드 중..." : "이미지 선택"}</span>
         </button>
       )}
       <input ref={fileRef} type="file" accept="image/*" className="hidden"
@@ -72,22 +72,23 @@ function YouTubeInput({ id, value, onChange }: Readonly<{
   );
 }
 
-async function uploadCommunityImage(file: File): Promise<string | null> {
+async function uploadCommunityImage(file: File): Promise<string> {
   const form = new globalThis.FormData();
   form.append("file", file);
   const path = `community/${crypto.randomUUID()}.webp`;
   const res = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
-  const json = await res.json() as { success: boolean; path?: string };
+  const json = await res.json() as { success: boolean; path?: string; error?: string };
   if (json.success && json.path) {
     const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
     return `${supabaseUrl}/storage/v1/object/public/portfolios/${json.path}`;
   }
-  return null;
+  // 서버 사유(예: 업로드 횟수 초과)를 그대로 보여준다.
+  throw new Error(json.error ?? STRINGS.common.imageUploadFailed);
 }
 
-function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, canUploadImage, guestPasswordField, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
+function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, guestPasswordField, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
   title: string; content: string; imageUrl: string; youtubeUrl: string;
-  uploading: boolean; isPending: boolean; canSubmit: boolean; canUploadImage: boolean;
+  uploading: boolean; isPending: boolean; canSubmit: boolean;
   guestPasswordField: React.ReactNode;
   fileRef: React.RefObject<HTMLInputElement | null>;
   onTitleChange: (v: string) => void; onContentChange: (v: string) => void;
@@ -110,11 +111,8 @@ function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPendi
           placeholder={t.postContentPlaceholder} rows={10} maxLength={POST_CONTENT_MAX}
           className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring" />
       </div>
-      {/* 이미지 업로드 API 는 로그인이 필요하다 — 비회원에게는 아예 보여주지 않는다. */}
-      {canUploadImage ? (
-        <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
-          onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
-      ) : null}
+      <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
+        onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
       <YouTubeInput id="edit-youtube" value={youtubeUrl} onChange={onYoutubeChange} />
       <Button onClick={onSubmit} disabled={isPending || !canSubmit} className="w-full">
         {isPending ? STRINGS.common.saving : t.edit}
@@ -149,10 +147,10 @@ export function PostEditClient({
   const handleImageUpload = useCallback(async (file: File) => {
     setUploading(true);
     try {
-      const url = await uploadCommunityImage(file);
-      if (url) setImageUrl(url);
-      else toast.error("이미지 업로드에 실패했습니다");
-    } catch { toast.error("이미지 업로드에 실패했습니다"); }
+      setImageUrl(await uploadCommunityImage(file));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : STRINGS.common.imageUploadFailed);
+    }
     setUploading(false);
   }, []);
 
@@ -180,8 +178,7 @@ export function PostEditClient({
       </div>
       <PostEditForm
         title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
-        uploading={uploading} isPending={isPending} canSubmit={canSubmit}
-        canUploadImage={!requireGuestPassword} fileRef={fileRef}
+        uploading={uploading} isPending={isPending} canSubmit={canSubmit} fileRef={fileRef}
         guestPasswordField={requireGuestPassword ? (
           <div className="mb-4">
             <p className="mb-2 text-xs text-muted-foreground">{t.guestOnlyNotice}</p>

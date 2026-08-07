@@ -42,8 +42,8 @@ function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, on
       ) : (
         <button type="button" onClick={onPickFile} disabled={uploading}
           className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-brand-primary hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <ImagePlus className="h-5 w-5" />
-          {uploading ? "업로드 중..." : "이미지 선택"}
+          <ImagePlus className="h-5 w-5" aria-hidden="true" />
+          <span aria-live="polite">{uploading ? "업로드 중..." : "이미지 선택"}</span>
         </button>
       )}
       <input ref={fileRef} type="file" accept="image/*" className="hidden"
@@ -90,17 +90,18 @@ function BoardSelector({ board, onSelect }: Readonly<{
   );
 }
 
-async function uploadCommunityImage(file: File): Promise<string | null> {
+async function uploadCommunityImage(file: File): Promise<string> {
   const form = new globalThis.FormData();
   form.append("file", file);
   const path = `community/${crypto.randomUUID()}.webp`;
   const res = await fetch(`/api/upload?bucket=portfolios&path=${encodeURIComponent(path)}`, { method: "PUT", body: form });
-  const json = await res.json() as { success: boolean; path?: string };
+  const json = await res.json() as { success: boolean; path?: string; error?: string };
   if (json.success && json.path) {
     const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
     return `${supabaseUrl}/storage/v1/object/public/portfolios/${json.path}`;
   }
-  return null;
+  // 서버 사유(예: 업로드 횟수 초과)를 그대로 보여준다 — "실패했습니다" 만으로는 원인을 알 수 없다.
+  throw new Error(json.error ?? STRINGS.common.imageUploadFailed);
 }
 
 function buildPostFormData(board: string, title: string, content: string, imageUrl: string, youtubeUrl: string, guest: { name: string; password: string } | null): FormData {
@@ -117,9 +118,9 @@ function buildPostFormData(board: string, title: string, content: string, imageU
   return formData;
 }
 
-function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, canUploadImage, guestFields, fileRef, onBoardSelect, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
+function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, guestFields, fileRef, onBoardSelect, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
   board: string; title: string; content: string; imageUrl: string; youtubeUrl: string;
-  uploading: boolean; isPending: boolean; canSubmit: boolean; canUploadImage: boolean;
+  uploading: boolean; isPending: boolean; canSubmit: boolean;
   guestFields: React.ReactNode;
   fileRef: React.RefObject<HTMLInputElement | null>;
   onBoardSelect: (v: string) => void; onTitleChange: (v: string) => void;
@@ -144,11 +145,8 @@ function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading,
           className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         <p className="mt-1 text-xs text-muted-foreground">건전한 커뮤니티 문화를 해치는 게시글은 숨김 및 삭제될 수 있습니다.</p>
       </div>
-      {/* 이미지 업로드 API 는 로그인이 필요하다 — 비회원에게는 아예 보여주지 않는다. */}
-      {canUploadImage ? (
-        <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
-          onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
-      ) : null}
+      <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
+        onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
       <YouTubeInput id="youtube-url" value={youtubeUrl} onChange={onYoutubeChange} />
       <Button onClick={onSubmit} disabled={isPending || !canSubmit} className="w-full">
         {isPending ? STRINGS.common.saving : t.submit}
@@ -177,10 +175,10 @@ export function PostWriteClient({ isGuest }: Readonly<{ isGuest: boolean }>): Re
   const handleImageUpload = useCallback(async (file: File) => {
     setUploading(true);
     try {
-      const url = await uploadCommunityImage(file);
-      if (url) setImageUrl(url);
-      else toast.error("이미지 업로드에 실패했습니다");
-    } catch { toast.error("이미지 업로드에 실패했습니다"); }
+      setImageUrl(await uploadCommunityImage(file));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : STRINGS.common.imageUploadFailed);
+    }
     setUploading(false);
   }, []);
 
@@ -206,8 +204,7 @@ export function PostWriteClient({ isGuest }: Readonly<{ isGuest: boolean }>): Re
       </div>
       <PostWriteForm
         board={board} title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
-        uploading={uploading} isPending={isPending} canSubmit={canSubmit}
-        canUploadImage={!isGuest} fileRef={fileRef}
+        uploading={uploading} isPending={isPending} canSubmit={canSubmit} fileRef={fileRef}
         guestFields={isGuest ? (
           <GuestFields
             idPrefix="write" name={guestName} password={guestPassword}

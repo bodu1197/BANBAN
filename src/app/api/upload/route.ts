@@ -4,6 +4,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import sharp from "sharp";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sanitizeStoragePath } from "@/lib/supabase/storage-utils";
+import { getClientIp } from "@/lib/rate-limit";
+import {
+  reserveGuestUpload,
+  releaseGuestUpload,
+  purgeOrphanGuestUploads,
+  GUEST_BUCKET,
+  GUEST_FOLDER,
+} from "@/lib/guest-upload";
 
 export const maxDuration = 60;
 
@@ -25,8 +33,24 @@ interface UploadResult {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const INTERNAL_SERVER_ERROR = "Internal server error";
-const INVALID_BUCKET = "Invalid bucket";
+const WEBP_CONTENT_TYPE = "image/webp";
+const CACHE_ONE_YEAR = "31536000";
+
+/**
+ * 압축 폭탄 방어 — 파일 크기 상한(10MB)은 **압축 후** 크기라 소용이 없다.
+ * 수백 KB 짜리가 수억 픽셀로 풀리면 sharp 가 기가바이트를 먹는다.
+ * (같은 상한을 lib/event/image-service.ts 도 쓴다)
+ */
+const SHARP_INPUT_PIXEL_LIMIT = 1024 * 1024 * 16;
+const SHARP_OPTIONS = { failOn: "error", limitInputPixels: SHARP_INPUT_PIXEL_LIMIT } as const;
+
+/** SVG 는 스크립트를 품을 수 있어 제외한다 — `image/` 접두사 검사만으로는 통과된다. */
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
+const INVALID_IMAGE = "이미지 파일이 아닙니다";
+// 사용자에게 나가는 문구는 전부 한국어 고정 — 클라이언트가 이 값을 그대로 toast 로 띄운다.
+const INTERNAL_SERVER_ERROR = "업로드에 실패했습니다. 잠시 후 다시 시도해주세요";
+const BAD_REQUEST = "요청이 올바르지 않습니다";
+const UPLOAD_ERROR_LOG = "Upload error:";
 const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media", "banners"]);
 
 function validateBucket(bucket: string): boolean {
@@ -78,7 +102,7 @@ async function authorizePutUpload(bucket: string, path: string, userId: string):
 async function processImage(buffer: Buffer, size: ImageSize): Promise<Buffer> {
   const dimensions = IMAGE_SIZES[size];
 
-  return sharp(buffer)
+  return sharp(buffer, SHARP_OPTIONS)
     .resize(dimensions.width, dimensions.height, {
       fit: "inside",
       withoutEnlargement: true,
@@ -100,23 +124,31 @@ async function validateAuth(supabase: Awaited<ReturnType<typeof createClient>>):
  * 파일 유효성 검사
  */
 function validateFile(file: File | null): { valid: boolean; error?: string } {
-  if (!file) return { valid: false, error: "No file provided" };
-  if (!file.type.startsWith("image/")) return { valid: false, error: "File must be an image" };
-  if (file.size > MAX_FILE_SIZE) return { valid: false, error: "File too large (max 10MB)" };
+  if (!file) return { valid: false, error: INVALID_IMAGE };
+  // 클라이언트가 보낸 MIME 은 위조 가능하지만 1차 관문이다. 실제 디코딩은 SHARP_OPTIONS 가 막는다.
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) return { valid: false, error: INVALID_IMAGE };
+  if (file.size > MAX_FILE_SIZE) return { valid: false, error: "파일이 너무 큽니다 (최대 10MB)" };
   return { valid: true };
 }
 
+/** 바디를 파싱하기 전에 선언된 크기부터 본다 — 읽으면서 메모리를 먼저 태우지 않게. */
+function declaredSizeTooLarge(request: NextRequest): boolean {
+  const length = Number(request.headers.get("content-length") ?? "0");
+  return Number.isFinite(length) && length > MAX_FILE_SIZE * 1.1; // multipart 오버헤드 여유
+}
+
 /**
- * Common auth + file validation for upload handlers
+ * Common auth + file validation for upload handlers.
+ * @param allowGuest 비로그인 허용 여부. true 면 userId 가 null 로 돌아온다(커뮤니티 게스트 글 첨부용).
  */
-async function getAuthenticatedFile(request: NextRequest): Promise<
-  | { ok: true; userId: string; file: File; buffer: Buffer; searchParams: URLSearchParams }
+async function getAuthenticatedFile(request: NextRequest, allowGuest = false): Promise<
+  | { ok: true; userId: string | null; file: File; buffer: Buffer; searchParams: URLSearchParams }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
   const userId = await validateAuth(supabase);
-  if (!userId) {
-    return { ok: false, response: NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 }) };
+  if (!userId && !allowGuest) {
+    return { ok: false, response: NextResponse.json({ success: false, error: "로그인이 필요합니다" }, { status: 401 }) };
   }
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -151,8 +183,8 @@ async function uploadAllSizes(
       const { error: uploadError } = await adminClient.storage
         .from(bucket)
         .upload(filePath, processedBuffer, {
-          contentType: "image/webp",
-          cacheControl: "31536000",
+          contentType: WEBP_CONTENT_TYPE,
+          cacheControl: CACHE_ONE_YEAR,
           upsert: true,
         });
 
@@ -170,29 +202,37 @@ async function uploadAllSizes(
   return { paths };
 }
 
+/** POST 쿼리스트링 → 저장 위치. 버킷·폴더가 올바르지 않으면 null. */
+function resolvePostTarget(searchParams: URLSearchParams): { bucket: string; basePath: string } | null {
+  const bucket = searchParams.get("bucket") ?? DEFAULT_BUCKET;
+  const folder = searchParams.get("folder") ?? "";
+  if (!validateBucket(bucket)) return null;
+  if (folder && !sanitizeStoragePath(folder)) return null;
+
+  const id = crypto.randomUUID();
+  return { bucket, basePath: folder ? `${folder}/${id}` : id };
+}
+
 /**
  * POST /api/upload
  * 이미지 업로드 및 최적화
  */
 export async function POST(request: NextRequest): Promise<NextResponse<UploadResult>> {
   try {
-    const auth = await getAuthenticatedFile(request);
+    const auth = await getAuthenticatedFile(request); // 로그인 필수 (게스트는 PUT 만)
     if (!auth.ok) return auth.response as NextResponse<UploadResult>;
 
-    const bucket = auth.searchParams.get("bucket") ?? "portfolios";
-    if (!validateBucket(bucket)) {
-      return NextResponse.json({ success: false, error: INVALID_BUCKET }, { status: 400 }) as NextResponse<UploadResult>;
-    }
-    const folder = auth.searchParams.get("folder") ?? "";
-    if (folder && !sanitizeStoragePath(folder)) {
-      return NextResponse.json({ success: false, error: "Invalid folder path" }, { status: 400 }) as NextResponse<UploadResult>;
-    }
-    const id = crypto.randomUUID();
-    const basePath = folder ? `${folder}/${id}` : id;
+    const target = resolvePostTarget(auth.searchParams);
+    if (!target) return badRequest();
+    // 실제로 디코딩되는 이미지인지 먼저 본다 — 아니면 5개 사이즈 변환 중 throw 해서 500 이 된다.
+    if (!(await isDecodableImage(auth.buffer))) return INVALID_IMAGE_RESPONSE() as NextResponse<UploadResult>;
 
+    const { bucket, basePath } = target;
     const result = await uploadAllSizes(auth.buffer, basePath, bucket);
     if (!result.paths) {
-      return NextResponse.json({ success: false, error: result.error }, { status: 500 });
+      // eslint-disable-next-line no-console
+      console.error(UPLOAD_ERROR_LOG,result.error);
+      return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, paths: result.paths as Record<ImageSize, string> });
@@ -202,56 +242,140 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 }
 
 /**
- * PUT /api/upload
- * 단일 이미지 업로드 (아티스트 등록용)
+ * 비로그인 업로드.
+ *
+ * 경로를 클라이언트에서 받지 않고 서버가 만든다 — 받으면 남의 네임스페이스
+ * (`artists/<남의id>/…`)에 파일을 만들 수 있다. 버킷도 고정이다.
  */
-export async function PUT(request: NextRequest): Promise<NextResponse> {
+async function handleGuestPut(request: NextRequest, buffer: Buffer): Promise<NextResponse> {
+  const rawIp = getClientIp(request);
+  const ip = rawIp === "unknown" ? null : rawIp;
+  const path = `${GUEST_FOLDER}/${crypto.randomUUID()}.webp`;
+
+  if (!(await reserveGuestUpload(ip, path))) {
+    return NextResponse.json(
+      { success: false, error: "업로드가 너무 잦습니다. 잠시 후 다시 시도해주세요" },
+      { status: 429 },
+    );
+  }
+
+  const processed = await toWebp(buffer);
+  if (!processed) {
+    await releaseGuestUpload(path); // 한도만 깎이는 일이 없게 되돌린다
+    return INVALID_IMAGE_RESPONSE();
+  }
+
+  const { error } = await createAdminClient().storage
+    .from(GUEST_BUCKET)
+    .upload(path, processed, { contentType: WEBP_CONTENT_TYPE, cacheControl: CACHE_ONE_YEAR, upsert: false });
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error("Guest upload error:", error.message);
+    await releaseGuestUpload(path);
+    return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
+  }
+
+  await purgeOrphanGuestUploads();
+  return NextResponse.json({ success: true, path });
+}
+
+/** 로그인 사용자 업로드 — 경로를 직접 지정하되 소유권을 검증한다. */
+async function handleMemberPut(
+  searchParams: URLSearchParams,
+  buffer: Buffer,
+  userId: string,
+): Promise<NextResponse> {
+  const bucket = searchParams.get("bucket") ?? DEFAULT_BUCKET;
+  const rawPath = searchParams.get("path");
+  const path = rawPath ? sanitizeStoragePath(rawPath) : null;
+  if (!validateBucket(bucket) || !path) return badRequest();
+  // 소유권 검증 — 타인 소유 경로 지정(IDOR) 차단. createAdminClient(RLS 우회)로 임의 경로에 쓰기 전 필수.
+  if (!(await authorizePutUpload(bucket, path, userId))) {
+    return NextResponse.json({ success: false, error: "권한이 없습니다" }, { status: 403 });
+  }
+
+  const processedBuffer = await toWebp(buffer);
+  if (!processedBuffer) return INVALID_IMAGE_RESPONSE();
+
+  // upsert:false — 신규 경로만 생성, 기존 파일 덮어쓰기(타인 파일 변조) 차단. 모든 호출처는 타임스탬프/UUID 로 새 경로 사용.
+  const { error: uploadError } = await createAdminClient().storage
+    .from(bucket)
+    .upload(path, processedBuffer, {
+      contentType: WEBP_CONTENT_TYPE,
+      cacheControl: CACHE_ONE_YEAR,
+      upsert: false,
+    });
+
+  if (uploadError) {
+    // 원문에는 버킷·객체 키가 들어있다 — 클라이언트가 그대로 toast 로 띄우므로 서버 로그로만 남긴다.
+    // eslint-disable-next-line no-console
+    console.error(UPLOAD_ERROR_LOG,uploadError.message);
+    return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, path });
+}
+
+/**
+ * 단일 이미지를 WebP 로 변환 (PUT 경로 공통).
+ *
+ * 여기서 나는 예외는 전부 "입력이 이미지가 아니거나 상한을 넘었다" 는 뜻이다 —
+ * 파이프라인은 고정이라 서버 잘못일 여지가 없다. 그래서 500 이 아니라 null 로 돌려
+ * 호출부가 400 을 주게 한다(요청자가 마음대로 5xx 를 만들지 못하게).
+ */
+async function toWebp(buffer: Buffer): Promise<Buffer | null> {
   try {
-    const auth = await getAuthenticatedFile(request);
-    if (!auth.ok) return auth.response;
-
-    const bucket = auth.searchParams.get("bucket") ?? "portfolios";
-    if (!validateBucket(bucket)) {
-      return NextResponse.json({ success: false, error: INVALID_BUCKET }, { status: 400 });
-    }
-    const rawPath = auth.searchParams.get("path");
-    if (!rawPath) {
-      return NextResponse.json({ success: false, error: "Path is required" }, { status: 400 });
-    }
-    const path = sanitizeStoragePath(rawPath);
-    if (!path) {
-      return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 });
-    }
-    // 소유권 검증 — 타인 소유 경로 지정(IDOR) 차단. createAdminClient(RLS 우회)로 임의 경로에 쓰기 전 필수.
-    if (!(await authorizePutUpload(bucket, path, auth.userId))) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-    }
-
-    // WebP로 변환 및 최적화
-    const processedBuffer = await sharp(auth.buffer)
+    return await sharp(buffer, SHARP_OPTIONS)
       .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
       .webp({ quality: 85 })
       .toBuffer();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Image decode failed:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
 
-    // Use admin client for Storage upload (bypasses RLS)
-    // upsert:false — 신규 경로만 생성, 기존 파일 덮어쓰기(타인 파일 변조) 차단. 모든 호출처는 타임스탬프/UUID 로 새 경로 사용.
-    const adminClient = createAdminClient();
-    const { error: uploadError } = await adminClient.storage
-      .from(bucket)
-      .upload(path, processedBuffer, {
-        contentType: "image/webp",
-        cacheControl: "31536000",
-        upsert: false,
-      });
+const DEFAULT_BUCKET = "portfolios";
 
-    if (uploadError) {
-      return NextResponse.json({ success: false, error: uploadError.message }, { status: 500 });
+const INVALID_IMAGE_RESPONSE = (): NextResponse =>
+  NextResponse.json({ success: false, error: INVALID_IMAGE }, { status: 400 });
+
+const badRequest = <T,>(): NextResponse<T> =>
+  NextResponse.json({ success: false, error: BAD_REQUEST }, { status: 400 }) as NextResponse<T>;
+
+/** 실제로 디코딩되는 이미지인지(그리고 픽셀 상한 안인지) 헤더만 읽어 확인한다. */
+async function isDecodableImage(buffer: Buffer): Promise<boolean> {
+  try {
+    const { width, height } = await sharp(buffer, SHARP_OPTIONS).metadata();
+    return Boolean(width && height);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * PUT /api/upload
+ * 단일 이미지 업로드 (아티스트 등록용 / 커뮤니티 첨부)
+ */
+export async function PUT(request: NextRequest): Promise<NextResponse> {
+  try {
+    // 비로그인도 커뮤니티 글에 사진을 첨부할 수 있다(경로는 서버가 정한다 — handleGuestPut 참조).
+    // 바디를 읽기 전에 선언 크기부터 끊는다 — 파싱 자체가 메모리를 먹는다.
+    if (declaredSizeTooLarge(request)) {
+      return NextResponse.json({ success: false, error: "파일이 너무 큽니다 (최대 10MB)" }, { status: 413 });
     }
 
-    return NextResponse.json({ success: true, path });
+    const auth = await getAuthenticatedFile(request, true);
+    if (!auth.ok) return auth.response;
+
+    if (!auth.userId) return handleGuestPut(request, auth.buffer);
+
+    return await handleMemberPut(auth.searchParams, auth.buffer, auth.userId);
   } catch (err: unknown) {
     // eslint-disable-next-line no-console
-    console.error("Upload error:", err);
+    console.error(UPLOAD_ERROR_LOG,err);
     return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
 }

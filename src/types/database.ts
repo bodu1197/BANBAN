@@ -1827,6 +1827,27 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_uploads: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string | null
+          path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          path?: string
+        }
+        Relationships: []
+      }
       guest_authors: {
         Row: {
           comment_id: string | null
@@ -3450,6 +3471,23 @@ export type Database = {
           p_window_seconds: number
         }
         Returns: string | null
+      }
+      record_guest_upload: {
+        Args: {
+          p_ip: string | null
+          p_path: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
+      orphan_guest_uploads: {
+        Args: { p_older_than_hours: number; p_limit: number }
+        Returns: { path: string }[]
+      }
+      forget_guest_uploads: {
+        Args: { p_paths: string[] }
+        Returns: undefined
       }
       record_guest_auth_attempt: {
         Args: {
