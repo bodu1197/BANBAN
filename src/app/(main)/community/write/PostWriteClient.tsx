@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
+import { GuestFields } from "@/components/community/GuestFields";
+import { isGuestReady } from "@/lib/guest-limits";
+import { POST_TITLE_MAX, POST_CONTENT_MAX } from "@/lib/post-limits";
 import { createPost } from "@/lib/actions/community";
 
 const t = STRINGS.community;
@@ -100,19 +103,24 @@ async function uploadCommunityImage(file: File): Promise<string | null> {
   return null;
 }
 
-function buildPostFormData(board: string, title: string, content: string, imageUrl: string, youtubeUrl: string): FormData {
+function buildPostFormData(board: string, title: string, content: string, imageUrl: string, youtubeUrl: string, guest: { name: string; password: string } | null): FormData {
   const formData = new FormData();
   formData.set("title", title.trim());
   formData.set("content", content.trim());
   formData.set("type_board", board);
   if (imageUrl) formData.set("image_url", imageUrl);
   if (youtubeUrl.trim()) formData.set("youtube_url", youtubeUrl.trim());
+  if (guest) {
+    formData.set("guest_name", guest.name.trim());
+    formData.set("guest_password", guest.password);
+  }
   return formData;
 }
 
-function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading, isPending, fileRef, onBoardSelect, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
+function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, canUploadImage, guestFields, fileRef, onBoardSelect, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
   board: string; title: string; content: string; imageUrl: string; youtubeUrl: string;
-  uploading: boolean; isPending: boolean;
+  uploading: boolean; isPending: boolean; canSubmit: boolean; canUploadImage: boolean;
+  guestFields: React.ReactNode;
   fileRef: React.RefObject<HTMLInputElement | null>;
   onBoardSelect: (v: string) => void; onTitleChange: (v: string) => void;
   onContentChange: (v: string) => void; onImageClear: () => void;
@@ -121,31 +129,35 @@ function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading,
 }>): React.ReactElement {
   return (
     <div className="px-4 py-4">
+      {guestFields}
       <BoardSelector board={board} onSelect={onBoardSelect} />
       <div className="mb-4">
         <label htmlFor="post-title" className="mb-1.5 block text-sm font-medium">{t.postTitle}</label>
         <input id="post-title" type="text" value={title} onChange={(e) => onTitleChange(e.target.value)}
-          placeholder={t.postTitlePlaceholder} maxLength={100}
+          placeholder={t.postTitlePlaceholder} maxLength={POST_TITLE_MAX}
           className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
       </div>
       <div className="mb-6">
         <label htmlFor="post-content" className="mb-1.5 block text-sm font-medium">{t.postContent}</label>
         <textarea id="post-content" value={content} onChange={(e) => onContentChange(e.target.value)}
-          placeholder={STRINGS.community.postContentPlaceholder} rows={10}
+          placeholder={STRINGS.community.postContentPlaceholder} rows={10} maxLength={POST_CONTENT_MAX}
           className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         <p className="mt-1 text-xs text-muted-foreground">건전한 커뮤니티 문화를 해치는 게시글은 숨김 및 삭제될 수 있습니다.</p>
       </div>
-      <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
-        onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
+      {/* 이미지 업로드 API 는 로그인이 필요하다 — 비회원에게는 아예 보여주지 않는다. */}
+      {canUploadImage ? (
+        <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
+          onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
+      ) : null}
       <YouTubeInput id="youtube-url" value={youtubeUrl} onChange={onYoutubeChange} />
-      <Button onClick={onSubmit} disabled={isPending || !board || !title.trim() || !content.trim()} className="w-full">
+      <Button onClick={onSubmit} disabled={isPending || !canSubmit} className="w-full">
         {isPending ? STRINGS.common.saving : t.submit}
       </Button>
     </div>
   );
 }
 
-export function PostWriteClient(): React.ReactElement {
+export function PostWriteClient({ isGuest }: Readonly<{ isGuest: boolean }>): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [board, setBoard] = useState("");
@@ -154,21 +166,29 @@ export function PostWriteClient(): React.ReactElement {
   const [imageUrl, setImageUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const canSubmit =
+    Boolean(board) && Boolean(title.trim()) && Boolean(content.trim())
+    && (!isGuest || isGuestReady(guestName, guestPassword));
 
   const handleImageUpload = useCallback(async (file: File) => {
     setUploading(true);
     try {
       const url = await uploadCommunityImage(file);
       if (url) setImageUrl(url);
-    } catch { /* upload failed */ }
+      else toast.error("이미지 업로드에 실패했습니다");
+    } catch { toast.error("이미지 업로드에 실패했습니다"); }
     setUploading(false);
   }, []);
 
   function handleSubmit(): void {
-    if (!board || !title.trim() || !content.trim()) return;
+    if (!canSubmit) return;
     startTransition(async () => {
-      const formData = buildPostFormData(board, title, content, imageUrl, youtubeUrl);
+      const guest = isGuest ? { name: guestName, password: guestPassword } : null;
+      const formData = buildPostFormData(board, title, content, imageUrl, youtubeUrl, guest);
       const result = await createPost(formData);
       if (result.success && result.postId) router.push(`/community/${result.postId}`);
       else if (result.error) toast.error(result.error);
@@ -186,7 +206,14 @@ export function PostWriteClient(): React.ReactElement {
       </div>
       <PostWriteForm
         board={board} title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
-        uploading={uploading} isPending={isPending} fileRef={fileRef}
+        uploading={uploading} isPending={isPending} canSubmit={canSubmit}
+        canUploadImage={!isGuest} fileRef={fileRef}
+        guestFields={isGuest ? (
+          <GuestFields
+            idPrefix="write" name={guestName} password={guestPassword}
+            onNameChange={setGuestName} onPasswordChange={setGuestPassword}
+          />
+        ) : null}
         onBoardSelect={setBoard} onTitleChange={setTitle} onContentChange={setContent}
         onImageClear={() => setImageUrl("")} onPickFile={() => fileRef.current?.click()}
         onImageUpload={handleImageUpload} onYoutubeChange={setYoutubeUrl} onSubmit={handleSubmit}

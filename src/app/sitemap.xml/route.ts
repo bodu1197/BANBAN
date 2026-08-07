@@ -18,12 +18,14 @@ async function getContentEntries(): Promise<ContentEntry[]> {
 
   const [artists, portfoliosCount, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews] =
     await Promise.all([
-      supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "active"),
+      // artists.xml 본문과 술어를 맞춘다 — is_hide 가 빠져 있어 빈 page=N 이 제출되고 있었다.
+      supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("is_hide", false).eq("status", "active"),
       // 포폴 개수는 본문(fetchPublicPortfolioSitemapRows)과 동일 anon client·동일 술어 → 인덱스 페이지수 = 실제 출력.
       countPublicPortfolios(),
       supabase.from("exhibitions").select("*", { count: "exact", head: true }),
       supabase.from("courses").select("*", { count: "exact", head: true }),
-      supabase.from("posts").select("*", { count: "exact", head: true }),
+      // community.xml 본문과 술어가 같아야 인덱스 페이지 수 = 실제 출력 (없는 page=N 제출 방지)
+      supabase.from("posts").select("*", { count: "exact", head: true }).is("deleted_at", null).is("guest_name", null),
       supabase.from("encyclopedia_articles").select("*", { count: "exact", head: true }).eq("published", true),
       supabase.from("location_seo_pages").select("*", { count: "exact", head: true }).eq("published", true),
       supabase.from("study_news_items").select("*", { count: "exact", head: true }).eq("status", "published"),

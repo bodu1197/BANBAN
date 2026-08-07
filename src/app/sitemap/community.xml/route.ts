@@ -9,14 +9,22 @@ import type { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
-    const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? "1"));
+    // Number("abc") = NaN → range(NaN, NaN) 이 500 을 낸다. 유한한 값만 쓴다.
+    const raw = Number(request.nextUrl.searchParams.get("page") ?? "1");
+    const page = Number.isFinite(raw) ? Math.max(1, Math.floor(raw)) : 1;
     const offset = (page - 1) * ITEMS_PER_PAGE;
 
     const supabase = createAdminClient();
+    // 삭제된 글은 404 가 되므로 제외한다.
+    // 게스트(비로그인) 글도 제외 — 검수 절차가 없어 광고글을 우리가 먼저 색인 요청하는 꼴이 된다.
     const { data: posts } = await supabase
       .from("posts")
       .select("id, updated_at")
+      .is("deleted_at", null)
+      .is("guest_name", null)
+      // id 타이브레이커 없이 정렬하면 created_at 이 같은 행이 페이지 경계에서 중복/누락된다.
       .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .range(offset, offset + ITEMS_PER_PAGE - 1);
 
     if (!posts?.length) {

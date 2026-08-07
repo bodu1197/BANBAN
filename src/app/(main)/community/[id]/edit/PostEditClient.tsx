@@ -9,6 +9,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
+import { GuestPasswordField } from "@/components/community/GuestFields";
+import { GUEST_PASSWORD_MIN } from "@/lib/guest-limits";
+import { POST_TITLE_MAX, POST_CONTENT_MAX } from "@/lib/post-limits";
 import { updatePost } from "@/lib/actions/community";
 
 const t = STRINGS.community;
@@ -17,9 +20,10 @@ interface PostEditClientProps {
   postId: string;
   initialTitle: string;
   initialContent: string;
-  initialBoard: string;
   initialImageUrl: string;
   initialYoutubeUrl: string;
+  /** 비회원 글 — 저장하려면 작성 시 정한 비밀번호가 필요하다. */
+  requireGuestPassword: boolean;
 }
 
 function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, onFileChange }: Readonly<{
@@ -81,9 +85,10 @@ async function uploadCommunityImage(file: File): Promise<string | null> {
   return null;
 }
 
-function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
+function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, canUploadImage, guestPasswordField, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
   title: string; content: string; imageUrl: string; youtubeUrl: string;
-  uploading: boolean; isPending: boolean;
+  uploading: boolean; isPending: boolean; canSubmit: boolean; canUploadImage: boolean;
+  guestPasswordField: React.ReactNode;
   fileRef: React.RefObject<HTMLInputElement | null>;
   onTitleChange: (v: string) => void; onContentChange: (v: string) => void;
   onImageClear: () => void; onPickFile: () => void;
@@ -92,22 +97,26 @@ function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPendi
 }>): React.ReactElement {
   return (
     <div className="px-4 py-4">
+      {guestPasswordField}
       <div className="mb-4">
         <label htmlFor="edit-title" className="mb-1.5 block text-sm font-medium">{t.postTitle}</label>
         <input id="edit-title" type="text" value={title} onChange={(e) => onTitleChange(e.target.value)}
-          placeholder={t.postTitlePlaceholder} maxLength={100}
+          placeholder={t.postTitlePlaceholder} maxLength={POST_TITLE_MAX}
           className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" />
       </div>
       <div className="mb-6">
         <label htmlFor="edit-content" className="mb-1.5 block text-sm font-medium">{t.postContent}</label>
         <textarea id="edit-content" value={content} onChange={(e) => onContentChange(e.target.value)}
-          placeholder={t.postContentPlaceholder} rows={10}
+          placeholder={t.postContentPlaceholder} rows={10} maxLength={POST_CONTENT_MAX}
           className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-ring" />
       </div>
-      <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
-        onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
+      {/* 이미지 업로드 API 는 로그인이 필요하다 — 비회원에게는 아예 보여주지 않는다. */}
+      {canUploadImage ? (
+        <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
+          onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
+      ) : null}
       <YouTubeInput id="edit-youtube" value={youtubeUrl} onChange={onYoutubeChange} />
-      <Button onClick={onSubmit} disabled={isPending || !title.trim() || !content.trim()} className="w-full">
+      <Button onClick={onSubmit} disabled={isPending || !canSubmit} className="w-full">
         {isPending ? STRINGS.common.saving : t.edit}
       </Button>
     </div>
@@ -120,6 +129,7 @@ export function PostEditClient({
   initialContent,
   initialImageUrl,
   initialYoutubeUrl,
+  requireGuestPassword,
 }: Readonly<PostEditClientProps>): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -127,22 +137,33 @@ export function PostEditClient({
   const [content, setContent] = useState(initialContent);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [youtubeUrl, setYoutubeUrl] = useState(initialYoutubeUrl);
+  const [guestPassword, setGuestPassword] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const canSubmit =
+    Boolean(title.trim())
+    && Boolean(content.trim())
+    && (!requireGuestPassword || guestPassword.length >= GUEST_PASSWORD_MIN);
 
   const handleImageUpload = useCallback(async (file: File) => {
     setUploading(true);
     try {
       const url = await uploadCommunityImage(file);
       if (url) setImageUrl(url);
-    } catch { /* upload failed */ }
+      else toast.error("이미지 업로드에 실패했습니다");
+    } catch { toast.error("이미지 업로드에 실패했습니다"); }
     setUploading(false);
   }, []);
 
   function handleSubmit(): void {
-    if (!title.trim() || !content.trim()) return;
+    if (!canSubmit) return;
     startTransition(async () => {
-      const result = await updatePost(postId, title.trim(), content.trim(), imageUrl || null, youtubeUrl.trim() || null);
+      const result = await updatePost(
+        postId, title.trim(), content.trim(),
+        imageUrl || null, youtubeUrl.trim() || null,
+        requireGuestPassword ? guestPassword : undefined,
+      );
       if (result.success) router.push(`/community/${postId}`);
       else if (result.error) toast.error(result.error);
     });
@@ -159,7 +180,20 @@ export function PostEditClient({
       </div>
       <PostEditForm
         title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
-        uploading={uploading} isPending={isPending} fileRef={fileRef}
+        uploading={uploading} isPending={isPending} canSubmit={canSubmit}
+        canUploadImage={!requireGuestPassword} fileRef={fileRef}
+        guestPasswordField={requireGuestPassword ? (
+          <div className="mb-4">
+            <p className="mb-2 text-xs text-muted-foreground">{t.guestOnlyNotice}</p>
+            <GuestPasswordField
+              id="edit-guest-password"
+              value={guestPassword}
+              placeholder={t.guestPasswordPrompt}
+              mode="verify"
+              onChange={setGuestPassword}
+            />
+          </div>
+        ) : null}
         onTitleChange={setTitle} onContentChange={setContent}
         onImageClear={() => setImageUrl("")} onPickFile={() => fileRef.current?.click()}
         onImageUpload={handleImageUpload} onYoutubeChange={setYoutubeUrl} onSubmit={handleSubmit}

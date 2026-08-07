@@ -13,6 +13,8 @@ import { NextResponse } from "next/server";
 
 interface RateLimitEntry {
   timestamps: number[];
+  /** 이 키의 윈도우 길이 — 청소 주기가 첫 호출자의 값을 쓰면 긴 윈도우가 잘려버린다. */
+  windowMs: number;
 }
 
 interface RateLimitOptions {
@@ -35,10 +37,10 @@ function cleanEntry(entry: RateLimitEntry, now: number, windowMs: number): void 
 }
 
 /** Purge entries with no recent timestamps (runs periodically) */
-function purgeExpired(windowMs: number): void {
+function purgeExpired(): void {
   const now = Date.now();
   for (const [key, entry] of store) {
-    cleanEntry(entry, now, windowMs);
+    cleanEntry(entry, now, entry.windowMs);
     if (entry.timestamps.length === 0) {
       store.delete(key);
     }
@@ -49,9 +51,9 @@ function purgeExpired(windowMs: number): void {
 const PURGE_INTERVAL_MS = 60_000;
 let purgeTimer: ReturnType<typeof setInterval> | null = null;
 
-function ensurePurgeTimer(windowMs: number): void {
+function ensurePurgeTimer(): void {
   if (purgeTimer) return;
-  purgeTimer = setInterval(() => purgeExpired(windowMs), PURGE_INTERVAL_MS);
+  purgeTimer = setInterval(purgeExpired, PURGE_INTERVAL_MS);
   // Allow Node.js to exit even if the timer is active
   if (typeof purgeTimer === "object" && "unref" in purgeTimer) {
     purgeTimer.unref();
@@ -67,10 +69,11 @@ function ensurePurgeTimer(windowMs: number): void {
  * @returns `{ success, remaining }` — success=false means 429
  */
 export function rateLimit({ key, limit, windowMs }: Readonly<RateLimitOptions>): RateLimitResult {
-  ensurePurgeTimer(windowMs);
+  ensurePurgeTimer();
 
   const now = Date.now();
-  const entry = store.get(key) ?? { timestamps: [] };
+  const entry = store.get(key) ?? { timestamps: [], windowMs };
+  entry.windowMs = windowMs;
 
   cleanEntry(entry, now, windowMs);
 
@@ -84,12 +87,22 @@ export function rateLimit({ key, limit, windowMs }: Readonly<RateLimitOptions>):
   return { success: true, remaining: limit - entry.timestamps.length };
 }
 
-/** Extract client IP from request headers */
-export function getClientIp(request: Request): string {
+/**
+ * Extract client IP from a Request or a bare Headers (server action: `await headers()`).
+ *
+ * Vercel 이 직접 심는 `x-vercel-forwarded-for` 를 먼저 본다 —
+ * `x-forwarded-for` 는 클라이언트가 앞쪽에 값을 끼워 넣을 수 있어 신뢰도가 낮다.
+ */
+export function getClientIp(source: Request | Headers): string {
+  // 🔴 `"headers" in source` 로 가르면 안 된다 — next/headers 의 HeadersAdapter 는
+  //    Headers 이면서도 own 프로퍼티 `headers` 를 갖고 있어 Request 로 오인된다.
+  //    (실측: `"headers" in adapter === true`, `adapter instanceof Headers === true`)
+  const headers = source instanceof Headers ? source : source.headers;
   return (
-    request.headers.get("x-forwarded-for")?.split(",")[0].trim()
-    ?? request.headers.get("x-real-ip")
-    ?? "unknown"
+    headers.get("x-vercel-forwarded-for")?.split(",")[0].trim()
+    || headers.get("x-forwarded-for")?.split(",")[0].trim()
+    || headers.get("x-real-ip")
+    || "unknown"
   );
 }
 

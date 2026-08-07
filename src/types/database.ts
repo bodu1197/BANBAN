@@ -885,6 +885,7 @@ export type Database = {
           content: string
           created_at: string | null
           deleted_at: string | null
+          guest_name: string | null
           id: string
           legacy_id: number | null
           likes_count: number | null
@@ -897,6 +898,7 @@ export type Database = {
           content: string
           created_at?: string | null
           deleted_at?: string | null
+          guest_name?: string | null
           id?: string
           legacy_id?: number | null
           likes_count?: number | null
@@ -909,6 +911,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           deleted_at?: string | null
+          guest_name?: string | null
           id?: string
           legacy_id?: number | null
           likes_count?: number | null
@@ -1824,6 +1827,54 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_authors: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          fail_count: number
+          id: string
+          ip: string | null
+          locked_until: string | null
+          password_hash: string
+          post_id: string | null
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          fail_count?: number
+          id?: string
+          ip?: string | null
+          locked_until?: string | null
+          password_hash: string
+          post_id?: string | null
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          fail_count?: number
+          id?: string
+          ip?: string | null
+          locked_until?: string | null
+          password_hash?: string
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_authors_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: true
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guest_authors_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_banners: {
         Row: {
           alt_text: string
@@ -2441,6 +2492,7 @@ export type Database = {
           content: string
           created_at: string | null
           deleted_at: string | null
+          guest_name: string | null
           id: string
           image_url: string | null
           legacy_id: number | null
@@ -2460,6 +2512,7 @@ export type Database = {
           content: string
           created_at?: string | null
           deleted_at?: string | null
+          guest_name?: string | null
           id?: string
           image_url?: string | null
           legacy_id?: number | null
@@ -2479,6 +2532,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           deleted_at?: string | null
+          guest_name?: string | null
           id?: string
           image_url?: string | null
           legacy_id?: number | null
@@ -3366,6 +3420,45 @@ export type Database = {
       ad_event_counts: {
         Args: { p_subscription_ids: string[] }
         Returns: { subscription_id: string; impressions: number; clicks: number }[]
+      }
+      create_guest_post: {
+        Args: {
+          p_title: string
+          p_content: string
+          p_type_board: string
+          p_type_post: string
+          p_type_artist: string
+          p_image_url: string | null
+          p_youtube_url: string | null
+          p_guest_name: string
+          p_password_hash: string
+          p_ip: string | null
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: string | null
+      }
+      create_guest_comment: {
+        Args: {
+          p_post_id: string
+          p_parent_id: string | null
+          p_content: string
+          p_guest_name: string
+          p_password_hash: string
+          p_ip: string | null
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: string | null
+      }
+      record_guest_auth_attempt: {
+        Args: {
+          p_id: string
+          p_success: boolean
+          p_max: number
+          p_lock_minutes: number
+        }
+        Returns: string | null
       }
       analytics_daily: {
         Args: never
