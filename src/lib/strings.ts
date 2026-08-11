@@ -311,7 +311,7 @@ export const STRINGS ={
     "course": "수강",
     "search": "검색",
     "likes": "좋아요",
-    "mypage": "MY"
+    "mypage": "마이페이지"
   },
   "homepage": {
     "seeMore": "더보기",

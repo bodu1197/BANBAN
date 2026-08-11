@@ -34,7 +34,7 @@ export function UserMenuContent({ user }: Readonly<UserMenuContentProps>): React
       <DropdownMenuItem asChild>
         <Link href={"/mypage"} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
-          {STRINGS.nav.mypage}
+          {STRINGS.common.mypage}
         </Link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />

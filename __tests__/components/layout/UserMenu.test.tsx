@@ -1,7 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "../../utils";
-import { UserMenu } from "@/components/layout/UserMenu";
 import { LoggedInUserMenu } from "@/components/layout/LoggedInUserMenu";
 import { UserMenuContent } from "@/components/layout/UserMenuContent";
 
@@ -57,28 +56,12 @@ vi.mock("@/components/ui/avatar", () => ({
 
 const TEST_EMAIL = "test@test.com";
 
-describe("UserMenu", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("유저가 없으면 로그인 버튼이 표시됨", () => {
-    render(<UserMenu user={null} />);
-    expect(screen.getByLabelText("로그인")).toBeInTheDocument();
-  });
-
-  it("로그인 버튼이 /login 으로 연결됨", () => {
-    render(<UserMenu user={null} />);
-    expect(screen.getByLabelText("로그인").closest("a")).toHaveAttribute("href", "/login");
-  });
-});
-
-// 로그인 상태 메뉴는 next/dynamic 으로 분리돼 있어(UserMenu → LoggedInUserMenu → UserMenuContent)
-// 실제 마크업을 가진 컴포넌트를 직접 렌더한다.
 describe("LoggedInUserMenu", () => {
-  it("유저 메뉴 트리거가 표시됨", () => {
+  it("트리거에 '마이페이지' 라벨이 보이고 접근명도 같은 말을 쓴다", () => {
     render(<LoggedInUserMenu user={{ id: "u1", email: TEST_EMAIL, name: "테스트" }} />);
-    expect(screen.getByLabelText("User menu")).toBeInTheDocument();
+    expect(screen.getByText("마이페이지")).toBeInTheDocument();
+    // 보이는 라벨과 접근명이 어긋나면 음성 제어로 못 누른다(WCAG 2.5.3).
+    expect(screen.getByRole("button", { name: /마이페이지/ })).toBeInTheDocument();
   });
 
   it("이름 앞 2자가 이니셜", () => {
@@ -100,6 +83,11 @@ describe("LoggedInUserMenu", () => {
 describe("UserMenuContent", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("마이페이지 링크가 /mypage 로 연결됨", () => {
+    render(<UserMenuContent user={{ id: "u1", email: TEST_EMAIL, name: "테스트" }} />);
+    expect(screen.getByText("마이페이지").closest("a")).toHaveAttribute("href", "/mypage");
   });
 
   it("로그아웃 클릭 시 signOut이 호출됨", async () => {

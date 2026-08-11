@@ -90,6 +90,13 @@ function extractHeaderUser(user: unknown): HeaderUser | null {
   };
 }
 
+/** 표시 필드가 모두 같으면 true — 같은 세션이 재발화될 때 불필요한 리렌더를 막는다. */
+function sameHeaderUser(prev: HeaderUser | null, next: HeaderUser | null): boolean {
+  if (prev === null || next === null) return prev === next;
+  return prev.id === next.id && prev.email === next.email
+    && prev.name === next.name && prev.avatarUrl === next.avatarUrl;
+}
+
 function readUserFromCookie(): HeaderUser | null {
   const key = getStorageKey();
   if (!key) return null;
@@ -104,12 +111,41 @@ function readUserFromCookie(): HeaderUser | null {
   }
 }
 
+/**
+ * 인증 상태 구독 — 해제 함수를 돌려준다.
+ * supabase-js 는 초기 번들에 넣지 않는다(useAuth·Swing2AppBridge 와 같은 지연 로드 규칙).
+ */
+async function subscribeAuth(onUser: (u: HeaderUser | null) => void): Promise<() => void> {
+  const { createClient } = await import("@/lib/supabase/client");
+  const { data } = createClient().auth.onAuthStateChange((_event, session) => {
+    onUser(extractHeaderUser(session?.user));
+  });
+  return () => { data.subscription.unsubscribe(); };
+}
+
 export function HeaderUserSection(): React.ReactElement {
   const [user, setUser] = useState<HeaderUser | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 쿠키는 클라에서만 읽어 hydration mismatch 방지(의도적 client-only init)
+    // 첫 페인트용 즉시 값 — 쿠키는 클라에서만 읽어 hydration mismatch 를 피한다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 의도적 client-only init
     setUser(readUserFromCookie());
+
+    // 헤더는 레이아웃에 있어 로그인/로그아웃 후에도 마운트가 유지된다.
+    // 구독이 없으면 이메일 로그인(router.push, 클라 이동) 직후 헤더가 로그아웃 상태로 남아
+    // 종 아이콘이 안 뜨고 사람 아이콘이 /login 으로 간다(SNS 로그인은 서버 리다이렉트라 우연히 정상).
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    // TOKEN_REFRESHED·탭 복귀 시에도 발화한다 → 내용이 같으면 이전 참조를 유지해 리렌더를 막는다.
+    void subscribeAuth((next) => { setUser((prev) => (sameHeaderUser(prev, next) ? prev : next)); })
+      .then((unsub) => {
+        if (cancelled) { unsub(); return; }
+        unsubscribe = unsub;
+      });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   return (
@@ -120,13 +156,12 @@ export function HeaderUserSection(): React.ReactElement {
       ) : (
         <Button
           variant="ghost"
-          size="icon"
-          className="hidden md:inline-flex"
-          aria-label={STRINGS.common.login}
+          className="hidden gap-2 px-3 md:inline-flex"
           asChild
         >
           <Link href="/login">
             <User className="h-5 w-5" />
+            <span className="text-sm font-medium">{STRINGS.common.login}</span>
           </Link>
         </Button>
       )}

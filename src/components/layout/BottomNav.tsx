@@ -15,6 +15,8 @@ export function BottomNav(): React.ReactElement | null {
     { href: "/events", label: "이벤트", icon: CalendarDays },
     { href: "/artists", label: "내주변 샵", icon: MapPin },
     { href: "/beauty-sim/ai-test", label: "시뮬레이션", icon: Sparkles },
+    // 라벨은 헤더·모바일 메뉴와 같은 "마이페이지"(STRINGS.nav.mypage). 같은 목적지를 두 이름으로
+    // 부르면 헷갈린다. 폭은 옆 항목("시뮬레이션")과 같은 5글자라 탭바가 넘치지 않는다.
     { href: "/mypage", label: STRINGS.nav.mypage, icon: User },
   ], [homePath]);
 
