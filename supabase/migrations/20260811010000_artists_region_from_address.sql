@@ -10,7 +10,10 @@
 --   · 일반구가 있는 시는 "시 구"("경기 용인시 수지구"), 그 외는 "시도 시군구"
 --   · 세종은 시군구가 없으므로 "세종 세종시" 고정
 --   · 구 단위 이름이 없으면 시 단위로 한 번 더 찾는다(행정구역 개편 안전망)
--- 주소에서 지역을 못 찾으면 넘어온 region_id 를 그대로 둔다 — 정상 등록/수정을 막지 않는다.
+-- 주소에서 지역을 못 찾으면 region_id 를 NULL 로 둔다(넘어온 값을 살려두지 않는다).
+--   살려두면 "regions 에 없는 주소를 쓰면 아무 지역이나 붙일 수 있다"는 우회로가 남는다
+--   (예: '경기 부천시 중동 1234' 처럼 구가 빠진 지번 표기는 매칭이 안 된다).
+--   지역을 모르면 '없음'이 정직한 값이고, 폼은 "지역을 찾지 못했습니다"로 안내해 주소 재검색을 유도한다.
 
 create or replace function public.artists_region_from_address()
 returns trigger
@@ -24,12 +27,15 @@ declare
   city    text;
   rid     uuid;
 begin
+  -- 주소가 없거나 시도+시군구 형태가 아니면 지역을 알 수 없다 → NULL(넘어온 값을 살려두지 않는다).
   if new.address is null or btrim(new.address) = '' then
+    new.region_id := null;
     return new;
   end if;
 
   parts := regexp_split_to_array(btrim(new.address), '\s+');
   if array_length(parts, 1) < 2 then
+    new.region_id := null;
     return new;
   end if;
 
@@ -47,7 +53,7 @@ begin
 
   if sido = '세종' then
     select id into rid from public.regions where name = '세종 세종시';
-    new.region_id := coalesce(rid, new.region_id);
+    new.region_id := rid;
     return new;
   end if;
 
@@ -62,7 +68,7 @@ begin
     select id into rid from public.regions where name = sido || ' ' || city;
   end if;
 
-  new.region_id := coalesce(rid, new.region_id);
+  new.region_id := rid;
   return new;
 end;
 $$;

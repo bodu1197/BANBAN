@@ -3,7 +3,7 @@
 import { STRINGS } from "@/lib/strings";
 /* eslint-disable max-lines-per-function */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -315,6 +315,8 @@ export function ArtistEditClient({ artist,
   /** 주소로 매칭된 지역명 — 화면 표시용(저장은 region_id). 최초값은 서버가 내려준 현재 지역. */
   const [regionName, setRegionName] = useState(artist.region?.name ?? "");
   const [isRegionLoading, setIsRegionLoading] = useState(false);
+  /** 마지막으로 조회를 시작한 주소 — 늦게 도착한 응답을 버리는 기준. */
+  const requestedAddressRef = useRef("");
 
   // 마운트 시 주소로 region_id 를 덮어쓰던 보정 useEffect 는 삭제했다.
   // 지역 누락의 원인이던 regions 결손(시군구 133/252)을 메웠고, 주소를 실제로 바꿀 때만
@@ -331,10 +333,12 @@ export function ArtistEditClient({ artist,
     setFormData((prev) => ({ ...prev, zipcode: result.zonecode, address: result.address, region_id: "" }));
     setRegionName("");
     // 조회 중엔 저장을 잠근다 — 지역이 아직 안 붙은 상태로 저장되는 경합 방지.
+    requestedAddressRef.current = result.address;
     setIsRegionLoading(true);
     try {
       const region = await resolveRegionByAddress(createClient(), result.address);
-      if (region) {
+      // 조회 중 주소를 또 바꿨으면 늦게 온 결과는 버린다(옛 주소의 지역이 새 주소에 붙는 것 방지).
+      if (region && requestedAddressRef.current === result.address) {
         setFormData((prev) => ({ ...prev, region_id: region.id }));
         setRegionName(region.name);
       }

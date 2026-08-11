@@ -90,6 +90,8 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
   /** 주소로 매칭된 지역명 — 화면 표시용(저장은 region_id). */
   const [regionName, setRegionName] = useState("");
   const [isRegionLoading, setIsRegionLoading] = useState(false);
+  /** 마지막으로 조회를 시작한 주소 — 늦게 도착한 응답을 버리는 기준. */
+  const requestedAddressRef = useRef("");
 
   const t = STRINGS.artistRegister;
   const { handleInputChange, handleBlurNormalize, handleCheckboxChange } = useArtistFormHandlers(setFormData);
@@ -121,11 +123,13 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
     setFormData((prev) => ({ ...prev, zipcode: result.zonecode, address: result.address, region_id: "" }));
     setRegionName("");
     // 조회 중엔 '다음'을 잠근다 — 안 그러면 아직 조회 중인 지역을 '못 찾았다'고 오해하게 된다.
+    requestedAddressRef.current = result.address;
     setIsProcessing(true);
     setIsRegionLoading(true);
     try {
       const region = await resolveRegionByAddress(createClient(), result.address);
-      if (region) {
+      // 조회 중 주소를 또 바꿨으면 늦게 온 결과는 버린다(옛 주소의 지역이 새 주소에 붙는 것 방지).
+      if (region && requestedAddressRef.current === result.address) {
         setFormData((prev) => ({ ...prev, region_id: region.id }));
         setRegionName(region.name);
       }
