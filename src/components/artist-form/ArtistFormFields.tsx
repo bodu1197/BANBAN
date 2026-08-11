@@ -178,9 +178,26 @@ export function TextFieldWithHint({ label, value, onChange, placeholder, hint }:
   );
 }
 
-export function AddressField({ formData, onSearch, onChange, t }: Readonly<{
+/** 주소로 자동 매칭된 지역을 보여준다 — 지역은 입력칸이 없어 여기 말고는 확인할 방법이 없다. */
+function MatchedRegion({ address, regionName, isLoading }: Readonly<{
+  address: string; regionName?: string | null; isLoading?: boolean;
+}>): React.ReactElement | null {
+  // 조회 중에는 실패 경고를 띄우지 않는다 — 매번 '못 찾았다'가 깜빡이고 스크린리더가 거짓 실패를 읽는다.
+  if (isLoading) return <p className="text-xs text-muted-foreground">지역 확인 중…</p>;
+  if (regionName) return <p aria-live="polite" className="text-xs text-muted-foreground">지역: {regionName}</p>;
+  if (!address.trim()) return null;
+  return (
+    <p role="alert" className="text-xs text-red-500">
+      지역을 찾지 못했습니다. &apos;검색&apos; 버튼으로 주소를 다시 선택해 주세요.
+    </p>
+  );
+}
+
+export function AddressField({ formData, onSearch, onChange, t, regionName, isRegionLoading }: Readonly<{
   formData: ArtistFormData; onSearch: () => void;
   onChange: (field: keyof ArtistFormData) => (e: React.ChangeEvent<HTMLInputElement>) => void; t: ArtistFormLabels;
+  regionName?: string | null;
+  isRegionLoading?: boolean;
 }>): React.ReactElement {
   return (
     <div className="space-y-2">
@@ -193,6 +210,7 @@ export function AddressField({ formData, onSearch, onChange, t }: Readonly<{
       </div>
       <Input type="text" value={formData.address} readOnly placeholder={t.addressPlaceholder} className="bg-muted" />
       <Input type="text" value={formData.address_detail} onChange={onChange("address_detail")} placeholder={t.addressDetailPlaceholder} />
+      <MatchedRegion address={formData.address} regionName={regionName} isLoading={isRegionLoading} />
     </div>
   );
 }

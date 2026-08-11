@@ -71,7 +71,7 @@ function buildRegisterBody(formData: ArtistFormData, coords: { lat: number; lon:
     zipcode: formData.zipcode,
     address: formData.address,
     address_detail: formData.address_detail || null,
-    region_id: formData.region_id,
+    // region_id 는 보내지 않는다 — 서버가 address 에서 다시 뽑는다(위장 등록 차단).
     introduce: normalizeFancyText(formData.introduce),
     introduce_qa: formData.introduce_qa,
     description: formData.description ? normalizeFancyText(formData.description) : null,
@@ -85,6 +85,7 @@ export type ShopRegistrationResult =
   | { status: "created"; artistId: string }
   | { status: "exists" }
   | { status: "duplicate_name" }
+  | { status: "region_not_found" }
   | { status: "error" };
 
 /** 409 응답 분류 — duplicate_name(중복 이름) vs exists(이미 등록). */
@@ -107,7 +108,11 @@ export async function registerShop(args: Readonly<{
     body: buildRegisterBody(formData, coords),
   });
   if (registerRes.status === 409) return { status: await classifyConflict(registerRes) };
-  if (!registerRes.ok) return { status: "error" };
+  if (!registerRes.ok) {
+    // 서버가 주소에서 지역을 못 뽑은 경우만 구분 — 1단계(주소)로 돌려보내야 사용자가 고칠 수 있다.
+    const errBody = await registerRes.json().catch(() => ({})) as { error?: string };
+    return { status: errBody.error === "region_not_found" ? "region_not_found" : "error" };
+  }
 
   const { artistId } = await registerRes.json() as { artistId: string };
 

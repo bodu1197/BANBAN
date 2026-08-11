@@ -12,11 +12,11 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useDaumPostcode } from "@/hooks/useDaumPostcode";
-import { createClient } from "@/lib/supabase/client";
 
 import { FullPageSpinner } from "@/components/ui/full-page-spinner";
 import { INITIAL_FORM_DATA } from "@/types/artist-form";
-import { addressToRegionKey } from "@/lib/regions";
+import { createClient } from "@/lib/supabase/client";
+import { resolveRegionByAddress } from "@/lib/regions-lookup";
 import type { ArtistFormData, ArtistFormCategory } from "@/types/artist-form";
 import { useArtistFormHandlers, useArtistCategories, buildFormLabelsFromDict, DaumPostcodeModal } from "@/components/artist-form/ArtistFormFields";
 import { INTRODUCE_MIN_LENGTH } from "@/components/artist-form/GuidedIntroduce";
@@ -52,7 +52,7 @@ function validateShopInfo(formData: ArtistFormData, t: typeof STRINGS.artistRegi
   if (!formData.title.trim()) return `'${t.artistName}'${eulReul(t.artistName)} 입력해 주세요.`;
   if (!formData.contact.trim()) return `'${t.phone}'${eulReul(t.phone)} 입력해 주세요.`;
   if (!formData.address.trim()) return `'${t.address}'${eulReul(t.address)} 입력해 주세요.`;
-  if (!formData.region_id) return `'${t.region}' 정보가 없습니다. 주소를 '검색' 버튼으로 다시 선택하면 지역이 자동 설정됩니다.`;
+  if (!formData.region_id) return `'${t.region}'${eulReul(t.region)} 찾지 못했습니다. 주소를 '검색' 버튼으로 다시 선택해 주세요.`;
   if (!formData.introduce.trim()) return "소개글을 작성해 주세요.";
   const introduceLen = formData.introduce.trim().length;
   if (introduceLen < INTRODUCE_MIN_LENGTH) {
@@ -87,6 +87,9 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
   const [addedPreviews, setAddedPreviews] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [published, setPublished] = useState(false);
+  /** 주소로 매칭된 지역명 — 화면 표시용(저장은 region_id). */
+  const [regionName, setRegionName] = useState("");
+  const [isRegionLoading, setIsRegionLoading] = useState(false);
 
   const t = STRINGS.artistRegister;
   const { handleInputChange, handleBlurNormalize, handleCheckboxChange } = useArtistFormHandlers(setFormData);
@@ -114,12 +117,22 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
   const handleAddressSearch = async (): Promise<void> => {
     const result = await openAddress();
     if (!result) return;
-    setFormData((prev) => ({ ...prev, zipcode: result.zonecode, address: result.address }));
-    const regionKey = addressToRegionKey(result.address);
-    if (!regionKey) return;
-    const supabase = createClient();
-    const { data } = await supabase.from("regions").select("id, name").eq("name", regionKey).single();
-    if (data) setFormData((prev) => ({ ...prev, region_id: data.id as string }));
+    // 주소가 바뀌면 이전 지역은 무효 — 비운 뒤 새로 매칭(못 찾으면 빈 값이 유지돼 다음 단계에서 걸린다).
+    setFormData((prev) => ({ ...prev, zipcode: result.zonecode, address: result.address, region_id: "" }));
+    setRegionName("");
+    // 조회 중엔 '다음'을 잠근다 — 안 그러면 아직 조회 중인 지역을 '못 찾았다'고 오해하게 된다.
+    setIsProcessing(true);
+    setIsRegionLoading(true);
+    try {
+      const region = await resolveRegionByAddress(createClient(), result.address);
+      if (region) {
+        setFormData((prev) => ({ ...prev, region_id: region.id }));
+        setRegionName(region.name);
+      }
+    } finally {
+      setIsRegionLoading(false);
+      setIsProcessing(false);
+    }
   };
 
   async function goToImages(): Promise<void> {
@@ -157,6 +170,11 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
       }
       if (result.status === "duplicate_name") {
         globalThis.alert("이미 사용 중인 샵 이름이에요. 1단계로 돌아가 다른 이름을 입력해 주세요.");
+        setStep(1);
+        return;
+      }
+      if (result.status === "region_not_found") {
+        globalThis.alert("주소에서 '지역'을 확인하지 못했습니다. 1단계로 돌아가 주소를 '검색' 버튼으로 다시 선택해 주세요.");
         setStep(1);
         return;
       }
@@ -218,6 +236,8 @@ export function ArtistRegisterClient({ categories }: Readonly<ArtistRegisterClie
             handleBlurNormalize={handleBlurNormalize}
             handleCheckboxChange={handleCheckboxChange}
             onAddressSearch={() => void handleAddressSearch()}
+            regionName={regionName}
+            isRegionLoading={isRegionLoading}
             onIntroduceChange={(qa, text) => setFormData((prev) => ({ ...prev, introduce_qa: qa, introduce: text }))}
             onBusinessHoursChange={(hours) => setFormData((prev) => ({ ...prev, business_hours: hours }))}
           />

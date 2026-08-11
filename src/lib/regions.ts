@@ -1,6 +1,6 @@
 /**
- * Shared region grouping utilities.
- * Used by RegionModal, RegionSelector, RegionPickerModal, and portfolio search.
+ * Shared region utilities.
+ * Used by RegionModal, RegionSelector, and 주소→지역 매칭(regions-lookup).
  */
 
 export const REGION_PREFIXES = [
@@ -25,31 +25,6 @@ export const REGION_PREFIXES = [
 
 export function getSidoDisplayName(sido: string): string {
   return sido;
-}
-
-export interface RegionGroup {
-  prefix: string;
-  name: string;
-  subRegions: Array<{ id: string; name: string }>;
-}
-
-/**
- * Group flat region list into sido-prefixed groups.
- * Sub-region names have the sido prefix stripped for display.
- */
-export function groupRegionsByPrefix(
-  regions: ReadonlyArray<{ id: string; name: string }>,
-): RegionGroup[] {
-  return REGION_PREFIXES.map(({ prefix, name }) => ({
-    prefix,
-    name,
-    subRegions: regions
-      .filter((r) => r.name.startsWith(prefix))
-      .map((r) => ({
-        id: r.id,
-        name: r.name.replace(`${prefix} `, ""),
-      })),
-  }));
 }
 
 /**
@@ -95,12 +70,15 @@ const SHORT_SIDO_SET = new Set<string>(REGION_PREFIXES.map((r) => r.prefix));
  * short names already in DB ("서울 강남구 ...").
  */
 export function addressToRegionKey(address: string): string | null {
-  const parts = address.split(" ");
+  const parts = address.trim().split(/\s+/);
   if (parts.length < 2) return null;
 
   // Try full sido name first (Daum Postcode), then short name (DB stored)
   const sido = ADDRESS_SIDO_MAP[parts[0]] ?? (SHORT_SIDO_SET.has(parts[0]) ? parts[0] : null);
   if (!sido) return null;
+
+  // 세종은 시군구가 없어 주소 2번째 토큰이 도로명이다 → 유일한 지역으로 고정.
+  if (sido === "세종") return "세종 세종시";
 
   // For cities with sub-districts (e.g., "수원시 팔달구"), include both
   const district = parts[1];

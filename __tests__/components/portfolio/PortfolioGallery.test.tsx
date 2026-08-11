@@ -1,43 +1,9 @@
-import React from "react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "../../utils";
 import { PortfolioGallery } from "@/components/portfolio/PortfolioGallery";
 
-vi.mock("@/components/portfolio/ImageLightbox", () => ({
-  ImageLightbox: ({
-    onClose,
-    onPrevious,
-    onNext,
-    currentIndex,
-    totalCount,
-  }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onPrevious: () => void;
-    onNext: () => void;
-    imageSrc: string;
-    imageAlt: string;
-    currentIndex: number;
-    totalCount: number;
-  }) => (
-    <div data-testid="lightbox">
-      <button data-testid="lightbox-close" onClick={onClose}>
-        close
-      </button>
-      <button data-testid="lightbox-prev" onClick={onPrevious}>
-        prev
-      </button>
-      <button data-testid="lightbox-next" onClick={onNext}>
-        next
-      </button>
-      <span data-testid="lightbox-index">{currentIndex}</span>
-      <span data-testid="lightbox-total">{totalCount}</span>
-    </div>
-  ),
-}));
-
-const LIGHTBOX_INDEX_ID = "lightbox-index";
-
+// 갤러리는 라이트박스를 열지 않고 작품 상세(/portfolios/[id])로 보내는 링크 그리드다.
+// 작품당 첫 미디어 1장만 대표로 쓴다.
 describe("PortfolioGallery", () => {
   const mockPortfolios = [
     {
@@ -59,77 +25,26 @@ describe("PortfolioGallery", () => {
     },
   ];
 
-  it("모든 미디어 항목에 대한 이미지 버튼이 렌더링됨", () => {
+  it("작품당 링크 1개(대표 이미지 1장)만 렌더링됨", () => {
     render(<PortfolioGallery portfolios={mockPortfolios as never[]} />);
-    const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(3);
+    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
-  it("각 버튼이 포트폴리오 제목으로 aria-label을 가짐", () => {
+  it("각 링크가 작품 상세로 연결됨", () => {
     render(<PortfolioGallery portfolios={mockPortfolios as never[]} />);
-    expect(screen.getAllByLabelText("View 포트폴리오1")).toHaveLength(2);
-    expect(screen.getByLabelText("View 포트폴리오2")).toBeInTheDocument();
+    expect(screen.getByAltText("포트폴리오1").closest("a")).toHaveAttribute("href", "/portfolios/p1");
+    expect(screen.getByAltText("포트폴리오2").closest("a")).toHaveAttribute("href", "/portfolios/p2");
   });
 
-  it("이미지 클릭 시 라이트박스가 표시됨", async () => {
-    const { user } = render(
-      <PortfolioGallery portfolios={mockPortfolios as never[]} />
-    );
-    await user.click(screen.getAllByRole("button")[0]);
-    expect(screen.getByTestId("lightbox")).toBeInTheDocument();
+  it("미디어가 없는 작품은 건너뛴다", () => {
+    const withEmpty = [...mockPortfolios, { id: "p3", title: "빈작품", artist_id: "a1", portfolio_media: [] }];
+    render(<PortfolioGallery portfolios={withEmpty as never[]} />);
+    expect(screen.getAllByRole("link")).toHaveLength(2);
+    expect(screen.queryByAltText("빈작품")).not.toBeInTheDocument();
   });
 
-  it("포트폴리오가 비어있으면 버튼이 없음", () => {
+  it("포트폴리오가 비어있으면 링크가 없음", () => {
     render(<PortfolioGallery portfolios={[]} />);
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-  });
-
-  it("라이트박스 닫기 시 selectedIndex가 null로 됨", async () => {
-    const { user } = render(
-      <PortfolioGallery portfolios={mockPortfolios as never[]} />
-    );
-    await user.click(screen.getAllByRole("button")[0]);
-    expect(screen.getByTestId("lightbox")).toBeInTheDocument();
-    await user.click(screen.getByTestId("lightbox-close"));
-    expect(screen.queryByTestId("lightbox")).not.toBeInTheDocument();
-  });
-
-  it("다음 버튼 클릭 시 인덱스 증가", async () => {
-    const { user } = render(
-      <PortfolioGallery portfolios={mockPortfolios as never[]} />
-    );
-    await user.click(screen.getAllByRole("button")[0]);
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("0");
-    await user.click(screen.getByTestId("lightbox-next"));
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("1");
-  });
-
-  it("이전 버튼 클릭 시 마지막 인덱스로 순환", async () => {
-    const { user } = render(
-      <PortfolioGallery portfolios={mockPortfolios as never[]} />
-    );
-    await user.click(screen.getAllByRole("button")[0]);
-    await user.click(screen.getByTestId("lightbox-prev"));
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("2");
-  });
-
-  it("중간 이미지에서 이전 버튼 클릭 시 인덱스 감소", async () => {
-    const { user } = render(
-      <PortfolioGallery portfolios={mockPortfolios as never[]} />
-    );
-    await user.click(screen.getAllByRole("button")[1]);
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("1");
-    await user.click(screen.getByTestId("lightbox-prev"));
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("0");
-  });
-
-  it("마지막 이미지에서 다음 버튼 클릭 시 첫 인덱스로 순환", async () => {
-    const { user } = render(
-      <PortfolioGallery portfolios={mockPortfolios as never[]} />
-    );
-    await user.click(screen.getAllByRole("button")[2]);
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("2");
-    await user.click(screen.getByTestId("lightbox-next"));
-    expect(screen.getByTestId(LIGHTBOX_INDEX_ID).textContent).toBe("0");
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });

@@ -7,26 +7,23 @@ vi.mock("@/components/layout/HeaderUserSection", () => ({
   HeaderUserSection: () => <div data-testid="header-user-section" />,
 }));
 
-vi.mock("@/components/layout/HeaderSearch", () => ({
-  HeaderSearchIcon: () => <div data-testid="header-search" />,
+vi.mock("@/components/layout/HeaderStickySearch", () => ({
+  HeaderStickySearch: () => <div data-testid="header-search" />,
 }));
 
 describe("Header", () => {
-  it("반언니 로고가 렌더링됨", () => {
+  it("반언니 로고 이미지가 렌더링됨", () => {
     render(<Header />);
-    expect(screen.getByText("반")).toBeInTheDocument();
-    expect(screen.getByText("언니")).toBeInTheDocument();
+    expect(screen.getByAltText("반언니")).toBeInTheDocument();
   });
 
   it("로고 링크가 / 로 연결됨", () => {
     render(<Header />);
-    const logoLink = screen.getByText("반").closest("a");
-    expect(logoLink).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "반언니 홈으로 이동" })).toHaveAttribute("href", "/");
   });
 
-  it("헤더 검색 아이콘이 렌더링됨", () => {
+  it("헤더 검색이 렌더링됨", () => {
     render(<Header />);
     expect(screen.getByTestId("header-search")).toBeInTheDocument();
   });
-
 });

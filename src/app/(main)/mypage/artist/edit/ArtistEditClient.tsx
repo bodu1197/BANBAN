@@ -3,7 +3,7 @@
 import { STRINGS } from "@/lib/strings";
 /* eslint-disable max-lines-per-function */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -13,7 +13,7 @@ import { getStorageUrl, getAvatarUrl } from "@/lib/supabase/storage-utils";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
 import type { ArtistType } from "@/types/database";
-import { addressToRegionKey } from "@/lib/regions";
+import { resolveRegionByAddress } from "@/lib/regions-lookup";
 import { geocodeAddress } from "@/types/artist-form";
 import { normalizeFancyText } from "@/lib/normalize-text";
 import { revalidateArtistPage } from "@/lib/actions/artists";
@@ -157,6 +157,10 @@ function validateEditForm(
   // 샵갤러리 폐지 → 대표 배너(banner_path) 필수.
   if (!hasBanner) return "대표 배너 이미지를 1장 등록해 주세요.";
   if (!hasRequiredFields(formData, hasBanner, existingProfileCount + newProfileCount > 0)) {
+    // 지역은 폼에 입력칸이 없고 주소 검색으로만 채워진다 → 일반 '필수항목' 문구로는 뭘 해야 할지 알 수 없다.
+    if (formData.address.trim() && !formData.region_id) {
+      return "'지역'을 찾지 못했습니다. 주소를 '검색' 버튼으로 다시 선택해 주세요.";
+    }
     return STRINGS.artistRegister.required;
   }
   const introduceLen = formData.introduce.trim().length;
@@ -308,19 +312,13 @@ export function ArtistEditClient({ artist,
   const [newProfileImage, setNewProfileImage] = useState<File[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** 주소로 매칭된 지역명 — 화면 표시용(저장은 region_id). 최초값은 서버가 내려준 현재 지역. */
+  const [regionName, setRegionName] = useState(artist.region?.name ?? "");
+  const [isRegionLoading, setIsRegionLoading] = useState(false);
 
-  // Auto-match region from existing address on load (fixes mismatched region_id)
-  // @client-reason: 클라 폼 상태(formData.region_id) 정정용 보정 쿼리 — addressToRegionKey 로 주소에서 파생한 키로 regions 를 조회해 setFormData 로 폼에 주입한다. 동일 로직이 handleAddressSearch(주소검색 인터랙션)에도 존재하며, 이 컴포넌트는 본인/관리자 두 렌더 경로에서 공유되어 props 계약 변경 시 회귀 위험이 있어 클라 페칭 유지.
-  useEffect(() => {
-    const regionKey = addressToRegionKey(artist.address);
-    if (!regionKey) return;
-    const supabase = createClient();
-    supabase.from("regions").select("id, name").eq("name", regionKey).single().then(({ data }: { data: { id: string; name: string } | null }) => {
-      if (data && data.id !== artist.region_id) {
-        setFormData((prev) => ({ ...prev, region_id: data.id }));
-      }
-    });
-  }, [artist.address, artist.region_id]);
+  // 마운트 시 주소로 region_id 를 덮어쓰던 보정 useEffect 는 삭제했다.
+  // 지역 누락의 원인이던 regions 결손(시군구 133/252)을 메웠고, 주소를 실제로 바꿀 때만
+  // handleAddressSearch 가 지역을 다시 잡는다 — 열어보기만 해도 지역이 조용히 바뀌던 문제 제거.
 
   const t = STRINGS.artistRegister;
   const { handleInputChange, handleBlurNormalize, handleCheckboxChange } = useArtistFormHandlers(setFormData);
@@ -329,15 +327,19 @@ export function ArtistEditClient({ artist,
   const handleAddressSearch = async (): Promise<void> => {
     const result = await openAddress();
     if (!result) return;
-    setFormData((prev) => ({ ...prev, zipcode: result.zonecode, address: result.address }));
-    // Auto-match region from address
-    const regionKey = addressToRegionKey(result.address);
-    if (regionKey) {
-      const supabase = createClient();
-      const { data } = await supabase.from("regions").select("id, name").eq("name", regionKey).single();
-      if (data) {
-        setFormData((prev) => ({ ...prev, region_id: data.id as string }));
+    // 주소가 바뀌면 이전 지역은 무효 — 비운 뒤 새로 매칭(못 찾으면 저장 시 걸린다).
+    setFormData((prev) => ({ ...prev, zipcode: result.zonecode, address: result.address, region_id: "" }));
+    setRegionName("");
+    // 조회 중엔 저장을 잠근다 — 지역이 아직 안 붙은 상태로 저장되는 경합 방지.
+    setIsRegionLoading(true);
+    try {
+      const region = await resolveRegionByAddress(createClient(), result.address);
+      if (region) {
+        setFormData((prev) => ({ ...prev, region_id: region.id }));
+        setRegionName(region.name);
       }
+    } finally {
+      setIsRegionLoading(false);
     }
   };
 
@@ -396,7 +398,7 @@ export function ArtistEditClient({ artist,
           <TextField label={t.phone} value={formData.contact} onChange={handleInputChange("contact")} placeholder={t.phonePlaceholder} required type="tel" />
           <TextField label={t.instagramUrl} value={formData.instagram_url} onChange={handleInputChange("instagram_url")} placeholder={t.instagramUrlPlaceholder} type="url" />
           <TextFieldWithHint label={t.kakaoUrl} value={formData.kakao_url} onChange={handleInputChange("kakao_url")} placeholder={t.kakaoUrlPlaceholder} hint={t.kakaoUrlHint} />
-          <AddressField formData={formData} onSearch={handleAddressSearch} onChange={handleInputChange} t={formLabels} />
+          <AddressField formData={formData} onSearch={() => void handleAddressSearch()} onChange={handleInputChange} t={formLabels} regionName={regionName} isRegionLoading={isRegionLoading} />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -436,7 +438,7 @@ export function ArtistEditClient({ artist,
 
       <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background p-4">
         <div className="mx-auto max-w-[1024px]">
-          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-brand-primary py-6 text-base font-semibold text-white hover:bg-brand-primary-hover focus-visible:bg-brand-primary-hover">
+          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting || isRegionLoading} className="w-full bg-brand-primary py-6 text-base font-semibold text-white hover:bg-brand-primary-hover focus-visible:bg-brand-primary-hover">
             {isSubmitting ? STRINGS.common.saving : STRINGS.common.save}
           </Button>
         </div>

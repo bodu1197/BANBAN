@@ -6,15 +6,6 @@ let mockPathname = "/";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mockPathname,
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-    back: vi.fn(),
-    forward: vi.fn(),
-  }),
-  useParams: () => ({ }),
-  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/components/layout/BottomNavItem", () => ({
@@ -32,10 +23,10 @@ describe("BottomNav", () => {
     mockPathname = "/";
   });
 
-  it("4개의 네비게이션 항목을 렌더링함", () => {
+  it("5개의 네비게이션 항목을 렌더링함", () => {
     render(<BottomNav />);
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(4);
+    expect(links).toHaveLength(5);
   });
 
   it('aria-label이 "Bottom navigation"임', () => {
@@ -51,12 +42,16 @@ describe("BottomNav", () => {
     expect(homeLink).toHaveAttribute(DATA_ACTIVE, "true");
   });
 
-  it("pathname이 /likes이면 좋아요가 활성", () => {
-    mockPathname = "/likes";
+  it("pathname이 /events이면 이벤트가 활성", () => {
+    mockPathname = "/events";
     render(<BottomNav />);
-    const likesLink = screen.getByText("좋아요");
-    expect(likesLink).toHaveAttribute(DATA_ACTIVE, "true");
-    const homeLink = screen.getByText("홈");
-    expect(homeLink).toHaveAttribute(DATA_ACTIVE, "false");
+    expect(screen.getByText("이벤트")).toHaveAttribute(DATA_ACTIVE, "true");
+    expect(screen.getByText("홈")).toHaveAttribute(DATA_ACTIVE, "false");
+  });
+
+  it("숨김 경로(/register/artist)에서는 아무것도 렌더링하지 않음", () => {
+    mockPathname = "/register/artist";
+    const { container } = render(<BottomNav />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

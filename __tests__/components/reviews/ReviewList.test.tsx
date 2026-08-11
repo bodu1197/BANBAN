@@ -56,7 +56,7 @@ describe("ReviewList", () => {
     expect(cards).toHaveLength(2);
   });
 
-  it("profile이 없으면 Anonymous를 전달함", () => {
+  it("profile이 없으면 익명으로 표시함", () => {
     const reviews = [
       {
         id: "r1",
@@ -76,6 +76,6 @@ describe("ReviewList", () => {
     render(
       <ReviewList reviews={reviews} emptyMessage="리뷰가 없습니다" />
     );
-    expect(screen.getByText("Anonymous")).toBeInTheDocument();
+    expect(screen.getByText("익명")).toBeInTheDocument();
   });
 });

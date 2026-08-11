@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { escapeIlike } from "@/lib/supabase/queries";
+import { resolveRegionByAddress } from "@/lib/regions-lookup";
 import { isHttpUrl } from "@/lib/url-utils";
 import { DAY_KEYS, isDayHours, parseIntroduceQA } from "@/types/artist-form";
 import type { BusinessHoursMap } from "@/types/artist-form";
@@ -18,7 +19,6 @@ interface RegisterBody {
   zipcode: string;
   address: string;
   address_detail: string | null;
-  region_id: string;
   introduce: string;
   introduce_qa?: unknown;
   description: string | null;
@@ -58,7 +58,6 @@ function validateRequiredStrings(body: RegisterBody): string | null {
     checkTitleField(body) ??
     checkRequiredStringField(body.contact, "contact") ??
     checkRequiredStringField(body.address, "address") ??
-    checkRequiredStringField(body.region_id, "region_id") ??
     checkIntroduceField(body)
   );
 }
@@ -143,7 +142,7 @@ async function isTitleTaken(admin: SupabaseClient<Database>, title: string): Pro
   return (data?.length ?? 0) > 0;
 }
 
-function buildArtistRow(userId: string, body: RegisterBody): Database["public"]["Tables"]["artists"]["Insert"] {
+function buildArtistRow(userId: string, body: RegisterBody, regionId: string): Database["public"]["Tables"]["artists"]["Insert"] {
   return {
     user_id: userId,
     type_artist: body.type_artist,
@@ -155,7 +154,7 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     zipcode: body.zipcode,
     address: body.address,
     address_detail: body.address_detail,
-    region_id: body.region_id,
+    region_id: regionId,
     introduce: body.introduce,
     introduce_qa: parseIntroduceQA(body.introduce_qa) as unknown as Json,
     description: body.description,
@@ -170,6 +169,26 @@ function buildArtistRow(userId: string, body: RegisterBody): Database["public"][
     status: "draft",
     approved_at: null,
   };
+}
+
+/**
+ * insert 전 사전 검사 — 샵 이름 중복 차단 + 지역 확정.
+ * 지역은 클라가 보낸 region_id 를 믿지 않고 주소에서 서버가 다시 뽑는다
+ * (다른 지역으로 위장 등록 차단 + 존재하지 않는 uuid 로 인한 FK 500 차단).
+ */
+async function preInsertChecks(
+  admin: SupabaseClient<Database>,
+  body: RegisterBody,
+): Promise<{ regionId: string } | { error: NextResponse }> {
+  // 같은 이름 무한 생성(계정별 1샵 우회) 방지 — 사전 검사(친절 메시지).
+  if (await isTitleTaken(admin, body.title)) {
+    return { error: NextResponse.json({ error: "duplicate_name" }, { status: 409 }) };
+  }
+  const region = await resolveRegionByAddress(admin, body.address);
+  if (!region) {
+    return { error: NextResponse.json({ error: "region_not_found" }, { status: 400 }) };
+  }
+  return { regionId: region.id };
 }
 
 /** GET /api/artist-register?name=... — 샵 이름 가용성(중복 여부) 사전 확인. 위저드 1단계 빠른 실패용. */
@@ -208,14 +227,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
-  // 동일 샵 이름 차단 — 같은 이름 무한 생성(계정별 1샵 우회) 방지. 사전 검사(친절 메시지).
-  if (await isTitleTaken(admin, body.title)) {
-    return NextResponse.json({ error: "duplicate_name" }, { status: 409 });
-  }
+  const pre = await preInsertChecks(admin, body);
+  if ("error" in pre) return pre.error;
 
   const { data: artist, error: insertError } = await admin
     .from("artists")
-    .insert(buildArtistRow(auth.user.id, body))
+    .insert(buildArtistRow(auth.user.id, body, pre.regionId))
     .select("id")
     .single();
 

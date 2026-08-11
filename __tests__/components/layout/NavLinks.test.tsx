@@ -14,7 +14,7 @@ describe("DesktopNav", () => {
     labels: {
       home: "홈",
       search: "검색",
-      tattoo: "타투",
+      womenBeauty: "여성 반영구",
       community: "커뮤니티",
     },
   };
@@ -22,7 +22,7 @@ describe("DesktopNav", () => {
   it("내비게이션 링크가 렌더링됨", () => {
     render(<DesktopNav {...defaultProps} />);
     expect(screen.getByText("홈")).toBeInTheDocument();
-    expect(screen.getByText("타투")).toBeInTheDocument();
+    expect(screen.getByText("여성 반영구")).toBeInTheDocument();
     expect(screen.getByText("커뮤니티")).toBeInTheDocument();
   });
 
@@ -39,7 +39,7 @@ describe("MobileNav", () => {
     labels: {
       home: "홈",
       search: "검색",
-      tattoo: "타투",
+      womenBeauty: "여성 반영구",
       likes: "좋아요",
       mypage: "MY",
     },
@@ -54,7 +54,7 @@ describe("MobileNav", () => {
   it("모든 네비게이션 링크가 렌더링됨", () => {
     render(<MobileNav {...defaultProps} />);
     expect(screen.getByText("홈")).toBeInTheDocument();
-    expect(screen.getByText("타투")).toBeInTheDocument();
+    expect(screen.getByText("여성 반영구")).toBeInTheDocument();
     expect(screen.getByText("좋아요")).toBeInTheDocument();
     expect(screen.getByText("MY")).toBeInTheDocument();
   });

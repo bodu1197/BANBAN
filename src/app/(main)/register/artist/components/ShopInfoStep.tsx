@@ -20,7 +20,7 @@ type BlurHandler = (field: "title" | "introduce" | "description") => () => void;
 export function ShopInfoStep({
   formData, t, formLabels, shopCategories,
   handleInputChange, handleBlurNormalize, handleCheckboxChange,
-  onAddressSearch, onIntroduceChange, onBusinessHoursChange,
+  onAddressSearch, onIntroduceChange, onBusinessHoursChange, regionName, isRegionLoading,
 }: Readonly<{
   formData: ArtistFormData;
   t: typeof STRINGS.artistRegister;
@@ -32,6 +32,9 @@ export function ShopInfoStep({
   onAddressSearch: () => void;
   onIntroduceChange: (qa: IntroduceQA, text: string) => void;
   onBusinessHoursChange: (hours: BusinessHoursMap) => void;
+  /** 주소로 자동 매칭된 지역명 — 사용자가 확인할 수 있게 주소칸 아래 표시. */
+  regionName?: string | null;
+  isRegionLoading?: boolean;
 }>): React.ReactElement {
   return (
     <div className="space-y-6 p-4">
@@ -39,7 +42,7 @@ export function ShopInfoStep({
       <TextField label={t.phone} value={formData.contact} onChange={handleInputChange("contact")} placeholder={t.phonePlaceholder} required type="tel" />
       <TextField label={t.instagramUrl} value={formData.instagram_url} onChange={handleInputChange("instagram_url")} placeholder={t.instagramUrlPlaceholder} type="url" />
       <TextFieldWithHint label={t.kakaoUrl} value={formData.kakao_url} onChange={handleInputChange("kakao_url")} placeholder={t.kakaoUrlPlaceholder} hint={t.kakaoUrlHint} />
-      <AddressField formData={formData} onSearch={onAddressSearch} onChange={handleInputChange} t={formLabels} />
+      <AddressField formData={formData} onSearch={onAddressSearch} onChange={handleInputChange} t={formLabels} regionName={regionName} isRegionLoading={isRegionLoading} />
 
       <IntroduceSeoPreview
         shopName={formData.title}
