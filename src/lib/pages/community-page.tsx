@@ -31,7 +31,7 @@ export function resolveCommunityTab(raw: string | undefined): CommunityTabKey {
 }
 
 export function generateCommunityMetadata(): Metadata {
-  const description = `${t.title} — 샵인샵 임대·구인, 질문답변, 후기, 뷰티랩까지 반언니 회원 소통 공간`;
+  const description = `${t.title} — 샵인샵 임대·구인, ${t.qna}, 후기, 뷰티랩까지 반언니 회원 소통 공간`;
   return {
     title: t.title,
     description,
