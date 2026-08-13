@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cancelSubscription } from "@/lib/supabase/ad-queries";
+import { AD_STATUS_PENDING } from "@/lib/ad-status";
 import { refundPointsBestEffort } from "@/lib/supabase/point-queries";
 
 /**
@@ -32,12 +33,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    if (sub.status !== "PENDING") {
+    if (sub.status !== AD_STATUS_PENDING) {
         return NextResponse.json({ error: "not_pending" }, { status: 400 });
     }
 
     // PENDING → CANCELLED 원자적 claim. 동시/재시도 호출 중 1건만 성공 → 이중 환불 차단(H4).
-    const claimed = await cancelSubscription(body.subscriptionId, "PENDING");
+    const claimed = await cancelSubscription(body.subscriptionId, AD_STATUS_PENDING);
     if (!claimed) return NextResponse.json({ error: "not_pending" }, { status: 400 });
 
     // claim 성공한 호출만 포인트 환불 (best-effort, 실패 시 로깅)

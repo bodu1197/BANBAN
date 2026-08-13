@@ -19,7 +19,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminLoadingSpinner, AdminErrorState, AdminPageHeader } from "@/components/admin/admin-shared";
-import type { AdPlan, AdSubscription } from "@/types/ads";
+import type { AdPlan, AdSubscription, AdSubscriptionStatus } from "@/types/ads";
+import { effectiveAdStatus, AD_STATUS_ACTIVE } from "@/lib/ad-status";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ interface Pagination {
 }
 
 interface AdminData {
-    stats: { totalRevenue: number; activeCount: number; totalCount: number };
+    stats: { totalRevenue: number; activeCount: number; activeArtistCount: number; totalCount: number };
     subscriptions: SubWithDetails[];
     plans: AdPlan[];
     paymentBreakdown: PaymentBreakdown;
@@ -89,7 +90,7 @@ function StatCard({ icon, label, value, sub }: Readonly<{
                 {icon} {label}
             </div>
             <p className="text-2xl font-bold text-white">{value}</p>
-            {sub ? <p className="mt-1 text-[11px] text-zinc-500">{sub}</p> : null}
+            {sub ? <p className="mt-1 text-[11px] text-zinc-400">{sub}</p> : null}
         </div>
     );
 }
@@ -110,7 +111,7 @@ function RevenueStatsSection({ stats, paymentBreakdown }: Readonly<{
                 <StatCard icon={<CreditCard className="h-3.5 w-3.5 text-blue-400" />} label="카드 결제" value={`${paymentBreakdown.totalCash.toLocaleString()}원`} sub={`활성 ${paymentBreakdown.activeCash.toLocaleString()}원`} />
                 <StatCard icon={<Coins className="h-3.5 w-3.5 text-amber-400" />} label="포인트 결제" value={`${paymentBreakdown.totalPoints.toLocaleString()}P`} sub={`활성 ${paymentBreakdown.activePoints.toLocaleString()}P`} />
                 <StatCard icon={<Crown className="h-3.5 w-3.5 text-amber-400" />} label="활성 광고" value={`${stats.activeCount}건`} sub={`전체 ${stats.totalCount}건`} />
-                <StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="광고 아티스트" value={`${stats.activeCount}명`} />
+                <StatCard icon={<Users className="h-3.5 w-3.5 text-blue-400" />} label="광고 아티스트" value={`${stats.activeArtistCount}명`} />
             </div>
         </section>
     );
@@ -157,15 +158,16 @@ function FilterBar({ status, search, onStatusChange, onSearchChange }: Readonly<
 }>): React.ReactElement {
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5" role="group" aria-label="상태 필터">
                 {STATUS_OPTIONS.map(opt => (
                     <button
                         key={opt.value}
                         type="button"
                         onClick={() => onStatusChange(opt.value)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${
+                        aria-pressed={status === opt.value}
+                        className={`min-h-[44px] rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${
                             status === opt.value
-                                ? "bg-amber-500/20 text-amber-400"
+                                ? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-400/70"
                                 : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200 focus-visible:bg-white/5 focus-visible:text-zinc-200"
                         }`}
                     >
@@ -180,7 +182,7 @@ function FilterBar({ status, search, onStatusChange, onSearchChange }: Readonly<
                     value={search}
                     onChange={e => onSearchChange(e.target.value)}
                     placeholder="아티스트 검색..."
-                    className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-amber-500/50 focus:outline-none"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-zinc-400 focus:border-amber-500/50 focus:outline-none"
                 />
             </div>
         </div>
@@ -197,13 +199,13 @@ function PaginationControls({ pagination, onPageChange }: Readonly<{
     const { page, totalPages, totalCount } = pagination;
     return (
         <div className="flex items-center justify-between">
-            <p className="text-xs text-zinc-500">총 {totalCount.toLocaleString()}건</p>
+            <p className="text-xs text-zinc-400">총 {totalCount.toLocaleString()}건</p>
             <div className="flex items-center gap-2">
                 <button
                     type="button"
                     disabled={page <= 1}
                     onClick={() => onPageChange(page - 1)}
-                    className="rounded-lg border border-white/10 p-1.5 text-zinc-400 transition-colors hover:bg-white/5 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-white/10 p-1.5 text-zinc-400 transition-colors hover:bg-white/5 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                     aria-label="이전 페이지"
                 >
                     <ChevronLeft className="h-4 w-4" />
@@ -213,7 +215,7 @@ function PaginationControls({ pagination, onPageChange }: Readonly<{
                     type="button"
                     disabled={page >= totalPages}
                     onClick={() => onPageChange(page + 1)}
-                    className="rounded-lg border border-white/10 p-1.5 text-zinc-400 transition-colors hover:bg-white/5 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-white/10 p-1.5 text-zinc-400 transition-colors hover:bg-white/5 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                     aria-label="다음 페이지"
                 >
                     <ChevronRight className="h-4 w-4" />
@@ -235,11 +237,14 @@ function PaymentTypeBadge({ sub }: Readonly<{ sub: SubWithDetails }>): React.Rea
     return <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/20 px-2 py-0.5 text-[11px] font-medium text-purple-400"><CreditCard className="h-3 w-3" /> 혼합</span>;
 }
 
-function RefundButton({ sub, onRefund }: Readonly<{
+function RefundButton({ sub, status, onRefund }: Readonly<{
     sub: SubWithDetails;
+    status: AdSubscriptionStatus;
     onRefund: (id: string) => void;
 }>): React.ReactElement | null {
-    if (sub.status !== "ACTIVE") return null;
+    // 배지와 같은 값(행에서 한 번 계산) — 기간을 다 소진한 광고에 전액 환불 버튼이 뜨면 안 되고,
+    // raw status 로 두면 만료 크론이 도는 순간 같은 행에서 버튼이 조용히 사라져 정책이 크론 타이밍에 좌우된다.
+    if (status !== AD_STATUS_ACTIVE) return null;
     return (
         <button
             type="button"
@@ -275,29 +280,41 @@ function SubscriptionTable({ subscriptions, onRefund }: Readonly<{
                 </thead>
                 <tbody>
                     {subscriptions.length === 0 ? (
-                        <tr><td colSpan={10} className="px-4 py-8 text-center text-sm text-zinc-500">결과 없음</td></tr>
+                        <tr><td colSpan={10} className="px-4 py-8 text-center text-sm text-zinc-400">결과 없음</td></tr>
                     ) : null}
                     {subscriptions.map(sub => (
-                        <tr key={sub.id} className="border-b border-white/5 hover:bg-white/[0.02] focus-visible:bg-white/[0.02]">
-                            <td className="px-4 py-3"><StatusBadge status={sub.status} /></td>
+                        <SubscriptionRow key={sub.id} sub={sub} onRefund={onRefund} />
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+/** 한 행의 실질 상태를 한 번만 계산 — 배지와 환불 버튼이 각자 Date.now() 를 부르면 값이 갈릴 수 있다 */
+function SubscriptionRow({ sub, onRefund }: Readonly<{
+    sub: SubWithDetails;
+    onRefund: (id: string) => void;
+}>): React.ReactElement {
+    // status 컬럼은 만료 크론 실행 전까지 ACTIVE 로 남는다 → 만료일 반영한 실질 상태로 표시
+    const status = effectiveAdStatus(sub.status, sub.expires_at);
+    return (
+                        <tr className="border-b border-white/5 hover:bg-white/[0.02] focus-visible:bg-white/[0.02]">
+                            <td className="px-4 py-3"><StatusBadge status={status} /></td>
                             <td className="px-4 py-3 text-zinc-300">{sub.artist?.title ?? "Unknown"}</td>
                             <td className="px-4 py-3 text-xs text-zinc-400">{sub.plan?.name ?? "-"}</td>
                             <td className="px-4 py-3"><PaymentTypeBadge sub={sub} /></td>
                             <td className="px-4 py-3 text-right font-medium text-white">{sub.price_paid.toLocaleString()}원</td>
                             <td className="px-4 py-3 text-right text-zinc-300">
-                                {sub.paid_by_cash > 0 ? `${sub.paid_by_cash.toLocaleString()}원` : <span className="text-zinc-600">-</span>}
+                                {sub.paid_by_cash > 0 ? `${sub.paid_by_cash.toLocaleString()}원` : <span className="text-zinc-400">-</span>}
                             </td>
                             <td className="px-4 py-3 text-right text-amber-400">
-                                {sub.paid_by_points > 0 ? `${sub.paid_by_points.toLocaleString()}P` : <span className="text-zinc-600">-</span>}
+                                {sub.paid_by_points > 0 ? `${sub.paid_by_points.toLocaleString()}P` : <span className="text-zinc-400">-</span>}
                             </td>
-                            <td className="px-4 py-3 text-xs text-zinc-500">{formatDateTime(sub.created_at)}</td>
-                            <td className="px-4 py-3 text-xs text-zinc-500">{sub.expires_at ? formatDateTime(sub.expires_at) : "-"}</td>
-                            <td className="px-4 py-3 text-center"><RefundButton sub={sub} onRefund={onRefund} /></td>
+                            <td className="px-4 py-3 text-xs text-zinc-400">{formatDateTime(sub.created_at)}</td>
+                            <td className="px-4 py-3 text-xs text-zinc-400">{sub.expires_at ? formatDateTime(sub.expires_at) : "-"}</td>
+                            <td className="px-4 py-3 text-center"><RefundButton sub={sub} status={status} onRefund={onRefund} /></td>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
     );
 }
 

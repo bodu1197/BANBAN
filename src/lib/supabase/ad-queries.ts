@@ -2,10 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient, createAdminClient } from "./server";
 import { getStorageUrl, getAvatarUrl } from "./storage-utils";
 import { escapeLikePattern } from "./query-utils";
+import { monthStartKST } from "@/lib/utils/format";
+import { isAdRunning, adStatusFilterExpr, AD_STATUS_ACTIVE, AD_STATUS_EXPIRED, AD_STATUS_CANCELLED, AD_STATUS_PENDING } from "@/lib/ad-status";
 import type { AdDurationOption, AdPlan, AdPortfolioSlot, AdSubscription, AdSubscriptionStatus, ActiveAdArtist } from "@/types/ads";
 import type { Database } from "@/types/database";
 
-const STATUS_ACTIVE: AdSubscriptionStatus = "ACTIVE";
 const SELECT_WITH_PLAN = "*, plan:ad_plans(*)";
 const DAYS_PER_MONTH = 30;
 
@@ -65,7 +66,7 @@ export async function createAdSubscription(params: {
             paid_by_cash: params.paidByCash,
             merchant_uid: params.merchantUid,
             duration_months: params.durationMonths,
-            status: params.paidByCash > 0 ? "PENDING" : STATUS_ACTIVE,
+            status: params.paidByCash > 0 ? AD_STATUS_PENDING : AD_STATUS_ACTIVE,
             started_at: params.paidByCash === 0 ? new Date().toISOString() : null,
             expires_at: params.paidByCash === 0 ? getExpiryDate(days) : null,
         })
@@ -95,13 +96,13 @@ export async function activateSubscription(
     const { data } = await supabase
         .from("ad_subscriptions")
         .update({
-            status: STATUS_ACTIVE,
+            status: AD_STATUS_ACTIVE,
             started_at: now,
             expires_at: expiresAt,
             imp_uid: impUid,
         })
         .eq("id", subscriptionId)
-        .eq("status", "PENDING")
+        .eq("status", AD_STATUS_PENDING)
         .select();
 
     if (data && data.length > 0) return data[0] as AdSubscription;
@@ -109,7 +110,7 @@ export async function activateSubscription(
     // 0행: 이미 ACTIVE(정상 replay)면 그 행을 변경 없이 반환, 그 외 상태면 활성화 불가 → 에러.
     const { data: existing } = await supabase
         .from("ad_subscriptions").select("*").eq("id", subscriptionId).single();
-    if (existing && (existing as { status: string }).status === STATUS_ACTIVE) {
+    if (existing && (existing as { status: string }).status === AD_STATUS_ACTIVE) {
         return existing as AdSubscription;
     }
     throw new Error("Failed to activate subscription: not in PENDING/ACTIVE state");
@@ -136,7 +137,7 @@ export async function getActiveSubscription(artistId: string): Promise<AdSubscri
         .from("ad_subscriptions")
         .select(SELECT_WITH_PLAN)
         .eq("artist_id", artistId)
-        .eq("status", STATUS_ACTIVE)
+        .eq("status", AD_STATUS_ACTIVE)
         .gt("expires_at", now)
         .order("expires_at", { ascending: false })
         .limit(1)
@@ -154,7 +155,7 @@ export async function getActiveSubscriptions(artistId: string): Promise<AdSubscr
         .from("ad_subscriptions")
         .select(SELECT_WITH_PLAN)
         .eq("artist_id", artistId)
-        .eq("status", STATUS_ACTIVE)
+        .eq("status", AD_STATUS_ACTIVE)
         .gt("expires_at", now)
         .order("created_at", { ascending: true });
 
@@ -174,7 +175,7 @@ export async function cancelSubscription(
     const supabase = createAdminClient();
     const { data } = await supabase
         .from("ad_subscriptions")
-        .update({ status: "CANCELLED" as AdSubscriptionStatus })
+        .update({ status: AD_STATUS_CANCELLED })
         .eq("id", subscriptionId)
         .eq("status", fromStatus)
         .select("id");
@@ -202,7 +203,7 @@ export async function getActiveAdArtists(): Promise<ActiveAdArtist[]> {
       artist:artists!inner(title, profile_image_path),
       slots:ad_portfolio_slots(portfolio_id)
     `)
-        .eq("status", STATUS_ACTIVE)
+        .eq("status", AD_STATUS_ACTIVE)
         .gt("expires_at", now);
 
     if (!data) return [];
@@ -250,46 +251,18 @@ export async function expireOldSubscriptions(): Promise<number> {
 
     // 단일 가드 UPDATE — ACTIVE & 만료된 구독을 EXPIRED 로 전이. SELECT 왕복 제거 + RETURNING 으로
     // 실제 처리 건수 정확 반환(기존 SELECT-then-UPDATE 의 오해 소지 카운트/에러 무시 개선).
+    // 경계 포함(lte) — lt 로 두면 만료 정각 행이 화면엔 "만료"인데 크론은 영원히 안 건드린다.
+    // expires_at IS NULL 인 ACTIVE 행은 일부러 제외한다: 정상 경로로는 생기지 않는 이상 데이터라
+    // 화면에선 만료로 닫아 보여주되(adStatusFilterExpr) 상태를 덮어써 원인 추적 단서를 지우지 않는다.
     const { data, error } = await supabase
         .from("ad_subscriptions")
-        .update({ status: "EXPIRED" as AdSubscriptionStatus })
-        .eq("status", STATUS_ACTIVE)
-        .lt("expires_at", now)
+        .update({ status: AD_STATUS_EXPIRED })
+        .eq("status", AD_STATUS_ACTIVE)
+        .lte("expires_at", now)
         .select("id");
 
     if (error) throw new Error(`Failed to expire subscriptions: ${error.message}`);
     return data?.length ?? 0;
-}
-
-// ─── Admin Stats ─────────────────────────────────────────
-
-/** Get ad revenue stats for admin dashboard, optionally filtered by artist type */
-export async function getAdRevenueStats(artistType?: "SEMI_PERMANENT"): Promise<{
-    totalRevenue: number;
-    activeCount: number;
-    totalCount: number;
-}> {
-    // 관리자 대시보드 집계 — ad_subscriptions 의 SELECT RLS 가 소유자(artist_id=auth.uid())로
-    // 제한되므로 RLS 클라이언트로는 관리자가 본인 소유만(=0) 보게 됨 → service_role 로 전체 집계.
-    const supabase = createAdminClient();
-    const now = new Date().toISOString();
-
-    let query = supabase
-        .from("ad_subscriptions")
-        .select("price_paid, status, expires_at, plan:ad_plans!inner(artist_type)");
-
-    if (artistType) {
-        query = query.eq("plan.artist_type", artistType);
-    }
-
-    const { data: allSubs } = await query;
-
-    const subs = (allSubs ?? []) as { price_paid: number; status: string; expires_at: string }[];
-    const confirmedSubs = subs.filter(s => s.status === STATUS_ACTIVE || s.status === "EXPIRED");
-    const totalRevenue = confirmedSubs.reduce((sum, s) => sum + s.price_paid, 0);
-    const activeCount = subs.filter(s => s.status === STATUS_ACTIVE && s.expires_at > now).length;
-
-    return { totalRevenue, activeCount, totalCount: confirmedSubs.length };
 }
 
 // ─── Portfolio Slots ────────────────────────────────────
@@ -368,7 +341,7 @@ export async function grantFreeSubscription(
             paid_by_cash: 0,
             merchant_uid: `${ADMIN_GRANT_PREFIX}${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
             duration_months: durationMonths,
-            status: STATUS_ACTIVE,
+            status: AD_STATUS_ACTIVE,
             started_at: now,
             expires_at: getExpiryDate(days),
         })
@@ -400,12 +373,13 @@ export async function setSlotsAsAdmin(
 ): Promise<string[]> {
     const { data: sub } = await adminClient
         .from("ad_subscriptions")
-        .select("artist_id, status, plan:ad_plans(max_portfolios)")
+        .select("artist_id, status, expires_at, plan:ad_plans(max_portfolios)")
         .eq("id", subscriptionId)
         .single();
     if (!sub) throw new Error("구독을 찾을 수 없습니다.");
-    // 종료된 구독에는 슬롯 변경 불가 — UI에서는 ACTIVE 만 노출되지만 API 단에서도 가드
-    if (sub.status === "CANCELLED" || sub.status === "EXPIRED") {
+    // 광고가 실제로 나가는 중일 때만 슬롯 변경 허용 — 화면 게이트(isAdRunning)와 같은 기준이라
+    // "UI 에선 막혔는데 API 는 통과" 가 생기지 않는다. status 컬럼만 보면 크론 실행 전 만료건이 통과한다.
+    if (!isAdRunning(sub.status, sub.expires_at)) {
         throw new Error("종료된 구독은 슬롯을 변경할 수 없습니다.");
     }
 
@@ -436,26 +410,24 @@ export interface AdminGrantStats {
 }
 
 /** 통계 4개를 head:true count 쿼리 4번으로 집계 — 행 데이터 fetch 없이 카운트만.
- *  expired 는 두 쿼리(status=EXPIRED + active-but-past-expiry)를 합쳐 .or() 문자열 보간 제거. */
+ *  활성/만료 조건은 목록 탭·배지와 같은 SSOT 표현식(adStatusFilterExpr)을 그대로 쓴다. */
 export async function fetchGrantStats(
     adminClient: SupabaseClient<Database>,
 ): Promise<AdminGrantStats> {
     const now = new Date();
-    const nowIso = now.toISOString();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    // KST 기준 월초 — 서버 로컬 시각으로 계산하면 Vercel(UTC)에서 매월 1일 00:00~09:00(KST) 부여가
+    // "이번달 부여" 에서 통째로 빠진다(개발 PC 는 KST 라 로컬에선 안 보이는 차이).
+    const monthStart = monthStartKST();
     const base = (): ReturnType<typeof adminClient.from> => adminClient.from("ad_subscriptions");
     const prefix = `${ADMIN_GRANT_PREFIX}%`;
 
-    const [totalRes, activeRes, expiredByStatusRes, expiredByDateRes, monthRes] = await Promise.all([
+    const [totalRes, activeRes, expiredRes, monthRes] = await Promise.all([
         base().select("id", { count: "exact", head: true }).like("merchant_uid", prefix),
         base().select("id", { count: "exact", head: true })
-            .like("merchant_uid", prefix).eq("status", STATUS_ACTIVE).gt("expires_at", nowIso),
-        // status 가 명시적으로 EXPIRED 인 것 (cron 처리됨)
+            .like("merchant_uid", prefix).or(adStatusFilterExpr(AD_STATUS_ACTIVE, now)),
+        // 크론 처리분(status=EXPIRED) + 미처리분(ACTIVE 인데 더 이상 안 나감)이 한 조건에 들어 있다
         base().select("id", { count: "exact", head: true })
-            .like("merchant_uid", prefix).eq("status", "EXPIRED"),
-        // status 는 ACTIVE 지만 만료 시점이 지난 것 (cron 미처리, expired와 중복 안 됨)
-        base().select("id", { count: "exact", head: true })
-            .like("merchant_uid", prefix).eq("status", STATUS_ACTIVE).lte("expires_at", nowIso),
+            .like("merchant_uid", prefix).or(adStatusFilterExpr(AD_STATUS_EXPIRED, now)),
         base().select("id", { count: "exact", head: true })
             .like("merchant_uid", prefix).gte("created_at", monthStart),
     ]);
@@ -463,7 +435,7 @@ export async function fetchGrantStats(
     return {
         totalCount: totalRes.count ?? 0,
         activeCount: activeRes.count ?? 0,
-        expiredCount: (expiredByStatusRes.count ?? 0) + (expiredByDateRes.count ?? 0),
+        expiredCount: expiredRes.count ?? 0,
         thisMonthCount: monthRes.count ?? 0,
     };
 }
@@ -537,6 +509,32 @@ function mapGrantRow(g: AdminGrantRowRaw, counts?: { impressions: number; clicks
     };
 }
 
+/**
+ * 목록 쿼리 조립 — 상태 필터는 만료일까지 함께 판정(규칙은 lib/ad-status.ts 한 곳).
+ * 반환 타입은 추론에 맡긴다: PostgrestFilterBuilder 제네릭을 손으로 적으면 select 문자열과 어긋나고,
+ * `ReturnType<typeof client.from>` 별칭은 Database 의 Views 가 비어 있어 any 로 붕괴해 검증을 잃는다.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- 위 주석 참조
+function buildGrantsQuery(
+    adminClient: SupabaseClient<Database>,
+    options: ListGrantsOptions,
+    searchArtistIds: string[] | null,
+    page: number,
+    pageSize: number,
+) {
+    let query = adminClient
+        .from("ad_subscriptions")
+        .select(GRANTS_SELECT, { count: "exact" })
+        .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`)
+        .order("created_at", { ascending: false });
+
+    if (options.status && options.status !== "ALL") {
+        query = query.or(adStatusFilterExpr(options.status, Date.now()));
+    }
+    if (searchArtistIds) query = query.in("artist_id", searchArtistIds);
+    return query.range((page - 1) * pageSize, page * pageSize - 1);
+}
+
 /** 관리자: 무료 부여 구독 목록 + 통계 (merchant_uid prefix `ADMIN_GRANT-` 로 필터) */
 export async function listAdminGrants(
     adminClient: SupabaseClient<Database>,
@@ -550,20 +548,18 @@ export async function listAdminGrants(
         if (searchArtistIds === null) return emptyGrantsResult(page, pageSize, includeStats);
     }
 
-    let query = adminClient
-        .from("ad_subscriptions")
-        .select(GRANTS_SELECT, { count: "exact" })
-        .like("merchant_uid", `${ADMIN_GRANT_PREFIX}%`)
-        .order("created_at", { ascending: false });
-
-    if (options.status && options.status !== "ALL") query = query.eq("status", options.status);
-    if (searchArtistIds) query = query.in("artist_id", searchArtistIds);
-    query = query.range((page - 1) * pageSize, page * pageSize - 1);
-
-    const [{ data: grants, count }, stats] = await Promise.all([
+    const query = buildGrantsQuery(adminClient, options, searchArtistIds, page, pageSize);
+    const [{ data: grants, count, error }, stats] = await Promise.all([
         query,
         includeStats ? fetchGrantStats(adminClient) : Promise.resolve(null),
     ]);
+    // 에러를 삼키면 화면이 "부여 내역이 없습니다" 로 거짓말하고 통계까지 어긋난다 → 라우트가 500 으로 매핑
+    if (error) {
+        // 원문 메시지는 컬럼·제약명을 노출한다 → 로그에만 남기고 호출부에는 고정 문구
+        // eslint-disable-next-line no-console -- error logging
+        console.error("[listAdminGrants] query failed:", error.message);
+        throw new Error("부여 목록을 불러오지 못했습니다");
+    }
 
     const totalCount = count ?? 0;
     const rows = (grants ?? []) as unknown as AdminGrantRowRaw[];

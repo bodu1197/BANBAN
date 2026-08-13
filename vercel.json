@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/collect-study-news",
       "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/expire-ads",
+      "schedule": "0 1 * * *"
     }
   ],
   "routes": [

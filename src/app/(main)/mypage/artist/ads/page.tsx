@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { PortfolioSlotManager } from "@/components/ads/PortfolioSlotManager";
 import type { AdSubscription } from "@/types/ads";
+import { effectiveAdStatus, isAdRunning } from "@/lib/ad-status";
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -133,11 +134,13 @@ function ActiveSubscriptionCard({ sub }: Readonly<{ sub: AdSubscription }>): Rea
 
 // ─── Subscription History ────────────────────────────────
 
-function SubscriptionHistoryItem({ sub }: Readonly<{ sub: AdSubscription }>): React.ReactElement {
+function SubscriptionHistoryItem({ sub, now }: Readonly<{ sub: AdSubscription; now: number }>): React.ReactElement {
     return (
         <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm">
             <div className="flex items-center gap-3">
-                <StatusBadge status={sub.status} />
+                {/* status 컬럼은 만료 크론 실행 전까지 ACTIVE 로 남는다 → 만료일 반영한 실질 상태로 표시.
+                    now 는 페이지가 고정한 시계 — 활성 목록과 다른 시계를 쓰면 같은 구독이 위/아래에서 갈린다 */}
+                <StatusBadge status={effectiveAdStatus(sub.status, sub.expires_at, now)} />
                 <span className="font-medium text-foreground">{sub.price_paid.toLocaleString()}원</span>
                 {sub.duration_months > 1 ? (
                     <span className="text-xs text-muted-foreground">({sub.duration_months}개월)</span>
@@ -153,7 +156,7 @@ function SubscriptionHistoryItem({ sub }: Readonly<{ sub: AdSubscription }>): Re
     );
 }
 
-function SubscriptionHistory({ subscriptions }: Readonly<{ subscriptions: AdSubscription[] }>): React.ReactElement | null {
+function SubscriptionHistory({ subscriptions, now }: Readonly<{ subscriptions: AdSubscription[]; now: number }>): React.ReactElement | null {
     if (subscriptions.length === 0) return null;
     return (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -161,7 +164,7 @@ function SubscriptionHistory({ subscriptions }: Readonly<{ subscriptions: AdSubs
                 <CreditCard className="h-4 w-4 text-muted-foreground" /> 결제 내역
             </h3>
             <div className="space-y-2">
-                {subscriptions.map(sub => <SubscriptionHistoryItem key={sub.id} sub={sub} />)}
+                {subscriptions.map(sub => <SubscriptionHistoryItem key={sub.id} sub={sub} now={now} />)}
             </div>
         </div>
     );
@@ -181,17 +184,42 @@ function WalletSummary({ wallet }: Readonly<{ wallet: WalletData }>): React.Reac
 
 // ─── Purchase CTA ────────────────────────────────────────
 
-function PurchaseCTA(): React.ReactElement {
+/** null = 조회 실패로 모름 → "없다" 고 단정하지 않는 중립 문구 */
+function ctaLabel(hasActive: boolean | null): string {
+    if (hasActive === null) return "광고 구매하기";
+    return hasActive ? "추가 광고 구매하기" : "광고 시작하기";
+}
+
+function PurchaseCTA({ hasActive }: Readonly<{ hasActive: boolean | null }>): React.ReactElement {
+    // 실행 중인 광고가 없는데 "추가" 라고 하면 거짓 안내 — 만료 반영 후엔 이 경우가 실제로 생긴다.
+    // 조회 실패로 목록을 못 받았으면(null) "없다" 고 단정하지 않는다 — 중복 구매를 유도하게 된다.
     return (
         <Link
             href="/mypage/artist/ads/purchase"
             className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 px-6 py-5 text-base font-bold text-amber-700 transition-all hover:border-amber-500 hover:bg-amber-100 focus-visible:border-amber-500 focus-visible:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
             <ShoppingCart className="h-5 w-5" />
-            <span>추가 광고 구매하기</span>
+            <span>{ctaLabel(hasActive)}</span>
             <Sparkles className="h-5 w-5" />
         </Link>
     );
+}
+
+/** 조회 실패("모름")와 "활성 0건" 을 구분한다 — 섞으면 CTA 문구가 거짓말한다 */
+function splitSubscriptions(dashboard: DashboardData | null, now: number): {
+    loadedSubscriptions: AdSubscription[] | null;
+    activeSubscriptions: AdSubscription[];
+    hasActive: boolean | null;
+} {
+    const loadedSubscriptions = Array.isArray(dashboard?.subscriptions) ? dashboard.subscriptions : null;
+    const activeSubscriptions = (loadedSubscriptions ?? []).filter(
+        (s) => isAdRunning(s.status, s.expires_at, now),
+    );
+    return {
+        loadedSubscriptions,
+        activeSubscriptions,
+        hasActive: loadedSubscriptions === null ? null : activeSubscriptions.length > 0,
+    };
 }
 
 // ─── Data Hook ───────────────────────────────────────────
@@ -243,9 +271,7 @@ export default function AdManagementPage(): React.ReactElement {
     if (!isArtist) { router.push("/login"); return <div />; }
     if (!artist) { router.push("/register/artist"); return <div />; }
 
-    const activeSubscriptions = (dashboard?.subscriptions ?? []).filter(
-        s => s.status === "ACTIVE" && s.expires_at && new Date(s.expires_at).getTime() > now,
-    );
+    const { loadedSubscriptions, activeSubscriptions, hasActive } = splitSubscriptions(dashboard, now);
 
     return (
         <div className="mx-auto w-full max-w-[1024px] pb-20">
@@ -265,10 +291,10 @@ export default function AdManagementPage(): React.ReactElement {
 
                 {activeSubscriptions.length > 0 ? <PortfolioSlotManager /> : null}
 
-                <PurchaseCTA />
+                <PurchaseCTA hasActive={hasActive} />
 
-                {dashboard?.subscriptions ? (
-                    <SubscriptionHistory subscriptions={dashboard.subscriptions} />
+                {loadedSubscriptions ? (
+                    <SubscriptionHistory subscriptions={loadedSubscriptions} now={now} />
                 ) : null}
             </div>
         </div>

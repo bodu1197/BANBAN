@@ -15,6 +15,8 @@ interface Props {
     p: AdminPortfolioOption;
     selected: boolean;
     disabled: boolean;
+    /** 조회 전용 — 눌리지 않는다(포커스·aria-pressed 도 붙이지 않는다) */
+    readOnly?: boolean;
     /** id 기반 콜백 — 부모는 useCallback 한 번만 만들면 모든 thumb 가 동일 ref 공유 → memo 효과 발휘 */
     onToggle: (id: string) => void;
 }
@@ -30,22 +32,24 @@ function getBorderCls(selected: boolean, disabled: boolean): string {
     return "border-white/10 hover:border-emerald-300 focus-visible:border-emerald-300";
 }
 
-function PortfolioThumbImpl({ p, selected, disabled, onToggle }: Readonly<Props>): React.ReactElement {
+function PortfolioThumbImpl({ p, selected, disabled, readOnly = false, onToggle }: Readonly<Props>): React.ReactElement {
     const borderCls = getBorderCls(selected, disabled);
     return (
+        // 조회 전용에서 aria-pressed 를 남기면 스크린리더가 "해제할 수 있는 토글" 로 안내하는데
+        // 실제로는 아무 반응이 없다 → 아예 눌리지 않게 disabled 로 두고 pressed 상태도 알리지 않는다.
         <button
             type="button"
             onClick={() => onToggle(p.id)}
-            disabled={disabled && !selected}
-            aria-pressed={selected}
-            aria-label={`${p.title} ${selected ? "선택됨" : "선택"}`}
+            disabled={readOnly || (disabled && !selected)}
+            aria-pressed={readOnly ? undefined : selected}
+            aria-label={readOnly ? p.title : `${p.title} ${selected ? "선택됨" : "선택"}`}
             className={`relative aspect-square overflow-hidden rounded-lg border-2 motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${borderCls}`}
         >
             {p.thumbnail ? (
                 <Image src={p.thumbnail} alt={p.title} fill sizes="100px" className="object-cover" />
             ) : (
                 <div className="flex h-full w-full items-center justify-center bg-zinc-800">
-                    <ImageIcon className="h-6 w-6 text-zinc-600" />
+                    <ImageIcon className="h-6 w-6 text-zinc-400" />
                 </div>
             )}
             {selected && (

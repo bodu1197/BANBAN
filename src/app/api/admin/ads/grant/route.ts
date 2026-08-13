@@ -4,10 +4,8 @@ import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { grantFreeSubscription, listAdminGrants } from "@/lib/supabase/ad-queries";
 import { VALID_GRANT_MONTHS_SET, GRANTS_PAGE_SIZE } from "@/lib/supabase/ad-constants";
 import { UUID_RE } from "@/lib/validation";
+import { isAdStatus } from "@/lib/ad-status";
 import type { AdSubscriptionStatus } from "@/types/ads";
-
-// AdSubscriptionStatus 와 동기화 필요 — 신규 status 추가 시 여기도 추가
-const VALID_STATUS = new Set<AdSubscriptionStatus | "ALL">(["ALL", "ACTIVE", "EXPIRED", "CANCELLED", "PENDING"]);
 
 interface GrantBody {
     artistId: string;
@@ -102,7 +100,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const { page, pageSize, status, search, includeStats } = parseGrantListQuery(request.url);
 
-    if (!VALID_STATUS.has(status)) {
+    // 허용 상태 목록은 lib/ad-status 하나만 — 라우트마다 수기 화이트리스트를 두면 갈라진다
+    if (status !== "ALL" && !isAdStatus(status)) {
         return NextResponse.json({ error: "유효하지 않은 status" }, { status: 400 });
     }
 

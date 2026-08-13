@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { ADMIN_GRANT_PREFIX } from "@/lib/supabase/ad-constants";
 import { UUID_RE } from "@/lib/validation";
+import { isAdRunning, AD_STATUS_ACTIVE } from "@/lib/ad-status";
+import { cancelSubscription } from "@/lib/supabase/ad-queries";
 
 /** POST: 부여 취소 — status CANCELLED 변경 (idempotent — ACTIVE 인 경우만 update) */
 export async function POST(
@@ -19,7 +21,7 @@ export async function POST(
 
     const { data: sub } = await auth.supabase
         .from("ad_subscriptions")
-        .select("id, status, merchant_uid")
+        .select("id, status, expires_at, merchant_uid")
         .eq("id", subscriptionId)
         .single();
     if (!sub) return NextResponse.json({ error: "구독을 찾을 수 없습니다" }, { status: 404 });
@@ -28,17 +30,16 @@ export async function POST(
     if (!sub.merchant_uid?.startsWith(ADMIN_GRANT_PREFIX)) {
         return NextResponse.json({ error: "관리자 부여 구독만 취소 가능합니다" }, { status: 400 });
     }
-    if (sub.status === "CANCELLED" || sub.status === "EXPIRED") {
+    // 광고가 실제로 나가는 중일 때만 취소 가능 — 화면 게이트(isAdRunning)와 같은 기준.
+    // status 컬럼만 보면 이미 끝난 부여가 CANCELLED 로 잘못 기록된다.
+    if (!isAdRunning(sub.status, sub.expires_at)) {
         return NextResponse.json({ error: "이미 종료된 구독입니다" }, { status: 400 });
     }
 
-    // 조건부 update — fetch 와 update 사이 race condition 방지 (ACTIVE 가 아닌 다른 상태로 바뀌었으면 silent skip)
-    const { error } = await auth.supabase
-        .from("ad_subscriptions")
-        .update({ status: "CANCELLED" })
-        .eq("id", subscriptionId)
-        .eq("status", "ACTIVE");
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // 원자적 claim 재사용(ad-queries) — SELECT 와 UPDATE 사이에 상태가 바뀌면 0행이 되는데,
+    // 그때 ok:true 를 주면 "취소했다" 는 거짓 응답이 된다. 영향 행 수를 보고 409 로 알린다.
+    const claimed = await cancelSubscription(subscriptionId, AD_STATUS_ACTIVE);
+    if (!claimed) return NextResponse.json({ error: "이미 종료된 구독입니다" }, { status: 409 });
 
     return NextResponse.json({ ok: true });
 }

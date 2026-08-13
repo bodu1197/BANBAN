@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { cancelSubscription } from "@/lib/supabase/ad-queries";
 import { refundPointsBestEffort } from "@/lib/supabase/point-queries";
+import { isAdRunning, AD_STATUS_ACTIVE } from "@/lib/ad-status";
 import { rateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { UUID_RE } from "@/lib/validation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -12,6 +14,7 @@ const IMP_SECRET = process.env.PORTONE_IMP_SECRET ?? "";
 type SubData = {
     id: string;
     status: string;
+    expires_at: string | null;
     imp_uid: string | null;
     merchant_uid: string | null;
     paid_by_cash: number;
@@ -54,7 +57,7 @@ async function cancelPortOnePayment(sub: SubData, reason: string): Promise<void>
 async function fetchSubscription(supabase: SupabaseClient<Database>, subscriptionId: string): Promise<SubData | null> {
     const { data } = await supabase
         .from("ad_subscriptions")
-        .select("id, status, imp_uid, merchant_uid, paid_by_cash, paid_by_points, artist:artists!inner(user_id)")
+        .select("id, status, expires_at, imp_uid, merchant_uid, paid_by_cash, paid_by_points, artist:artists!inner(user_id)")
         .eq("id", subscriptionId)
         .single();
     return data as SubData | null;
@@ -63,7 +66,7 @@ async function fetchSubscription(supabase: SupabaseClient<Database>, subscriptio
 /** Process the refund: 원자적 취소 claim → 성공 시에만 카드 취소(best effort) + 포인트 환불 (이중 환불 방지) */
 async function processRefund(sub: SubData): Promise<{ success: boolean; alreadyProcessed?: boolean }> {
     // ACTIVE → CANCELLED 원자적 claim. 동시/재시도 호출 중 1건만 true → 이중 환불 차단(H4).
-    const claimed = await cancelSubscription(sub.id, "ACTIVE");
+    const claimed = await cancelSubscription(sub.id, AD_STATUS_ACTIVE);
     if (!claimed) return { success: true, alreadyProcessed: true };
 
     // claim 성공한 호출만 환불 수행
@@ -93,12 +96,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const auth = await requireAdmin();
     if (!auth.ok) return auth.response;
 
-    const body = await request.json() as { subscriptionId: string };
-    if (!body.subscriptionId) return NextResponse.json({ error: "missing_subscription_id" }, { status: 400 });
+    const body = await request.json().catch(() => null) as { subscriptionId?: string } | null;
+    if (!body?.subscriptionId) return NextResponse.json({ error: "missing_subscription_id" }, { status: 400 });
+    if (!UUID_RE.test(body.subscriptionId)) return NextResponse.json({ error: "invalid_subscription_id" }, { status: 400 });
 
     const sub = await fetchSubscription(auth.supabase, body.subscriptionId);
     if (!sub) return NextResponse.json({ error: "not_found" }, { status: 404 });
-    if (sub.status !== "ACTIVE") return NextResponse.json({ error: "not_active" }, { status: 400 });
+    // 만료일까지 반영 — status 컬럼만 보면 기간을 다 소진한 광고가 전액 환불되고, 만료 크론이 도는
+    // 순간 같은 요청이 거부로 바뀌어 환불 가능 여부가 정책이 아니라 크론 타이밍에 좌우된다.
+    if (!isAdRunning(sub.status, sub.expires_at)) return NextResponse.json({ error: "not_active" }, { status: 400 });
 
     await processRefund(sub);
 

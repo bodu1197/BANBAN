@@ -25,7 +25,7 @@ export function AdminSearchBar({ onSearch, placeholder, accentColor }: Readonly<
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-                    className={`w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-${accent}-500 focus:outline-none`}
+                    className={`w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-zinc-400 focus:border-${accent}-500 focus:outline-none`}
                 />
             </div>
             <button
@@ -48,11 +48,11 @@ export function AdminPagination({ currentPage, total, limit, onPageChange }: Rea
     if (totalPages <= 1) return null;
     return (
         <div className="flex items-center justify-center gap-2 py-4">
-            <button type="button" disabled={currentPage <= 1} aria-label="이전 페이지" className="rounded-lg bg-white/10 p-2 text-white disabled:opacity-30 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/20" onClick={() => onPageChange(currentPage - 1)}>
+            <button type="button" disabled={currentPage <= 1} aria-label="이전 페이지" className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 p-2 text-white disabled:opacity-30 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/20" onClick={() => onPageChange(currentPage - 1)}>
                 <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="text-sm text-zinc-400">{currentPage} / {totalPages}</span>
-            <button type="button" disabled={currentPage >= totalPages} aria-label="다음 페이지" className="rounded-lg bg-white/10 p-2 text-white disabled:opacity-30 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/20" onClick={() => onPageChange(currentPage + 1)}>
+            <button type="button" disabled={currentPage >= totalPages} aria-label="다음 페이지" className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 p-2 text-white disabled:opacity-30 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-white/20" onClick={() => onPageChange(currentPage + 1)}>
                 <ChevronRight className="h-4 w-4" />
             </button>
         </div>

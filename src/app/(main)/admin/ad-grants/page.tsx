@@ -3,7 +3,6 @@
 /* eslint-disable max-lines-per-function */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-// useRef: useGrants 의 statsFetchedRef 에서 사용
 import {
     Gift,
     Crown,
@@ -13,6 +12,7 @@ import {
     TrendingUp,
     ChevronDown,
     ChevronUp,
+    Clock,
     Trash2,
     Eye,
     MousePointerClick,
@@ -28,6 +28,7 @@ import {
     AdminPagination,
 } from "@/components/admin/admin-shared";
 import type { AdSubscriptionStatus } from "@/types/ads";
+import { effectiveAdStatus, AD_STATUS_ACTIVE } from "@/lib/ad-status";
 import type { AdminGrantRow, AdminGrantStats } from "@/lib/supabase/ad-queries";
 import { GRANTS_PAGE_SIZE } from "@/lib/supabase/ad-constants";
 import { NewGrantModal } from "./NewGrantModal";
@@ -56,11 +57,12 @@ function daysUntil(iso: string | null): number {
 }
 
 // WCAG AA 명도 대비 4.5:1 충족을 위해 -300 톤 사용 (-400 은 어두운 배경 위 텍스트로 부족)
-const STATUS_LABELS: Record<AdSubscriptionStatus, { label: string; cls: string }> = {
-    ACTIVE: { label: "활성", cls: "bg-emerald-500/20 text-emerald-300" },
-    PENDING: { label: "대기", cls: "bg-amber-500/20 text-amber-300" },
-    EXPIRED: { label: "만료", cls: "bg-zinc-500/20 text-zinc-300" },
-    CANCELLED: { label: "취소", cls: "bg-red-500/20 text-red-300" },
+// 라벨·색·아이콘을 한 항목에 둔다 — 아이콘만 따로 분기하면 "대기" 에 실패 아이콘이 붙는 식으로 어긋난다
+const STATUS_LABELS: Record<AdSubscriptionStatus, { label: string; cls: string; Icon: typeof CheckCircle2 }> = {
+    ACTIVE: { label: "활성", cls: "bg-emerald-500/20 text-emerald-300", Icon: CheckCircle2 },
+    PENDING: { label: "대기", cls: "bg-amber-500/20 text-amber-300", Icon: Clock },
+    EXPIRED: { label: "만료", cls: "bg-zinc-500/20 text-zinc-300", Icon: XCircle },
+    CANCELLED: { label: "취소", cls: "bg-red-500/20 text-red-300", Icon: XCircle },
 };
 
 function StatusBadge({ status }: Readonly<{ status: AdSubscriptionStatus }>): React.ReactElement {
@@ -68,7 +70,7 @@ function StatusBadge({ status }: Readonly<{ status: AdSubscriptionStatus }>): Re
     const cfg = STATUS_LABELS[status];
     return (
         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${cfg.cls}`}>
-            {status === "ACTIVE" ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+            <cfg.Icon className="h-3 w-3" aria-hidden="true" />
             {cfg.label}
         </span>
     );
@@ -128,7 +130,7 @@ function FilterBar({ status, onStatusChange, onSearch, onNewGrant }: Readonly<{
                         type="button"
                         onClick={() => onStatusChange(f.key)}
                         aria-pressed={status === f.key}
-                        className={`min-h-[36px] rounded-lg px-3 py-1.5 text-xs font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                        className={`min-h-[44px] rounded-lg px-3 py-1.5 text-xs font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                             status === f.key
                                 ? "bg-emerald-500/20 text-emerald-300"
                                 : "bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white focus-visible:bg-white/10 focus-visible:text-white"
@@ -154,17 +156,16 @@ function FilterBar({ status, onStatusChange, onSearch, onNewGrant }: Readonly<{
 
 // ─── Grant Row — 분리된 expanded 패널로 중첩 축소 ──────────
 
-function GrantRowSummary({ grant }: Readonly<{ grant: AdminGrantRow }>): React.ReactElement {
-    const daysLeft = daysUntil(grant.expiresAt);
+function GrantRowSummary({ grant, status }: Readonly<{ grant: AdminGrantRow; status: AdSubscriptionStatus }>): React.ReactElement {
     return (
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <div className="flex items-center gap-2">
                 <p className="truncate text-sm font-medium text-white">{grant.artistTitle}</p>
-                <StatusBadge status={grant.status} />
+                <StatusBadge status={status} />
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-zinc-300">
                 <span><CalendarDays className="mr-1 inline h-3 w-3" />{grant.durationMonths}개월</span>
-                <span>만료 {formatDate(grant.expiresAt)} (D-{daysLeft})</span>
+                <span>만료 {formatDate(grant.expiresAt)}{status === AD_STATUS_ACTIVE ? ` (D-${daysUntil(grant.expiresAt)})` : ""}</span>
                 <span><Megaphone className="mr-1 inline h-3 w-3" />슬롯 {grant.slotCount}개</span>
                 <span><Eye className="mr-1 inline h-3 w-3" />{grant.impressionCount.toLocaleString()}</span>
                 <span><MousePointerClick className="mr-1 inline h-3 w-3" />{grant.clickCount.toLocaleString()}</span>
@@ -173,22 +174,27 @@ function GrantRowSummary({ grant }: Readonly<{ grant: AdminGrantRow }>): React.R
     );
 }
 
-function GrantRowExpanded({ grant, onCancel, onReload, cache, onCacheUpdate }: Readonly<{
+function GrantRowExpanded({ grant, status, onCancel, onReload, cache, onCacheUpdate }: Readonly<{
     grant: AdminGrantRow;
+    status: AdSubscriptionStatus;
     onCancel: () => void;
     onReload: () => void;
     cache: SlotsCacheData | null;
     onCacheUpdate: (data: SlotsCacheData) => void;
 }>): React.ReactElement {
+    // 종료된 부여는 서버(setSlotsAsAdmin)가 슬롯 변경을 거부한다 → 편집기를 그대로 띄우면 고르고 저장한
+    // 뒤에야 에러를 만나는 막다른 길이 된다. 대신 읽기 전용으로 "무엇이 부스트 중이었는지"는 남긴다.
+    const running = status === AD_STATUS_ACTIVE;
     return (
         <div id={`grant-expand-${grant.id}`} className="border-t border-white/10 bg-black/20 p-4">
             <SlotEditor
                 subscriptionId={grant.id}
+                readOnly={!running}
                 onUpdated={onReload}
                 cache={cache}
                 onCacheUpdate={onCacheUpdate}
             />
-            {grant.status === "ACTIVE" && (
+            {running && (
                 <div className="mt-4 flex justify-end">
                     <button
                         type="button"
@@ -210,6 +216,9 @@ function GrantRowCard({ grant, expanded, onToggle, onCancel, onReload, cache, on
     onCacheUpdate: (data: SlotsCacheData) => void;
 }>): React.ReactElement {
     const expandId = `grant-expand-${grant.id}`;
+    // status 컬럼은 만료 크론 실행 전까지 ACTIVE 로 남는다 → 행마다 실질 상태를 한 번 계산해
+    // 배지·D-day·편집기·취소 버튼이 전부 같은 값을 쓰게 한다(각자 Date.now() 를 부르면 갈릴 수 있다).
+    const status = effectiveAdStatus(grant.status, grant.expiresAt);
     return (
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
             <button
@@ -225,12 +234,13 @@ function GrantRowCard({ grant, expanded, onToggle, onCancel, onReload, cache, on
                         <Image src={grant.artistProfileImage} alt="" fill sizes="40px" className="object-cover" />
                     ) : null}
                 </div>
-                <GrantRowSummary grant={grant} />
+                <GrantRowSummary grant={grant} status={status} />
                 {expanded ? <ChevronUp className="h-4 w-4 text-zinc-300" aria-hidden="true" /> : <ChevronDown className="h-4 w-4 text-zinc-300" aria-hidden="true" />}
             </button>
             {expanded && (
                 <GrantRowExpanded
                     grant={grant}
+                    status={status}
                     onCancel={onCancel}
                     onReload={onReload}
                     cache={cache}

@@ -29,6 +29,12 @@ export function todayStartKST(): string {
   return new Date(`${kstDate}T00:00:00+09:00`).toISOString();
 }
 
+/** Get KST start-of-month as ISO string for DB queries ("이번 달" 집계 기준) */
+export function monthStartKST(): string {
+  // 서버 로컬 타임존으로 new Date(y, m, 1) 을 만들면 Vercel(UTC)에서 KST 기준 1일 00:00~09:00 이 빠진다
+  return new Date(`${todayKST().slice(0, 7)}-01T00:00:00+09:00`).toISOString();
+}
+
 /** Get a date N days ago in KST as ISO string */
 export function daysAgoKST(n: number): string {
   const d = new Date(new Date().toLocaleString("en-US", { timeZone: KST }));
