@@ -7,18 +7,13 @@ import Image from "next/image";
 import { ArrowLeft, ImagePlus, Youtube, X } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
 import { POST_TITLE_MAX, POST_CONTENT_MAX } from "@/lib/post-limits";
+import type { WriteBoard } from "@/lib/board/constants";
 import { createPost } from "@/lib/actions/community";
 
 const t = STRINGS.community;
-
-const BOARD_OPTIONS = [
-  { key: "SHOP_IN_SHOP", label: t.shopInShop },
-  { key: "QNA", label: t.qna },
-] as const;
 
 function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, onFileChange }: Readonly<{
   imageUrl: string; uploading: boolean; onClear: () => void;
@@ -66,28 +61,6 @@ function YouTubeInput({ id, value, onChange }: Readonly<{
   );
 }
 
-function BoardSelector({ board, onSelect }: Readonly<{
-  board: string; onSelect: (key: string) => void;
-}>): React.ReactElement {
-  return (
-    <div className="mb-4">
-      <label className="mb-1.5 block text-sm font-medium">{t.selectCategory}</label>
-      <div className="flex gap-2">
-        {BOARD_OPTIONS.map((opt) => (
-          <button key={opt.key} type="button" onClick={() => onSelect(opt.key)}
-            className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              "hover:bg-brand-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              board === opt.key ? "bg-brand-primary text-white" : "bg-muted text-muted-foreground",
-            )}>
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 async function uploadCommunityImage(file: File): Promise<string> {
   const form = new globalThis.FormData();
   form.append("file", file);
@@ -112,18 +85,17 @@ function buildPostFormData(board: string, title: string, content: string, imageU
   return formData;
 }
 
-function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, fileRef, onBoardSelect, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
-  board: string; title: string; content: string; imageUrl: string; youtubeUrl: string;
+function PostWriteForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
+  title: string; content: string; imageUrl: string; youtubeUrl: string;
   uploading: boolean; isPending: boolean; canSubmit: boolean;
   fileRef: React.RefObject<HTMLInputElement | null>;
-  onBoardSelect: (v: string) => void; onTitleChange: (v: string) => void;
+  onTitleChange: (v: string) => void;
   onContentChange: (v: string) => void; onImageClear: () => void;
   onPickFile: () => void; onImageUpload: (file: File) => void;
   onYoutubeChange: (v: string) => void; onSubmit: () => void;
 }>): React.ReactElement {
   return (
     <div className="px-4 py-4">
-      <BoardSelector board={board} onSelect={onBoardSelect} />
       <div className="mb-4">
         <label htmlFor="post-title" className="mb-1.5 block text-sm font-medium">{t.postTitle}</label>
         <input id="post-title" type="text" value={title} onChange={(e) => onTitleChange(e.target.value)}
@@ -140,17 +112,19 @@ function PostWriteForm({ board, title, content, imageUrl, youtubeUrl, uploading,
       <PostImageUpload imageUrl={imageUrl} uploading={uploading} onClear={onImageClear}
         onPickFile={onPickFile} fileRef={fileRef} onFileChange={onImageUpload} />
       <YouTubeInput id="youtube-url" value={youtubeUrl} onChange={onYoutubeChange} />
-      <Button onClick={onSubmit} disabled={isPending || !canSubmit} className="w-full">
+      {/* 비활성 대신 눌리게 두고 handleSubmit 이 모자란 항목을 알려준다 —
+          disabled 버튼은 포커스도 안 잡혀 이유를 물어볼 방법이 없다. */}
+      <Button onClick={onSubmit} disabled={isPending} aria-disabled={!canSubmit} className="w-full">
         {isPending ? STRINGS.common.saving : t.submit}
       </Button>
     </div>
   );
 }
 
-export function PostWriteClient(): React.ReactElement {
+/** 글이 올라갈 게시판은 목록에서 보던 탭이 정한다 — 여기서 다시 고르게 하지 않는다. */
+export function PostWriteClient({ board }: Readonly<{ board: WriteBoard }>): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [board, setBoard] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -158,7 +132,7 @@ export function PostWriteClient(): React.ReactElement {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const canSubmit = Boolean(board) && Boolean(title.trim()) && Boolean(content.trim());
+  const canSubmit = Boolean(title.trim()) && Boolean(content.trim());
 
   const handleImageUpload = useCallback(async (file: File) => {
     setUploading(true);
@@ -171,7 +145,8 @@ export function PostWriteClient(): React.ReactElement {
   }, []);
 
   function handleSubmit(): void {
-    if (!canSubmit) return;
+    // 버튼을 죽여 놓고 이유를 안 알려주면 사용자는 뭐가 모자란지 알 길이 없다.
+    if (!canSubmit) { toast.error(t.titleContentRequired); return; }
     startTransition(async () => {
       const formData = buildPostFormData(board, title, content, imageUrl, youtubeUrl);
       const result = await createPost(formData);
@@ -190,9 +165,9 @@ export function PostWriteClient(): React.ReactElement {
         <h1 className="flex-1 text-base font-bold">{t.writePost}</h1>
       </div>
       <PostWriteForm
-        board={board} title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
+        title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
         uploading={uploading} isPending={isPending} canSubmit={canSubmit} fileRef={fileRef}
-        onBoardSelect={setBoard} onTitleChange={setTitle} onContentChange={setContent}
+        onTitleChange={setTitle} onContentChange={setContent}
         onImageClear={() => setImageUrl("")} onPickFile={() => fileRef.current?.click()}
         onImageUpload={handleImageUpload} onYoutubeChange={setYoutubeUrl} onSubmit={handleSubmit}
       />

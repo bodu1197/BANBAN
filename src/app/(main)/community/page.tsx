@@ -10,6 +10,7 @@ import {
   type ReviewComment,
 } from "@/lib/supabase/queries";
 import { fetchBoardList, type BoardListItem } from "@/lib/board/queries";
+import { boardFromTab } from "@/lib/board/constants";
 import { getUser } from "@/lib/supabase/auth";
 import {
   renderCommunityHub,
@@ -47,8 +48,8 @@ export default async function Page({ searchParams }: Readonly<PageProps>): Promi
     // 뷰티랩 = 백과사전 글을 커뮤니티 안에서 동일 카드(/encyclopedia 와 공유)로 노출.
     articles = (await fetchBoardList({ limit: 60 })).items;
   } else {
-    const typeBoard = activeTab === "qna" ? "QNA" : "SHOP_IN_SHOP";
-    posts = await fetchCommunityPosts({ typeBoard });
+    // 글쓰기와 같은 함수를 쓴다 — 규칙이 두 벌이면 "보던 탭 ≠ 저장된 게시판" 이 생긴다.
+    posts = await fetchCommunityPosts({ typeBoard: boardFromTab(activeTab) });
   }
 
   return renderCommunityHub({

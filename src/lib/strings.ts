@@ -553,7 +553,6 @@ export const STRINGS ={
     "postTitlePlaceholder": "제목을 입력해주세요",
     "postContent": "내용",
     "postContentPlaceholder": "내용을 입력해주세요",
-    "selectCategory": "카테고리를 선택해주세요",
     "submit": "등록",
     "edit": "수정",
     "delete": "삭제",
@@ -574,7 +573,8 @@ export const STRINGS ={
     "reportAlready": "이미 신고한 게시글입니다",
     "reportFailed": "신고 처리에 실패했습니다",
     "commentLoginRequired": "댓글은 회원만 작성할 수 있습니다.",
-    "loginToComment": "로그인하고 댓글 쓰기"
+    "loginToComment": "로그인하고 댓글 쓰기",
+    "titleContentRequired": "제목과 내용을 입력해주세요"
   },
   "courseDetail": {
     "highlights": "특장점",

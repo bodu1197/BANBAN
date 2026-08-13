@@ -94,10 +94,11 @@ function PostBoardSection({ posts, tab }: Readonly<{
 }>): React.ReactElement {
   return (
     <section aria-label={COMMUNITY_TABS.find((x) => x.key === tab)?.label ?? t.title}>
-      {/* 글쓰기는 회원 전용 — 비로그인은 /community/write 에서 로그인으로 보낸다. */}
+      {/* 글쓰기는 회원 전용 — 비로그인은 /community/write 에서 로그인으로 보낸다.
+          보던 탭을 넘겨 글쓰기에서 게시판을 다시 고르지 않게 한다. */}
       <div className="flex justify-end px-4 py-3">
         <Link
-          href="/community/write"
+          href={`/community/write?tab=${tab}`}
           className="flex items-center gap-1 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <PenSquare className="h-3.5 w-3.5" aria-hidden="true" />

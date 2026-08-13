@@ -9,6 +9,7 @@ import { containsProfanity } from "@/lib/utils/profanity-filter";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
 import { getClientIp } from "@/lib/rate-limit";
 import { isCurrentUserAdmin } from "@/lib/supabase/is-current-user-admin";
+import { boardFromTab } from "@/lib/board/constants";
 import { POST_TITLE_MAX, POST_CONTENT_MAX, COMMENT_MAX } from "@/lib/post-limits";
 import type { Database } from "@/types/database";
 
@@ -257,14 +258,15 @@ interface PostRowInput {
  * @returns 이미지 주소가 허용되지 않으면 undefined (조용히 버리지 않는다 — updatePost 와 같은 계약)
  */
 function parsePostFields(formData: FormData): PostRowInput | undefined {
-  const rawBoard = formString(formData, "type_board") || "QNA";
+  const rawBoard = formString(formData, "type_board");
   const imageUrl = safeImageUrl(formString(formData, "image_url"));
   if (imageUrl === undefined) return undefined;
 
   return {
     title: formString(formData, "title"),
     content: formString(formData, "content"),
-    type_board: ALLOWED_WRITE_BOARDS.has(rawBoard) ? rawBoard : "QNA",
+    // 기본값은 boardFromTab 과 같은 곳에서 온다 — 서버만 QNA 로 떨어지면 조용히 다른 게시판에 저장된다.
+    type_board: ALLOWED_WRITE_BOARDS.has(rawBoard) ? rawBoard : boardFromTab(undefined),
     type_post: formString(formData, "type_post") || "BEAUTY",
     type_artist: "SEMI_PERMANENT",
     image_url: imageUrl,
