@@ -3,12 +3,11 @@ import { notFound } from "next/navigation";
 import { fetchPostById } from "@/lib/supabase/community-queries";
 import { getUser } from "@/lib/supabase/auth";
 import { recordPostView } from "@/lib/actions/community";
-import { fetchGuestIps } from "@/lib/guest-auth";
 import { isCurrentUserAdmin } from "@/lib/supabase/is-current-user-admin";
 import { buildPageSeo } from "@/lib/seo";
 import { PostDetailClient } from "./PostDetailClient";
 
-// 관리자에게만 작성 IP 를 실어 보내므로 응답을 공유 캐시에 담으면 안 된다.
+// 로그인 여부·관리자 여부에 따라 화면이 달라지므로 공유 캐시에 담으면 안 된다.
 // (지금도 getUser() 의 쿠키 접근으로 동적이지만, 그 암묵적 조건에 기대지 않는다.)
 export const dynamic = "force-dynamic";
 
@@ -44,21 +43,12 @@ export default async function Page({ params }: Readonly<PageProps>): Promise<Rea
   recordPostView(id).catch(() => {});
 
   const isAdmin = user ? await isCurrentUserAdmin() : false;
-  // 작성 IP 는 관리자에게만 넘긴다 — 일반 사용자 응답에는 아예 실리지 않는다.
-  // 게스트가 쓴 글·댓글만 조회한다(회원 글은 guest_authors 에 행이 없다).
-  const guestIps = isAdmin
-    ? await fetchGuestIps(
-        post.isGuest ? id : null,
-        post.comments.filter((c) => c.isGuest).map((c) => c.id),
-      )
-    : {};
 
   return (
     <PostDetailClient
       post={post}
       userId={user?.id ?? null}
       isAdmin={isAdmin}
-      guestIps={guestIps}
     />
   );
 }

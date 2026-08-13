@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { STRINGS } from "@/lib/strings";
 import { getUser } from "@/lib/supabase/auth";
 import { PostWriteClient } from "./PostWriteClient";
@@ -9,8 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Page(): Promise<React.ReactElement> {
-  // 비로그인도 닉네임·비밀번호로 작성할 수 있다.
+  // 글쓰기는 회원만 — 비로그인은 로그인 후 이 페이지로 돌아온다.
   const user = await getUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent("/community/write")}`);
 
-  return <PostWriteClient isGuest={!user} />;
+  return <PostWriteClient />;
 }

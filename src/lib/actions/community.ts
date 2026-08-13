@@ -1,31 +1,20 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { containsProfanity } from "@/lib/utils/profanity-filter";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
-import {
-  prepareGuest,
-  insertGuestPost,
-  insertGuestComment,
-  verifyGuestPassword,
-  getRequestIp,
-  GUEST_FLOOD_ERROR,
-  LOCK_MINUTES,
-  type GuestInput,
-  type GuestPostRow,
-  type GuestTarget,
-} from "@/lib/guest-auth";
+import { getClientIp } from "@/lib/rate-limit";
 import { isCurrentUserAdmin } from "@/lib/supabase/is-current-user-admin";
 import { POST_TITLE_MAX, POST_CONTENT_MAX, COMMENT_MAX } from "@/lib/post-limits";
 import type { Database } from "@/types/database";
 
 const COMMUNITY_PATH = "/community";
 const PROFANITY_ERROR = "부적절한 표현이 포함되어 있습니다";
-const GUEST_PASSWORD_ERROR = "비밀번호가 일치하지 않습니다";
-const GUEST_LOCKED_ERROR = `비밀번호를 여러 번 틀렸습니다. ${LOCK_MINUTES}분 뒤에 다시 시도해주세요`;
+const LOGIN_REQUIRED_ERROR = "로그인이 필요합니다";
 const FORBIDDEN_ERROR = "권한이 없습니다";
 const NOT_FOUND_ERROR = "글을 찾을 수 없습니다";
 // DB 오류 원문(테이블·제약 이름)을 사용자에게 보여주지 않는다.
@@ -71,9 +60,9 @@ export async function createComment(
   postId: string,
   content: string,
   parentId?: string,
-  guest?: GuestInput,
 ): Promise<CreateCommentResult> {
   const user = await getUser();
+  if (!user) return { success: false, error: LOGIN_REQUIRED_ERROR };
 
   const contentError = validateText(content, COMMENT_MAX, "댓글");
   if (contentError) return { success: false, error: contentError };
@@ -81,25 +70,13 @@ export async function createComment(
   const targetError = await commentTargetError(postId, parentId);
   if (targetError) return { success: false, error: targetError };
 
-  // RLS(auth.uid() = user_id)로는 게스트 댓글을 넣을 수 없으므로 admin 클라이언트로 쓴다.
-  const db = createAdminClient();
-  const base = { post_id: postId, content, parent_id: parentId ?? null };
-
-  if (user) {
-    const { error } = await db.from("comments").insert({ ...base, user_id: user.id });
-    if (error) {
-      logDbError("createComment", error);
-      return { success: false, error: SAVE_FAILED_ERROR };
-    }
-  } else {
-    const prepared = await prepareGuest(guest);
-    if (!prepared.ok) return { success: false, error: prepared.error };
-
-    // 도배 카운트·본문·비밀번호를 한 트랜잭션에 넣는다(RPC). null = 도배로 차단됨.
-    const id = await insertGuestComment(postId, parentId ?? null, content, prepared)
-      .catch(() => undefined);
-    if (id === undefined) return { success: false, error: SAVE_FAILED_ERROR };
-    if (id === null) return { success: false, error: GUEST_FLOOD_ERROR };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("comments")
+    .insert({ post_id: postId, content, parent_id: parentId ?? null, user_id: user.id });
+  if (error) {
+    logDbError("createComment", error);
+    return { success: false, error: SAVE_FAILED_ERROR };
   }
 
   // comments_count is maintained by DB trigger (trg_post_comments_count)
@@ -128,23 +105,21 @@ export async function togglePostLike(postId: string): Promise<{
     .eq("likeable_id", postId)
     .maybeSingle() as { data: LikeRow | null };
 
-  if (existing) {
-    await supabase.from("likes").delete().eq("id", existing.id);
-    // likes_count is maintained by DB trigger (trg_post_likes_count)
-    revalidatePath(COMMUNITY_PATH);
-    revalidatePath(`${COMMUNITY_PATH}/${postId}`);
-    return { success: true, isLiked: false };
+  // 쓰기 결과를 무시하면 실패해도 하트가 켜진 것처럼 보이고, 새로고침하면 되돌아간다.
+  const wasLiked = Boolean(existing);
+  const { error } = wasLiked
+    ? await supabase.from("likes").delete().eq("id", (existing as LikeRow).id)
+    : await supabase.from("likes").insert({ user_id: user.id, likeable_type: "post", likeable_id: postId });
+
+  if (error) {
+    logDbError("togglePostLike", error);
+    return { success: false, isLiked: wasLiked, error: SAVE_FAILED_ERROR };
   }
 
-  await supabase.from("likes").insert({
-    user_id: user.id,
-    likeable_type: "post",
-    likeable_id: postId,
-  });
   // likes_count is maintained by DB trigger (trg_post_likes_count)
   revalidatePath(COMMUNITY_PATH);
   revalidatePath(`${COMMUNITY_PATH}/${postId}`);
-  return { success: true, isLiked: true };
+  return { success: true, isLiked: !wasLiked };
 }
 
 export interface ReportPostResult {
@@ -213,7 +188,8 @@ export async function reportPost(
  */
 export async function recordPostView(postId: string): Promise<void> {
   const user = await getUser().catch(() => null);
-  // anon 클라이언트로는 안 된다 — post_views 의 SELECT 정책을 없애(방문 IP 비공개) ON CONFLICT 경로가 막힌다.
+  // 유일한 기록 경로다. anon 에게는 INSERT 정책을 주지 않는다(공개 키로 조회수를 부풀릴 수 있다) —
+  // 그래서 여기서만 service_role 로 쓴다. 방문 IP 는 어차피 아무에게도 읽히지 않는다(SELECT 정책 없음).
   const supabase = createAdminClient();
 
   const row: { post_id: string; user_id?: string; ip_address?: string } = { post_id: postId };
@@ -221,7 +197,7 @@ export async function recordPostView(postId: string): Promise<void> {
   if (user) {
     row.user_id = user.id;
   } else {
-    const ip = await getRequestIp();
+    const ip = getClientIp(await headers());
     if (ip === "unknown") return; // 유저도 IP도 없으면 기록 불가
     row.ip_address = ip;
   }
@@ -265,11 +241,22 @@ function safeImageUrl(raw: string): string | null | undefined {
   return raw.startsWith(`${base}/storage/v1/object/public/`) ? raw : undefined;
 }
 
+/** posts 에 넣을 값 (작성자 컬럼 제외) — 필드명이 바뀌면 컴파일이 깨지도록 명시한다. */
+interface PostRowInput {
+  title: string;
+  content: string;
+  type_board: string;
+  type_post: string;
+  type_artist: string;
+  image_url: string | null;
+  youtube_url: string | null;
+}
+
 /**
  * 글쓰기 폼 → posts 행 (작성자 컬럼 제외). 허용되지 않은 게시판은 QNA 로 강제된다.
  * @returns 이미지 주소가 허용되지 않으면 undefined (조용히 버리지 않는다 — updatePost 와 같은 계약)
  */
-function parsePostFields(formData: FormData): GuestPostRow | undefined {
+function parsePostFields(formData: FormData): PostRowInput | undefined {
   const rawBoard = formString(formData, "type_board") || "QNA";
   const imageUrl = safeImageUrl(formString(formData, "image_url"));
   if (imageUrl === undefined) return undefined;
@@ -291,15 +278,15 @@ export async function createPost(formData: FormData): Promise<{
   error?: string;
 }> {
   const user = await getUser();
+  if (!user) return { success: false, error: LOGIN_REQUIRED_ERROR };
+
   const base = parsePostFields(formData);
   if (!base) return { success: false, error: IMAGE_URL_ERROR };
 
   const validationError = validatePostContent(base.title, base.content);
   if (validationError) return { success: false, error: validationError };
 
-  if (!user) return createGuestPost(base, readGuestInput(formData));
-
-  // 회원 글은 RLS(posts_insert_auth: auth.uid() = user_id)를 그대로 통과시킨다.
+  // 회원 글은 RLS(posts_insert: user_id = auth.uid())를 그대로 통과시킨다.
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
@@ -317,52 +304,19 @@ export async function createPost(formData: FormData): Promise<{
   return { success: true, postId: data.id };
 }
 
-/** 비로그인 글 저장 — 도배 카운트·본문·비밀번호가 한 트랜잭션(RPC)에서 처리된다. */
-async function createGuestPost(
-  base: GuestPostRow,
-  guest: GuestInput | undefined,
-): Promise<{ success: boolean; postId?: string; error?: string }> {
-  const prepared = await prepareGuest(guest);
-  if (!prepared.ok) return { success: false, error: prepared.error };
-
-  const postId = await insertGuestPost(base, prepared).catch(() => undefined);
-  if (postId === undefined) return { success: false, error: SAVE_FAILED_ERROR };
-  if (postId === null) return { success: false, error: GUEST_FLOOD_ERROR };
-
-  revalidatePath(COMMUNITY_PATH);
-  // 게스트 글은 검증되지 않은 작성자라 색인을 먼저 요청하지 않는다(공개·크롤은 그대로).
-  return { success: true, postId };
-}
-
-/** 글쓰기 폼에서 게스트 닉네임·비밀번호 읽기 (비로그인 작성 시에만 채워진다). */
-function readGuestInput(formData: FormData): GuestInput | undefined {
-  const name = formData.get("guest_name");
-  const password = formData.get("guest_password");
-  if (typeof name !== "string" || typeof password !== "string") return undefined;
-  return { name, password };
-}
-
 /**
  * 글·댓글 수정/삭제 권한 검사 (수정·삭제 4개 액션의 단일 진입점).
- * - 회원 글(ownerId 있음): 본인 또는 관리자
- * - 게스트 글(ownerId 없음): 관리자, 또는 작성 시 정한 비밀번호가 맞을 때
+ * 본인 글이거나 관리자일 때만 통과한다.
  *
  * @returns 통과하면 null, 막히면 사용자에게 보여줄 사유
  */
 async function manageDenyReason(
-  target: GuestTarget,
-  rowId: string,
   ownerId: string | null,
   userId: string | null,
-  guestPassword?: string,
 ): Promise<string | null> {
-  if (userId && ownerId === userId) return null;
-  if (userId && await isCurrentUserAdmin()) return null;
-  if (ownerId !== null) return FORBIDDEN_ERROR;
-
-  const verdict = await verifyGuestPassword(target, rowId, guestPassword);
-  if (verdict === "ok") return null;
-  return verdict === "locked" ? GUEST_LOCKED_ERROR : GUEST_PASSWORD_ERROR;
+  if (!userId) return LOGIN_REQUIRED_ERROR;
+  if (ownerId === userId) return null;
+  return await isCurrentUserAdmin() ? null : FORBIDDEN_ERROR;
 }
 
 interface CommentOwnerRow {
@@ -373,7 +327,6 @@ interface CommentOwnerRow {
 /** 댓글 수정·삭제 공통: 댓글을 찾고 권한을 확인한다. */
 async function authorizeComment(
   commentId: string,
-  guestPassword?: string,
 ): Promise<{ postId: string } | { error: string }> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -386,17 +339,17 @@ async function authorizeComment(
 
   const comment = data as CommentOwnerRow;
   const user = await getUser();
-  const deny = await manageDenyReason("comments", commentId, comment.user_id, user?.id ?? null, guestPassword);
+  const deny = await manageDenyReason(comment.user_id, user?.id ?? null);
   if (deny) return { error: deny };
 
   return { postId: comment.post_id };
 }
 
-export async function deleteComment(commentId: string, guestPassword?: string): Promise<{
+export async function deleteComment(commentId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const auth = await authorizeComment(commentId, guestPassword);
+  const auth = await authorizeComment(commentId);
   if ("error" in auth) return { success: false, error: auth.error };
 
   const { error } = await createAdminClient()
@@ -414,14 +367,14 @@ export async function deleteComment(commentId: string, guestPassword?: string): 
   return { success: true };
 }
 
-export async function updateComment(commentId: string, content: string, guestPassword?: string): Promise<{
+export async function updateComment(commentId: string, content: string): Promise<{
   success: boolean;
   error?: string;
 }> {
   const contentError = validateText(content, COMMENT_MAX, "댓글");
   if (contentError) return { success: false, error: contentError };
 
-  const auth = await authorizeComment(commentId, guestPassword);
+  const auth = await authorizeComment(commentId);
   if ("error" in auth) return { success: false, error: auth.error };
 
   const { error } = await createAdminClient()
@@ -439,11 +392,8 @@ export async function updateComment(commentId: string, content: string, guestPas
   return { success: true };
 }
 
-/** 글 수정·삭제 공통: 글을 찾고 권한을 확인한다. */
-async function authorizePost(
-  postId: string,
-  guestPassword?: string,
-): Promise<{ ownerId: string | null } | { error: string }> {
+/** 글 수정·삭제 공통: 글을 찾고 권한을 확인한다. @returns 통과하면 null, 막히면 사유 */
+async function authorizePostError(postId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("posts")
@@ -451,20 +401,18 @@ async function authorizePost(
     .eq("id", postId)
     .is("deleted_at", null)
     .maybeSingle();
-  if (!data) return { error: NOT_FOUND_ERROR };
+  if (!data) return NOT_FOUND_ERROR;
 
-  const ownerId = (data as { user_id: string | null }).user_id;
   const user = await getUser();
-  const deny = await manageDenyReason("posts", postId, ownerId, user?.id ?? null, guestPassword);
-  return deny ? { error: deny } : { ownerId };
+  return manageDenyReason((data as { user_id: string | null }).user_id, user?.id ?? null);
 }
 
-export async function deletePost(postId: string, guestPassword?: string): Promise<{
+export async function deletePost(postId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const auth = await authorizePost(postId, guestPassword);
-  if ("error" in auth) return { success: false, error: auth.error };
+  const denied = await authorizePostError(postId);
+  if (denied) return { success: false, error: denied };
 
   const { error } = await createAdminClient()
     .from("posts")
@@ -487,7 +435,6 @@ export async function updatePost(
   content: string,
   imageUrl?: string | null,
   youtubeUrl?: string | null,
-  guestPassword?: string,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -495,14 +442,14 @@ export async function updatePost(
   const validationError = validatePostContent(title, content);
   if (validationError) return { success: false, error: validationError };
 
-  const auth = await authorizePost(postId, guestPassword);
-  if ("error" in auth) return { success: false, error: auth.error };
+  const denied = await authorizePostError(postId);
+  if (denied) return { success: false, error: denied };
 
   const updates: Database["public"]["Tables"]["posts"]["Update"] = { title, content };
   if (imageUrl !== undefined) {
     const checked = safeImageUrl(imageUrl ?? "");
     // 허용되지 않는 이미지면 조용히 지우지 않고 저장 자체를 거부한다.
-    if (checked === undefined) return { success: false, error: "첨부 이미지 주소가 올바르지 않습니다" };
+    if (checked === undefined) return { success: false, error: IMAGE_URL_ERROR };
     updates.image_url = checked;
   }
   if (youtubeUrl !== undefined) updates.youtube_url = youtubeUrl;
@@ -519,7 +466,6 @@ export async function updatePost(
 
   revalidatePath(COMMUNITY_PATH);
   revalidatePath(`${COMMUNITY_PATH}/${postId}`);
-  // 게스트 글은 색인 요청을 보내지 않는다 — 반복 수정으로 색인 API 할당량을 태울 수 있다.
-  if (auth.ownerId) notifySearchEngines([`${COMMUNITY_PATH}/${postId}`, COMMUNITY_PATH]);
+  notifySearchEngines([`${COMMUNITY_PATH}/${postId}`, COMMUNITY_PATH]);
   return { success: true };
 }

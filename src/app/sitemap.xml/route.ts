@@ -8,6 +8,15 @@ import {
   xmlResponse,
 } from "@/lib/sitemap-utils";
 
+/**
+ * 인덱스는 하위 사이트맵의 페이지 수를 "지금" 세어서 알려야 한다.
+ * ISR 로 굳어 있으면 배포 시점 개수가 남아, 글이 늘면 뒤쪽 page=N 을 아예 안 알리고
+ * 줄면 빈 page=N 을 제출한다. 게다가 500 은 ISR 캐시에 안 써져서 옛 본문이 만료(1년)까지 계속 나간다.
+ * 하위 사이트맵(community.xml 등)은 searchParams 때문에 이미 동적이라 여기만 맞추면 된다.
+ * CDN 캐시는 xmlResponse 의 s-maxage=300 이 그대로 담당한다.
+ */
+export const dynamic = "force-dynamic";
+
 interface ContentEntry {
   slug: string;
   count: number;
@@ -25,7 +34,7 @@ async function getContentEntries(): Promise<ContentEntry[]> {
       supabase.from("exhibitions").select("*", { count: "exact", head: true }),
       supabase.from("courses").select("*", { count: "exact", head: true }),
       // community.xml 본문과 술어가 같아야 인덱스 페이지 수 = 실제 출력 (없는 page=N 제출 방지)
-      supabase.from("posts").select("*", { count: "exact", head: true }).is("deleted_at", null).is("guest_name", null),
+      supabase.from("posts").select("*", { count: "exact", head: true }).is("deleted_at", null),
       supabase.from("encyclopedia_articles").select("*", { count: "exact", head: true }).eq("published", true),
       supabase.from("location_seo_pages").select("*", { count: "exact", head: true }).eq("published", true),
       supabase.from("study_news_items").select("*", { count: "exact", head: true }).eq("status", "published"),

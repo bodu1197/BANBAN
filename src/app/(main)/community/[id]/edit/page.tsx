@@ -21,13 +21,8 @@ export default async function Page({ params }: Readonly<PageProps>): Promise<Rea
   if (!post) notFound();
 
   const user = await getUser();
-  const admin = user ? await isCurrentUserAdmin() : false;
-
-  // 게스트 글은 누구나 폼을 열 수 있고(내용은 어차피 공개), 저장할 때 비밀번호로 막는다.
-  if (!post.isGuest && !admin) {
-    if (!user) redirect("/login");
-    if (user.id !== post.authorId) redirect(`/community/${id}`);
-  }
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/community/${id}/edit`)}`);
+  if (user.id !== post.authorId && !(await isCurrentUserAdmin())) redirect(`/community/${id}`);
 
   return (
     <PostEditClient
@@ -36,7 +31,6 @@ export default async function Page({ params }: Readonly<PageProps>): Promise<Rea
       initialContent={post.content}
       initialImageUrl={post.imageUrl ?? ""}
       initialYoutubeUrl={post.youtubeUrl ?? ""}
-      requireGuestPassword={post.isGuest && !admin}
     />
   );
 }

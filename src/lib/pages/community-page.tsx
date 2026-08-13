@@ -10,7 +10,6 @@ import type { CommunityPost } from "@/lib/supabase/community-queries";
 import type { ReviewWithArtist, ReviewComment } from "@/lib/supabase/queries";
 import type { BoardListItem } from "@/lib/board/queries";
 import { ReviewComments } from "@/components/community/ReviewComments";
-import { GuestBadge } from "@/components/community/GuestFields";
 import { ArticleCard } from "@/components/board/ArticleCard";
 import { formatRelativeTime } from "@/lib/utils/format-time";
 
@@ -80,11 +79,7 @@ function PostCard({ post }: Readonly<{ post: CommunityPost }>): React.ReactEleme
       </div>
       <p className="line-clamp-1 text-xs text-muted-foreground">{post.content}</p>
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1">
-          {post.authorNickname ?? t.anonymous}
-          {/* 회원 사칭 방지 — 상세와 같은 표시를 목록에도 둔다 */}
-          {post.isGuest ? <GuestBadge /> : null}
-        </span>
+        <span>{post.authorNickname ?? t.anonymous}</span>
         <span>{formatRelativeTime(post.createdAt)}</span>
         <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" aria-hidden="true" />{post.viewsCount}</span>
         <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" aria-hidden="true" />{post.likesCount}</span>
@@ -99,7 +94,7 @@ function PostBoardSection({ posts, tab }: Readonly<{
 }>): React.ReactElement {
   return (
     <section aria-label={COMMUNITY_TABS.find((x) => x.key === tab)?.label ?? t.title}>
-      {/* 글쓰기: 비회원도 닉네임·비밀번호로 작성 가능(로그인 불필요). */}
+      {/* 글쓰기는 회원 전용 — 비로그인은 /community/write 에서 로그인으로 보낸다. */}
       <div className="flex justify-end px-4 py-3">
         <Link
           href="/community/write"
@@ -164,7 +159,8 @@ function ReviewsSection({ reviews, commentsByReview, userId }: Readonly<{
       <div className="px-4 py-16 text-center">
         <p className="mb-3 text-sm font-medium text-foreground">로그인한 회원만 후기를 볼 수 있습니다.</p>
         <Link
-          href="/login"
+          // 로그인 후 후기 탭으로 되돌아온다.
+          href={`/login?next=${encodeURIComponent("/community?tab=reviews")}`}
           className="inline-flex items-center justify-center rounded-lg bg-brand-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           로그인하고 후기 보기

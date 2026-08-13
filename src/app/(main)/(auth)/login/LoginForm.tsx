@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { loginWithProvider } from "./actions";
 import { signInWithEmail } from "@/lib/supabase/auth-client";
 import { OAUTH_PROVIDERS, type OAuthProvider } from "@/lib/auth/oauth-providers";
+import { sanitizeNext } from "@/lib/auth/next-path";
 import { getLabelFromSlug } from "@/lib/auth-labels";
 
 function describeAuthError(error: string | null, method: string | null): string | null {
@@ -50,10 +51,14 @@ export function LoginForm(): React.ReactElement {
   const error = localError ?? urlErrorMessage;
   const setError = setLocalError;
 
-  // URL 에 error 가 있으면 정리 — 새로고침/공유 시 에러 재노출, 검색엔진 인덱싱 방지
+  // 로그인 전에 보던 곳(?next=)으로 돌려보낸다. 외부 URL 은 sanitizeNext 가 "/" 로 깎는다.
+  const next = sanitizeNext(searchParams.get("next"));
+
+  // URL 에 error 가 있으면 정리 — 새로고침/공유 시 에러 재노출, 검색엔진 인덱싱 방지.
+  // next 는 살려둔다 — 여기서 지우면 재시도 로그인이 홈으로 떨어진다.
   useEffect(() => {
-    if (errorParam) router.replace("/login");
-  }, [errorParam, router]);
+    if (errorParam) router.replace(next === "/" ? "/login" : `/login?next=${encodeURIComponent(next)}`);
+  }, [errorParam, next, router]);
 
   const handleOAuthLogin = (provider: OAuthProvider): void => {
     if (isPending) return;
@@ -61,7 +66,7 @@ export function LoginForm(): React.ReactElement {
     setError(null);
     startTransition(async () => {
       try {
-        const result = await loginWithProvider(provider);
+        const result = await loginWithProvider(provider, next);
         if (!result.ok) {
           setError(`OAuth 로그인 실패: ${result.error}`);
           setPendingProvider(null);
@@ -84,7 +89,7 @@ export function LoginForm(): React.ReactElement {
       if (loginError) {
         setError(loginError.message);
       } else {
-        router.push("/");
+        router.push(next);
         router.refresh();
       }
     });

@@ -9,8 +9,6 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { STRINGS } from "@/lib/strings";
 import { Button } from "@/components/ui/button";
-import { GuestPasswordField } from "@/components/community/GuestFields";
-import { GUEST_PASSWORD_MIN } from "@/lib/guest-limits";
 import { POST_TITLE_MAX, POST_CONTENT_MAX } from "@/lib/post-limits";
 import { updatePost } from "@/lib/actions/community";
 
@@ -22,8 +20,6 @@ interface PostEditClientProps {
   initialContent: string;
   initialImageUrl: string;
   initialYoutubeUrl: string;
-  /** 비회원 글 — 저장하려면 작성 시 정한 비밀번호가 필요하다. */
-  requireGuestPassword: boolean;
 }
 
 function PostImageUpload({ imageUrl, uploading, onClear, onPickFile, fileRef, onFileChange }: Readonly<{
@@ -86,10 +82,9 @@ async function uploadCommunityImage(file: File): Promise<string> {
   throw new Error(json.error ?? STRINGS.common.imageUploadFailed);
 }
 
-function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, guestPasswordField, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
+function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPending, canSubmit, fileRef, onTitleChange, onContentChange, onImageClear, onPickFile, onImageUpload, onYoutubeChange, onSubmit }: Readonly<{
   title: string; content: string; imageUrl: string; youtubeUrl: string;
   uploading: boolean; isPending: boolean; canSubmit: boolean;
-  guestPasswordField: React.ReactNode;
   fileRef: React.RefObject<HTMLInputElement | null>;
   onTitleChange: (v: string) => void; onContentChange: (v: string) => void;
   onImageClear: () => void; onPickFile: () => void;
@@ -98,7 +93,6 @@ function PostEditForm({ title, content, imageUrl, youtubeUrl, uploading, isPendi
 }>): React.ReactElement {
   return (
     <div className="px-4 py-4">
-      {guestPasswordField}
       <div className="mb-4">
         <label htmlFor="edit-title" className="mb-1.5 block text-sm font-medium">{t.postTitle}</label>
         <input id="edit-title" type="text" value={title} onChange={(e) => onTitleChange(e.target.value)}
@@ -127,7 +121,6 @@ export function PostEditClient({
   initialContent,
   initialImageUrl,
   initialYoutubeUrl,
-  requireGuestPassword,
 }: Readonly<PostEditClientProps>): React.ReactElement {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -135,14 +128,10 @@ export function PostEditClient({
   const [content, setContent] = useState(initialContent);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
   const [youtubeUrl, setYoutubeUrl] = useState(initialYoutubeUrl);
-  const [guestPassword, setGuestPassword] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const canSubmit =
-    Boolean(title.trim())
-    && Boolean(content.trim())
-    && (!requireGuestPassword || guestPassword.length >= GUEST_PASSWORD_MIN);
+  const canSubmit = Boolean(title.trim()) && Boolean(content.trim());
 
   const handleImageUpload = useCallback(async (file: File) => {
     setUploading(true);
@@ -160,7 +149,6 @@ export function PostEditClient({
       const result = await updatePost(
         postId, title.trim(), content.trim(),
         imageUrl || null, youtubeUrl.trim() || null,
-        requireGuestPassword ? guestPassword : undefined,
       );
       if (result.success) router.push(`/community/${postId}`);
       else if (result.error) toast.error(result.error);
@@ -179,18 +167,6 @@ export function PostEditClient({
       <PostEditForm
         title={title} content={content} imageUrl={imageUrl} youtubeUrl={youtubeUrl}
         uploading={uploading} isPending={isPending} canSubmit={canSubmit} fileRef={fileRef}
-        guestPasswordField={requireGuestPassword ? (
-          <div className="mb-4">
-            <p className="mb-2 text-xs text-muted-foreground">{t.guestOnlyNotice}</p>
-            <GuestPasswordField
-              id="edit-guest-password"
-              value={guestPassword}
-              placeholder={t.guestPasswordPrompt}
-              mode="verify"
-              onChange={setGuestPassword}
-            />
-          </div>
-        ) : null}
         onTitleChange={setTitle} onContentChange={setContent}
         onImageClear={() => setImageUrl("")} onPickFile={() => fileRef.current?.click()}
         onImageUpload={handleImageUpload} onYoutubeChange={setYoutubeUrl} onSubmit={handleSubmit}

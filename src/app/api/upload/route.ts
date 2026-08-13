@@ -4,14 +4,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import sharp from "sharp";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sanitizeStoragePath } from "@/lib/supabase/storage-utils";
-import { getClientIp } from "@/lib/rate-limit";
-import {
-  reserveGuestUpload,
-  releaseGuestUpload,
-  purgeOrphanGuestUploads,
-  GUEST_BUCKET,
-  GUEST_FOLDER,
-} from "@/lib/guest-upload";
 
 export const maxDuration = 60;
 
@@ -51,7 +43,10 @@ const INVALID_IMAGE = "이미지 파일이 아닙니다";
 const INTERNAL_SERVER_ERROR = "업로드에 실패했습니다. 잠시 후 다시 시도해주세요";
 const BAD_REQUEST = "요청이 올바르지 않습니다";
 const UPLOAD_ERROR_LOG = "Upload error:";
-const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media", "banners"]);
+// "chat" 누락으로 채팅 이미지 첨부가 400 으로 막혀 있었다(버킷은 Storage 에 존재).
+// 채팅은 POST 만 쓰고, POST 경로는 서버가 crypto.randomUUID() 로 만들어 타인 경로 지정이 불가능하다.
+// PUT 으로도 이 버킷에 쓸 수 있게 되지만 upsert:false 라 남의 파일을 덮어쓰지는 못한다.
+const ALLOWED_BUCKETS = new Set(["portfolios", "avatars", "before-after", "inquiries", "artist-media", "banners", "chat"]);
 
 function validateBucket(bucket: string): boolean {
   return ALLOWED_BUCKETS.has(bucket);
@@ -137,17 +132,14 @@ function declaredSizeTooLarge(request: NextRequest): boolean {
   return Number.isFinite(length) && length > MAX_FILE_SIZE * 1.1; // multipart 오버헤드 여유
 }
 
-/**
- * Common auth + file validation for upload handlers.
- * @param allowGuest 비로그인 허용 여부. true 면 userId 가 null 로 돌아온다(커뮤니티 게스트 글 첨부용).
- */
-async function getAuthenticatedFile(request: NextRequest, allowGuest = false): Promise<
-  | { ok: true; userId: string | null; file: File; buffer: Buffer; searchParams: URLSearchParams }
+/** Common auth + file validation for upload handlers. 업로드는 로그인 필수. */
+async function getAuthenticatedFile(request: NextRequest): Promise<
+  | { ok: true; userId: string; file: File; buffer: Buffer; searchParams: URLSearchParams }
   | { ok: false; response: NextResponse }
 > {
   const supabase = await createClient();
   const userId = await validateAuth(supabase);
-  if (!userId && !allowGuest) {
+  if (!userId) {
     return { ok: false, response: NextResponse.json({ success: false, error: "로그인이 필요합니다" }, { status: 401 }) };
   }
   const formData = await request.formData();
@@ -219,7 +211,7 @@ function resolvePostTarget(searchParams: URLSearchParams): { bucket: string; bas
  */
 export async function POST(request: NextRequest): Promise<NextResponse<UploadResult>> {
   try {
-    const auth = await getAuthenticatedFile(request); // 로그인 필수 (게스트는 PUT 만)
+    const auth = await getAuthenticatedFile(request);
     if (!auth.ok) return auth.response as NextResponse<UploadResult>;
 
     const target = resolvePostTarget(auth.searchParams);
@@ -239,45 +231,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
   } catch {
     return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
   }
-}
-
-/**
- * 비로그인 업로드.
- *
- * 경로를 클라이언트에서 받지 않고 서버가 만든다 — 받으면 남의 네임스페이스
- * (`artists/<남의id>/…`)에 파일을 만들 수 있다. 버킷도 고정이다.
- */
-async function handleGuestPut(request: NextRequest, buffer: Buffer): Promise<NextResponse> {
-  const rawIp = getClientIp(request);
-  const ip = rawIp === "unknown" ? null : rawIp;
-  const path = `${GUEST_FOLDER}/${crypto.randomUUID()}.webp`;
-
-  if (!(await reserveGuestUpload(ip, path))) {
-    return NextResponse.json(
-      { success: false, error: "업로드가 너무 잦습니다. 잠시 후 다시 시도해주세요" },
-      { status: 429 },
-    );
-  }
-
-  const processed = await toWebp(buffer);
-  if (!processed) {
-    await releaseGuestUpload(path); // 한도만 깎이는 일이 없게 되돌린다
-    return INVALID_IMAGE_RESPONSE();
-  }
-
-  const { error } = await createAdminClient().storage
-    .from(GUEST_BUCKET)
-    .upload(path, processed, { contentType: WEBP_CONTENT_TYPE, cacheControl: CACHE_ONE_YEAR, upsert: false });
-
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error("Guest upload error:", error.message);
-    await releaseGuestUpload(path);
-    return NextResponse.json({ success: false, error: INTERNAL_SERVER_ERROR }, { status: 500 });
-  }
-
-  await purgeOrphanGuestUploads();
-  return NextResponse.json({ success: true, path });
 }
 
 /** 로그인 사용자 업로드 — 경로를 직접 지정하되 소유권을 검증한다. */
@@ -357,20 +310,17 @@ async function isDecodableImage(buffer: Buffer): Promise<boolean> {
 
 /**
  * PUT /api/upload
- * 단일 이미지 업로드 (아티스트 등록용 / 커뮤니티 첨부)
+ * 단일 이미지 업로드 (아티스트 등록용 / 커뮤니티 첨부) — 로그인 필수
  */
 export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
-    // 비로그인도 커뮤니티 글에 사진을 첨부할 수 있다(경로는 서버가 정한다 — handleGuestPut 참조).
     // 바디를 읽기 전에 선언 크기부터 끊는다 — 파싱 자체가 메모리를 먹는다.
     if (declaredSizeTooLarge(request)) {
       return NextResponse.json({ success: false, error: "파일이 너무 큽니다 (최대 10MB)" }, { status: 413 });
     }
 
-    const auth = await getAuthenticatedFile(request, true);
+    const auth = await getAuthenticatedFile(request);
     if (!auth.ok) return auth.response;
-
-    if (!auth.userId) return handleGuestPut(request, auth.buffer);
 
     return await handleMemberPut(auth.searchParams, auth.buffer, auth.userId);
   } catch (err: unknown) {

@@ -16,12 +16,10 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const supabase = createAdminClient();
     // 삭제된 글은 404 가 되므로 제외한다.
-    // 게스트(비로그인) 글도 제외 — 검수 절차가 없어 광고글을 우리가 먼저 색인 요청하는 꼴이 된다.
     const { data: posts } = await supabase
       .from("posts")
       .select("id, updated_at")
       .is("deleted_at", null)
-      .is("guest_name", null)
       // id 타이브레이커 없이 정렬하면 created_at 이 같은 행이 페이지 경계에서 중복/누락된다.
       .order("created_at", { ascending: true })
       .order("id", { ascending: true })

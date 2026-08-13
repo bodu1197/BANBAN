@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/seo";
 import { getProviderSlug, normalizeTypeSocial } from "@/lib/auth-labels";
 import { ONBOARDING_WINDOW_MS } from "@/lib/onboarding/constants";
 import { downloadAndStoreAvatar } from "@/lib/auth/avatar-download";
+import { sanitizeNext } from "@/lib/auth/next-path";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -43,11 +44,6 @@ function getRedirectUrl(request: Request, origin: string, path: string): string 
     return `https://${forwardedHost}${path}`;
   }
   return `${origin}${path}`;
-}
-
-function sanitizeNext(param: string | null): string {
-  const next = param ?? "/";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
 }
 
 async function safeRun(label: string, op: () => PromiseLike<unknown>): Promise<void> {

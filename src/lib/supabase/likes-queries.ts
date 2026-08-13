@@ -50,7 +50,8 @@ export async function fetchLikedPortfolios(
     .from("likes")
     .select("likeable_id")
     .eq("user_id", userId)
-    .eq("likeable_type", "Portfolio")
+    // 저장은 전부 소문자다(actions/portfolio-likes.ts) — "Portfolio" 로 찾아 목록이 늘 비어 있었다.
+    .eq("likeable_type", "portfolio")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -107,7 +108,8 @@ export async function fetchLikedArtists(
     .from("likes")
     .select("likeable_id")
     .eq("user_id", userId)
-    .eq("likeable_type", "Artist")
+    // 저장은 전부 소문자다(actions/likes.ts) — "Artist" 로 찾아 목록이 늘 비어 있었다.
+    .eq("likeable_type", "artist")
     .order("created_at", { ascending: false })
     .limit(limit);
 

@@ -573,18 +573,8 @@ export const STRINGS ={
     "reportSuccess": "신고가 접수되었습니다",
     "reportAlready": "이미 신고한 게시글입니다",
     "reportFailed": "신고 처리에 실패했습니다",
-    "guestName": "닉네임",
-    "guestNamePlaceholder": "표시할 닉네임",
-    "guestPassword": "비밀번호",
-    "guestPasswordPlaceholder": "수정·삭제 시 필요",
-    "guestNotice": "비회원으로 작성합니다. 닉네임(2~12자)과 비밀번호(4~20자)를 입력해주세요. 작성 IP는 신고 처리 목적으로 90일간 보관되며 관리자만 확인합니다.",
-    "guestPasswordPrompt": "작성 시 입력한 비밀번호를 입력해주세요",
-    "guestOnlyNotice": "비회원 글은 비밀번호를 입력해야 수정할 수 있습니다.",
-    "guestBadge": "비회원",
-    "guestManageHint": "비회원 글 — 작성 시 비밀번호 필요",
-    "guestConfirmDelete": "비밀번호를 확인하고 삭제합니다.",
-    "guestConfirmEdit": "비밀번호를 확인하고 수정합니다.",
-    "authorIp": "작성 IP"
+    "commentLoginRequired": "댓글은 회원만 작성할 수 있습니다.",
+    "loginToComment": "로그인하고 댓글 쓰기"
   },
   "courseDetail": {
     "highlights": "특장점",

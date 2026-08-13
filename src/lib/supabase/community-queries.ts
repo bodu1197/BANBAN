@@ -14,8 +14,6 @@ export interface CommunityPost {
   authorNickname: string | null;
   authorAvatar: string | null;
   authorId: string | null;
-  /** 비로그인(게스트) 작성 글 — 수정·삭제에 비밀번호가 필요하다. */
-  isGuest: boolean;
   viewsCount: number;
   likesCount: number;
   commentsCount: number;
@@ -36,7 +34,6 @@ export interface PostComment {
   authorNickname: string | null;
   authorAvatar: string | null;
   authorId: string | null;
-  isGuest: boolean;
   createdAt: string;
   legacyId: number | null;
 }
@@ -53,7 +50,6 @@ interface PostRow {
   reports_count: number | null;
   created_at: string;
   user_id: string | null;
-  guest_name: string | null;
   image_url: string | null;
   youtube_url: string | null;
   profile: {
@@ -68,7 +64,6 @@ interface CommentRow {
   parent_id: string | null;
   created_at: string;
   user_id: string | null;
-  guest_name: string | null;
   legacy_id: number | null;
   profile: {
     nickname: string | null;
@@ -83,12 +78,11 @@ function mapPostRow(row: PostRow): CommunityPost {
     content: row.content,
     typeBoard: row.type_board,
     typePost: row.type_post,
-    authorNickname: row.profile?.nickname ?? row.guest_name ?? null,
+    authorNickname: row.profile?.nickname ?? null,
     authorAvatar: row.profile?.profile_image_path
       ? getAvatarUrl(row.profile.profile_image_path)
       : null,
     authorId: row.user_id,
-    isGuest: row.user_id === null && row.guest_name !== null,
     viewsCount: row.views_count,
     likesCount: row.likes_count,
     commentsCount: row.comments_count,
@@ -104,12 +98,11 @@ function mapCommentRow(row: CommentRow): PostComment {
     id: row.id,
     content: row.content,
     parentId: row.parent_id,
-    authorNickname: row.profile?.nickname ?? row.guest_name ?? null,
+    authorNickname: row.profile?.nickname ?? null,
     authorAvatar: row.profile?.profile_image_path
       ? getAvatarUrl(row.profile.profile_image_path)
       : null,
     authorId: row.user_id,
-    isGuest: row.user_id === null && row.guest_name !== null,
     createdAt: row.created_at,
     legacyId: row.legacy_id,
   };
@@ -126,7 +119,7 @@ async function fetchCommunityPostsInternal(options: {
   let query = supabase
     .from("posts")
     .select(`
-      id, title, content, type_board, type_post, views_count, likes_count, comments_count, reports_count, created_at, user_id, guest_name, image_url, youtube_url,
+      id, title, content, type_board, type_post, views_count, likes_count, comments_count, reports_count, created_at, user_id, image_url, youtube_url,
       profile:profiles!user_id(nickname, profile_image_path)
     `)
     .is("deleted_at", null)
@@ -165,7 +158,7 @@ export const fetchPostById = cache(async (id: string): Promise<CommunityPostDeta
   const { data: post, error: postError } = await supabase
     .from("posts")
     .select(`
-      id, title, content, type_board, type_post, views_count, likes_count, comments_count, reports_count, created_at, user_id, guest_name, image_url, youtube_url,
+      id, title, content, type_board, type_post, views_count, likes_count, comments_count, reports_count, created_at, user_id, image_url, youtube_url,
       profile:profiles!user_id(nickname, profile_image_path)
     `)
     .eq("id", id)
@@ -177,7 +170,7 @@ export const fetchPostById = cache(async (id: string): Promise<CommunityPostDeta
   const { data: comments } = await supabase
     .from("comments")
     .select(`
-      id, content, parent_id, created_at, user_id, guest_name, legacy_id,
+      id, content, parent_id, created_at, user_id, legacy_id,
       profile:profiles!user_id(nickname, profile_image_path)
     `)
     .eq("post_id", id)
