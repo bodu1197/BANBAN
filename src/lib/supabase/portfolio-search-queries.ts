@@ -5,6 +5,8 @@ import type { Region } from "@/types/database";
 import { type PortfolioRowWithType, type HomePortfolio, mapPortfolioRow } from "./portfolio-common";
 import { withAdInjection, AD_INJECTION_FETCH_LIMIT } from "./boost-ranking";
 import { secureShuffle } from "@/lib/random";
+import { matchCategoryIds } from "@/lib/search-match";
+import { fetchSearchCategories } from "./category-queries";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -50,17 +52,18 @@ async function resolveRegionIds(supabase: DbClient, regionSido: string | null | 
   return null;
 }
 
-async function resolveKeywordCategories(supabase: DbClient, searchWord: string | null | undefined, categoryIds: string[] | undefined): Promise<string[]> {
+async function resolveKeywordCategories(searchWord: string | null | undefined, categoryIds: string[] | undefined): Promise<string[]> {
   const effective = categoryIds ? [...categoryIds] : [];
   if (!searchWord) return effective;
 
-  const { data: keywordCatData } = await supabase
-    .from("categories")
-    .select("id")
-    .ilike("name", `%${escapeIlike(searchWord)}%`);
+  // 매칭 규칙·대상 목록 모두 통합 검색과 공유 — 예전엔 여기만 단방향 ilike 라 같은 검색어인데도
+  // /search 는 300건, /portfolios 는 0건이 나왔다("남자 눈썹"·"자연눈썹"·"눈썹문신").
+  // fetchSearchCategories 는 SHOP 타입(주차가능·당일예약 등)을 뺀 목록이다 — SHOP 이 걸리면
+  // RPC 가 그 샵의 전 작품을 반환해 결과가 통째로 오염된다.
+  const categories = await fetchSearchCategories().catch(() => []);
+  const matchedCatIds = matchCategoryIds(searchWord, categories);
 
-  if (keywordCatData && keywordCatData.length > 0) {
-    const matchedCatIds = keywordCatData.map((c) => c.id);
+  if (matchedCatIds.length > 0) {
     return [...new Set([...effective, ...matchedCatIds])];
   }
   // searchWord given but no matching category → force empty result by returning
@@ -100,7 +103,7 @@ export async function searchPortfolios(
   if (effectiveRegionIds !== null && effectiveRegionIds.length === 0) return { portfolios: [], totalCount: 0 };
 
   // 2. Resolve keyword categories (chip clicks or text search → category name match)
-  let effectiveCategoryIds = await resolveKeywordCategories(supabase, searchWord, categoryIds);
+  let effectiveCategoryIds = await resolveKeywordCategories(searchWord, categoryIds);
 
   // 2b. Include child categories (e.g. selecting 속눈썹 also includes 펌)
   effectiveCategoryIds = await expandWithChildCategories(supabase, effectiveCategoryIds);
