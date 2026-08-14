@@ -1,7 +1,7 @@
-import { SegmentQueryProvider } from "@/providers/SegmentQueryProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 export default function SearchLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.ReactElement {
-  return <SegmentQueryProvider>{children}</SegmentQueryProvider>;
+  return <QueryProvider>{children}</QueryProvider>;
 }

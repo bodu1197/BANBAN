@@ -14,6 +14,9 @@ export async function generateReviewsMetadata(): Promise<Metadata> {
     return {
         title: STRINGS.common.reviews,
         description: SEO_DESCRIPTION,
+        // 후기 3건뿐 — 콘텐츠가 없는 동안은 색인 대상이 아니다(사이트맵에서도 뺐다).
+        // 소프트 404 는 사이트 전체 품질 평가를 끌어내린다. 후기가 쌓이면 이 줄과 사이트맵을 함께 되돌린다.
+        robots: { index: false, follow: true },
         keywords: ["반영구 후기", "반영구 시술 후기", "반영구 평점", "반영구 만족도"],
         ...buildPageSeo({
             title: STRINGS.common.reviews,

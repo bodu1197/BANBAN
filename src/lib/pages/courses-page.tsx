@@ -16,6 +16,10 @@ export async function generateCoursesMetadata(): Promise<Metadata> {
     return {
         title: t.courseList,
         description: SEO_DESCRIPTION,
+    // 콘텐츠가 없는 동안은 색인 대상이 아니다 — 사이트맵에서도 뺐다(static.xml/route.ts 주석 참고).
+    // 소프트 404 는 사이트 전체 품질 평가를 끌어내린다. 콘텐츠가 채워지면 이 블록과 사이트맵을 함께 되돌린다.
+    robots: { index: false, follow: true },
+
         keywords: ["반영구 수강", "반영구 교육", "반영구 학원", "반영구 원데이", "반영구 자격증"],
         ...buildPageSeo({
             title: t.courseList,

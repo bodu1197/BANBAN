@@ -4,7 +4,7 @@ import { getPublishedNews } from "@/lib/study-news/store";
 import { StudyNewsRow } from "@/components/study/StudyNewsRow";
 
 export const metadata: Metadata = {
-  title: "문신사 뉴스 — 문신사법·국가시험 소식 | 반언니",
+  title: "문신사 뉴스 — 문신사법·국가시험 소식",
   description: "문신사법·문신사 국가시험 관련 최신 뉴스를 한곳에서. 정부·공식 출처와 신뢰 언론을 큐레이션합니다.",
   alternates: { canonical: "/study-news" },
 };

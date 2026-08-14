@@ -13,6 +13,8 @@ const SEO_DESCRIPTION =
 export const metadata: Metadata = {
   title: SEO_TITLE,
   description: SEO_DESCRIPTION,
+  // 콘텐츠가 없는 동안은 색인 대상이 아니다 — 사이트맵에서도 뺐다(sitemap/static.xml 주석 참고).
+  robots: { index: false, follow: true },
   keywords: ["반언니 혜택", "반영구 할인", "반영구 프로모션", "반영구 쿠폰"],
   ...buildPageSeo({
     title: SEO_TITLE,

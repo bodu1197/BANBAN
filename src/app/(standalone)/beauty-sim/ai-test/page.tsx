@@ -6,7 +6,7 @@ import { buildPageSeo } from "@/lib/seo";
 
 export const revalidate = 300;
 
-const TITLE = "뷰티 시뮬레이션 | 반언니";
+const TITLE = "AI 반영구 시뮬레이션 — 내 얼굴에 미리 입혀보기";
 const DESCRIPTION = "내 얼굴에 어울리는 반영구 눈썹·입술 스타일을 미리 체험해보세요. 사진 한 장으로 다양한 시술 결과를 확인할 수 있습니다.";
 
 export const metadata: Metadata = {

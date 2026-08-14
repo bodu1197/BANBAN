@@ -12,8 +12,8 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
 
-  // Disable automatic locale detection that causes 308 redirects
-  skipTrailingSlashRedirect: true,
+  // (구 로케일 라우팅 시절의 skipTrailingSlashRedirect 는 제거했다 — 로케일이 사라진 뒤에는
+  //  "/about/" 과 "/about" 이 둘 다 200 으로 응답해 같은 페이지의 주소가 두 개씩 생기기만 했다.)
 
   async headers() {
     // iamport/portone=결제, t1.daumcdn=우편번호, pcdn2.swing2app=앱브릿지, cdn.jsdelivr=외부CDN
@@ -55,6 +55,16 @@ const nextConfig: NextConfig = {
   // collapse onto a single canonical URL set.
   async redirects() {
     return [
+      // www → apex 영구 리다이렉트. 앱스토어/외부 표기가 www 를 쓰고 있어 같은 페이지가 두 호스트로
+      // 200 응답했다(canonical 이 apex 를 가리켜 최악은 면했지만, 네이버는 둘을 별개 사이트로 취급한다).
+      // `has.value` 는 정규식으로 컴파일되므로 점을 이스케이프해야 `wwwXbanunniYcom` 이 매칭되지 않는다.
+      // /api 는 제외한다 — 외부 웹훅/앱브릿지가 www 로 POST 하면 리다이렉트에서 본문이 유실될 수 있다.
+      {
+        source: "/:path((?!api/).*)",
+        has: [{ type: "host" as const, value: "www\\.banunni\\.com" }],
+        destination: "https://banunni.com/:path",
+        permanent: true,
+      },
       { source: "/en/:path*", destination: "/:path*", permanent: true },
       { source: "/ja/:path*", destination: "/:path*", permanent: true },
       { source: "/zh/:path*", destination: "/:path*", permanent: true },

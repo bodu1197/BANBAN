@@ -9,13 +9,17 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
 const PORTFOLIOS_PATH = "/portfolios";
 
+// UI 라벨(STRINGS.pages.portfoliosList = "포트폴리오")과 분리 — <title> 이 "포트폴리오 | 반언니" 라
+// 검색어가 하나도 없었다. 페이지네이션 표기는 뒤에 붙인다.
+const SEO_TITLE = "반영구 작품 모음 — 눈썹·입술·아이라인 시술 사진과 가격";
+
 const SEO_DESCRIPTION =
   "전국 반영구 포트폴리오 모음 — 눈썹, 입술, 아이라인, 헤어라인까지 다양한 반영구 작품을 한곳에서 비교하고 가격대별로 찾아보세요. 인증 아티스트의 실제 시술 결과와 비포/애프터 사진, 가격 정보를 함께 확인할 수 있습니다.";
 
 export async function generatePortfoliosMetadata(page = 1): Promise<Metadata> {
   // page>1 은 자기 자신을 canonical 로(중복 색인 방지) + 제목에 페이지 표기. URL 규칙은 hrefForPage 공유.
   const path = hrefForPage(PORTFOLIOS_PATH, page);
-  const title = page > 1 ? `${STRINGS.pages.portfoliosList} (${page}페이지)` : STRINGS.pages.portfoliosList;
+  const title = page > 1 ? `${SEO_TITLE} (${page}페이지)` : SEO_TITLE;
   return {
     title,
     description: SEO_DESCRIPTION,

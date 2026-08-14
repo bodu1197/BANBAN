@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AdminLayoutShell } from "@/components/admin/admin-layout-shell";
-import { SegmentQueryProvider } from "@/providers/SegmentQueryProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 export default async function AdminLayout({ children }: Readonly<{
     children: React.ReactNode;
@@ -20,8 +20,8 @@ export default async function AdminLayout({ children }: Readonly<{
     if (error || profile?.is_admin !== true) redirect("/");
 
     return (
-        <SegmentQueryProvider>
+        <QueryProvider>
             <AdminLayoutShell>{children}</AdminLayoutShell>
-        </SegmentQueryProvider>
+        </QueryProvider>
     );
 }

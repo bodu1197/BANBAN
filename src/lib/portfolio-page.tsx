@@ -3,6 +3,7 @@ import { buildPageSeo } from "@/lib/seo";
 import { searchPortfolios, fetchCategoriesByType, fetchActiveRegions } from "@/lib/supabase/portfolio-search-queries";
 import { PortfolioSearchClient } from "@/components/portfolio-search";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { PAGE_SIZE } from "@/lib/constants";
 
 interface PortfolioPageConfig {
   typeArtist: "SEMI_PERMANENT";
@@ -35,19 +36,27 @@ async function renderPortfolioContent(config: PortfolioPageConfig): Promise<Reac
   const firstParentId = isBeautyPage
     ? categories.find((c) => c.type === "GENRE")?.id
     : undefined;
+  // limit 은 클라이언트 무한스크롤과 같은 PAGE_SIZE — 첫 페이지가 서버 HTML 에 그대로 실려야
+  // 작품 상세로 가는 내부링크가 크롤된다(3개만 내리면 링크도 3개뿐이었다).
+  //
+  // sort 를 명시하는 이유: 기본값이 "random" 이라 (a) 크롤러가 방문할 때마다 서버 HTML 의 내용이
+  // 통째로 달라져 색인이 흔들리고, (b) random 은 내부적으로 limit×3 을 읽어 DB 부하가 3배가 된다.
+  // 무작위 섞기는 클라이언트 무한스크롤 구간에서만 쓰면 충분하다.
   const initialResult = await searchPortfolios({
     typeArtist: config.typeArtist,
     targetGender: config.targetGender,
     categoryIds: firstParentId ? [firstParentId] : undefined,
-    limit: 3,
+    sort: "popular",
+    limit: PAGE_SIZE,
   });
 
   // QueryProvider 로 wrap — usePortfolioSearch(useInfiniteQuery) 가 client context 필요.
   // (main)/layout.tsx 의 전역 Provider 가 fb336ef 에서 제거됨 → portfolio 페이지(mens/women-beauty)는
-  // 자체 segment Provider 가 없어 여기서 주입. ssr:false 인 SegmentQueryProvider 대신 SSR 가능한
-  // QueryProvider 사용 — initialData 가 서버 HTML 에 포함돼야 SEO/LCP 유지(ISR revalidate=300 페이지).
+  // 자체 segment Provider 가 없어 여기서 주입. initialData 가 서버 HTML 에 포함돼야 SEO/LCP 유지.
   return (
     <div className="mx-auto w-full max-w-[1024px]">
+      {/* h1 이 없어 검색엔진이 페이지 주제를 잡을 단서가 없었다(2026-08-14 실측: h1 0개). */}
+      <h1 className="sr-only">{config.title}</h1>
       <QueryProvider>
         <PortfolioSearchClient
           key={config.slug}

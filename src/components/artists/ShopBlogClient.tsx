@@ -1,8 +1,7 @@
 // @client-reason: activeTab 기반 단일 탭 렌더 + sticky 탭 nav. 한 번에 한 탭의 콘텐츠만 노출.
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import type { EventCardData } from "@/lib/supabase/event-queries";
@@ -166,12 +165,22 @@ export function ShopBlogClient({
   artistId,
   isLoggedIn,
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const { tabs, initialTab } = resolveTabs(counts, labels, tabParam);
+  // ⚠️ 여기서 useSearchParams() 를 쓰면 안 된다 — 프리렌더 중 바일아웃이 나서 샵 상세 전체가
+  // 클라이언트 렌더로 떨어지고 서버 HTML 본문이 0자가 된다(2026-08-14 SEO 사고, 색인률 5%).
+  // 기본 탭을 서버에서 그대로 렌더하고, ?tab= 딥링크만 마운트 후 클라이언트에서 반영한다.
+  const { tabs, initialTab } = resolveTabs(counts, labels, null);
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
   const tablistRef = useRef<HTMLDivElement>(null);
   const scrollToTopOnNextRenderRef = useRef(false);
+
+  useEffect(() => {
+    const tabParam = new URLSearchParams(globalThis.location.search).get("tab");
+    if (isShopTabId(tabParam) && tabs.some((t) => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+    // tabs 는 counts/labels 파생값이라 마운트 시 1회만 반영하면 충분하다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ?tab= 딥링크는 최초 진입에만 적용
+  }, []);
 
   const handleTabClick = useCallback((tab: ShopTabId): void => {
     scrollToTopOnNextRenderRef.current = true;

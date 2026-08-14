@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { buildPageSeo } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "반언니 비서실",
+  title: "비서실",
   description: "반언니 비서실 — 반영구 메이크업 전문 상담 서비스",
   ...buildPageSeo({
     title: "반언니 비서실",

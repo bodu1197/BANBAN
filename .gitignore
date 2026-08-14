@@ -104,3 +104,6 @@ scripts/run-migration.mjs
 *tempdiff*.txt
 매/
 "매/"
+
+# 1회성 이미지 생성 스크립트(로컬 전용, .env.local 을 직접 읽음)
+make_*.mjs

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { countPublicPortfolios } from "@/lib/supabase/portfolio-listing-queries";
+import { getActiveEventFilter } from "@/lib/supabase/event-queries";
 import {
   SITE_URL,
   buildSitemapIndexEntry,
@@ -17,6 +18,8 @@ import {
  */
 export const dynamic = "force-dynamic";
 
+const DEPLOYED_AT = new Date().toISOString();
+
 interface ContentEntry {
   slug: string;
   count: number;
@@ -25,7 +28,7 @@ interface ContentEntry {
 async function getContentEntries(): Promise<ContentEntry[]> {
   const supabase = createAdminClient();
 
-  const [artists, portfoliosCount, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews] =
+  const [artists, portfoliosCount, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews, events] =
     await Promise.all([
       // artists.xml 본문과 술어를 맞춘다 — is_hide 가 빠져 있어 빈 page=N 이 제출되고 있었다.
       supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("is_hide", false).eq("status", "active"),
@@ -38,6 +41,8 @@ async function getContentEntries(): Promise<ContentEntry[]> {
       supabase.from("encyclopedia_articles").select("*", { count: "exact", head: true }).eq("published", true),
       supabase.from("location_seo_pages").select("*", { count: "exact", head: true }).eq("published", true),
       supabase.from("study_news_items").select("*", { count: "exact", head: true }).eq("status", "published"),
+      // events.xml 본문과 술어 동일 유지 — 어긋나면 없는 page=N 제출/뒤쪽 누락.
+      supabase.from("events").select("*", { count: "exact", head: true }).eq("status", "published").is("deleted_at", null).or(getActiveEventFilter()),
     ]);
 
   return [
@@ -49,12 +54,15 @@ async function getContentEntries(): Promise<ContentEntry[]> {
     { slug: "encyclopedia", count: encyclopedia.count ?? 0 },
     { slug: "location", count: locationSeo.count ?? 0 },
     { slug: "study-news", count: studyNews.count ?? 0 },
+    { slug: "events", count: events.count ?? 0 },
   ];
 }
 
 export async function GET(): Promise<Response> {
   try {
-    const now = new Date().toISOString();
+    // lastmod 를 매 요청 "지금" 으로 채우면 구글이 이 신호를 통째로 무시한다.
+    // 배포 시점(모듈 로드 시각)이 정적 페이지·인덱스가 실제로 바뀌는 시점이다.
+    const now = DEPLOYED_AT;
     let entries = "";
 
     // Static pages sitemap

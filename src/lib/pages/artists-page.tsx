@@ -10,13 +10,17 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 const SEO_DESCRIPTION =
   "전국 반영구 아티스트를 한곳에서 만나보세요. 눈썹·입술·아이라인·헤어라인 전문가의 포트폴리오, 가격, 후기, 위치를 한 번에 비교하고 내게 딱 맞는 인증 아티스트를 찾아보세요. 반언니가 직접 검증한 전국의 작가만 모았습니다.";
 
+// 검색 제목은 UI 라벨(STRINGS.pages.artistsList = "아티스트")과 분리한다 —
+// UI 탭 라벨을 그대로 <title> 로 쓰면 "아티스트 | 반언니" 처럼 검색어가 하나도 없는 제목이 된다.
+const SEO_TITLE = "반영구 아티스트·샵 찾기 — 지역별 눈썹문신 전문가";
+
 export async function generateArtistsMetadata(): Promise<Metadata> {
   return {
-    title: STRINGS.pages.artistsList,
+    title: SEO_TITLE,
     description: SEO_DESCRIPTION,
     keywords: ["반영구 아티스트", "반영구 잘하는 곳", "눈썹 문신", "입술 반영구", "아이라인", "반영구 가격비교"],
     ...buildPageSeo({
-      title: STRINGS.pages.artistsList,
+      title: SEO_TITLE,
       description: SEO_DESCRIPTION,
       path: "/artists",
     }),
@@ -38,6 +42,8 @@ export async function renderArtistsPage(): Promise<React.ReactElement> {
   return (
     <div className="mx-auto w-full max-w-[1024px]">
       <JsonLdScript jsonLd={breadcrumbJsonLd} />
+      {/* 목록 페이지에 h1 이 아예 없어 검색엔진이 주제를 잡을 단서가 없었다(2026-08-14 실측). */}
+      <h1 className="sr-only">{SEO_TITLE}</h1>
       <ArtistSearchClient
         initialArtists={result.artists}
         initialTotalCount={result.totalCount}

@@ -163,7 +163,7 @@ function PageHeader({ onBack }: Readonly<{ onBack: () => void }>): React.ReactEl
       >
         <ArrowLeft className="h-5 w-5" />
       </button>
-      <h1 className="text-base font-bold">이벤트</h1>
+      <h1 className="text-base font-bold">반영구 이벤트·할인</h1>
     </header>
   );
 }

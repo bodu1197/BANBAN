@@ -30,7 +30,7 @@ export async function generateEventMetadata(id: string): Promise<Metadata> {
   // 공개 상세는 published 만 노출 — draft/종료(ended)/삭제는 not-found 처리(색인 제외).
   if (!event || event.status !== "published") {
     return {
-      title: "이벤트를 찾을 수 없습니다 | 반언니",
+      title: "이벤트를 찾을 수 없습니다",
       description: "요청하신 이벤트를 찾을 수 없습니다. 다른 이벤트를 확인해보세요.",
       robots: { index: false, follow: false },
       ...buildPageSeo({
@@ -53,7 +53,8 @@ export async function generateEventMetadata(id: string): Promise<Metadata> {
   const isExpired = isEventExpiredByDate(event.event_end_at);
 
   return {
-    title: `${event.title} | 반언니`,
+    // 브랜드는 layout.tsx 의 title.template 이 붙인다 — 여기서 또 붙이면 "… | 반언니 | 반언니" 가 된다.
+    title: event.title,
     description,
     ...buildPageSeo({
       title: event.title,

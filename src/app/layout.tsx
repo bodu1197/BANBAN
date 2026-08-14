@@ -9,7 +9,8 @@ const Swing2AppBridge = dynamic(() => import("@/components/layout/Swing2AppBridg
 const ServiceWorkerRegistration = dynamic(() => import("@/components/layout/ServiceWorkerRegistration").then(m => m.ServiceWorkerRegistration));
 
 const SITE_NAME = "반언니";
-const SITE_TITLE = "반언니 - 반영구 화장 가격비교 & 아티스트 추천 | 대한민국 1등 반영구 플랫폼";
+// "대한민국 1등" 같은 검증 불가 최상급 표현은 쓰지 않는다(표시광고법 + 검색 신뢰도).
+const SITE_TITLE = "반언니 — 반영구 화장·눈썹문신 가격비교와 아티스트 추천";
 const SITE_DESCRIPTION = "반영구 잘하는 곳 찾을 땐 반언니! 전국 반영구 아티스트 포트폴리오, 눈썹·입술·아이라인 가격비교. 나에게 맞는 반영구 아티스트를 찾아보세요.";
 
 // 공개 준비 중에는 NEXT_PUBLIC_BLOCK_INDEXING=true → meta robots noindex + robots.ts disallow.

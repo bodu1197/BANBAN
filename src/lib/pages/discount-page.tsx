@@ -6,16 +6,19 @@ import { fetchRegions } from "@/lib/supabase/queries";
 import { DiscountPageClient } from "@/components/discount/DiscountPageClient";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
+// UI 라벨(STRINGS.pages.discount = "할인")과 분리 — <title> 이 "할인 | 반언니" 8자였다.
+const SEO_TITLE = "반영구 할인·특가 모음 — 눈썹문신 이벤트 가격";
+
 const SEO_DESCRIPTION =
   "반언니 한정 할인 모음 — 인기 반영구 시술을 최대 50% 할인된 가격으로 만나보세요. 눈썹·입술·아이라인 카테고리별 특가 포트폴리오를 매일 업데이트하며, 시즌 한정 할인과 신규 아티스트 데뷔 이벤트도 함께 확인할 수 있습니다.";
 
 export async function generateDiscountMetadata(): Promise<Metadata> {
   return {
-    title: STRINGS.pages.discount,
+    title: SEO_TITLE,
     description: SEO_DESCRIPTION,
     keywords: ["반영구 할인", "반영구 특가", "반영구 이벤트", "눈썹 문신 할인"],
     ...buildPageSeo({
-      title: STRINGS.pages.discount,
+      title: SEO_TITLE,
       description: SEO_DESCRIPTION,
       path: "/discount",
     }),
@@ -35,6 +38,8 @@ export async function renderDiscountPage(): Promise<React.ReactElement> {
   return (
     <div className="mx-auto w-full max-w-[1024px] pb-20">
       <JsonLdScript jsonLd={breadcrumbJsonLd} />
+      {/* h1 이 없어 본문 1만자짜리 페이지의 주제를 검색엔진이 못 잡고 있었다(2026-08-14 실측). */}
+      <h1 className="sr-only">{SEO_TITLE}</h1>
       <DiscountPageClient
         portfolios={portfolios}
         regions={regions}

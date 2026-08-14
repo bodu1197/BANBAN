@@ -30,12 +30,15 @@ export function resolveCommunityTab(raw: string | undefined): CommunityTabKey {
   return raw && VALID_TAB_KEYS.has(raw as CommunityTabKey) ? (raw as CommunityTabKey) : "shop-in-shop";
 }
 
+// UI 탭 라벨("커뮤니티")과 분리 — <title> 이 "커뮤니티 | 반언니" 라 검색어가 하나도 없었다.
+const COMMUNITY_SEO_TITLE = "반영구 커뮤니티 — 시술 부작용·후기·샵인샵 구인";
+
 export function generateCommunityMetadata(): Metadata {
   const description = `${t.title} — 샵인샵 임대·구인, ${t.qna}, 후기, 뷰티랩까지 반언니 회원 소통 공간`;
   return {
-    title: t.title,
+    title: COMMUNITY_SEO_TITLE,
     description,
-    ...buildPageSeo({ title: t.title, description, path: "/community" }),
+    ...buildPageSeo({ title: COMMUNITY_SEO_TITLE, description, path: "/community" }),
   };
 }
 
@@ -226,6 +229,8 @@ function CommunityTabContent({
 export function renderCommunityHub(props: Readonly<HubProps>): React.ReactElement {
   return (
     <div className="mx-auto w-full max-w-[1024px]">
+      {/* h1 부재 — 검색엔진이 페이지 주제를 잡을 단서가 없었다(2026-08-14 실측). */}
+      <h1 className="sr-only">{COMMUNITY_SEO_TITLE}</h1>
       <TabsNav activeTab={props.activeTab} />
       <CommunityTabContent {...props} />
     </div>

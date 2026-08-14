@@ -30,12 +30,62 @@ export function getAlternates(path: string = ""): { canonical: string } {
  * `value` 가 trim 후 비어 있으면 fallback, 아니면 trim 한 값을 `max`(양수) 길이로 캡(미지정 시 원본).
  * `x || fallback`(공백 문자열=truthy 누수)·`x ?? fallback`(빈 문자열 누수) 가드의 함정을 한 곳에서 차단한다.
  */
+/**
+ * 이름 있는 HTML 엔티티 최소 집합 — 본문에서 실제로 나오는 것만. 숫자 엔티티는 별도 처리.
+ * Map 을 쓰는 이유: 평범한 객체면 `&constructor;` 같은 입력이 프로토타입 체인을 타
+ * `function Object() { [native code] }` 가 meta description 에 그대로 실린다.
+ */
+const NAMED_ENTITIES = new Map<string, string>([
+  ["nbsp", " "], ["amp", "&"], ["lt", "<"], ["gt", ">"], ["quot", '"'], ["apos", "'"],
+]);
+
+/**
+ * 정규식 스캔 상한. `introduce`·`description` 에 길이 제약이 없어 태그 정리 정규식이
+ * 아주 긴 입력에서 O(n²) 로 늘어질 수 있다(닫는 `>` 가 없는 `<p ` 반복 등).
+ * meta description 은 어차피 160자만 쓰므로 앞부분만 훑으면 충분하다.
+ */
+const PLAIN_TEXT_SCAN_LIMIT = 20_000;
+
+/** 유효한 유니코드 스칼라만 복원 — 범위를 벗어나면 String.fromCodePoint 가 RangeError 로 페이지를 500 낸다. */
+function decodeCodePoint(code: number, original: string): string {
+  if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return original;
+  if (code >= 0xd800 && code <= 0xdfff) return original; // surrogate half
+  return String.fromCodePoint(code);
+}
+
+/**
+ * 에디터 원문(HTML)을 meta description / JSON-LD 에 쓸 수 있는 순수 텍스트로 바꾼다.
+ *
+ * 레거시 이관 작품 161개(공개 627개 중 25.7%)의 description 이
+ * `<p><img alt="3190811017403568772_1494000330.jpg" src="/files/…">` 형태라
+ * 검색 스니펫과 카카오톡/페이스북 공유 미리보기에 태그가 그대로 노출되고 있었다(2026-08-14 실측).
+ * 태그를 지운 뒤 읽을 텍스트가 남지 않으면 빈 문자열을 돌려주고, 호출부가 fallback 을 쓴다.
+ *
+ * ⚠️ 반환값을 dangerouslySetInnerHTML 로 넘기지 마라. 엔티티를 디코딩하므로 DB 에 `&lt;script&gt;`
+ * 가 들어 있으면 결과 문자열에는 진짜 `<script>` 가 복원된다. 용도는 meta/JSON-LD 같은
+ * **텍스트 sink 전용**이다(Next metadata 는 자동 escape, JSON-LD 는 jsonLdSafe 가 `<` 를 이스케이프).
+ */
+export function htmlToPlainText(value: string): string {
+  return value
+    .slice(0, PLAIN_TEXT_SCAN_LIMIT)
+    // script/style 은 태그를 벗기면 코드가 본문으로 새므로 통째로 제거
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    // 블록 경계는 공백으로 — 문장이 붙어버리는 것 방지
+    .replace(/<\/?(p|div|br|li|tr|h[1-6]|section|article)\b[^>]*>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&#(\d+);/g, (whole, code: string) => decodeCodePoint(Number(code), whole))
+    .replace(/&#x([0-9a-f]+);/gi, (whole, code: string) => decodeCodePoint(Number.parseInt(code, 16), whole))
+    .replace(/&([a-z]+);/gi, (whole, name: string) => NAMED_ENTITIES.get(name.toLowerCase()) ?? whole)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function descriptionOrFallback(
   value: string | null | undefined,
   fallback: string,
   max?: number,
 ): string {
-  const trimmed = value?.trim();
+  const trimmed = value ? htmlToPlainText(value) : "";
   if (!trimmed) return fallback;
   return max === undefined ? trimmed : trimmed.slice(0, max);
 }

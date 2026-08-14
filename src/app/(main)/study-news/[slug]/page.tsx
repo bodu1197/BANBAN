@@ -12,10 +12,10 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ slug: string }> }>): Promise<Metadata> {
   const { slug } = await params;
   const item = await getNewsBySlug(slug);
-  if (!item) return { title: "문신사 뉴스 | 반언니" };
+  if (!item) return { title: "문신사 뉴스" };
   const description = item.summary.slice(0, 150);
   return {
-    title: `${item.title} | 반언니 문신사 뉴스`,
+    title: item.title,
     description,
     alternates: { canonical: `/study-news/${slug}` },
     openGraph: { title: item.title, description, type: "article", url: `/study-news/${slug}`, images: ["/og-image.png"] },

@@ -6,7 +6,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, MapPin } from "lucide-react";
 import {
   fetchLocationSeoPageBySlug,
+  fetchShopsInRegion,
   type LocationSeoPage,
+  type LocationShopLink,
 } from "@/lib/location-seo/queries";
 import { ArticleBody, FaqSection, WatermarkStamp } from "@/lib/pages/article-content";
 import {
@@ -117,11 +119,54 @@ function LocationStats({
 }
 
  
+/**
+ * 지역 랜딩 → 그 지역 샵 상세로 나가는 크롤 경로.
+ * 이게 없어서 지역 페이지가 "샵 3곳" 이라고 세어놓고 갈 데는 없는 막다른 길이었다(2026-08-14).
+ */
+// 헤딩에 개수를 쓰지 않는다 — LocationStats 의 artist_count 는 시술(style)별로 스코프된 값이라
+// 지역 전체 샵 목록과 숫자가 어긋나 사용자에게 모순으로 보인다.
+function RegionShopLinks({
+  regionName,
+  shops,
+}: Readonly<{ regionName: string; shops: LocationShopLink[] }>): React.ReactElement | null {
+  if (shops.length === 0) return null;
+  return (
+    <section className="mt-8 border-t border-border pt-6" aria-labelledby="region-shops-heading">
+      <h2 id="region-shops-heading" className="mb-3 text-base font-bold text-foreground md:text-lg">
+        {regionName} 반영구 샵
+      </h2>
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {shops.map((shop) => (
+          <li key={shop.id}>
+            <Link
+              href={`/artists/${shop.id}`}
+              className="block rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-brand-primary hover:bg-muted focus-visible:border-brand-primary focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="block truncate text-sm font-semibold text-foreground">{shop.title}</span>
+              {shop.address ? (
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">{shop.address}</span>
+              ) : null}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/artists"
+        className="mt-4 inline-flex items-center gap-1 rounded-sm text-sm font-medium text-brand-primary transition-colors hover:text-brand-primary-hover focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        전국 반영구 샵 전체 보기 →
+      </Link>
+    </section>
+  );
+}
+
 export async function renderLocationDetailPage(
   slug: string,
 ): Promise<React.ReactElement> {
   const page = await fetchLocationSeoPageBySlug(slug);
   if (!page) notFound();
+
+  const shops = await fetchShopsInRegion(page.region_id);
 
   const date = new Date(page.published_at).toLocaleDateString("ko-KR", {
     year: "numeric",
@@ -189,6 +234,7 @@ export async function renderLocationDetailPage(
 
         <ArticleBody content={page.content} coverImageUrl={page.cover_image_url} />
         <FaqSection faq={page.faq} />
+        <RegionShopLinks regionName={page.region_name} shops={shops} />
       </div>
     </article>
   );

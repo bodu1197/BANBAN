@@ -8,7 +8,7 @@ export async function generateCourseDetailMetadata(id: string): Promise<Metadata
     const course = await fetchCourseById(id);
     if (!course) {
         return {
-            title: "수강 과정을 찾을 수 없습니다 | 반언니",
+            title: "수강 과정을 찾을 수 없습니다",
             description: "요청하신 수강 과정을 찾을 수 없습니다.",
             robots: { index: false, follow: false },
             ...buildPageSeo({
