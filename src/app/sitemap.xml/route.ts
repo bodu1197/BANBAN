@@ -6,6 +6,8 @@ import {
   SITE_URL,
   buildSitemapIndexEntry,
   calcPageCount,
+  settledCount,
+  type SitemapCountResult,
   wrapSitemapIndex,
   xmlResponse,
 } from "@/lib/sitemap-utils";
@@ -19,26 +21,19 @@ import {
  */
 export const dynamic = "force-dynamic";
 
-const DEPLOYED_AT = new Date().toISOString();
+/** 빌드 때 인라인되는 배포 시각 — 런타임 `new Date()` 는 콜드스타트마다 달라진다(next.config.ts 참조). */
+const DEPLOYED_AT = process.env.BUILD_TIME ?? new Date(0).toISOString();
 
 interface ContentEntry {
   slug: string;
   count: number;
 }
 
-type CountResult = PromiseSettledResult<{ count: number | null } | number>;
-
-/**
- * 하나가 실패해도 사이트맵 인덱스 전체를 500 으로 날리지 않는다 — 실패한 항목만 0(=스킵)으로 강등.
- * 조용히 0 으로 떨어뜨리면 특정 콘텐츠 타입이 사이트맵에서 통째로 사라져도 아무 신호가 안 남으므로,
- * 실패는 반드시 로그로 남긴다(구글이 그 타입을 발견 못 하는 SEO 사고로 이어진다).
- */
-function settledCount(r: CountResult, slug: string): number {
-  if (r.status !== "fulfilled") {
-    console.error(`[sitemap] ${slug} count 실패 — 사이트맵에서 제외됨:`, r.reason);
-    return 0;
-  }
-  return typeof r.value === "number" ? r.value : (r.value.count ?? 0);
+/** 실패는 반드시 로그로 — 조용히 빠지면 그 콘텐츠 타입이 사이트맵에서 사라져도 아무도 모른다. */
+function countOf(result: SitemapCountResult, slug: string): number {
+  return settledCount(result, (reason) => {
+    console.error(`[sitemap] ${slug} count 실패 — 사이트맵에서 제외됨:`, reason);
+  });
 }
 
 async function getContentEntries(): Promise<ContentEntry[]> {
@@ -62,15 +57,15 @@ async function getContentEntries(): Promise<ContentEntry[]> {
     ]);
 
   return [
-    { slug: "artists", count: settledCount(artists, "artists") },
-    { slug: "portfolios", count: settledCount(portfoliosCount, "portfolios") },
-    { slug: "exhibitions", count: settledCount(exhibitions, "exhibitions") },
-    { slug: "courses", count: settledCount(courses, "courses") },
-    { slug: "community", count: settledCount(posts, "community") },
-    { slug: "encyclopedia", count: settledCount(encyclopedia, "encyclopedia") },
-    { slug: "location", count: settledCount(locationSeo, "location") },
-    { slug: "study-news", count: settledCount(studyNews, "study-news") },
-    { slug: "events", count: settledCount(events, "events") },
+    { slug: "artists", count: countOf(artists, "artists") },
+    { slug: "portfolios", count: countOf(portfoliosCount, "portfolios") },
+    { slug: "exhibitions", count: countOf(exhibitions, "exhibitions") },
+    { slug: "courses", count: countOf(courses, "courses") },
+    { slug: "community", count: countOf(posts, "community") },
+    { slug: "encyclopedia", count: countOf(encyclopedia, "encyclopedia") },
+    { slug: "location", count: countOf(locationSeo, "location") },
+    { slug: "study-news", count: countOf(studyNews, "study-news") },
+    { slug: "events", count: countOf(events, "events") },
   ];
 }
 

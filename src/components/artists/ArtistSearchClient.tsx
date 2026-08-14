@@ -1,14 +1,14 @@
 // @client-reason: URL-synced filters, category tabs, like toggle, geolocation for nearby artists
 "use client";
 
-import { useState, useCallback, useMemo, Suspense, useTransition } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useViewerState } from "@/hooks/useViewerState";
+import { useCallback, useMemo, Suspense } from "react";
+import { usePathname } from "next/navigation";
+import { useUrlSearchParams, pushParams } from "@/hooks/useUrlSearchParams";
+import { useLikedArtists } from "@/hooks/useLikedArtists";
 import { STRINGS } from "@/lib/strings";
 import { useArtistSearch } from "@/hooks/useArtistSearch";
 import { useNearbyArtists } from "@/hooks/useNearbyArtists";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { toggleLike } from "@/lib/actions/likes";
 import { ArtistListCard } from "./ArtistListCard";
 import { RegionSelector } from "@/components/filters/RegionSelector";
 import { MapPin, Navigation } from "lucide-react";
@@ -22,19 +22,6 @@ interface ArtistSearchClientProps {
 }
 
 // --- Helpers ---
-
-function buildUpdatedPath(pathname: string, current: URLSearchParams, updates: Partial<Record<string, string | null>>): string {
-  const params = new URLSearchParams(current.toString());
-  for (const [key, value] of Object.entries(updates)) {
-    if (value === null || value === "" || value === undefined) {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-  }
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : pathname;
-}
 
 // --- Skeleton ---
 
@@ -65,7 +52,7 @@ function ArtistSkeleton(): React.ReactElement {
 
 function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedIds, likesLoaded, onLikeToggle }: Readonly<{
   artists: ArtistListItem[]; isLoading: boolean; isLoadingMore: boolean; noDataLabel: string;
-  likedIds: Set<string>; likesLoaded: boolean; onLikeToggle: (id: string) => void;
+  likedIds: ReadonlySet<string>; likesLoaded: boolean; onLikeToggle: (id: string) => void;
 }>): React.ReactElement {
   if (isLoading) return <ArtistSkeleton />;
 
@@ -160,40 +147,6 @@ function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount, onRe
   return null;
 }
 
-/**
- * 좋아요 상태 — 서버는 로그아웃 상태를 렌더한다(그래야 이 페이지가 CDN 캐시를 받는다).
- * 서버 상태를 로컬 state 로 복사하지 않고 파생시킨다: 복사하면 effect 안 setState 라 렌더가 한 번 더 돌고,
- * 하트를 누른 직후 서버 응답이 도착하면 낙관적 표시가 되돌아간다. 낙관적 토글은 override 로만 덮는다.
- */
-function useLikedArtists(): { likedIds: Set<string>; handleLikeToggle: (artistId: string) => void; loaded: boolean } {
-  const viewer = useViewerState();
-  const [overrides, setOverrides] = useState<ReadonlyMap<string, boolean>>(() => new Map());
-  const [, startTransition] = useTransition();
-
-  const likedIds = useMemo(() => {
-    const ids = new Set(viewer.likedArtistIds);
-    for (const [id, liked] of overrides) {
-      if (liked) ids.add(id);
-      else ids.delete(id);
-    }
-    return ids;
-  }, [viewer.likedArtistIds, overrides]);
-
-  const handleLikeToggle = useCallback((artistId: string): void => {
-    // 서버 응답 전에는 전부 "좋아요 안 함"이다. 그 사이에 누르면 화면은 +1 인데 서버는 해제해 어긋난다.
-    if (!viewer.loaded) return;
-    const next = !likedIds.has(artistId);
-    setOverrides((prev) => new Map(prev).set(artistId, next));
-
-    startTransition(async () => {
-      const result = await toggleLike(artistId).catch(() => null);
-      if (!result?.success) setOverrides((prev) => new Map(prev).set(artistId, !next));
-    });
-  }, [likedIds, viewer.loaded]);
-
-  return { likedIds, handleLikeToggle, loaded: viewer.loaded };
-}
-
 // --- Search/nearby mode resolution ---
 
 function useResolvedArtists(
@@ -230,9 +183,8 @@ function ArtistSearchInner({ initialArtists,
   initialTotalCount,
   regions,
 }: Readonly<ArtistSearchClientProps>): React.ReactElement {
-  const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const searchParams = useUrlSearchParams();
 
   const { artists: searchArtists, isLoading: searchLoading, isLoadingMore, sentinelRef, regionId, regionSido } =
     useArtistSearch(initialArtists, initialTotalCount);
@@ -248,15 +200,15 @@ function ArtistSearchInner({ initialArtists,
 
   const resolved = useResolvedArtists(searchArtists, searchLoading, isLoadingMore, initialTotalCount, nearby, isNearbyMode);
 
-  const { likedIds, handleLikeToggle, loaded: likesLoaded } = useLikedArtists();
+  const { likedIds, toggleArtistLike, loaded: likesLoaded } = useLikedArtists();
 
   const d = STRINGS;
 
   const navigateWithParams = useCallback(
     (updates: Partial<Record<string, string | null>>): void => {
-      router.push(buildUpdatedPath(pathname, searchParams, updates));
+      pushParams(pathname, searchParams, updates);
     },
-    [pathname, router, searchParams],
+    [pathname, searchParams],
   );
 
   const handleRegionsSelect = useCallback((id: string | null, sido: string | null): void => {
@@ -302,7 +254,7 @@ function ArtistSearchInner({ initialArtists,
           noDataLabel={resolved.noDataLabel}
           likedIds={likedIds}
           likesLoaded={likesLoaded}
-          onLikeToggle={handleLikeToggle}
+          onLikeToggle={toggleArtistLike}
         />
         {!isNearbyMode && <div ref={sentinelRef} className="h-1" />}
       </section>

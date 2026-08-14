@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Heart, Edit2, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
+import { fetchPortfolioLikeState } from "@/lib/actions/portfolio-likes";
 import { trackPortfolioView } from "@/lib/actions/portfolio-view";
 import { toast } from "sonner";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
@@ -51,7 +51,6 @@ interface PortfolioDetailClientProps {
   heroBanner?: React.ReactNode;
   descriptionHtml: string;
   artistSection?: React.ReactNode;
-  shopTabs?: React.ReactNode;
 }
 
 async function handleToggleLike(
@@ -97,7 +96,18 @@ function YouTubeEmbed({ url }: Readonly<{ url: string | null }>): React.ReactEle
   );
 }
 
-// eslint-disable-next-line max-lines-per-function
+/**
+ * 좋아요 토글을 열어도 되는 시점.
+ *
+ * 서버 응답 전에 열어두면 이미 좋아요한 사용자가 그 사이 누를 때 화면은 +1 인데 서버는 해제해
+ * 상태가 영구히 어긋난다. 비로그인은 조회 자체를 안 하므로 인증 확인이 끝나면 바로 확정이다.
+ */
+function resolveLikeLoaded(authLoading: boolean, user: unknown, likeFetched: boolean): boolean {
+  if (authLoading) return false;
+  return user ? likeFetched : true;
+}
+
+// eslint-disable-next-line max-lines-per-function -- 상세 화면 한 벌, 쪼개면 섹션 순서가 흩어진다
 export function PortfolioDetailClient({
   portfolio,
   firstImageUrl,
@@ -105,19 +115,32 @@ export function PortfolioDetailClient({
   heroBanner,
   descriptionHtml,
   artistSection,
-  shopTabs,
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
   // 좋아요 여부·조회수는 서버 렌더에서 다루지 않는다 — 쿠키를 읽거나 DB 에 쓰면 이 페이지(627개)가
   // 캐시 불가가 된다. 마운트 후 한 번 채우고, 조회수도 여기서 집계한다.
   const [isLiked, setIsLiked] = useState(false);
-  // 서버 응답 전 클릭 방지 — 이미 좋아요한 사용자가 그 사이 누르면 화면(+1)과 서버(해제)가 어긋난다.
-  const [likeLoaded, setLikeLoaded] = useState(false);
+  const [likeFetched, setLikeFetched] = useState(false);
   const [likesCount, setLikesCount] = useState(portfolio.likes_count ?? 0);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const { user, artist: myArtist, isLoading: authLoading } = useAuth();
+
+  const likeLoaded = resolveLikeLoaded(authLoading, user, likeFetched);
+
+  // 좋아요 상태는 **로그인 사용자에게만** 물어본다. 비로그인 방문자에게도 부르면 이 서버액션 POST 가
+  // 방문마다 발생해, 프리렌더로 캐시해 둔 상세 627개가 매번 함수 인보케이션을 도로 물게 된다.
   useEffect(() => {
-    void isPortfolioLiked(portfolio.id)
-      .then(setIsLiked)
-      .catch(() => { /* 로그아웃 상태 유지 */ })
-      .finally(() => { setLikeLoaded(true); });
+    if (authLoading || !user) return;
+    void fetchPortfolioLikeState(portfolio.id)
+      .then(({ isLiked: liked, likesCount: count }) => {
+        setIsLiked(liked);
+        // 프리렌더 시점 개수는 낡아 있다 — 서버 값으로 교체해야 토글 후 숫자가 어긋나지 않는다.
+        if (count !== null) setLikesCount(count);
+      })
+      .catch(() => { /* 조회 실패 시 프리렌더 값 유지 */ })
+      .finally(() => { setLikeFetched(true); });
+  }, [portfolio.id, user, authLoading]);
+
+  useEffect(() => {
     // 세션당 1회만 집계 — 없으면 새로고침·뒤로가기·StrictMode 이중 마운트마다 +1 이 된다
     // (백과의 ViewCounter 와 같은 방식으로 맞춘다).
     const seenKey = `pf-view:${portfolio.id}`;
@@ -131,8 +154,6 @@ export function PortfolioDetailClient({
       void trackPortfolioView(portfolio.id);
     }
   }, [portfolio.id]);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const { user, artist: myArtist } = useAuth();
   const canEdit = useCanEdit(user?.id, myArtist?.id, portfolio.artist_id);
 
   const artist = portfolio.artist;
@@ -183,7 +204,6 @@ export function PortfolioDetailClient({
 
       {heroBanner}
 
-      {shopTabs}
 
       <section
         id={PORTFOLIO_SECTION_IDS.description}

@@ -137,6 +137,20 @@ export default async function Page() {
 - `Suspense` + async Server Component 패턴 사용
 - `globalThis` 사용 (`window`/`global` 금지)
 
+#### 🔴 색인되는 페이지에서 `useSearchParams()` 금지
+
+**목록·필터 페이지(= 검색결과에 나와야 하는 페이지)는 `useSearchParams()` 대신
+`useUrlSearchParams()`(`src/hooks/useUrlSearchParams.ts`)를 쓰고, URL 변경은 `pushUrl()` 로만 한다.**
+
+`useSearchParams()` 는 정적 프리렌더 중 바일아웃을 던져 가장 가까운 Suspense 경계까지가
+클라이언트 전용으로 떨어진다 — 서버 HTML 본문이 통째로 사라진다.
+2026-08-14 실측: 이 한 줄 때문에 112개 URL 이 본문 0자로 나가 색인률이 5% 였다.
+
+- ✅ 써도 되는 곳: 로그인·마이페이지·검색결과처럼 `noindex` 이거나 어차피 색인 대상이 아닌 화면
+- ❌ 쓰면 안 되는 곳: `/artists` `/events` `/portfolios` `/women-beauty` `/mens-beauty` 등 목록 페이지
+- **쿼리·필터를 바꿀 때만** `pushUrl()`/`pushParams()` 를 쓴다. `router.push` + 수동 알림 조합은 만들지 말 것 — 히스토리 커밋이 트랜지션 뒤라 경합이 난다. 페이지 **이동**(`router.back()`, `<Link>`, 다른 경로로 push)은 평소대로 라우터를 쓴다.
+- ⚠️ 트레이드오프: 서버 HTML 은 **항상 필터가 안 걸린 기본 목록**이다(서버 스냅샷 = 빈 쿼리). 필터는 하이드레이션 이후에 적용된다 — 그게 크롤러가 보는 화면이자 캐시되는 화면이다. 필터 결과를 SSR 해야 하면 쿼리가 아니라 **경로**로 만들어라(`/portfolios/page/2` 처럼).
+
 ### SonarCloud
 - 부정 조건 (`!condition ? A : B`) 대신 긍정 조건 우선 (`condition ? B : A`)
 - 빈 catch: `catch {}` 사용 (`catch (e) {}` 금지)

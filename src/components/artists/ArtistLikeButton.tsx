@@ -1,10 +1,9 @@
 // @client-reason: Like toggle requires user interaction + server action
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Heart } from "lucide-react";
-import { toggleLike } from "@/lib/actions/likes";
-import { useViewerState } from "@/hooks/useViewerState";
+import { useLikedArtists } from "@/hooks/useLikedArtists";
 
 interface ArtistLikeButtonProps {
   artistId: string;
@@ -17,30 +16,23 @@ export function ArtistLikeButton({
   initialCount,
   label,
 }: Readonly<ArtistLikeButtonProps>): React.ReactElement {
-  // 서버는 "좋아요 안 함" 을 렌더한다 — 서버에서 로그인 상태를 읽으면 샵 상세 85개가 캐시 불가가 된다.
-  // 마운트 후 실제 상태로 교체(로그인 사용자에게 하트가 잠깐 비어 보이는 건 의도된 트레이드오프).
-  const viewer = useViewerState();
-  // 서버 상태를 로컬 state 로 복사하지 않고 파생시킨다 — 복사하면 effect 안 setState 라 렌더가 한 번 더 돌고,
-  // 하트를 누른 직후 서버 응답이 도착하면 낙관적 표시가 되돌아간다. 낙관적 토글은 override 로만 덮는다.
-  const [likeOverride, setLikeOverride] = useState<boolean | null>(null);
-  const isLiked = likeOverride ?? viewer.likedArtistIds.includes(artistId);
-  const [count, setCount] = useState(initialCount);
-  const [, startTransition] = useTransition();
+  // 좋아요 상태·낙관적 토글·확정 전 클릭 차단은 목록과 같은 훅을 쓴다(로직 중복 제거).
+  // 서버는 "좋아요 안 함"을 렌더하고 마운트 후 실제 상태로 바뀐다 — 그래야 샵 상세 85개가 캐시된다.
+  const { likedIds, loaded, toggleArtistLike } = useLikedArtists();
+  const isLiked = likedIds.has(artistId);
+
+  // 개수만 이 버튼의 로컬 상태다 — 목록 카드는 개수를 안 보여줘 훅이 다루지 않는다.
+  const [countDelta, setCountDelta] = useState(0);
+  const count = initialCount + countDelta;
 
   const handleClick = (): void => {
-    // 서버 응답 전에는 "좋아요 안 함"으로 그려져 있다. 이미 좋아요한 사용자가 이때 누르면
-    // 화면은 +1 인데 서버는 좋아요를 해제해 상태가 영구히 어긋난다 — 확정될 때까지 막는다.
-    if (!viewer.loaded) return;
-    const next = !isLiked;
-    setLikeOverride(next);
-    setCount((prev) => prev + (next ? 1 : -1));
-
-    startTransition(async () => {
-      const result = await toggleLike(artistId).catch(() => null);
-      if (!result?.success) {
-        setLikeOverride(!next);
-        setCount((prev) => prev + (next ? -1 : 1));
-      }
+    if (!loaded) return;
+    const delta = isLiked ? -1 : 1;
+    setCountDelta((prev) => prev + delta);
+    // 서버가 거부하면(비로그인 등) 훅은 하트를 되돌리는데 개수는 이 컴포넌트 것이라
+    // 같이 되돌리지 않으면 하트만 원복되고 숫자가 영구히 어긋난다.
+    void toggleArtistLike(artistId).then((ok) => {
+      if (!ok) setCountDelta((prev) => prev - delta);
     });
   };
 
@@ -48,10 +40,11 @@ export function ArtistLikeButton({
     <button
       type="button"
       onClick={handleClick}
-      disabled={!viewer.loaded}
+      disabled={!loaded}
       className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-full p-2 transition-colors hover:text-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-50 disabled:hover:text-current"
-      // 로딩 중에는 aria-pressed 가 아직 false 라 스크린리더가 틀린 상태를 읽는다 — 라벨로 확인 중임을 알린다.
-      aria-label={viewer.loaded ? label : "좋아요 상태 확인 중"}
+      // aria-label 은 버튼의 이름을 통째로 덮으므로 개수를 빼면 스크린리더는 숫자를 영영 못 듣는다.
+      // 로딩 중에는 aria-pressed 가 아직 false 라 상태가 거짓말이 된다 — 라벨로 확인 중임을 알린다.
+      aria-label={loaded ? `${label} ${String(count)}` : "좋아요 상태 확인 중"}
       aria-pressed={isLiked}
     >
       <Heart

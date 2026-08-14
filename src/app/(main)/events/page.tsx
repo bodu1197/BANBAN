@@ -13,9 +13,8 @@ export const metadata: Metadata = {
   ...buildPageSeo({ title, description, path: "/events" }),
 };
 
-// 정적 프리렌더 시 EventsSearchClient 의 useSearchParams() 가 바일아웃 → 본문 0자.
-// 동적 렌더에서는 정상 SSR 된다.
-export const dynamic = "force-dynamic";
+// 필터는 useUrlSearchParams 로 읽는다 — 근거는 그 훅의 JSDoc 참조(src/hooks/useUrlSearchParams.ts).
+export const revalidate = 60;
 
 export default async function Page(): Promise<React.ReactElement> {
   return renderEventsPage();

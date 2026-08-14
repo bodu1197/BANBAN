@@ -2,7 +2,8 @@
 "use client";
 
 import { useCallback, useMemo, Suspense } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { useUrlSearchParams, pushParams } from "@/hooks/useUrlSearchParams";
 import { ArrowLeft, MapPin, Navigation } from "lucide-react";
 import { STRINGS } from "@/lib/strings";
 import { useEventSearch } from "@/hooks/useEventSearch";
@@ -17,19 +18,6 @@ interface EventsSearchClientProps {
   initialEvents: EventCardData[];
   initialTotalCount: number;
   regions: Region[];
-}
-
-function buildUpdatedPath(pathname: string, current: URLSearchParams, updates: Partial<Record<string, string | null>>): string {
-  const params = new URLSearchParams(current.toString());
-  for (const [key, value] of Object.entries(updates)) {
-    if (value === null || value === "" || value === undefined) {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-  }
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : pathname;
 }
 
 function EventGridSkeleton(): React.ReactElement {
@@ -176,7 +164,7 @@ function EventsSearchInner({
 }: Readonly<EventsSearchClientProps>): React.ReactElement {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const searchParams = useUrlSearchParams();
 
   const { events: searchEvents, isLoading: searchLoading, isLoadingMore, sentinelRef, regionId, regionSido } =
     useEventSearch(initialEvents, initialTotalCount);
@@ -196,9 +184,9 @@ function EventsSearchInner({
 
   const navigateWithParams = useCallback(
     (updates: Partial<Record<string, string | null>>): void => {
-      router.push(buildUpdatedPath(pathname, searchParams, updates));
+      pushParams(pathname, searchParams, updates);
     },
-    [pathname, router, searchParams],
+    [pathname, searchParams],
   );
 
   const handleRegionsSelect = useCallback((id: string | null, sido: string | null): void => {

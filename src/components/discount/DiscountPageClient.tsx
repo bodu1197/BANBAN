@@ -62,7 +62,7 @@ const REGION_LABELS = {
   back: "뒤로",
   close: "닫기",
   resetRegion: "지역 초기화",
-  apply: "적용",
+  // apply 는 지정하지 않는다 — RegionModal 의 기본 문구("이 지역으로 보기")를 다른 목록과 함께 쓴다.
 };
 
 function filterByRegion(items: HomePortfolio[], regionId: string | null, regionSido: string | null, regionMap: Map<string, string>, activeRegions: Region[]): HomePortfolio[] {

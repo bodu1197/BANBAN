@@ -12,6 +12,14 @@ export const LISTING_PAGE_SIZE = 24;
 /** 목록/카운트 캐시 TTL(초). page.tsx revalidate, sitemap s-maxage 과 의미상 동일 계층. */
 const LISTING_CACHE_TTL = 300;
 
+/**
+ * 목록(1페이지 + /page/N) 전용 무효화 태그.
+ *
+ * 예전엔 `"portfolios"` 를 썼는데 그 태그는 홈 6개 섹션·`/discount`·전역검색 캐시까지 달고 있어
+ * 작품 1건 수정이 그 전부를 콜드로 만들었다. 그쪽은 30~60초 TTL 이라 어차피 스스로 만료된다.
+ */
+export const LISTING_CACHE_TAG = "portfolio-listing";
+
 const SELECT_PUBLIC = `
   id, artist_id, title, price_origin, price, discount_rate, sale_ended_at, likes_count,
   portfolio_media(storage_path, order_index),
@@ -45,7 +53,7 @@ async function fetchPublicPortfolioTotal(): Promise<number> {
       return count ?? 0;
     },
     ["public-portfolio-total"],
-    { revalidate: LISTING_CACHE_TTL, tags: ["portfolios"] },
+    { revalidate: LISTING_CACHE_TTL, tags: [LISTING_CACHE_TAG] },
   )();
 }
 
@@ -68,7 +76,7 @@ async function fetchNaturalPortfolioItems(safePage: number): Promise<HomePortfol
       return ((data ?? []) as unknown as PortfolioRow[]).map(mapPortfolioRow);
     },
     [`public-portfolio-items-${safePage}`],
-    { revalidate: LISTING_CACHE_TTL, tags: ["portfolios"] },
+    { revalidate: LISTING_CACHE_TTL, tags: [LISTING_CACHE_TAG] },
   )();
 }
 

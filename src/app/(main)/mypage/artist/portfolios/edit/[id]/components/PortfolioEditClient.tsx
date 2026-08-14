@@ -271,8 +271,8 @@ export default function PortfolioEditClient({
             const activeCount = existingMedia.filter((m) => !deletedMediaIds.has(m.id)).length;
             await uploadNewMedia(supabase, portfolioId, effectiveArtistId, newImages, activeCount);
             if (formValues.isEvent) await syncExhibitions();
-            // 목록/공개샵 페이지 캐시 즉시 무효화
-            await revalidatePortfolioPages(effectiveArtistId).catch((err: unknown) => {
+            // 목록/공개샵/이 작품 상세 캐시 즉시 무효화
+            await revalidatePortfolioPages(effectiveArtistId, portfolioId).catch((err: unknown) => {
                 // eslint-disable-next-line no-console
                 console.error("Portfolio cache invalidation failed:", err);
             });
@@ -296,7 +296,7 @@ export default function PortfolioEditClient({
             // 삭제된 작품 색인 제거 요청(keepalive — 직후 router.push 이탈에도 전송 보장).
             requestPortfolioIndexPing(portfolioId);
             const effectiveArtistId = artist?.id ?? portfolioArtistId;
-            await revalidatePortfolioPages(effectiveArtistId).catch((err: unknown) => {
+            await revalidatePortfolioPages(effectiveArtistId, portfolioId).catch((err: unknown) => {
                 // eslint-disable-next-line no-console
                 console.error("Portfolio cache invalidation failed:", err);
             });

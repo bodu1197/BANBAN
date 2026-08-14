@@ -35,7 +35,6 @@ interface RecentReview {
 interface EventDetailClientProps {
   event: EventWithDetails;
   heroBanner: React.ReactNode;
-  shopTabs?: React.ReactNode;
   shopInfoCard?: React.ReactNode;
   recommendedSection?: React.ReactNode;
   isLoggedIn: boolean;
@@ -47,7 +46,6 @@ interface EventDetailClientProps {
 export function EventDetailClient({
   event,
   heroBanner,
-  shopTabs,
   shopInfoCard,
   recommendedSection,
   isLoggedIn,
@@ -65,7 +63,6 @@ export function EventDetailClient({
 
       {heroBanner}
 
-      {shopTabs}
 
       <section id={EVENT_SECTION_IDS.description} aria-label="이벤트 설명">
         {isImageBased ? (

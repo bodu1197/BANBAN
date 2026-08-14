@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
-import { SITE_URL, jsonLdSafe } from "@/lib/seo";
+import { SITE_URL, jsonLdSafe, getBreadcrumbJsonLd } from "@/lib/seo";
 import { getNewsBySlug, getPublishedNews } from "@/lib/study-news/store";
 import { fmtDate, safeSourceUrl } from "@/lib/study-news/format";
 import { StudyNewsSourceBadge } from "@/components/study/StudyNewsRow";
@@ -54,10 +54,18 @@ export default async function StudyNewsDetailPage({ params }: Readonly<{ params:
     mainEntityOfPage: `${SITE_URL}/study-news/${slug}`,
   };
 
+  // 다른 상세(백과·지역·샵)에는 있는데 여기만 없었다 — 검색결과 탐색경로 표시가 빠진다.
+  const breadcrumbJsonLd = getBreadcrumbJsonLd([
+    { name: "홈", path: "/" },
+    { name: "문신사 뉴스", path: "/study-news" },
+    { name: item.title, path: `/study-news/${slug}` },
+  ]);
+
   return (
     <article className="mx-auto max-w-2xl px-4 py-6">
       {/* JSON-LD 구조화 데이터(NewsArticle) — jsonLdSafe 로 </script> 탈출 방지 */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(breadcrumbJsonLd) }} />
 
       <Link href="/study-news" className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <ChevronLeft className="h-4 w-4" aria-hidden="true" /> 뉴스 목록

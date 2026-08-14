@@ -3,7 +3,7 @@ import Link from "next/link";
 interface SeoPaginationProps {
   currentPage: number;
   totalPages: number;
-  /** 페이지 링크 기준 경로 (예: "/portfolios"). page>1 은 ?page=N 이 붙는다. */
+  /** 페이지 링크 기준 경로 (예: "/portfolios"). page>1 은 /page/N 세그먼트가 붙는다. */
   basePath: string;
 }
 
@@ -17,10 +17,15 @@ const ELLIPSIS_CLASS = "px-1 text-sm text-muted-foreground";
 
 /**
  * 목록 canonical 과 페이지네이션 링크가 공유하는 정규 URL 규칙.
- * page 1 은 파라미터 없는 정규 URL(중복 색인 방지), 2 이상만 ?page=N.
+ * page 1 은 파라미터 없는 정규 URL(중복 색인 방지), 2 이상은 **경로 세그먼트** /page/N.
+ *
+ * 쿼리(?page=N)가 아니라 경로를 쓰는 이유: 페이지가 searchParams 를 읽는 순간 그 라우트는
+ * 요청마다 새로 그리는 동적 페이지가 되어 CDN 캐시를 전혀 못 받는다. /portfolios 는 627개
+ * 작품 상세로 가는 관문인데 모든 봇 요청이 서버리스 인보케이션을 태우고 있었다(2026-08-14 실측:
+ * 3회 연속 X-Vercel-Cache MISS · private,no-store).
  */
 export function hrefForPage(basePath: string, page: number): string {
-  return page <= 1 ? basePath : `${basePath}?page=${page}`;
+  return page <= 1 ? basePath : `${basePath}/page/${page}`;
 }
 
 /** 현재 페이지 ±2 = 최대 5개 번호를 노출. */

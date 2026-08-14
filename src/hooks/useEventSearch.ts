@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInfiniteScroll } from "./useInfiniteScroll";
 import type { EventCardData, EventSearchResult } from "@/lib/supabase/event-queries";
@@ -61,7 +61,7 @@ export function useEventSearch(
   initialEvents: EventCardData[],
   initialTotalCount: number,
 ): UseEventSearchReturn {
-  const searchParams = useSearchParams();
+  const searchParams = useUrlSearchParams();
   const filters = parseSearchFilters(searchParams);
 
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } = useInfiniteQuery({

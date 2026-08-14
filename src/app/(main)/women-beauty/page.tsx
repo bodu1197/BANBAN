@@ -1,10 +1,7 @@
 import { createPortfolioPageMetadata, createPortfolioPage } from "@/lib/portfolio-page";
 
-// 정적 프리렌더 시 usePortfolioFilters 의 useSearchParams() 가 바일아웃을 던져 본문이 통째로
-// 사라진다(2026-08-14 SEO 사고: 서버 HTML 본문 0자 · h1 0개 · 색인 안 됨).
-// 동적 렌더에서는 useSearchParams() 가 정상 SSR 되므로 본문·내부링크가 HTML 에 실린다.
-// ponytail: 캐시 복구는 쿼리 단위(unstable_cache)로 따로 처리 — 빈 페이지를 캐시하느니 안 캐시하는 게 낫다.
-export const dynamic = "force-dynamic";
+// 필터는 useUrlSearchParams 로 읽는다 — 근거는 그 훅의 JSDoc 참조(src/hooks/useUrlSearchParams.ts).
+export const revalidate = 300;
 
 const config = {
   typeArtist: "SEMI_PERMANENT" as const,

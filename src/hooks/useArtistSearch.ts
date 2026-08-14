@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInfiniteScroll } from "./useInfiniteScroll";
 import type { ArtistListItem } from "@/lib/supabase/artist-queries";
@@ -79,7 +79,7 @@ export function useArtistSearch(
   initialArtists: ArtistListItem[],
   initialTotalCount: number,
 ): UseArtistSearchReturn {
-  const searchParams = useSearchParams();
+  const searchParams = useUrlSearchParams();
   const filters = parseSearchFilters(searchParams);
 
   const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } = useInfiniteQuery({

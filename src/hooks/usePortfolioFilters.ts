@@ -1,8 +1,9 @@
-// @client-reason: Custom hook using useRouter, useSearchParams for URL-synced filter state
+// @client-reason: URL 쿼리에 묶인 필터 상태 — history/location 접근 필요
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useUrlSearchParams, pushUrl, pushParams } from "@/hooks/useUrlSearchParams";
 import type { PortfolioSortOption } from "@/types/portfolio-search";
 
 export interface PortfolioFilters {
@@ -44,9 +45,8 @@ function checkActiveFilters(f: PortfolioFilters, initialCategoryIds?: string[]):
 }
 
 export function usePortfolioFilters(initialCategoryIds?: string[]): UsePortfolioFiltersReturn {
-  const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const searchParams = useUrlSearchParams();
 
   const filters = useMemo<PortfolioFilters>(
     () => parseFilters(searchParams, initialCategoryIds),
@@ -57,18 +57,9 @@ export function usePortfolioFilters(initialCategoryIds?: string[]): UsePortfolio
 
   const updateParams = useCallback(
     (updates: Partial<Record<string, string | null>>): void => {
-      const params = new URLSearchParams(searchParams.toString());
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value === null || value === "" || value === undefined) {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
-      });
-      const qs = params.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname);
+      pushParams(pathname, searchParams, updates);
     },
-    [pathname, router, searchParams],
+    [pathname, searchParams],
   );
 
   const setRegions = useCallback(
@@ -97,8 +88,8 @@ export function usePortfolioFilters(initialCategoryIds?: string[]): UsePortfolio
   );
 
   const resetFilters = useCallback((): void => {
-    router.push(pathname);
-  }, [pathname, router]);
+    pushUrl(pathname);
+  }, [pathname]);
 
   return { filters, setRegions, setCategoryIds, setSearchWord, setSort, setPriceMax, resetFilters, hasActiveFilters };
 }

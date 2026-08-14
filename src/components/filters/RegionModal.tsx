@@ -1,7 +1,7 @@
 // @client-reason: Modal state, region grid selection interaction
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getSubRegionDisplayName, getSidoDisplayName } from "@/lib/regions";
 import type { RegionSelectorLabels, SidoGroup } from "./region-types";
@@ -23,7 +23,7 @@ function RegionModalHeader({ title, showBack, onBack, backLabel, showReset, rese
     <div className="mb-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
         {showBack && (
-          <button type="button" onClick={onBack} aria-label={backLabel} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" onClick={onBack} aria-label={backLabel} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span className="text-base leading-none">&lt;</span>
           </button>
         )}
@@ -31,11 +31,11 @@ function RegionModalHeader({ title, showBack, onBack, backLabel, showReset, rese
       </div>
       <div className="flex items-center gap-2">
         {showReset && (
-          <button type="button" onClick={onReset} aria-label="필터 초기화" className="rounded-full px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <button type="button" onClick={onReset} aria-label="필터 초기화" className="inline-flex min-h-11 items-center rounded-full px-3 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             {resetLabel}
           </button>
         )}
-        <button type="button" onClick={onClose} aria-label={closeLabel} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <button type="button" onClick={onClose} aria-label={closeLabel} className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span className="text-xl leading-none">&times;</span>
         </button>
       </div>
@@ -62,6 +62,23 @@ function RegionSubGrid({ group, localIds, localSido, allLabel, onSelectAll, onTo
   );
 }
 
+/**
+ * 열리면 패널로 포커스를 옮기고 Esc 로 닫는다.
+ * 이게 없으면 키보드 사용자는 모달을 닫을 방법이 아예 없다(백드롭 클릭은 마우스 전용이었다).
+ */
+function useDismissableDialog(onClose: () => void): React.RefObject<HTMLDivElement | null> {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    panelRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") onClose();
+    };
+    globalThis.addEventListener("keydown", onKeyDown);
+    return () => { globalThis.removeEventListener("keydown", onKeyDown); };
+  }, [onClose]);
+  return panelRef;
+}
+
  
 export function RegionModal({ groups, selectedId, selectedSido, labels, onSelectRegions, onClose }: Readonly<{
   groups: SidoGroup[]; selectedId: string | null; selectedSido: string | null; labels: RegionSelectorLabels;
@@ -86,6 +103,8 @@ export function RegionModal({ groups, selectedId, selectedSido, labels, onSelect
     setLocalIds(new Set());
   };
 
+  const panelRef = useDismissableDialog(onClose);
+
   const handleApply = (): void => {
     onSelectRegions(localIds.size > 0 ? Array.from(localIds).join(",") : null, localSido);
     onClose();
@@ -93,8 +112,9 @@ export function RegionModal({ groups, selectedId, selectedSido, labels, onSelect
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={labels.regionView}>
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} onKeyDown={() => { }} role="presentation" />
-      <div className="relative z-10 flex max-h-[80vh] w-full max-w-[767px] flex-col overflow-hidden rounded-t-2xl bg-background sm:rounded-2xl">
+      {/* 예전엔 role="presentation" + 빈 onKeyDown 이라 키보드로는 이 모달을 닫을 방법이 아예 없었다. */}
+      <button type="button" aria-label={labels.close} onClick={onClose} className="fixed inset-0 cursor-default bg-black/50" />
+      <div ref={panelRef} tabIndex={-1} className="relative z-10 flex max-h-[80vh] w-full max-w-[767px] flex-col overflow-hidden rounded-t-2xl bg-background focus:outline-none sm:rounded-2xl">
         <div className="overflow-y-auto p-6">
           <RegionModalHeader
             title={activeGroup ? getSidoDisplayName(activeSido as string) : labels.regionView}
@@ -138,7 +158,8 @@ export function RegionModal({ groups, selectedId, selectedSido, labels, onSelect
             onClick={handleApply}
             className="w-full rounded-xl bg-brand-primary px-4 py-3.5 text-center font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {labels.apply ?? "등록"}
+            {/* 예전 문구 "등록" 은 이 버튼이 하는 일(지역 필터 적용)이 아니라 샵 등록을 가리켰다. */}
+            이 지역으로 보기
           </button>
         </div>
       </div>

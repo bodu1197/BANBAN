@@ -6,10 +6,21 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
+/** 목록 경로 — 아래 리다이렉트 3개가 같은 값을 쓴다. */
+const PORTFOLIOS_PATH = "/portfolios";
+
 const nextConfig: NextConfig = {
   // Turbopack configuration
   turbopack: {
     root: __dirname,
+  },
+
+  env: {
+    // 사이트맵 lastmod 의 기준 시각. 라우트 안에서 `new Date()` 를 부르면 그건 배포 시각이 아니라
+    // **람다 콜드스타트 시각**이라, 내용이 그대로인데도 인스턴스가 뜰 때마다 전 URL 의 lastmod 가
+    // 달라진다 — 구글이 lastmod 신호를 통째로 무시하게 만드는 바로 그 패턴이다.
+    // 여기 값은 빌드 때 문자열로 인라인되므로 배포마다 한 번만 바뀐다.
+    BUILD_TIME: new Date().toISOString(),
   },
 
   // (구 로케일 라우팅 시절의 skipTrailingSlashRedirect 는 제거했다 — 로케일이 사라진 뒤에는
@@ -65,6 +76,22 @@ const nextConfig: NextConfig = {
         destination: "https://banunni.com/:path",
         permanent: true,
       },
+      // 포트폴리오 목록 페이지네이션을 쿼리 → 경로 세그먼트로 옮겼다(searchParams 를 읽으면 캐시 불가).
+      // 이미 밖에 나가 있는 ?page=N 링크·색인을 새 경로로 합친다.
+      {
+        source: PORTFOLIOS_PATH,
+        // `[2-9]\d*` 로 쓰면 10~19 페이지가 매칭되지 않아(첫 글자가 1) 그 URL 들이 리다이렉트 없이
+        // 1페이지 내용을 서빙한다 — 현재 27페이지까지 있으므로 실제로 10개가 새고 있었다.
+        has: [{ type: "query" as const, key: "page", value: "(?<n>[2-9]|[1-9]\\d+)" }],
+        destination: `${PORTFOLIOS_PATH}/page/:n`,
+        permanent: true,
+      },
+      // ?page=1 은 리다이렉트하지 않는다 — Next 는 원본 쿼리를 destination 에 그대로 붙이므로
+      // /portfolios → /portfolios?page=1 무한 루프가 된다(실측). 어차피 이 페이지는 이제
+      // searchParams 를 읽지 않아 1페이지를 렌더하고 canonical 이 /portfolios 를 가리킨다.
+      // 크롤러가 유추하는 부모/1페이지 URL — 두면 중복·soft 404 가 된다.
+      { source: `${PORTFOLIOS_PATH}/page`, destination: PORTFOLIOS_PATH, permanent: true },
+      { source: `${PORTFOLIOS_PATH}/page/1`, destination: PORTFOLIOS_PATH, permanent: true },
       { source: "/en/:path*", destination: "/:path*", permanent: true },
       { source: "/ja/:path*", destination: "/:path*", permanent: true },
       { source: "/zh/:path*", destination: "/:path*", permanent: true },

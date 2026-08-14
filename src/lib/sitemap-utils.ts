@@ -70,4 +70,25 @@ export function calcPageCount(totalItems: number): number {
   return Math.ceil(totalItems / ITEMS_PER_PAGE);
 }
 
+/** Supabase count 응답 또는 숫자 — Promise.allSettled 결과 한 칸. */
+export type SitemapCountResult = PromiseSettledResult<{ count: number | null } | number>;
+
+/**
+ * 사이트맵 인덱스의 개수 집계 한 칸을 읽는다.
+ *
+ * 하나가 실패해도 인덱스 전체를 500 으로 날리지 않고 그 항목만 0(=스킵)으로 강등한다.
+ * 다만 조용히 0 이 되면 해당 콘텐츠 타입이 사이트맵에서 통째로 사라져도 아무도 모르므로,
+ * 실패는 호출부가 로그로 남길 수 있게 `onError` 로 넘긴다.
+ */
+export function settledCount(
+  result: SitemapCountResult,
+  onError?: (reason: unknown) => void,
+): number {
+  if (result.status !== "fulfilled") {
+    onError?.(result.reason);
+    return 0;
+  }
+  return typeof result.value === "number" ? result.value : (result.value.count ?? 0);
+}
+
 export { SITE_URL };

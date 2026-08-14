@@ -57,7 +57,7 @@ export default function PortfolioWriteClient(): React.ReactElement {
             }
             // 목록 페이지 + 공개 샵 페이지 server cache 무효화
             if (artist) {
-                await revalidatePortfolioPages(artist.id).catch((err: unknown) => {
+                await revalidatePortfolioPages(artist.id, newPortfolioId ?? undefined).catch((err: unknown) => {
                     // eslint-disable-next-line no-console
                     console.error("Portfolio cache invalidation failed:", err);
                 });
