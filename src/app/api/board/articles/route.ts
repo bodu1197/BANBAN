@@ -6,10 +6,10 @@ import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { estimateReadingTime, generateExcerpt, generateMetaDescription } from "@/lib/board/utils";
 import { notifySearchEngines } from "@/lib/utils/search-notify";
+import { ENCYCLOPEDIA_CACHE_TAG } from "@/lib/board/queries";
 
 type ArticleInsert = Database["public"]["Tables"]["encyclopedia_articles"]["Insert"];
 
-const ENCYCLOPEDIA_CACHE_TAG = "encyclopedia";
 const SLUG_MAX_LENGTH = 80;
 
 interface ArticleBody {

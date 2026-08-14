@@ -1,13 +1,27 @@
+/* eslint-disable no-console -- 프리렌더 실패는 빌드 로그가 유일한 탐지 수단이다(조용한 강등 방지) */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
 import { SITE_URL, jsonLdSafe } from "@/lib/seo";
-import { getNewsBySlug } from "@/lib/study-news/store";
+import { getNewsBySlug, getPublishedNews } from "@/lib/study-news/store";
 import { fmtDate, safeSourceUrl } from "@/lib/study-news/format";
 import { StudyNewsSourceBadge } from "@/components/study/StudyNewsRow";
 
-export const dynamic = "force-dynamic";
+// 상동 — 데이터 캐시는 태그로 무효화되므로 페이지는 ISR 로 둔다.
+export const revalidate = 600;
+
+/** 발행 뉴스를 사전 생성 — 없으면 이 라우트가 완전 동적이 되어 no-store 로 나간다. */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  try {
+    const items = await getPublishedNews(200);
+    return items.map((item) => ({ slug: item.slug }));
+  } catch (e) {
+    // 조용히 0개를 반환하면 프리렌더가 통째로 사라져도 아무도 모른다 — 빌드 로그가 유일한 탐지 수단.
+    console.error(`[generateStaticParams] ${import.meta.url} 실패 — 온디맨드로 강등됨:`, e);
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ slug: string }> }>): Promise<Metadata> {
   const { slug } = await params;

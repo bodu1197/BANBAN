@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
+import { ENCYCLOPEDIA_CACHE_TAG } from "@/lib/board/queries";
 
-const ENCYCLOPEDIA_CACHE_TAG = "encyclopedia";
 const INVALID_UUID_MESSAGE = "유효한 UUID 형식이 아닙니다.";
 
 interface InlineImage { url: string; alt?: string }

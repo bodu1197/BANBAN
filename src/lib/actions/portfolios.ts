@@ -42,4 +42,6 @@ export async function revalidatePortfolioPages(artistId: string): Promise<void> 
 
   revalidatePath("/mypage/artist/portfolios");
   revalidatePath(`/artists/${artistId}`);
+  // 상세가 ISR(1시간)로 바뀌었으므로 저장 즉시 그 페이지를 무효화해야 옛 내용이 남지 않는다.
+  revalidatePath("/portfolios");
 }

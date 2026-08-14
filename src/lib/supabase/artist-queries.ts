@@ -1,8 +1,8 @@
-import { createClient } from "./server";
+import { createStaticClient } from "./server";
 import { getStorageUrl, getAvatarUrl } from "./queries";
 import { fetchAdExemptArtistIds, MIN_PORTFOLIO_MEDIA } from "./artist-visibility";
 
-type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
+type SupabaseInstance = ReturnType<typeof createStaticClient>;
 
 function escapeIlike(input: string): string {
   return input.replace(/[%_\\]/g, (ch) => `\\${ch}`);
@@ -219,7 +219,7 @@ function mapResults(
 
 export async function fetchArtistsWithDetails(options: FetchArtistsOptions): Promise<FetchArtistsResult> {
   const { regionId, regionPrefix, genres = [], searchWord } = options;
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const [{ ids: regionIds, empty: noRegions }, adExemptIds] = await Promise.all([
     resolveRegionIds(supabase, regionPrefix),

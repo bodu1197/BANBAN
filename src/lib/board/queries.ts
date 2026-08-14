@@ -1,6 +1,13 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createStaticClient } from "@/lib/supabase/server";
 import type { FaqItem } from "@/lib/pages/article-content";
+
+/**
+ * 백과 캐시 태그 SSOT. 관리자 API 3곳이 각자 문자열 상수를 갖고 있었다 —
+ * 하나만 오타 나면 그 경로의 무효화가 조용히 사라지므로 여기 한 곳에서 export 한다.
+ */
+export const ENCYCLOPEDIA_CACHE_TAG = "encyclopedia";
 
 export interface BoardArticle {
   id: string;
@@ -42,7 +49,7 @@ export async function fetchBoardList(options: {
   limit?: number;
   offset?: number;
 }): Promise<{ items: BoardListItem[]; count: number }> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const limit = options.limit ?? 30;
   const offset = options.offset ?? 0;
 
@@ -57,11 +64,26 @@ export async function fetchBoardList(options: {
   return { items: (data ?? []) as BoardListItem[], count: count ?? 0 };
 }
 
-export async function fetchBoardArticleBySlug(
+/**
+ * 백과 글 단건.
+ *
+ * ⚠️ `unstable_cache(tags: ENCYCLOPEDIA_CACHE_TAG)` 로 감싸는 이유:
+ * 이 페이지가 ISR(300s) 로 바뀌면서, 태그가 없으면 관리자가 글을 고치고
+ * `revalidateTag("encyclopedia")` 를 호출해도 페이지 HTML 캐시가 그대로 남아 최대 5분간 옛 글이 나간다
+ * (쿠키 클라이언트를 쓰던 시절에는 매 요청 동적이라 이 문제가 없었다 — 캐시 복구가 만든 회귀).
+ * `unstable_cache` 의 태그는 페이지 라우트 엔트리까지 전파되므로 둘이 함께 무효화된다.
+ */
+export const fetchBoardArticleBySlug = unstable_cache(
+  fetchBoardArticleBySlugUncached,
+  ["board-article-by-slug"],
+  { revalidate: 300, tags: [ENCYCLOPEDIA_CACHE_TAG] },
+);
+
+async function fetchBoardArticleBySlugUncached(
   slug: string,
 ): Promise<BoardArticle | null> {
   const decoded = decodeURIComponent(slug);
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("encyclopedia_articles")
     .select("*")
@@ -78,7 +100,7 @@ export async function fetchBoardArticleBySlug(
 export async function fetchBoardSlugs(): Promise<
   { slug: string; published_at: string }[]
 > {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("encyclopedia_articles")
     .select("slug, published_at")

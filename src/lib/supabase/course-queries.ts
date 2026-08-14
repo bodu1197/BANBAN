@@ -1,4 +1,4 @@
-import { createClient } from "./server";
+import { createStaticClient } from "./server";
 import { getAvatarUrl } from "./storage-utils";
 
 export interface CourseDetail {
@@ -104,7 +104,7 @@ async function fetchCourseRow(db: AnyClient, id: string): Promise<CourseRow | nu
   return data;
 }
 
-async function fetchCourseRelations(supabase: Awaited<ReturnType<typeof createClient>>, db: AnyClient, id: string, artistId: string): Promise<{
+async function fetchCourseRelations(supabase: ReturnType<typeof createStaticClient>, db: AnyClient, id: string, artistId: string): Promise<{
   artistName: string; artistDetail: { profile_image_path: string | null; instagram_url: string | null; introduce: string | null; kakao_url: string | null; contact: string | null } | null;
   images: ImageRow[]; highlights: HighlightRow[]; curriculum: CurriculumRow[]; reviewList: CourseReview[]; summary: ReviewSummary;
 }> {
@@ -156,7 +156,7 @@ function buildCourseDetail(course: CourseRow, rel: Awaited<ReturnType<typeof fet
 }
 
 export async function fetchCourseById(id: string): Promise<CourseDetail | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const db = supabase as AnyClient;
   const course = await fetchCourseRow(db, id);
   if (!course) return null;
@@ -165,7 +165,7 @@ export async function fetchCourseById(id: string): Promise<CourseDetail | null> 
 }
 
 export async function fetchCourseList(): Promise<CourseListItem[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const db = supabase as AnyClient;
 
   const { data: courses } = await db
@@ -205,7 +205,7 @@ export async function fetchCourseList(): Promise<CourseListItem[]> {
 }
 
 async function buildReviewerMap(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: ReturnType<typeof createStaticClient>,
   reviews: ReviewRow[],
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>();

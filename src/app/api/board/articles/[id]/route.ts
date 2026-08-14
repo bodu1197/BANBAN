@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-guard";
 import { estimateReadingTime, generateExcerpt, generateMetaDescription } from "@/lib/board/utils";
+import { ENCYCLOPEDIA_CACHE_TAG } from "@/lib/board/queries";
 
-const ENCYCLOPEDIA_CACHE_TAG = "encyclopedia";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ALLOWED_KEYS = new Set([

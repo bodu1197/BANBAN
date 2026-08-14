@@ -10,7 +10,7 @@
  */
 
 import { cache } from "react";
-import { createClient, createAdminClient } from "./server";
+import { createClient, createStaticClient, createAdminClient } from "./server";
 import { getStorageUrl } from "./storage-utils";
 import type { Artist, Database, Portfolio, PortfolioMedia, Region, Review } from "@/types/database";
 
@@ -154,7 +154,7 @@ export async function fetchArtists(options: {
   typeArtist?: "SEMI_PERMANENT";
 }): Promise<{ data: ArtistWithDetails[]; count: number }> {
   const { limit = 24, offset = 0, regionId } = options;
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   let query = buildArtistListQuery(supabase, offset, limit);
 
@@ -171,7 +171,7 @@ export async function fetchArtists(options: {
 export const fetchArtistById = cache(async function fetchArtistById(
   id: string
 ): Promise<ArtistWithDetails | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const { data, error } = await supabase
     .from("artists")
@@ -203,6 +203,9 @@ export const fetchArtistById = cache(async function fetchArtistById(
  * user_id = userId 로 스코프 + RLS(owner) 이중 보호 → 절대 타인 샵을 반환하지 않음(비공개 노출 차단).
  */
 export async function fetchOwnArtistForPreview(userId: string): Promise<ArtistWithDetails | null> {
+  // ⚠️ 이 함수만 쿠키 클라이언트를 유지한다 — 위아래 공개 조회 함수들과 다르다고 해서 바꾸지 말 것.
+  // createStaticClient 는 쿠키를 전혀 싣지 않아(server.ts 의 getAll(){return []}) auth.uid() 가 비고,
+  // 소유자 전용 RLS 정책이 통째로 무력화돼 본인 미공개 샵을 못 읽거나 남의 것이 열릴 수 있다.
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -260,7 +263,7 @@ export async function fetchArtistForAdminPreview(id: string): Promise<ArtistWith
  * Fetch all regions
  */
 export async function fetchRegions(): Promise<Region[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const { data, error } = await supabase
     .from("regions")
@@ -286,7 +289,7 @@ export async function searchArtists(options: {
   offset?: number;
 }): Promise<{ data: ArtistWithDetails[]; count: number }> {
   const { query, regionId, limit = 24, offset = 0 } = options;
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   let dbQuery = buildArtistListQuery(supabase, offset, limit);
 
@@ -310,7 +313,7 @@ export async function fetchReviewsByArtist(
   options: { limit?: number; offset?: number } = {}
 ): Promise<{ data: ReviewWithUser[]; count: number }> {
   const { limit = 20, offset = 0 } = options;
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const { data, error, count } = await supabase
     .from("reviews")
@@ -350,7 +353,7 @@ export async function fetchAllReviews(
   options: { limit?: number; offset?: number } = {}
 ): Promise<{ data: ReviewWithArtist[]; count: number }> {
   const { limit = 20, offset = 0 } = options;
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const { data, error, count } = await supabase
     .from("reviews")
@@ -407,7 +410,7 @@ export async function fetchReviewCommentsByReviewIds(
   const map = new Map<string, ReviewComment[]>();
   if (reviewIds.length === 0) return map;
 
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("review_comments")
     .select(`id, review_id, content, parent_id, created_at, user_id, profile:profiles!user_id(nickname)`)
@@ -442,7 +445,7 @@ export type BeforeAfterPhoto = Database["public"]["Tables"]["before_after_photos
 export async function fetchBeforeAfterByArtist(
   artistId: string,
 ): Promise<BeforeAfterPhoto[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const { data, error } = await supabase
     .from("before_after_photos")

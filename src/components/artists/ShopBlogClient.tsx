@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useViewerState } from "@/hooks/useViewerState";
 import type { PortfolioWithMedia, ReviewWithUser, BeforeAfterPhoto } from "@/lib/supabase/queries";
 import type { EventCardData } from "@/lib/supabase/event-queries";
 import { EventCard } from "@/components/event/EventCard";
@@ -63,7 +64,6 @@ interface ShopBlogClientProps {
   counts: ShopBlogCounts;
   labels: ShopBlogLabels;
   artistId: string;
-  isLoggedIn: boolean;
 }
 
 function EmptyMessage({ message }: Readonly<{ message: string }>): React.ReactElement {
@@ -163,11 +163,12 @@ export function ShopBlogClient({
   counts,
   labels,
   artistId,
-  isLoggedIn,
 }: Readonly<ShopBlogClientProps>): React.ReactElement {
   // ⚠️ 여기서 useSearchParams() 를 쓰면 안 된다 — 프리렌더 중 바일아웃이 나서 샵 상세 전체가
   // 클라이언트 렌더로 떨어지고 서버 HTML 본문이 0자가 된다(2026-08-14 SEO 사고, 색인률 5%).
   // 기본 탭을 서버에서 그대로 렌더하고, ?tab= 딥링크만 마운트 후 클라이언트에서 반영한다.
+  // 로그인 여부도 서버에서 읽지 않는다 — 읽는 순간 이 페이지가 캐시 불가가 된다.
+  const { isLoggedIn } = useViewerState();
   const { tabs, initialTab } = resolveTabs(counts, labels, null);
   const [activeTab, setActiveTab] = useState<ShopTabId>(initialTab);
   const tablistRef = useRef<HTMLDivElement>(null);

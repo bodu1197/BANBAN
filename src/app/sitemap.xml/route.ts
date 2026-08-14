@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- 사이트맵 생성 실패는 서버 로그에 남아야 원인을 찾을 수 있다(조용한 누락 방지) */
 import { createAdminClient } from "@/lib/supabase/server";
 import { countPublicPortfolios } from "@/lib/supabase/portfolio-listing-queries";
 import { getActiveEventFilter } from "@/lib/supabase/event-queries";
@@ -25,11 +26,26 @@ interface ContentEntry {
   count: number;
 }
 
+type CountResult = PromiseSettledResult<{ count: number | null } | number>;
+
+/**
+ * 하나가 실패해도 사이트맵 인덱스 전체를 500 으로 날리지 않는다 — 실패한 항목만 0(=스킵)으로 강등.
+ * 조용히 0 으로 떨어뜨리면 특정 콘텐츠 타입이 사이트맵에서 통째로 사라져도 아무 신호가 안 남으므로,
+ * 실패는 반드시 로그로 남긴다(구글이 그 타입을 발견 못 하는 SEO 사고로 이어진다).
+ */
+function settledCount(r: CountResult, slug: string): number {
+  if (r.status !== "fulfilled") {
+    console.error(`[sitemap] ${slug} count 실패 — 사이트맵에서 제외됨:`, r.reason);
+    return 0;
+  }
+  return typeof r.value === "number" ? r.value : (r.value.count ?? 0);
+}
+
 async function getContentEntries(): Promise<ContentEntry[]> {
   const supabase = createAdminClient();
 
   const [artists, portfoliosCount, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews, events] =
-    await Promise.all([
+    await Promise.allSettled([
       // artists.xml 본문과 술어를 맞춘다 — is_hide 가 빠져 있어 빈 page=N 이 제출되고 있었다.
       supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("is_hide", false).eq("status", "active"),
       // 포폴 개수는 본문(fetchPublicPortfolioSitemapRows)과 동일 anon client·동일 술어 → 인덱스 페이지수 = 실제 출력.
@@ -46,15 +62,15 @@ async function getContentEntries(): Promise<ContentEntry[]> {
     ]);
 
   return [
-    { slug: "artists", count: artists.count ?? 0 },
-    { slug: "portfolios", count: portfoliosCount },
-    { slug: "exhibitions", count: exhibitions.count ?? 0 },
-    { slug: "courses", count: courses.count ?? 0 },
-    { slug: "community", count: posts.count ?? 0 },
-    { slug: "encyclopedia", count: encyclopedia.count ?? 0 },
-    { slug: "location", count: locationSeo.count ?? 0 },
-    { slug: "study-news", count: studyNews.count ?? 0 },
-    { slug: "events", count: events.count ?? 0 },
+    { slug: "artists", count: settledCount(artists, "artists") },
+    { slug: "portfolios", count: settledCount(portfoliosCount, "portfolios") },
+    { slug: "exhibitions", count: settledCount(exhibitions, "exhibitions") },
+    { slug: "courses", count: settledCount(courses, "courses") },
+    { slug: "community", count: settledCount(posts, "community") },
+    { slug: "encyclopedia", count: settledCount(encyclopedia, "encyclopedia") },
+    { slug: "location", count: settledCount(locationSeo, "location") },
+    { slug: "study-news", count: settledCount(studyNews, "study-news") },
+    { slug: "events", count: settledCount(events, "events") },
   ];
 }
 

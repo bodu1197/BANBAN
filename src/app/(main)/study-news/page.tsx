@@ -8,7 +8,10 @@ export const metadata: Metadata = {
   description: "문신사법·문신사 국가시험 관련 최신 뉴스를 한곳에서. 정부·공식 출처와 신뢰 언론을 큐레이션합니다.",
   alternates: { canonical: "/study-news" },
 };
-export const dynamic = "force-dynamic";
+// 데이터는 store.ts 가 unstable_cache(tags: STUDY_NEWS_CACHE_TAG) 로 감싸고 수집 크론·승인 시
+// revalidateTag 로 즉시 무효화한다 — force-dynamic 이면 그 캐시를 쓰고도 페이지는 매번 새로 그려
+// 크롤러 방문마다 서버 렌더가 돈다(no-store). 태그 무효화가 있으니 ISR 로 충분하다.
+export const revalidate = 600;
 
 export default async function StudyNewsPage(): Promise<React.ReactElement> {
   const items = await getPublishedNews(60);

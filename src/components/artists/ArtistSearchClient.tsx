@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useMemo, Suspense, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useViewerState } from "@/hooks/useViewerState";
 import { STRINGS } from "@/lib/strings";
 import { useArtistSearch } from "@/hooks/useArtistSearch";
 import { useNearbyArtists } from "@/hooks/useNearbyArtists";
@@ -18,7 +19,6 @@ interface ArtistSearchClientProps {
   initialArtists: ArtistListItem[];
   initialTotalCount: number;
   regions: Region[];
-  initialLikedIds?: string[];
 }
 
 // --- Helpers ---
@@ -63,9 +63,9 @@ function ArtistSkeleton(): React.ReactElement {
 
 // --- Artist content area ---
 
-function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedIds, onLikeToggle }: Readonly<{
+function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedIds, likesLoaded, onLikeToggle }: Readonly<{
   artists: ArtistListItem[]; isLoading: boolean; isLoadingMore: boolean; noDataLabel: string;
-  likedIds: Set<string>; onLikeToggle: (id: string) => void;
+  likedIds: Set<string>; likesLoaded: boolean; onLikeToggle: (id: string) => void;
 }>): React.ReactElement {
   if (isLoading) return <ArtistSkeleton />;
 
@@ -92,6 +92,7 @@ function ArtistContent({ artists, isLoading, isLoadingMore, noDataLabel, likedId
                 likesCount={artist.likesCount}
                 distance={artist.distanceKm}
                 isLiked={likedIds.has(artist.id)}
+                likeDisabled={!likesLoaded}
                 onLikeToggle={onLikeToggle}
               />
             </li>
@@ -159,13 +160,38 @@ function GeoStatusBanner({ geoStatus, hasFilters, isNearbyMode, totalCount, onRe
   return null;
 }
 
-// --- Like toggle helper ---
+/**
+ * 좋아요 상태 — 서버는 로그아웃 상태를 렌더한다(그래야 이 페이지가 CDN 캐시를 받는다).
+ * 서버 상태를 로컬 state 로 복사하지 않고 파생시킨다: 복사하면 effect 안 setState 라 렌더가 한 번 더 돌고,
+ * 하트를 누른 직후 서버 응답이 도착하면 낙관적 표시가 되돌아간다. 낙관적 토글은 override 로만 덮는다.
+ */
+function useLikedArtists(): { likedIds: Set<string>; handleLikeToggle: (artistId: string) => void; loaded: boolean } {
+  const viewer = useViewerState();
+  const [overrides, setOverrides] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  const [, startTransition] = useTransition();
 
-function toggleLikedId(prev: Set<string>, artistId: string): Set<string> {
-  const next = new Set(prev);
-  if (next.has(artistId)) next.delete(artistId);
-  else next.add(artistId);
-  return next;
+  const likedIds = useMemo(() => {
+    const ids = new Set(viewer.likedArtistIds);
+    for (const [id, liked] of overrides) {
+      if (liked) ids.add(id);
+      else ids.delete(id);
+    }
+    return ids;
+  }, [viewer.likedArtistIds, overrides]);
+
+  const handleLikeToggle = useCallback((artistId: string): void => {
+    // 서버 응답 전에는 전부 "좋아요 안 함"이다. 그 사이에 누르면 화면은 +1 인데 서버는 해제해 어긋난다.
+    if (!viewer.loaded) return;
+    const next = !likedIds.has(artistId);
+    setOverrides((prev) => new Map(prev).set(artistId, next));
+
+    startTransition(async () => {
+      const result = await toggleLike(artistId).catch(() => null);
+      if (!result?.success) setOverrides((prev) => new Map(prev).set(artistId, !next));
+    });
+  }, [likedIds, viewer.loaded]);
+
+  return { likedIds, handleLikeToggle, loaded: viewer.loaded };
 }
 
 // --- Search/nearby mode resolution ---
@@ -203,12 +229,10 @@ function useResolvedArtists(
 function ArtistSearchInner({ initialArtists,
   initialTotalCount,
   regions,
-  initialLikedIds = [],
 }: Readonly<ArtistSearchClientProps>): React.ReactElement {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
 
   const { artists: searchArtists, isLoading: searchLoading, isLoadingMore, sentinelRef, regionId, regionSido } =
     useArtistSearch(initialArtists, initialTotalCount);
@@ -224,7 +248,7 @@ function ArtistSearchInner({ initialArtists,
 
   const resolved = useResolvedArtists(searchArtists, searchLoading, isLoadingMore, initialTotalCount, nearby, isNearbyMode);
 
-  const [likedIds, setLikedIds] = useState<Set<string>>(() => new Set(initialLikedIds));
+  const { likedIds, handleLikeToggle, loaded: likesLoaded } = useLikedArtists();
 
   const d = STRINGS;
 
@@ -238,17 +262,6 @@ function ArtistSearchInner({ initialArtists,
   const handleRegionsSelect = useCallback((id: string | null, sido: string | null): void => {
     navigateWithParams({ region: id, regionSido: sido });
   }, [navigateWithParams]);
-
-  const handleLikeToggle = useCallback((artistId: string): void => {
-    setLikedIds((prev) => toggleLikedId(prev, artistId));
-
-    startTransition(async () => {
-      const result = await toggleLike(artistId).catch(() => null);
-      if (!result?.success) {
-        setLikedIds((prev) => toggleLikedId(prev, artistId));
-      }
-    });
-  }, []);
 
   const regionLabels = useMemo(() => ({
     regionView: d.portfolioSearch.regionView,
@@ -288,6 +301,7 @@ function ArtistSearchInner({ initialArtists,
           isLoadingMore={resolved.isLoadingMore}
           noDataLabel={resolved.noDataLabel}
           likedIds={likedIds}
+          likesLoaded={likesLoaded}
           onLikeToggle={handleLikeToggle}
         />
         {!isNearbyMode && <div ref={sentinelRef} className="h-1" />}

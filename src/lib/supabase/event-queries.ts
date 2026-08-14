@@ -80,6 +80,11 @@ const EVENT_CARD_SELECT_INNER =
 // id 로 이벤트 로드(미삭제) — 공개 상태(status) 게이트는 여기서 걸지 않는다: 이 함수는 공개 상세와
 // 소유자 편집 페이지가 공유하므로 published 로 좁히면 소유자가 draft/종료 이벤트를 편집할 수 없다.
 // 공개 노출용 published 게이트는 호출부(event-detail-page)에서 적용한다.
+//
+// ⚠️ 여기만 쿠키 클라이언트를 유지한다(다른 공개 조회는 createStaticClient 로 바꿨다).
+// events RLS 가 `status='published' OR artist_id IN (본인 샵)` 이라 세션이 없으면 소유자가
+// 자기 draft/종료 이벤트를 못 읽고, 편집 페이지(/mypage/artist/events/[id]/edit)가 항상 튕긴다.
+// 이 함수를 쓰는 공개 상세(/events/[id])는 어차피 force-dynamic 이라 캐시 손실도 없다.
 export const fetchEventById = cache(async function fetchEventById(
   id: string,
 ): Promise<EventWithDetails | null> {
@@ -204,7 +209,7 @@ async function applyCategoryFilter(
 export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
   opts: { limit?: number; offset?: number; categoryId?: string; regionId?: string | null; regionSido?: string | null } = {},
 ): Promise<EventSearchResult> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const limit = opts.limit ?? 20;
   const offset = opts.offset ?? 0;
 
@@ -229,7 +234,7 @@ export const fetchPublishedEvents = cache(async function fetchPublishedEvents(
 export const fetchEventsByArtist = cache(async function fetchEventsByArtist(
   artistId: string,
 ): Promise<EventCardData[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase
     .from("events")
     .select(EVENT_CARD_SELECT)
@@ -375,7 +380,7 @@ export const fetchRelatedEvents = cache(async function fetchRelatedEvents(
   excludeId: string,
   limit = 6,
 ): Promise<EventCardData[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase
     .from("events")
     .select(EVENT_CARD_SELECT)
@@ -400,7 +405,7 @@ export interface ArtistShopStats {
 export const fetchArtistShopStats = cache(async function fetchArtistShopStats(
   artistId: string,
 ): Promise<ArtistShopStats> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const [events, portfolios] = await Promise.all([
     supabase
       .from("events")
@@ -426,7 +431,7 @@ export const fetchRecommendedEvents = cache(async function fetchRecommendedEvent
   artistId: string,
   limit = 15,
 ): Promise<EventCardData[]> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const [sameArtist, popular] = await Promise.all([
     supabase
       .from("events")

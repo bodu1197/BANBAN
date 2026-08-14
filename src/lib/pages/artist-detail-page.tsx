@@ -21,7 +21,6 @@ import { ShopBlogClient } from "@/components/artists/ShopBlogClient";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { buildPageSeo, getArtistJsonLd, getBreadcrumbJsonLd, getCanonicalUrl, jsonLdSafe, descriptionOrFallback } from "@/lib/seo";
 import { getUser } from "@/lib/supabase/auth";
-import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import { parseBusinessHours } from "@/types/artist-form";
 
 /** OG/대표 이미지 우선순위: 배너 → 갤러리 첫장 → 프로필 아바타. */
@@ -203,11 +202,11 @@ async function renderArtistDetailContent(
   const preview = opts?.preview;
   const isPreview = preview !== undefined;
 
-  const [{ data: portfolios }, { data: reviews }, user, likedIds, beforeAfterPhotos, events] = await Promise.all([
+  // 로그인·좋아요는 서버에서 읽지 않는다 — 쿠키를 건드리는 순간 샵 상세 85개가 캐시 불가(no-store)가 되어
+  // 크롤러가 방문할 때마다 서버가 DB 를 새로 조회한다(2026-08-14 실측). 개인화는 클라이언트가 마운트 후 채운다.
+  const [{ data: portfolios }, { data: reviews }, beforeAfterPhotos, events] = await Promise.all([
     fetchPortfoliosByArtist(id, { limit: 50 }),
     fetchReviewsByArtist(id),
-    getUser().catch(() => null),
-    fetchLikedArtistIds(),
     fetchBeforeAfterByArtist(id),
     fetchEventsByArtist(id),
   ]);
@@ -245,7 +244,6 @@ async function renderArtistDetailContent(
             heroImages={heroImages}
             reviewCount={reviewCount}
             avgRating={ratingAvg ?? 0}
-            isLiked={likedIds.includes(id)}
           />
         }
         data={{ events, portfolios, reviews, beforeAfterPhotos }}
@@ -273,7 +271,6 @@ async function renderArtistDetailContent(
           writeReview: STRINGS.review.writeReview,
         }}
         artistId={id}
-        isLoggedIn={!!user}
       />
 
       <ContactBottomBar

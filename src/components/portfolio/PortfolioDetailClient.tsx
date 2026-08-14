@@ -8,6 +8,8 @@ import Link from "next/link";
 import { Heart, Edit2, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
+import { trackPortfolioView } from "@/lib/actions/portfolio-view";
 import { toast } from "sonner";
 import { ContactBottomBar } from "@/components/shared/ContactBottomBar";
 import { PortfolioMediaViewer } from "./PortfolioMediaViewer";
@@ -105,8 +107,30 @@ export function PortfolioDetailClient({
   artistSection,
   shopTabs,
 }: Readonly<PortfolioDetailClientProps>): React.ReactElement {
-  const [isLiked, setIsLiked] = useState(Boolean(portfolio.is_liked));
+  // 좋아요 여부·조회수는 서버 렌더에서 다루지 않는다 — 쿠키를 읽거나 DB 에 쓰면 이 페이지(627개)가
+  // 캐시 불가가 된다. 마운트 후 한 번 채우고, 조회수도 여기서 집계한다.
+  const [isLiked, setIsLiked] = useState(false);
+  // 서버 응답 전 클릭 방지 — 이미 좋아요한 사용자가 그 사이 누르면 화면(+1)과 서버(해제)가 어긋난다.
+  const [likeLoaded, setLikeLoaded] = useState(false);
   const [likesCount, setLikesCount] = useState(portfolio.likes_count ?? 0);
+  useEffect(() => {
+    void isPortfolioLiked(portfolio.id)
+      .then(setIsLiked)
+      .catch(() => { /* 로그아웃 상태 유지 */ })
+      .finally(() => { setLikeLoaded(true); });
+    // 세션당 1회만 집계 — 없으면 새로고침·뒤로가기·StrictMode 이중 마운트마다 +1 이 된다
+    // (백과의 ViewCounter 와 같은 방식으로 맞춘다).
+    const seenKey = `pf-view:${portfolio.id}`;
+    try {
+      if (!sessionStorage.getItem(seenKey)) {
+        sessionStorage.setItem(seenKey, "1");
+        void trackPortfolioView(portfolio.id);
+      }
+    } catch {
+      // 시크릿 모드 등 storage 차단 — 그때는 한 번만 시도한다
+      void trackPortfolioView(portfolio.id);
+    }
+  }, [portfolio.id]);
   const [showReportModal, setShowReportModal] = useState(false);
   const { user, artist: myArtist } = useAuth();
   const canEdit = useCanEdit(user?.id, myArtist?.id, portfolio.artist_id);
@@ -115,8 +139,13 @@ export function PortfolioDetailClient({
   const address = artist.region?.name ?? artist.address ?? "";
 
   const handleLikeToggle = useCallback(
-    () => handleToggleLike(portfolio.id, setIsLiked, setLikesCount, STRINGS.common.likeAdded, STRINGS.common.likeRemoved),
-    [portfolio.id],
+    async (): Promise<void> => {
+      // 좋아요 여부가 확정되기 전에는 누르지 않는다 — 이미 좋아요한 사용자가 그 사이 누르면
+      // 화면은 +1 인데 서버는 해제해 상태가 영구히 어긋난다.
+      if (!likeLoaded) return;
+      await handleToggleLike(portfolio.id, setIsLiked, setLikesCount, STRINGS.common.likeAdded, STRINGS.common.likeRemoved);
+    },
+    [portfolio.id, likeLoaded],
   );
 
   const mediaItems = useMemo(
@@ -146,6 +175,7 @@ export function PortfolioDetailClient({
     <div className="flex flex-col pb-24">
       <PortfolioHeader
         isLiked={isLiked}
+        likeDisabled={!likeLoaded}
         onLikeToggle={handleLikeToggle}
         onReport={handleReport}
         labels={headerLabels}
@@ -178,6 +208,7 @@ export function PortfolioDetailClient({
       <section id={PORTFOLIO_SECTION_IDS.reviews} aria-label="후기 및 좋아요">
         <PortfolioActionButtons
           isLiked={isLiked}
+          likeDisabled={!likeLoaded}
           likesCount={likesCount}
           onLikeToggle={handleLikeToggle}
           reviewHref={`/reviews/write?id=${artist.id}`}
@@ -207,8 +238,10 @@ export function PortfolioDetailClient({
   );
 }
 
-function PortfolioActionButtons({ isLiked, likesCount, onLikeToggle, reviewHref, editHref, likesLabel, reviewLabel }: Readonly<{
+function PortfolioActionButtons({ isLiked, likeDisabled, likesCount, onLikeToggle, reviewHref, editHref, likesLabel, reviewLabel }: Readonly<{
   isLiked: boolean;
+  /** 좋아요 상태 확정 전에는 누를 수 없다 — 확정 전 토글은 화면(+1)과 서버(해제)가 어긋난다. */
+  likeDisabled: boolean;
   likesCount: number;
   onLikeToggle: () => void;
   reviewHref: string;
@@ -218,7 +251,7 @@ function PortfolioActionButtons({ isLiked, likesCount, onLikeToggle, reviewHref,
 }>): React.ReactElement {
   return (
     <div className="flex gap-3 px-4 py-4">
-      <Button variant="outline" className="flex-1 gap-2 focus-visible:ring-2 focus-visible:ring-ring" onClick={onLikeToggle}>
+      <Button variant="outline" className="flex-1 gap-2 focus-visible:ring-2 focus-visible:ring-ring" onClick={onLikeToggle} disabled={likeDisabled} aria-label={likeDisabled ? "좋아요 상태 확인 중" : undefined}>
         <Heart className={cn("h-4 w-4", isLiked && "fill-red-500 text-red-500")} />
         {likesLabel} {likesCount > 0 && likesCount}
       </Button>

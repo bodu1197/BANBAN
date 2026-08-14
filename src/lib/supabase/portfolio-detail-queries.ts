@@ -1,11 +1,11 @@
 import { cache } from "react";
-import { createClient } from "./server";
+import { createStaticClient } from "./server";
 import { filterPublicPortfolios } from "./portfolio-visibility";
 import { getStorageUrl } from "./storage-utils";
 import type { Artist, Portfolio, PortfolioMedia, Region } from "@/types/database";
 import { secureShuffle } from "@/lib/random";
 
-type SupabaseInstance = Awaited<ReturnType<typeof createClient>>;
+type SupabaseInstance = ReturnType<typeof createStaticClient>;
 
 // === Local type aliases (avoid circular import with queries.ts) ===
 
@@ -52,7 +52,7 @@ export interface ArtistReviewStats {
 export const fetchArtistReviewStats = cache(async function fetchArtistReviewStats(
   artistId: string,
 ): Promise<ArtistReviewStats> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase.rpc("get_artist_review_stats", { artist_ids: [artistId] });
   const row = ((data ?? []) as Array<{ artist_id: string; review_count: number; avg_rating: number }>)
     .find((r) => r.artist_id === artistId);
@@ -76,7 +76,7 @@ interface RecommendationContext {
  * Initialize recommendation context with artist IDs by type
  */
 const initRecommendationContext = cache(async function initRecommendationContext(artistType: ArtistType): Promise<RecommendationContext | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data } = await supabase.rpc("get_recommendation_artist_ids", { p_type_artist: artistType });
   const artistIds = ((data ?? []) as Array<{ artist_id: string }>).map((a) => a.artist_id);
   return artistIds.length > 0 ? { supabase, artistIds } : null;
@@ -103,7 +103,7 @@ function transformPortfolioMedia(portfolios: PortfolioRecommendation[]): Portfol
 export const fetchPortfolioById = cache(async function fetchPortfolioById(
   id: string
 ): Promise<PortfolioDetails | null> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   // 공개 술어 게이트(목록·사이트맵·ping 과 동일 filterPublicPortfolios) — 비공개(미승인·price0·
   // 미디어<5·숨김/삭제 아티스트) 포폴 상세가 200+색인되던 구멍 차단. 미통과면 null → 호출부가 notFound(404).
@@ -146,7 +146,7 @@ export async function fetchPortfoliosByArtist(
   options: { limit?: number; offset?: number } = {}
 ): Promise<{ data: PortfolioWithMediaLocal[]; count: number }> {
   const { limit = 20, offset = 0 } = options;
-  const supabase = await createClient();
+  const supabase = createStaticClient();
 
   const { data, error, count } = await supabase
     .from("portfolios")
@@ -317,7 +317,7 @@ export async function fetchSameCategoryPortfolios(
  * Fetch all categories (for artist registration/edit forms)
  */
 export async function fetchAllCategories(): Promise<Array<{ id: string; name: string; category_type: string | null }>> {
-  const supabase = await createClient();
+  const supabase = createStaticClient();
   const { data, error } = await supabase
     .from("categories")
     .select("id, name, category_type")

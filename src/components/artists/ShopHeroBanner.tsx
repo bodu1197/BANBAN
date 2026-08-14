@@ -17,7 +17,6 @@ interface ShopHeroBannerProps {
   heroImages: string[];
   reviewCount: number;
   avgRating: number;
-  isLiked?: boolean;
 }
 
 interface ShopBannerDerived {
@@ -74,7 +73,6 @@ export function ShopHeroBanner({
   heroImages,
   reviewCount,
   avgRating,
-  isLiked = false,
 }: Readonly<ShopHeroBannerProps>): React.ReactElement {
   const { regionName, displayAddress, hasIntroduce, description, sanitizedDescription } =
     deriveShopBannerData(shop);
@@ -88,7 +86,6 @@ export function ShopHeroBanner({
         displayAddress={displayAddress}
         avgRating={avgRating}
         reviewCount={reviewCount}
-        isLiked={isLiked}
       />
       <ShopIntroSection
         shop={shop}
@@ -153,14 +150,13 @@ function ShopRating({
 }
 
 function ShopInfo({
-  shop, regionName, displayAddress, avgRating, reviewCount, isLiked,
+  shop, regionName, displayAddress, avgRating, reviewCount,
 }: Readonly<{
   shop: ArtistWithDetails;
   regionName: string;
   displayAddress: string;
   avgRating: number;
   reviewCount: number;
-  isLiked: boolean;
 }>): React.ReactElement {
   return (
     <div className="px-4 pt-4 pb-3">
@@ -174,7 +170,6 @@ function ShopInfo({
         </div>
         <ArtistLikeButton
           artistId={shop.id}
-          initialIsLiked={isLiked}
           initialCount={shop.likes_count ?? 0}
           label={STRINGS.artist.likes}
         />

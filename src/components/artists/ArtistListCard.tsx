@@ -17,12 +17,20 @@ interface ArtistListCardProps {
   distance?: number;
   likesCount?: number;
   isLiked?: boolean;
+  /** 좋아요 상태가 확정되기 전에는 누를 수 없다 — 누르면 화면과 서버가 어긋난다. */
+  likeDisabled?: boolean;
     onLikeToggle?: (id: string) => void;
   likeLabel?: string;
   unlikeLabel?: string;
 }
 
 /* eslint-disable max-lines-per-function, complexity -- card with multiple conditional UI sections */
+/** 중첩 삼항 대신 — 로딩 중에는 aria-pressed 가 아직 false 라 스크린리더가 틀린 상태를 읽으므로 라벨로 알린다. */
+function resolveLikeLabel(disabled: boolean, isLiked: boolean, likeLabel: string, unlikeLabel: string): string {
+  if (disabled) return "좋아요 상태 확인 중";
+  return isLiked ? unlikeLabel : likeLabel;
+}
+
 export const ArtistListCard = memo(function ArtistListCard({
   id,
   name,
@@ -34,10 +42,13 @@ export const ArtistListCard = memo(function ArtistListCard({
   reviewCount,
   distance,
   isLiked = false,
+  likeDisabled = false,
   onLikeToggle,
   likeLabel = "Like",
   unlikeLabel = "Unlike",
 }: Readonly<ArtistListCardProps>): React.ReactElement {
+  const likeAriaLabel = resolveLikeLabel(likeDisabled, isLiked, likeLabel, unlikeLabel);
+
   const handleLikeClick = (e: React.MouseEvent): void => {
     e.preventDefault();
     e.stopPropagation();
@@ -106,8 +117,9 @@ export const ArtistListCard = memo(function ArtistListCard({
           <button
             type="button"
             onClick={handleLikeClick}
-            className="shrink-0 rounded-full p-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={isLiked ? unlikeLabel : likeLabel}
+            disabled={likeDisabled}
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full p-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent"
+            aria-label={likeAriaLabel}
             aria-pressed={isLiked}
           >
             <Heart

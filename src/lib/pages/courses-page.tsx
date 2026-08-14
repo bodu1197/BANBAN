@@ -39,6 +39,8 @@ export async function renderCoursesPage(): Promise<React.ReactElement> {
     return (
         <div className="mx-auto w-full max-w-[1024px]">
             <JsonLdScript jsonLd={breadcrumbJsonLd} />
+            {/* h1 이 아예 없어 페이지 주제를 잡을 단서가 없었다(2026-08-14 실측). */}
+            <h1 className="sr-only">{t.courseList}</h1>
             <CategoryIcons />
             <CourseListSection courses={courses} />
         </div>

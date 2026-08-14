@@ -3,7 +3,6 @@ import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getBreadcrumbJsonLd } from "@/lib/seo";
 import { fetchArtistsWithDetails } from "@/lib/supabase/artist-queries";
 import { fetchActiveRegions } from "@/lib/supabase/portfolio-search-queries";
-import { fetchLikedArtistIds } from "@/lib/actions/likes";
 import { ArtistSearchClient } from "@/components/artists/ArtistSearchClient";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 
@@ -28,10 +27,11 @@ export async function generateArtistsMetadata(): Promise<Metadata> {
 }
 
 export async function renderArtistsPage(): Promise<React.ReactElement> {
-  const [result, regions, likedIds] = await Promise.all([
+  // 좋아요는 서버에서 읽지 않는다 — 쿠키를 건드리는 순간 이 페이지가 캐시 불가(no-store)가 된다.
+  // 개인화는 ArtistSearchClient 가 마운트 후 useViewerState 로 채운다.
+  const [result, regions] = await Promise.all([
     fetchArtistsWithDetails({ typeArtist: "SEMI_PERMANENT", limit: 20 }),
     fetchActiveRegions("SEMI_PERMANENT"),
-    fetchLikedArtistIds(),
   ]);
 
   const breadcrumbJsonLd = getBreadcrumbJsonLd([
@@ -48,7 +48,6 @@ export async function renderArtistsPage(): Promise<React.ReactElement> {
         initialArtists={result.artists}
         initialTotalCount={result.totalCount}
         regions={regions}
-        initialLikedIds={likedIds}
       />
     </div>
   );

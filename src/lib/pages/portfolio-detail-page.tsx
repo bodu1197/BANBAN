@@ -16,8 +16,6 @@ import {
 } from "@/lib/supabase/queries";
 import { fetchArtistShopStats } from "@/lib/supabase/event-queries";
 import type { ArtistShopCardData } from "@/components/shared/ArtistShopCard";
-import { incrementPortfolioViews } from "@/lib/supabase/portfolio-view-tracking";
-import { isPortfolioLiked } from "@/lib/actions/portfolio-likes";
 import { PortfolioDetailClient } from "@/components/portfolio/PortfolioDetailClient";
 import { PortfolioHeroBanner } from "@/components/portfolio/PortfolioHeroBanner";
 import { PortfolioSecondarySection } from "@/components/portfolio/PortfolioSecondarySection";
@@ -258,16 +256,17 @@ export async function renderPortfolioDetailPage(id: string): Promise<React.React
     const reviewStatsPromise: Promise<ArtistReviewStats> = portfolioPromise.then((p) =>
         p ? fetchArtistReviewStats(p.artist_id) : { avgRating: 0, reviewCount: 0 },
     );
-    const [portfolio, isLiked, reviewStats] = await Promise.all([
+    // 좋아요 여부는 서버에서 읽지 않는다 — 쿠키를 건드리면 작품 상세 627개가 캐시 불가(no-store)가 되어
+    // 크롤러가 방문할 때마다 DB 를 새로 조회한다. 개인화는 PortfolioDetailClient 가 마운트 후 채운다.
+    const [portfolio, reviewStats] = await Promise.all([
         portfolioPromise,
-        isPortfolioLiked(id),
         reviewStatsPromise,
     ]);
 
     if (!portfolio) notFound();
 
-    incrementPortfolioViews(id).catch(() => { /* non-fatal */ });
-    portfolio.is_liked = isLiked;
+    // 조회수 증가는 클라이언트가 마운트 후 호출한다 — 서버 렌더에서 쓰기를 하면 페이지가 캐시 불가가 되고,
+    // 캐시가 살아나면 어차피 렌더가 안 돌아 조회수도 안 오른다(캐시와 조회수는 양립 불가).
 
     const firstImageUrl = getStorageUrl(portfolio.portfolio_media?.[0]?.storage_path ?? null);
     const heroMedia = buildHeroMedia(firstImageUrl, portfolio.title);

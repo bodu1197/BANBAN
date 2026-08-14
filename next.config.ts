@@ -112,7 +112,10 @@ const nextConfig: NextConfig = {
     // AVIF first for better compression (30% smaller than WebP)
     formats: ['image/avif', 'image/webp'],
     // Global quality for smaller payloads (component-level overrides still work)
-    qualities: [30, 50, 65, 80],
+    // ⚠️ 컴포넌트가 실제로 쓰는 값이 여기 없으면 그 이미지 요청은 400 이 되어 화면에서 사라진다(Next 16).
+    // 새 quality 값을 쓸 때 이 배열에 추가하는 걸 잊지 말 것 — 실측으로 q=60·70·85 가 400 이었다.
+    // 현재 사용처: 50=Header 로고 · 60=SquareImage 기본값 · 65=포폴 상세 · 70=UserAvatar · 85=이벤트 상세.
+    qualities: [30, 50, 60, 65, 70, 80, 85],
     // Vercel Image Optimizer cache: 30 days (portfolios use immutable UUID URLs)
     minimumCacheTTL: 2592000,
   },

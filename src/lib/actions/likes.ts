@@ -2,7 +2,6 @@
 
 import { createAdminClient } from "@/lib/supabase/server";
 import { getUser } from "@/lib/supabase/auth";
-import { revalidatePath } from "next/cache";
 
 export interface ToggleLikeResult {
   success: boolean;
@@ -50,7 +49,9 @@ export async function toggleLike(artistId: string): Promise<ToggleLikeResult> {
     // Decrement count
     await supabase.rpc("decrement_likes_count", { artist_id_param: artistId });
 
-    revalidatePath("/", "page");
+    // revalidatePath("/") 를 부르면 좋아요 한 번에 홈 ISR 엔트리가 날아가고,
+    // Next 가 응답에 현재 페이지 RSC 전체 재렌더를 실어보낸다(샵 상세는 포폴 50건 재조회).
+    // 좋아요 수는 실시간일 필요가 없고 페이지 revalidate 주기에 자연히 갱신된다.
     return { success: true, isLiked: false };
   }
 
@@ -68,7 +69,6 @@ export async function toggleLike(artistId: string): Promise<ToggleLikeResult> {
   // Increment count
   await supabase.rpc("increment_likes_count", { artist_id_param: artistId });
 
-  revalidatePath("/", "page");
   return { success: true, isLiked: true };
 }
 
