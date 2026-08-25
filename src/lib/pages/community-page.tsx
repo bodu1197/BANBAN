@@ -31,10 +31,10 @@ export function resolveCommunityTab(raw: string | undefined): CommunityTabKey {
 }
 
 // UI 탭 라벨("커뮤니티")과 분리 — <title> 이 "커뮤니티 | 반언니" 라 검색어가 하나도 없었다.
-const COMMUNITY_SEO_TITLE = "반영구 커뮤니티 — 시술 부작용·후기·샵인샵 구인";
+const COMMUNITY_SEO_TITLE = "반영구 커뮤니티 — 원장 톡·시술 부작용·후기·샵인샵 구인";
 
 export function generateCommunityMetadata(): Metadata {
-  const description = `${t.title} — 샵인샵 임대·구인, ${t.qna}, 후기, 뷰티랩까지 반언니 회원 소통 공간`;
+  const description = `${t.title} — 샵인샵 임대·구인, ${t.qna}(시술 부작용 상담), 후기, 뷰티랩까지 반언니 회원 소통 공간`;
   return {
     title: COMMUNITY_SEO_TITLE,
     description,
