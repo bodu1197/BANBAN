@@ -533,7 +533,7 @@ export const STRINGS ={
   "community": {
     "title": "커뮤니티",
     "beauty": "반영구",
-    "qna": "원장 톡",
+    "qna": "원장톡",
     "freeTalk": "자유수다",
     "review": "후기",
     "shopInShop": "샵인샵",
