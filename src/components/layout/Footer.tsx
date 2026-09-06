@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { STRINGS } from "@/lib/strings";
+import { GUIDES } from "@/lib/guides";
 
 // min-h-11(44px) + 좌우 패딩 — 인라인 텍스트 링크는 실효 높이가 20px 라 모바일 터치 타겟 기준에 못 미친다.
 const FOOTER_LINK_CLASS =
@@ -19,6 +20,11 @@ function FooterExploreNav(): React.ReactElement {
       <Link href={"/artists"} className={FOOTER_LINK_CLASS}>반영구 샵 찾기</Link>
       <Link href={"/portfolios"} className={FOOTER_LINK_CLASS}>반영구 작품</Link>
       <Link href={"/location"} className={FOOTER_LINK_CLASS}>지역별 반영구</Link>
+      {GUIDES.map((g) => (
+        <Link key={g.slug} href={`/guide/${g.slug}`} className={FOOTER_LINK_CLASS}>
+          {g.label} 가이드
+        </Link>
+      ))}
       <Link href={"/discount"} className={FOOTER_LINK_CLASS}>할인 이벤트</Link>
       <Link href={"/community"} className={FOOTER_LINK_CLASS}>커뮤니티</Link>
       <Link href={"/study-news"} className={FOOTER_LINK_CLASS}>문신사 뉴스</Link>

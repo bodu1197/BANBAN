@@ -1,6 +1,7 @@
 import "server-only";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GuideNavLinks } from "@/components/shared/GuideNavLinks";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Eye, MapPin } from "lucide-react";
@@ -235,6 +236,8 @@ export async function renderLocationDetailPage(
         <ArticleBody content={page.content} coverImageUrl={page.cover_image_url} />
         <FaqSection faq={page.faq} />
         <RegionShopLinks regionName={page.region_name} shops={shops} />
+        {/* 지역 가이드 → 시술 허브. 지역+시술 긴 검색어로 들어온 사람이 시술 자체를 더 읽고, 크롤러는 허브로 올라간다. */}
+        <GuideNavLinks />
       </div>
     </article>
   );

@@ -58,6 +58,10 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
   return {
     title: artist.title,
     description,
+    // 🔴 소개글이 없는 샵은 색인에서 뺀다(사이트맵 artists.xml 의 술어와 동일 — 두 곳이 갈리면 GSC 에
+    //    "제출했는데 noindex" 가 쌓인다). 빈 페이지가 사이트 전체 품질 평가를 깎는 것을 막는 장치이며,
+    //    소개를 채우면 자동으로 돌아온다. (판정 기준·현재 해당 건수는 hasArtistIntro 주석 참조.)
+    ...(hasArtistIntro(artist) ? {} : { robots: { index: false, follow: true } }),
     ...buildPageSeo({
       title: artist.title,
       description,
@@ -71,6 +75,16 @@ export async function generateArtistDetailMetadata(id: string): Promise<Metadata
 interface MediaItem {
   storage_path: string;
   order_index: number | null;
+}
+
+/**
+ * 색인 가치 판정 — introduce(현행) 또는 description(레거시 HTML) 중 하나라도 비어 있지 않으면 참.
+ * 🔒 사이트맵의 `ARTIST_HAS_INTRO_FILTER`(`introduce <> '' OR description <> ''`)와 **글자 그대로 같은 판정**이어야 한다
+ *    — 여기서 trim 을 하면 공백만 있는 소개가 "사이트맵엔 제출·페이지는 noindex" 로 갈린다(리뷰 2026-09-07).
+ * 🔎 2026-09-07 실측: 활성 샵 89곳 전부 소개가 있어 지금 걸리는 샵은 0곳이다. 앞으로 생길 빈 샵을 막는 장치다.
+ */
+export function hasArtistIntro(artist: { introduce?: string | null; description?: string | null }): boolean {
+  return (artist.introduce ?? "").length > 0 || (artist.description ?? "").length > 0;
 }
 
 function extractPortfolioImages(

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/brand-links";
+import { HomeGuideLinks } from "@/components/home/HomeGuideLinks";
 import dynamic from "next/dynamic";
 import { STRINGS } from "@/lib/strings";
 import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
@@ -185,7 +187,6 @@ function CuratedExhibitions({ hp, exhibitions }: Readonly<{
   );
 }
 
-
 /** Safely run an async fetch, returning fallback on error to prevent one section from breaking others */
 async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -268,9 +269,6 @@ function HomeCategorySections({
   );
 }
 
-const APP_STORE_URL = "https://apps.apple.com/us/app/%EB%B0%98%EC%96%B8%EB%8B%88-%EB%88%88%EC%8D%B9%EB%AC%B8%EC%8B%A0-%EB%B0%98%EC%98%81%EA%B5%AC-%EA%B0%80%EA%B2%A9%EB%B9%84%EA%B5%90-%EB%B0%8F-%EA%B0%84%ED%8E%B8-%EC%98%88%EC%95%BD/id6762251420";
-const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.swing2app.v3.da2371fb31eee407fb0e926e1fe9a607e&hl=ko";
-
 function AppDownloadSection(): React.ReactElement {
   const linkClass = "flex items-center justify-center gap-2.5 rounded-xl border border-border bg-background px-5 py-3 text-foreground shadow-sm transition-all hover:shadow-md hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-1";
   return (
@@ -332,6 +330,7 @@ async function AsyncHomeBottom(): Promise<React.ReactElement> {
       />
       <HomeDiscoverySections hp={hp} common={common} homeData={homeData} />
       <HomeCategorySections hp={hp} common={common} homeData={homeData} />
+      <HomeGuideLinks />
       <AppDownloadSection />
     </>
   );

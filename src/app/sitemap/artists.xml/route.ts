@@ -6,6 +6,7 @@ import {
   xmlResponse,
 } from "@/lib/sitemap-utils";
 import type { NextRequest } from "next/server";
+import { ARTIST_HAS_INTRO_FILTER } from "@/lib/sitemap-utils";
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
@@ -19,6 +20,8 @@ export async function GET(request: NextRequest): Promise<Response> {
       .is("deleted_at", null)
       .eq("is_hide", false)
       .eq("status", "active")
+      // 🔒 소개글 없는 샵 제외 — 상세 메타의 hasArtistIntro 와 같은 뜻(neq.'' 는 NULL 도 거른다).
+      .or(ARTIST_HAS_INTRO_FILTER)
       .order("created_at", { ascending: true })
       .range(offset, offset + ITEMS_PER_PAGE - 1);
 

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { countPublicPortfolios } from "@/lib/supabase/portfolio-listing-queries";
 import { getActiveEventFilter } from "@/lib/supabase/event-queries";
 import {
+  ARTIST_HAS_INTRO_FILTER,
   SITE_URL,
   buildSitemapIndexEntry,
   calcPageCount,
@@ -42,7 +43,7 @@ async function getContentEntries(): Promise<ContentEntry[]> {
   const [artists, portfoliosCount, exhibitions, courses, posts, encyclopedia, locationSeo, studyNews, events] =
     await Promise.allSettled([
       // artists.xml 본문과 술어를 맞춘다 — is_hide 가 빠져 있어 빈 page=N 이 제출되고 있었다.
-      supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("is_hide", false).eq("status", "active"),
+      supabase.from("artists").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("is_hide", false).eq("status", "active").or(ARTIST_HAS_INTRO_FILTER),
       // 포폴 개수는 본문(fetchPublicPortfolioSitemapRows)과 동일 anon client·동일 술어 → 인덱스 페이지수 = 실제 출력.
       countPublicPortfolios(),
       supabase.from("exhibitions").select("*", { count: "exact", head: true }),

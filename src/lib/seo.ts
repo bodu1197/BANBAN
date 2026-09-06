@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { BusinessHoursMap } from "@/types/artist-form";
+import { BRAND_SAME_AS } from "@/lib/brand-links";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://banunni.com")
   .trim()
@@ -406,7 +407,11 @@ export function getOrganizationJsonLd(): Record<string, unknown> {
     "@context": SCHEMA_CONTEXT,
     "@type": "Organization",
     name: SITE_NAME,
+    alternateName: "banunni",
     url: SITE_URL,
+    // 🔒 외부 공식 채널과 사이트를 한 브랜드로 잇는다(`lib/brand-links.ts` 단일 소스). 없으면 검색엔진이
+    //    앱스토어·인스타그램을 별개 개체로 보고 사이트만 뒤로 밀린다(2026-09-07 실측).
+    sameAs: [...BRAND_SAME_AS],
     logo: `${SITE_URL}/ban_logo.png`,
     description: "전국 반영구 아티스트 포트폴리오·가격비교 플랫폼",
     contactPoint: [

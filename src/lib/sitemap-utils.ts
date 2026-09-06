@@ -13,6 +13,13 @@ export const URLS_PER_SITEMAP = 50_000;
  */
 export const ITEMS_PER_PAGE = 1000;
 
+/**
+ * 사이트맵에 실을 샵의 조건 — 소개글(introduce 또는 레거시 description)이 있는 샵만.
+ * 🔒 `src/lib/pages/artist-detail-page.tsx` 의 hasArtistIntro 와 **같은 뜻**이어야 한다(제출 = 색인 허용).
+ *    PostgREST 의 `neq.` 은 빈 문자열과 비교하므로 NULL 행도 함께 걸러진다.
+ */
+export const ARTIST_HAS_INTRO_FILTER = "introduce.neq.,description.neq.";
+
 /** Encode non-ASCII characters and XML-escape the URL for sitemap XML */
 export function siteUrl(path: string): string {
   const encoded = encodeURI(path).replace(/&/g, "&amp;");

@@ -156,8 +156,11 @@ const nextConfig: NextConfig = {
   },
 
   // Experimental features for performance
+  // 🔴 `inlineCss` 는 **켜지 마라**(2026-09-07 제거). Tailwind CSS 157KB 가 모든 페이지 HTML 에
+  //    <style> 1회 + RSC 페이로드 2회 = 세 번 박혀 페이지가 500KB~1.2MB 가 됐다(실측: 홈 1,215KB,
+  //    소개 페이지 521KB). 크롤 예산이 그 무게로 소진돼 GSC "발견됨-색인 안 됨" 778건의 한 원인이었다.
+  //    CSS 는 파일로 내보내 브라우저·크롤러가 한 번만 받게 둔다.
   experimental: {
-    inlineCss: true,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-avatar",
