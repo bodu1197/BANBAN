@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
-import { SITE_URL } from "@/lib/seo";
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import { PUBLIC_ENV } from "@/lib/config/env";
 import "./globals.css";
 
@@ -8,7 +8,6 @@ const PageViewTracker = dynamic(() => import("@/components/layout/PageViewTracke
 const Swing2AppBridge = dynamic(() => import("@/components/layout/Swing2AppBridge").then(m => m.Swing2AppBridge));
 const ServiceWorkerRegistration = dynamic(() => import("@/components/layout/ServiceWorkerRegistration").then(m => m.ServiceWorkerRegistration));
 
-const SITE_NAME = "반언니";
 // "대한민국 1등" 같은 검증 불가 최상급 표현은 쓰지 않는다(표시광고법 + 검색 신뢰도).
 const SITE_TITLE = "반언니 — 반영구 화장·눈썹문신 가격비교와 아티스트 추천";
 const SITE_DESCRIPTION = "반영구 잘하는 곳 찾을 땐 반언니! 전국 반영구 아티스트 포트폴리오, 눈썹·입술·아이라인 가격비교. 나에게 맞는 반영구 아티스트를 찾아보세요.";

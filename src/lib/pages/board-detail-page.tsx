@@ -14,6 +14,7 @@ import {
   getCanonicalUrl,
   getFaqPageJsonLd,
   jsonLdSafe,
+  SITE_NAME,
 } from "@/lib/seo";
 
 export async function generateBoardDetailMetadata(
@@ -49,10 +50,10 @@ function ArticleStructuredData({
     image: article.cover_image_url ?? undefined,
     datePublished: article.published_at,
     dateModified: article.updated_at,
-    author: { "@type": "Organization", name: "반언니" },
+    author: { "@type": "Organization", name: SITE_NAME },
     publisher: {
       "@type": "Organization",
-      name: "반언니",
+      name: SITE_NAME,
       url: "https://banunni.com",
     },
     mainEntityOfPage: {

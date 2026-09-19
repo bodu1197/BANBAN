@@ -18,6 +18,7 @@ import {
   getCanonicalUrl,
   getFaqPageJsonLd,
   jsonLdSafe,
+  SITE_NAME,
 } from "@/lib/seo";
 
 export async function generateLocationDetailMetadata(
@@ -51,10 +52,10 @@ function buildArticleJsonLd(page: LocationSeoPage): string {
     image: page.cover_image_url ?? undefined,
     datePublished: page.published_at,
     dateModified: page.updated_at,
-    author: { "@type": "Organization", name: "반언니" },
+    author: { "@type": "Organization", name: SITE_NAME },
     publisher: {
       "@type": "Organization",
-      name: "반언니",
+      name: SITE_NAME,
       url: "https://banunni.com",
     },
     mainEntityOfPage: {

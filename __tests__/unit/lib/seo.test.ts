@@ -3,6 +3,7 @@ import {
   getCanonicalUrl,
   getAlternates,
   getWebsiteJsonLd,
+  getOrganizationJsonLd,
   getArtistJsonLd,
   htmlToPlainText,
   descriptionOrFallback,
@@ -49,6 +50,17 @@ describe("SEO 유틸리티 (한국어 전용)", () => {
       expect(result["@type"]).toBe("WebSite");
       expect(result.name).toBe(SITE_NAME);
       expect(result.url).toBe(SITE_URL);
+    });
+
+    it("사이트 이름: WebSite 에 별칭이 있고, Organization 과 같은 이름·별칭으로 한 개체로 이어진다", () => {
+      // 구글은 WebSite 의 name 에 확신이 없으면 alternateName 을 보고, 그것도 없으면 도메인을 찍는다.
+      const site = getWebsiteJsonLd();
+      const org = getOrganizationJsonLd();
+      expect(site.alternateName).toBe("banunni");
+      expect(org.alternateName).toBe(site.alternateName);
+      expect(org.name).toBe(site.name);
+      expect(site.publisher).toEqual({ "@id": org["@id"] });
+      expect(org["@id"]).toBe(`${SITE_URL}/#organization`);
     });
 
     it("SearchAction potentialAction이 포함됨", () => {

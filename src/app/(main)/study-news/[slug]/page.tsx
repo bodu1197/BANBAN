@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, ChevronLeft } from "lucide-react";
-import { SITE_URL, jsonLdSafe, getBreadcrumbJsonLd } from "@/lib/seo";
+import { SITE_URL, jsonLdSafe, getBreadcrumbJsonLd, SITE_NAME } from "@/lib/seo";
 import { getNewsBySlug, getPublishedNews } from "@/lib/study-news/store";
 import { fmtDate, safeSourceUrl } from "@/lib/study-news/format";
 import { StudyNewsSourceBadge } from "@/components/study/StudyNewsRow";
@@ -50,7 +50,7 @@ export default async function StudyNewsDetailPage({ params }: Readonly<{ params:
     datePublished: item.publishedAt ?? undefined,
     dateModified: item.publishedAt ?? undefined,
     author: { "@type": "Organization", name: item.sourceName },
-    publisher: { "@type": "Organization", name: "반언니", url: SITE_URL },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
     mainEntityOfPage: `${SITE_URL}/study-news/${slug}`,
   };
 

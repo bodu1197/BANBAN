@@ -6,6 +6,15 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://banunni.com")
   .trim()
   .replace(/\/+$/, "");
 const SITE_NAME = "반언니";
+/**
+ * 사이트 이름의 다른 표기. 구글은 검색결과에 주소 대신 띄울 사이트 이름을 WebSite 구조화 데이터의
+ * name 으로 먼저 고르고, 확신이 없으면 alternateName 을 본다 — 둘 다 없으면 도메인을 찍는다.
+ * 그래서 WebSite 와 Organization 이 같은 별칭을 쓴다.
+ */
+const SITE_ALTERNATE_NAME = "banunni";
+/** 두 블록을 한 개체로 잇는 식별자(WebSite.publisher → Organization). */
+const WEBSITE_ID = `${SITE_URL}/#website`;
+const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 const SCHEMA_CONTEXT = "https://schema.org";
 const DEFAULT_OG_IMAGE = "/og-image.png";
 
@@ -107,8 +116,12 @@ export function getWebsiteJsonLd(): Record<string, unknown> {
   return {
     "@context": SCHEMA_CONTEXT,
     "@type": "WebSite",
+    "@id": WEBSITE_ID,
     name: SITE_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     url: SITE_URL,
+    inLanguage: "ko-KR",
+    publisher: { "@id": ORGANIZATION_ID },
     potentialAction: {
       "@type": "SearchAction",
       target: {
@@ -400,14 +413,15 @@ export function getCourseJsonLd(input: Readonly<CourseJsonLdInput>): Record<stri
 }
 
 /**
- * Organization JSON-LD (홈에서 1회만 emit, WebSite 와 중복 회피)
+ * Organization JSON-LD ((main)/layout.tsx 가 WebSite 와 함께 모든 페이지에 1회 emit — WebSite.publisher 가 가리키는 대상)
  */
 export function getOrganizationJsonLd(): Record<string, unknown> {
   return {
     "@context": SCHEMA_CONTEXT,
     "@type": "Organization",
+    "@id": ORGANIZATION_ID,
     name: SITE_NAME,
-    alternateName: "banunni",
+    alternateName: SITE_ALTERNATE_NAME,
     url: SITE_URL,
     // 🔒 외부 공식 채널과 사이트를 한 브랜드로 잇는다(`lib/brand-links.ts` 단일 소스). 없으면 검색엔진이
     //    앱스토어·인스타그램을 별개 개체로 보고 사이트만 뒤로 밀린다(2026-09-07 실측).

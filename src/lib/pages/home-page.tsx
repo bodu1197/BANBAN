@@ -4,7 +4,7 @@ import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/brand-links";
 import { HomeGuideLinks } from "@/components/home/HomeGuideLinks";
 import dynamic from "next/dynamic";
 import { STRINGS } from "@/lib/strings";
-import { buildPageSeo, getOrganizationJsonLd, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, SITE_NAME } from "@/lib/seo";
 import { fetchEyebrowPortfolios, fetchLipPortfolios, fetchMensEyebrowPortfolios, fetchTimeSalePortfolios } from "@/lib/supabase/home-portfolio-queries";
 import { fetchPopularEvents } from "@/lib/supabase/event-queries";
 import {
@@ -351,17 +351,11 @@ export async function renderHomePage(): Promise<React.ReactElement> {
   const [topData, heroBanners] = await Promise.all([fetchTopHomeData(), fetchHeroBanners()]);
   const { promoBanners, quickMenuItems, popularEvents } = topData;
 
-  const organizationJsonLd = getOrganizationJsonLd();
-
   // (main)/layout.tsx 가 이미 <main id="main-content"> 랜드마크 제공 — 여기선 div 로 중첩 main 회피(WCAG 1.3.1)
   return (
     <div className="mx-auto w-full max-w-[1024px] overflow-hidden">
       {/* SEO/접근성: 페이지 단일 h1 (디자인 영향 없이 스크린리더·검색엔진용) */}
-      <h1 className="sr-only">반언니 — 반영구 화장 가격비교 &amp; 아티스트 추천 플랫폼</h1>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdSafe(organizationJsonLd) }}
-      />
+      <h1 className="sr-only">{SITE_NAME} — 반영구 화장 가격비교 &amp; 아티스트 추천 플랫폼</h1>
       <ImpressionZone placement="home" className="mx-auto w-full max-w-[1024px]">
         {/* 바비톡 패턴 순서: 검색바 → 인기검색어 → 히어로 캐러셀 → 퀵메뉴 → ... */}
         <HomeSearchTrigger />

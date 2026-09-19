@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { buildPageSeo, getBreadcrumbJsonLd, getCanonicalUrl, getFaqPageJsonLd, jsonLdSafe } from "@/lib/seo";
+import { buildPageSeo, getBreadcrumbJsonLd, getCanonicalUrl, getFaqPageJsonLd, jsonLdSafe, SITE_NAME } from "@/lib/seo";
 import { fetchRecentEncyclopediaLinks, guideLabel, guideSlugs, loadGuide, type Guide } from "@/lib/guides";
 import { fetchLocationSeoList } from "@/lib/location-seo/queries";
 import { GuideNavLinks } from "@/components/shared/GuideNavLinks";
@@ -49,10 +49,10 @@ function buildJsonLd(slug: string, label: string, guide: Guide): Record<string, 
       keywords: guide.keywords.join(", "),
       inLanguage: "ko-KR",
       mainEntityOfPage: url,
-      author: { "@type": "Organization", name: "반언니" },
+      author: { "@type": "Organization", name: SITE_NAME },
       publisher: {
         "@type": "Organization",
-        name: "반언니",
+        name: SITE_NAME,
         url: getCanonicalUrl("/"),
         logo: { "@type": "ImageObject", url: `${getCanonicalUrl("/")}ban_logo.png` },
       },

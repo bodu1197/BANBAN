@@ -3,10 +3,10 @@ import OpenAI from "openai";
 import type { EncyclopediaTopic } from "./topics";
 import { pickImagesForSections, uploadThumbnailToStorage } from "./queries";
 import { estimateReadingTime } from "@/lib/board/utils";
+import { SITE_NAME } from "@/lib/seo";
 
 const MODEL = "gpt-4o";
 const IMAGE_MODEL = "gpt-image-2";
-const SITE_NAME = "반언니";
 const AI_TEMPERATURE = 0.85;
 const AI_MAX_TOKENS = 8192;
 

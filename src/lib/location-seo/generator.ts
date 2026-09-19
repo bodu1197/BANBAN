@@ -3,9 +3,9 @@ import OpenAI from "openai";
 import type { LocationTarget } from "./targets";
 import { pickRelatedPortfolioImages } from "@/lib/encyclopedia/queries";
 import { estimateReadingTime } from "@/lib/board/utils";
+import { SITE_NAME } from "@/lib/seo";
 
 const MODEL = "gpt-4o";
-const SITE_NAME = "반언니";
 const AI_TEMPERATURE = 0.8;
 const AI_MAX_TOKENS = 8192;
 const SECTION_COUNT = 6; // AI 가 생성하는 본문 섹션 수 — buildPrompt 의 "정확히 N개" 및 섹션 가이드(1..N)와 반드시 일치.
