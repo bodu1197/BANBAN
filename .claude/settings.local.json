@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/check-self-execute.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-self-execute.mjs\"",
             "timeout": 10,
             "statusMessage": "MEMORY.md 규칙 준수 검사 중..."
           }
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/review8-gate.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/review8-gate.mjs\"",
             "timeout": 10,
             "statusMessage": "review8 게이트 검사 중..."
           }
@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/post-push-trigger-review8.mjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-push-trigger-review8.mjs\"",
             "timeout": 10,
             "statusMessage": "8-리뷰어 자동 트리거 확인..."
           }
