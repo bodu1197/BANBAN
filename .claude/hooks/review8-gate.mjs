@@ -7,6 +7,10 @@ import { execSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// 게이트와 같은 위치의 mark — 다른 저장소·worktree 에서 막혀도 해시 공식이 같은 스크립트로 풀 수 있게 차단 메시지에 절대경로로 보여 준다.
+const MARK_SCRIPT = fileURLToPath(new URL("./review8-mark.mjs", import.meta.url)).replaceAll("\\", "/");
 
 function readStdin() {
   return new Promise((resolve) => {
@@ -72,8 +76,10 @@ function emitBlock(reason) {
     }
 
     const head = sh("git rev-parse HEAD", repoRoot).trim();
-    const status = sh("git status --porcelain -z", repoRoot);
-    const diffTracked = sh("git diff HEAD", repoRoot);
+    // 마커 파일은 해시에서 뺀다 — 무시 목록에 없는 저장소에선 mark 가 파일을 쓰는 순간 해시가 바뀌어 게이트가 풀리지 않았다.
+    const NOT_MARK = " -- . \":(exclude).claude/.review8-hash\"";
+    const status = sh("git status --porcelain -z" + NOT_MARK, repoRoot);
+    const diffTracked = sh("git diff HEAD" + NOT_MARK, repoRoot);
     const current = createHash("sha256")
       .update(`${head}\n${status}\n${diffTracked}`)
       .digest("hex");
@@ -96,6 +102,7 @@ function emitBlock(reason) {
       "1. `/review8` 을 실행해 8인 병렬 검증을 수행 (Security/SEO/Performance/UX/Maintainability/Quality/Architecture/Type Safety)",
       "2. CRITICAL/HIGH 가 있으면 모두 수정한 뒤 /review8 재실행",
       "3. PASS 표시가 기록된 뒤 다시 이 `git commit` 시도",
+      `   PASS 표시 기록(커밋과 별도 호출 — 게이트가 검사한 저장소 ${repoRoot} 기준): cd "${repoRoot}" && node "${MARK_SCRIPT}"`,
       "",
       "절차 파일: .claude/commands/review8.md",
       "게이트 우회 금지 — 편법 사용 시 MEMORY.md 규칙 위반.",
