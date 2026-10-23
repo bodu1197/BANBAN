@@ -38,6 +38,8 @@ export function extractSido(regionName: string): string {
 /**
  * Map Daum Postcode full sido names to our short region prefixes.
  * e.g., "서울특별시" → "서울", "경기도" → "경기"
+ * DB 트리거 artists_region_from_address 의 시도 CASE 와 같은 표 — 바꿀 땐 둘 다. 적용된 마이그레이션은 고치지 않고
+ * 새 마이그레이션에서 함수 전체를 다시 정의한다(최신 정의는 supabase/migrations 를 함수 이름으로 검색).
  */
 const ADDRESS_SIDO_MAP: Record<string, string> = {
   "서울특별시": "서울",
@@ -65,13 +67,29 @@ const ADDRESS_SIDO_MAP: Record<string, string> = {
 const SHORT_SIDO_SET = new Set<string>(REGION_PREFIXES.map((r) => r.prefix));
 
 /**
+ * 2026-07-01 광주광역시+전라남도 → 전남광주통합특별시. 다음 주소검색이 이 이름을 그대로 내려준다.
+ * regions 는 광주/전남 그대로 두고(지역 필터·페이지 유지) 옛 광주 5개 구는 '광주', 나머지 시·군은 '전남'으로 붙인다.
+ * DB 트리거는 이 목록 없이 '광주 X'/'전남 X' 중 regions 에 있는 쪽을 고른다 — 이 목록이 틀려도
+ * 저장값은 안 깨지고 폼이 "지역을 찾지 못했습니다"로 드러낸다.
+ */
+const GWANGJU_DISTRICTS = new Set(["동구", "서구", "남구", "북구", "광산구"]);
+
+/** 통합시 이름만 옛 시도 약칭('광주'/'전남')으로 되돌린다. 그 밖의 시도 표기는 그대로 돌려준다. */
+function unmergeSido(sido: string, sigungu: string): string {
+  if (sido !== "전남광주통합특별시") return sido;
+  return GWANGJU_DISTRICTS.has(sigungu) ? "광주" : "전남";
+}
+
+/**
  * Convert an address to a region search keyword.
  * Supports both full names ("서울특별시 강남구 ...") and
  * short names already in DB ("서울 강남구 ...").
+ * DB 트리거 artists_region_from_address 와 같은 규칙(시도 표·세종 고정·시+구·통합시) — 바꿀 땐 둘 다.
  */
 export function addressToRegionKey(address: string): string | null {
   const parts = address.trim().split(/\s+/);
   if (parts.length < 2) return null;
+  parts[0] = unmergeSido(parts[0], parts[1]);
 
   // Try full sido name first (Daum Postcode), then short name (DB stored)
   const sido = ADDRESS_SIDO_MAP[parts[0]] ?? (SHORT_SIDO_SET.has(parts[0]) ? parts[0] : null);

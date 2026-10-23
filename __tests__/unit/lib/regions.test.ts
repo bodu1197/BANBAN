@@ -24,6 +24,21 @@ describe("addressToRegionKey", () => {
     expect(addressToRegionKey("전북특별자치도 전주시 완산구 효자로 225")).toBe("전북 전주시 완산구");
   });
 
+  it.each(["동구", "서구", "남구", "북구", "광산구"])("전남광주통합특별시(2026-07 통합) %s — 옛 광주 구는 광주로", (gu) => {
+    expect(addressToRegionKey(`전남광주통합특별시 ${gu} 가삼길 18`)).toBe(`광주 ${gu}`);
+  });
+
+  it("전남광주통합특별시의 시·군은 전남으로", () => {
+    expect(addressToRegionKey("전남광주통합특별시 목포시 연산동 1248-1")).toBe("전남 목포시");
+    expect(addressToRegionKey("전남광주통합특별시 담양군 담양읍 추성로 1371")).toBe("전남 담양군");
+  });
+
+  it("통합 전 표기와 다른 시도의 같은 이름 구는 그대로", () => {
+    expect(addressToRegionKey("광주광역시 광산구 가삼길 18")).toBe("광주 광산구");
+    expect(addressToRegionKey("전라남도 목포시 연산동 1248-1")).toBe("전남 목포시");
+    expect(addressToRegionKey("부산광역시 서구 구덕로 1")).toBe("부산 서구");
+  });
+
   it("세종은 시군구가 없어 도로명이 두 번째로 와도 고정 매칭한다", () => {
     expect(addressToRegionKey("세종특별자치시 한누리대로 2130")).toBe("세종 세종시");
     expect(addressToRegionKey("세종 도움5로 20")).toBe("세종 세종시");
@@ -32,11 +47,13 @@ describe("addressToRegionKey", () => {
   it("시도를 모르면 null", () => {
     expect(addressToRegionKey("Tokyo Shibuya 1-1")).toBeNull();
     expect(addressToRegionKey("서울")).toBeNull();
+    expect(addressToRegionKey("전남광주통합특별시")).toBeNull();
   });
 
   it("앞뒤 공백·중복 공백에도 흔들리지 않는다", () => {
     expect(addressToRegionKey("  서울 강남구 테헤란로 152 ")).toBe("서울 강남구");
     expect(addressToRegionKey("경기  용인시  수지구 현암로 148")).toBe("경기 용인시 수지구");
+    expect(addressToRegionKey("\t전남광주통합특별시 광산구 가삼길 18\n")).toBe("광주 광산구");
     expect(addressToRegionKey("")).toBeNull();
     expect(addressToRegionKey("   ")).toBeNull();
   });

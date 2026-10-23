@@ -424,7 +424,6 @@ export function ArtistEditClient({ artist,
           <IntroduceSeoPreview
             shopName={formData.title}
             introduce={formData.introduce}
-            region={formData.address}
             imageCount={existingProfileImage.length + newProfileImage.length}
           />
           <GuidedIntroduce

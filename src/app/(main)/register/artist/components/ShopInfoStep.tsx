@@ -47,7 +47,6 @@ export function ShopInfoStep({
       <IntroduceSeoPreview
         shopName={formData.title}
         introduce={formData.introduce}
-        region={formData.address}
         imageCount={0}
       />
       <GuidedIntroduce

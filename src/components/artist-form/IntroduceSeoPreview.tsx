@@ -14,18 +14,16 @@ function toSnippet(text: string): string {
 interface IntroduceSeoPreviewProps {
   shopName: string;
   introduce: string;
-  region: string;
   imageCount: number;
 }
 
 export function IntroduceSeoPreview({
-  shopName, introduce, region, imageCount,
+  shopName, introduce, imageCount,
 }: Readonly<IntroduceSeoPreviewProps>): React.ReactElement {
   const snippet = toSnippet(introduce);
   const len = introduce.trim().length;
   const rich = len >= TARGET_LEN;
   const name = shopName.trim() || "내 샵 이름";
-  const regionLabel = region.trim() || "지역";
 
   return (
     <div className="space-y-3">
@@ -48,7 +46,8 @@ export function IntroduceSeoPreview({
           <Search className="h-3.5 w-3.5" aria-hidden="true" /> 구글 검색에 이렇게 노출돼요 (실시간)
         </p>
         <div className="rounded-lg border border-border bg-muted/30 p-3">
-          <p className="text-[11px] text-muted-foreground">banunni.com › 아티스트 › {regionLabel}</p>
+          {/* 샵 상세의 BreadcrumbList(홈 › 아티스트 › 샵 이름)와 같게 — 지역은 검색 결과에 찍히지 않는다. */}
+          <p className="text-[11px] text-muted-foreground">banunni.com › 아티스트 › {name}</p>
           <p className="mt-0.5 line-clamp-1 text-base font-medium text-blue-700">{name} | 반언니</p>
           {snippet ? (
             <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{snippet}</p>

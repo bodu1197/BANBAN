@@ -1,7 +1,7 @@
 // @client-reason: Uses browser APIs for Daum Postcode
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 interface DaumPostcodeData {
   address: string;
@@ -27,8 +27,20 @@ function getDaum(): Window["daum"] {
 
 export function useDaumPostcode(): UseDaumPostcodeReturn {
   const [isOpen, setIsOpen] = useState(false);
+  /** 모달을 연 요소 — 닫히면 포커스를 돌려준다(안 그러면 키보드·스크린리더 사용자가 문서 맨 앞으로 튕긴다). */
+  const openerRef = useRef<HTMLElement | null>(null);
+
+  const close = useCallback(() => {
+    setIsOpen(false);
+    // 한 번만 돌려준다 — 선택하면 oncomplete 뒤 onclose 가 또 오고, ×로 닫은 뒤 늦게 끝난 open() 도 close 를 부른다
+    // (그때 포커스를 다시 끌어오면 상세주소를 입력하던 칸이 blur 된다).
+    const opener = openerRef.current;
+    openerRef.current = null;
+    opener?.focus();
+  }, []);
 
   const open = useCallback(async (): Promise<DaumPostcodeData | null> => {
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setIsOpen(true);
 
     // Load Daum Postcode script if not loaded
@@ -48,18 +60,18 @@ export function useDaumPostcode(): UseDaumPostcodeReturn {
     const container = document.getElementById("daumPostcodeContainer");
     const daum = getDaum();
     if (!container || !daum?.Postcode) {
-      setIsOpen(false);
+      close();
       return null;
     }
 
     return new Promise((resolve) => {
       new daum.Postcode({
         oncomplete: (data: DaumPostcodeData) => {
-          setIsOpen(false);
+          close();
           resolve(data);
         },
         onclose: () => {
-          setIsOpen(false);
+          close();
           resolve(null);
         },
         width: "100%",
@@ -67,11 +79,7 @@ export function useDaumPostcode(): UseDaumPostcodeReturn {
         maxSuggestItems: 5,
       }).embed(container);
     });
-  }, []);
-
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+  }, [close]);
 
   return {
     isOpen,

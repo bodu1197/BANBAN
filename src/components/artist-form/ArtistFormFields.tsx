@@ -178,19 +178,24 @@ export function TextFieldWithHint({ label, value, onChange, placeholder, hint }:
   );
 }
 
-/** 주소로 자동 매칭된 지역을 보여준다 — 지역은 입력칸이 없어 여기 말고는 확인할 방법이 없다. */
+/** 주소 아래 지역 안내 문구. 조회 중에는 실패로 보지 않는다 — 매번 '못 찾았다'가 깜빡이고 스크린리더가 거짓 실패를 읽는다. */
+function regionStatus(address: string, regionName?: string | null, isLoading?: boolean): { text: string; failed: boolean } {
+  if (isLoading) return { text: "지역 확인 중…", failed: false };
+  if (regionName) return { text: `지역: ${regionName}`, failed: false };
+  if (!address.trim()) return { text: "", failed: false };
+  return { text: "지역을 찾지 못했습니다. '검색' 버튼으로 주소를 다시 선택해 주세요.", failed: true };
+}
+
+/**
+ * 주소로 자동 매칭된 지역을 보여준다 — 지역은 입력칸이 없어 여기 말고는 확인할 방법이 없다.
+ * 알림 영역(role=status)은 비어 있어도 늘 두고 글자만 바꾼다 — 글자를 가진 채 새로 생기면 스크린리더가 놓친다.
+ * 비어 있을 땐 empty:-mt-2 로 바로 위 칸의 space-y 간격을 상쇄한다(빈 줄 방지).
+ */
 function MatchedRegion({ address, regionName, isLoading }: Readonly<{
   address: string; regionName?: string | null; isLoading?: boolean;
-}>): React.ReactElement | null {
-  // 조회 중에는 실패 경고를 띄우지 않는다 — 매번 '못 찾았다'가 깜빡이고 스크린리더가 거짓 실패를 읽는다.
-  if (isLoading) return <p className="text-xs text-muted-foreground">지역 확인 중…</p>;
-  if (regionName) return <p aria-live="polite" className="text-xs text-muted-foreground">지역: {regionName}</p>;
-  if (!address.trim()) return null;
-  return (
-    <p role="alert" className="text-xs text-red-500">
-      지역을 찾지 못했습니다. &apos;검색&apos; 버튼으로 주소를 다시 선택해 주세요.
-    </p>
-  );
+}>): React.ReactElement {
+  const { text, failed } = regionStatus(address, regionName, isLoading);
+  return <p role="status" className={`text-xs empty:-mt-2 ${failed ? "text-destructive" : "text-muted-foreground"}`}>{text}</p>;
 }
 
 export function AddressField({ formData, onSearch, onChange, t, regionName, isRegionLoading }: Readonly<{
@@ -206,7 +211,8 @@ export function AddressField({ formData, onSearch, onChange, t, regionName, isRe
       </Label>
       <div className="flex gap-2">
         <Input type="text" value={formData.zipcode} readOnly placeholder={t.zipcode} className="flex-1 bg-muted" />
-        <Button type="button" variant="outline" onClick={onSearch} className="shrink-0">{t.addressSearch}</Button>
+        {/* Safari 는 클릭한 버튼에 포커스를 주지 않는다 — 주소 창이 닫힌 뒤 포커스가 돌아올 곳을 이 버튼으로 고정. */}
+        <Button type="button" variant="outline" onClick={(e) => { e.currentTarget.focus(); onSearch(); }} className="shrink-0">{t.addressSearch}</Button>
       </div>
       <Input type="text" value={formData.address} readOnly placeholder={t.addressPlaceholder} className="bg-muted" />
       <Input type="text" value={formData.address_detail} onChange={onChange("address_detail")} placeholder={t.addressDetailPlaceholder} />
